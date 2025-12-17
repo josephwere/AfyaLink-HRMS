@@ -1,0 +1,7 @@
+{
+  "patched_files": [
+    "src/pages/Admin/CRDTPatientEditor.jsx"
+  ],
+  "created_files": [],
+  "missing_after_patch": []
+}
