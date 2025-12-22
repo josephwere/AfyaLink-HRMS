@@ -4,6 +4,28 @@ import crypto from "crypto";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+
+export async function verifyEmail(req, res) {
+  try {
+    const { token } = req.query;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+    user.isEmailVerified = true;
+    await user.save();
+
+    res.json({ message: "Email verified successfully" });
+  } catch (err) {
+    res.status(400).json({ message: "Verification failed" });
+  }
+}
 
 /* ======================================================
    CONFIG
