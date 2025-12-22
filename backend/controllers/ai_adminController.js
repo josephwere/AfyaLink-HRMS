@@ -1,0 +1,11 @@
+// ai_adminController - placeholder implementations
+import express from 'express';
+
+export const index = async (req, res) => {
+  res.json({ module: 'ai_admin', status: 'ok', msg: 'Placeholder response' });
+};
+
+// Example: list items
+export const list = async (req, res) => {
+  res.json([]);
+};
