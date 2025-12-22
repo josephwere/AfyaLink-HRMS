@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://afyalink-hrms-4.onrender.com/api/$1"
+    }
+  ]
+}

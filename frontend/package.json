@@ -1,0 +1,23 @@
+{
+  "name": "afyalink-frontend-v5",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.23.0",
+    
+
+    "socket.io-client": "^4.7.5",
+    "automerge": "1.0.1-preview.7",
+    "localforage": "^1.10.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "@vitejs/plugin-react": "^4.0.0"
+  }
+}
