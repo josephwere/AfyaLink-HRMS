@@ -5,8 +5,10 @@ import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
 
+/* ======================================================
+   EMAIL VERIFICATION
+====================================================== */
 export async function verifyEmail(req, res) {
   try {
     const { token } = req.query;
@@ -163,7 +165,7 @@ export const login = async (req, res) => {
 };
 
 /* ======================================================
-   VERIFY 2FA OTP (FIXED)
+   VERIFY 2FA OTP
 ====================================================== */
 export const verify2FAOtp = async (req, res) => {
   try {
@@ -273,7 +275,7 @@ export const resend2FA = async (req, res) => {
 };
 
 /* ======================================================
-   CHANGE PASSWORD (FIXED)
+   CHANGE PASSWORD
 ====================================================== */
 export const changePassword = async (req, res) => {
   try {
