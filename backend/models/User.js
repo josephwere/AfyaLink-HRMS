@@ -20,6 +20,11 @@ const userSchema = new Schema(
     },
 
     password: { type: String },
+     isEmailVerified: {
+  type: Boolean,
+  default: false,
+},
+
 
     /* ---------------- ROLE (RBAC) ---------------- */
     role: {
