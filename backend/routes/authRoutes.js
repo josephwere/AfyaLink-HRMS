@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
 
+
 import auth from "../middleware/auth.js";
 import {
   login,
@@ -15,6 +16,10 @@ import {
 } from "../controllers/authController.js";
 
 const router = express.Router();
+import { verifyEmail } from "../controllers/authController.js";
+
+router.get("/verify-email", verifyEmail);
+
 
 /* ======================================================
    REGISTER (EMAIL VERIFICATION)
