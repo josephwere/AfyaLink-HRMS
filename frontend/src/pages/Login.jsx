@@ -55,7 +55,7 @@ export default function Login() {
   }, [cooldown]);
 
   /* ---------------------------------------
-     Submit handler (2FA + email verification safe)
+     Submit handler
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,10 +80,7 @@ export default function Login() {
       // 🔐 2FA REQUIRED
       if (result?.requires2FA) {
         navigate("/2fa", {
-          state: {
-            userId: result.userId,
-            email,
-          },
+          state: { userId: result.userId, email },
         });
         return;
       }
@@ -96,7 +93,7 @@ export default function Login() {
   };
 
   /* ---------------------------------------
-     Resend verification handler
+     Resend verification handler (SYNCED)
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -110,10 +107,16 @@ export default function Login() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.msg);
+
+      if (!res.ok) {
+        if (data.retryAfter) {
+          setCooldown(data.retryAfter); // 🧠 backend-controlled
+        }
+        throw new Error(data.msg);
+      }
 
       setInfo("Verification email resent. Check your inbox.");
-      setCooldown(60); // ⏱️ 60 seconds
+      setCooldown(data.retryAfter || 60); // 🧠 safe fallback
     } catch (err) {
       setError(err.message);
     } finally {
@@ -188,4 +191,4 @@ export default function Login() {
       </form>
     </div>
   );
-                                       }
+      }
