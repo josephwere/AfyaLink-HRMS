@@ -5,6 +5,9 @@ import crypto from "crypto";
 import User from "../models/User.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
+import { resendVerificationEmail } from "../controllers/authController.js";
+
+router.post("/resend-verification", resendVerificationEmail);
 
 
 import auth from "../middleware/auth.js";
