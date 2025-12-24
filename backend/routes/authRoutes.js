@@ -1,5 +1,6 @@
 import express from "express";
 import auth from "../middleware/auth.js";
+import requireRole from "../middleware/requireRole.js";
 
 import {
   register,
@@ -9,18 +10,10 @@ import {
   resend2FA,
   verify2FAOtp,
   changePassword,
+  adminVerifyUser, // ✅ NOW EXISTS
 } from "../controllers/authController.js";
 
 const router = express.Router();
-import { requireRole } from "../middleware/requireRole.js";
-import { adminVerifyUser } from "../controllers/authController.js";
-
-router.post(
-  "/admin/verify-user",
-  auth,
-  requireRole("admin"),
-  adminVerifyUser
-);
 
 /* ======================================================
    AUTH
@@ -33,6 +26,16 @@ router.post("/login", login);
 ====================================================== */
 router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);
+
+/* ======================================================
+   ADMIN OVERRIDE
+====================================================== */
+router.post(
+  "/admin/verify-user/:userId",
+  auth,
+  requireRole("admin"),
+  adminVerifyUser
+);
 
 /* ======================================================
    PASSWORD
