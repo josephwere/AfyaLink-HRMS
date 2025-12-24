@@ -394,3 +394,38 @@ export const adminAlert = async (message) => {
     html: emailTemplate("System Alert", `<p>${message}</p>`),
   });
 };
+import crypto from "crypto";
+import User from "../models/User.js";
+import { sendVerificationEmail } from "../utils/sendEmail.js";
+
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ msg: "Email already verified" });
+    }
+
+    // 🔐 regenerate token
+    user.emailVerificationToken = crypto.randomBytes(32).toString("hex");
+    user.emailVerificationExpires = Date.now() + 1000 * 60 * 60; // 1 hour
+    await user.save();
+
+    await sendVerificationEmail(user.email, user.emailVerificationToken);
+
+    res.json({ msg: "Verification email resent successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
