@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../utils/auth";
+import { apiFetch } from "../utils/apiFetch";
 import PasswordInput from "../components/PasswordInput";
 
 export default function Login() {
@@ -14,6 +15,10 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // 🔁 Resend verification states
+  const [resendLoading, setResendLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   /* ---------------------------------------
      Show verification message after register
@@ -37,6 +42,17 @@ export default function Login() {
       setRememberMe(true);
     }
   }, []);
+
+  /* ---------------------------------------
+     Cooldown timer (anti-spam)
+  ---------------------------------------- */
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((c) => c - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   /* ---------------------------------------
      Submit handler (2FA + email verification safe)
@@ -79,6 +95,32 @@ export default function Login() {
     }
   };
 
+  /* ---------------------------------------
+     Resend verification handler
+  ---------------------------------------- */
+  const handleResendVerification = async () => {
+    try {
+      setResendLoading(true);
+      setError("");
+      setInfo("");
+
+      const res = await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.msg);
+
+      setInfo("Verification email resent. Check your inbox.");
+      setCooldown(60); // ⏱️ 60 seconds
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -92,26 +134,15 @@ export default function Login() {
         {error?.toLowerCase().includes("verify") && (
           <button
             type="button"
+            onClick={handleResendVerification}
+            disabled={resendLoading || cooldown > 0}
             className="resend-btn"
-            onClick={async () => {
-              try {
-                const res = await fetch("/api/auth/resend-verification", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email }),
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.msg);
-
-                setInfo("Verification email resent. Check your inbox.");
-                setError("");
-              } catch (err) {
-                setError(err.message);
-              }
-            }}
           >
-            Resend verification email
+            {cooldown > 0
+              ? `Resend available in ${cooldown}s`
+              : resendLoading
+              ? "Sending..."
+              : "Resend verification email"}
           </button>
         )}
 
@@ -157,4 +188,4 @@ export default function Login() {
       </form>
     </div>
   );
-      }
+                                       }
