@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
+import "./verify.css";
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
-  const [status, setStatus] = useState("loading");
+  const [status, setStatus] = useState("verifying");
+  const [cooldown, setCooldown] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const token = params.get("token");
 
   useEffect(() => {
-    const token = params.get("token");
-
     if (!token) {
       setStatus("invalid");
       return;
@@ -19,50 +21,77 @@ export default function VerifyEmail() {
       .then((res) => {
         if (!res.ok) throw new Error();
         setStatus("success");
-
-        // ⏳ Redirect to login after success
-        setTimeout(() => {
-          navigate("/login?verified=true");
-        }, 3000);
       })
-      .catch(() => {
-        setStatus("expired");
+      .catch(() => setStatus("error"));
+  }, [token]);
+
+  // ⏱️ Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const handleResend = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
       });
-  }, [params, navigate]);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.msg);
+      setCooldown(data.retryAfter || 60);
+    } catch {
+      alert("Failed to resend verification email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    
-      <div className={`verify-page ${status}`}>
-      {status === "loading" && (
-        <>
-          <h2>Verifying your email…</h2>
-          <p>Please wait a moment.</p>
-        </>
+    <div className="verify-page">
+      {status === "verifying" && (
+        <div className="card pulse">
+          <h1>Verifying…</h1>
+          <p>Please wait</p>
+        </div>
       )}
 
       {status === "success" && (
-        <>
-          <h2>✅ Email verified successfully!</h2>
-          <p>Redirecting you to login…</p>
-        </>
+        <div className="card success pop">
+          <h1>✅ Email Verified</h1>
+          <p>Your account is now active.</p>
+          <Link to="/login" className="btn">
+            Go to Login
+          </Link>
+        </div>
       )}
 
       {status === "invalid" && (
-        <>
-          <h2>❌ Invalid verification link</h2>
-          <p>The verification link is malformed.</p>
-          <Link to="/login">Go to Login</Link>
-        </>
+        <div className="card error shake">
+          <h1>❌ Invalid Link</h1>
+          <p>This verification link is invalid.</p>
+        </div>
       )}
 
-      {status === "expired" && (
-        <>
-          <h2>⏱️ Verification link expired</h2>
-          <p>
-            Please return to login and request a new verification email.
-          </p>
-          <Link to="/login">Go to Login</Link>
-        </>
+      {status === "error" && (
+        <div className="card error shake">
+          <h1>❌ Verification Failed</h1>
+          <p>Link expired or already used.</p>
+
+          <button
+            onClick={handleResend}
+            disabled={loading || cooldown > 0}
+            className="btn secondary"
+          >
+            {cooldown > 0
+              ? `Resend in ${cooldown}s`
+              : loading
+              ? "Sending…"
+              : "Resend verification email"}
+          </button>
+        </div>
       )}
     </div>
   );
