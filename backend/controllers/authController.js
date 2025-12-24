@@ -339,3 +339,36 @@ export const adminVerifyUser = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   CHANGE PASSWORD
+====================================================== */
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Current password is incorrect" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // 🔐 Security: invalidate refresh tokens
+    user.refreshTokens = [];
+    await user.save();
+
+    res.json({ success: true, msg: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
