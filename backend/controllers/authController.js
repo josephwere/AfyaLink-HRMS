@@ -205,6 +205,45 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   RESEND 2FA CODE
+====================================================== */
+export const resend2FA = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ msg: "User ID is required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({ msg: "2FA not enabled for this account" });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    await redis.set(`2fa:${user._id}`, otp, { ex: 300 }); // 5 minutes
+
+    await sendEmail({
+      to: user.email,
+      subject: "Your AfyaLink Security Code",
+      html: emailTemplate(
+        "Security Verification",
+        `<h1>${otp}</h1><p>Expires in 5 minutes.</p>`
+      ),
+    });
+
+    res.json({ msg: "Verification code resent" });
+  } catch (err) {
+    console.error("Resend 2FA error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
 
 /* ======================================================
    PASSWORD RESET
