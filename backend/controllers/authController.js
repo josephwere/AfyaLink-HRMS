@@ -244,6 +244,73 @@ export const resend2FA = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   VERIFY 2FA OTP
+====================================================== */
+export const verify2FAOtp = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+      return res.status(400).json({ msg: "User ID and OTP are required" });
+    }
+
+    const storedOtp = await redis.get(`2fa:${userId}`);
+    if (!storedOtp || storedOtp !== otp) {
+      return res.status(400).json({ msg: "Invalid or expired OTP" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Trust this device
+    const deviceId = getDeviceId(req);
+
+    user.trustedDevices = user.trustedDevices || [];
+
+    const existing = user.trustedDevices.find(
+      (d) => d.deviceId === deviceId
+    );
+
+    if (existing) {
+      existing.verifiedAt = new Date();
+      existing.lastUsed = new Date();
+    } else {
+      user.trustedDevices.push({
+        deviceId,
+        verifiedAt: new Date(),
+        lastUsed: new Date(),
+      });
+    }
+
+    // Issue tokens
+    const accessToken = signAccessToken({
+      id: user._id,
+      role: user.role,
+      twoFactorVerified: true,
+    });
+
+    const refreshToken = signRefreshToken({ id: user._id });
+    user.refreshTokens.push(refreshToken);
+
+    await user.save();
+    await redis.del(`2fa:${userId}`);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({ accessToken, user });
+  } catch (err) {
+    console.error("Verify 2FA OTP error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
 
 /* ======================================================
    PASSWORD RESET
