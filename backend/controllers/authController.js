@@ -327,3 +327,45 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   ADMIN VERIFY USER (OVERRIDE)
+====================================================== */
+export const adminVerifyUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ msg: "User already verified" });
+    }
+
+    user.emailVerified = true;
+    user.emailVerifiedAt = new Date();
+    await user.save();
+
+    await AuditLog.create({
+      actorId: req.user.id,
+      actorRole: "admin",
+      action: "ADMIN_EMAIL_VERIFIED",
+      resource: "User",
+      resourceId: user._id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      metadata: {
+        method: "admin_override",
+      },
+    });
+
+    res.json({
+      success: true,
+      msg: "User email verified by admin",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
