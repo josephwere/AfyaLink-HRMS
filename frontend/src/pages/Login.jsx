@@ -21,7 +21,9 @@ export default function Login() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
-      setInfo("Account created successfully. Please verify your email before logging in.");
+      setInfo(
+        "Account created successfully. Please verify your email before logging in."
+      );
     }
   }, [location.search]);
 
@@ -86,6 +88,33 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
 
+        {/* 🔁 RESEND VERIFICATION BUTTON */}
+        {error?.toLowerCase().includes("verify") && (
+          <button
+            type="button"
+            className="resend-btn"
+            onClick={async () => {
+              try {
+                const res = await fetch("/api/auth/resend-verification", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email }),
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.msg);
+
+                setInfo("Verification email resent. Check your inbox.");
+                setError("");
+              } catch (err) {
+                setError(err.message);
+              }
+            }}
+          >
+            Resend verification email
+          </button>
+        )}
+
         <label>Email address</label>
         <input
           type="email"
@@ -128,4 +157,4 @@ export default function Login() {
       </form>
     </div>
   );
-}
+      }
