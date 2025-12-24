@@ -35,8 +35,8 @@ export default function Register() {
       const res = await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
-          name: form.name,
-          email: form.email,
+          name: form.name.trim(),
+          email: form.email.toLowerCase().trim(),
           password: form.password,
         }),
       });
@@ -44,13 +44,13 @@ export default function Register() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.msg || "Registration failed");
+        throw new Error(data?.message || data?.msg || "Registration failed");
       }
 
-      // ✅ Redirect user to login with verification hint
+      // ✅ OPTION A: no auto-login, no tokens
       navigate("/login?verify=true");
     } catch (err) {
-      setError(err.message || "Registration failed. Try again.");
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -113,4 +113,4 @@ export default function Register() {
       </form>
     </div>
   );
-}
+  }
