@@ -12,6 +12,15 @@ import {
 } from "../controllers/authController.js";
 
 const router = express.Router();
+import { requireRole } from "../middleware/requireRole.js";
+import { adminVerifyUser } from "../controllers/authController.js";
+
+router.post(
+  "/admin/verify-user",
+  auth,
+  requireRole("admin"),
+  adminVerifyUser
+);
 
 /* ======================================================
    AUTH
