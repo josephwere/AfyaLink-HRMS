@@ -21,6 +21,25 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
 
   /* ---------------------------------------
+     Restore cooldown from localStorage
+  ---------------------------------------- */
+  useEffect(() => {
+    const saved = Number(localStorage.getItem("verifyCooldown"));
+    if (saved > 0) setCooldown(saved);
+  }, []);
+
+  /* ---------------------------------------
+     Persist cooldown to localStorage
+  ---------------------------------------- */
+  useEffect(() => {
+    if (cooldown > 0) {
+      localStorage.setItem("verifyCooldown", cooldown);
+    } else {
+      localStorage.removeItem("verifyCooldown");
+    }
+  }, [cooldown]);
+
+  /* ---------------------------------------
      Show verification message after register
   ---------------------------------------- */
   useEffect(() => {
@@ -110,13 +129,13 @@ export default function Login() {
 
       if (!res.ok) {
         if (data.retryAfter) {
-          setCooldown(data.retryAfter); // 🧠 backend-controlled
+          setCooldown(data.retryAfter);
         }
         throw new Error(data.msg);
       }
 
       setInfo("Verification email resent. Check your inbox.");
-      setCooldown(data.retryAfter || 60); // 🧠 safe fallback
+      setCooldown(data.retryAfter || 60);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -191,4 +210,4 @@ export default function Login() {
       </form>
     </div>
   );
-      }
+  }
