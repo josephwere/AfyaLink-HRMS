@@ -252,3 +252,37 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   ADMIN — MANUAL EMAIL VERIFICATION OVERRIDE
+====================================================== */
+export const adminVerifyUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ msg: "User already verified" });
+    }
+
+    user.emailVerified = true;
+    user.emailVerifiedAt = new Date();
+    await user.save();
+
+    /* 🧾 Audit log */
+    console.log(
+      `[ADMIN VERIFY] Admin ${req.user?.id} verified ${user.email}`
+    );
+
+    res.json({
+      success: true,
+      msg: "User email verified by admin",
+    });
+  } catch (err) {
+    console.error("Admin verify error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
