@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import AuditLog from "../models/AuditLog.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -78,11 +79,15 @@ export const register = async (req, res) => {
       subject: "Verify your AfyaLink account",
       html: emailTemplate(
         "Verify Your Email",
-        `<p>Please verify your email:</p>
-         <a href="${verifyLink}" style="padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
-           Verify Email
-         </a>
-         <p>Link expires in 24 hours.</p>`
+        `
+        <p>Welcome to AfyaLink 👋</p>
+        <p>Please verify your email to activate your account:</p>
+        <a href="${verifyLink}"
+           style="display:inline-block;padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
+          Verify Email
+        </a>
+        <p>This link expires in 24 hours.</p>
+        `
       ),
     });
 
@@ -97,7 +102,7 @@ export const register = async (req, res) => {
 };
 
 /* ======================================================
-   VERIFY EMAIL (API FRIENDLY)
+   VERIFY EMAIL
 ====================================================== */
 export const verifyEmail = async (req, res) => {
   try {
@@ -106,12 +111,27 @@ export const verifyEmail = async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-
     if (!user) return res.status(400).json({ msg: "User not found" });
 
     if (!user.emailVerified) {
       user.emailVerified = true;
+      user.emailVerifiedAt = new Date();
       await user.save();
+
+      /* 🧾 Audit log (safe) */
+      try {
+        await AuditLog.create({
+          actorId: user._id,
+          actorRole: "user",
+          action: "EMAIL_VERIFIED",
+          resource: "User",
+          resourceId: user._id,
+          ip: req.ip,
+          userAgent: req.headers["user-agent"],
+        });
+      } catch {
+        console.warn("Audit log failed: EMAIL_VERIFIED");
+      }
     }
 
     res.json({ success: true });
@@ -135,10 +155,13 @@ export const resendVerificationEmail = async (req, res) => {
       return res.status(400).json({ msg: "Email already verified" });
     }
 
-    const rateKey = `verify-resend:${user._id}`;
-    if (await redis.get(rateKey)) {
+    const key = `verify-resend:${user._id}`;
+    const ttl = await redis.ttl(key);
+
+    if (ttl > 0) {
       return res.status(429).json({
-        msg: "Please wait before requesting another verification email",
+        msg: "Please wait before resending",
+        retryAfter: ttl,
       });
     }
 
@@ -155,14 +178,35 @@ export const resendVerificationEmail = async (req, res) => {
       subject: "Verify your AfyaLink account",
       html: emailTemplate(
         "Verify Your Email",
-        `<a href="${verifyLink}">Verify Email</a>
-         <p>Expires in 24 hours.</p>`
+        `
+        <p>Please verify your email:</p>
+        <a href="${verifyLink}"
+           style="display:inline-block;padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
+          Verify Email
+        </a>
+        <p>Link expires in 24 hours.</p>
+        `
       ),
     });
 
-    await redis.set(rateKey, "1", { ex: RESEND_LIMIT });
+    await redis.set(key, "1", { ex: RESEND_LIMIT });
 
-    res.json({ msg: "Verification email resent" });
+    /* 🧾 Audit log */
+    try {
+      await AuditLog.create({
+        actorId: user._id,
+        actorRole: "user",
+        action: "VERIFICATION_EMAIL_RESENT",
+        resource: "User",
+        resourceId: user._id,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    } catch {
+      console.warn("Audit log failed: VERIFICATION_EMAIL_RESENT");
+    }
+
+    res.json({ msg: "Verification email resent", retryAfter: RESEND_LIMIT });
   } catch (err) {
     console.error("Resend error:", err);
     res.status(500).json({ msg: "Server error" });
@@ -170,7 +214,7 @@ export const resendVerificationEmail = async (req, res) => {
 };
 
 /* ======================================================
-   LOGIN (EMAIL + 2FA SAFE)
+   LOGIN (EMAIL VERIFIED + 2FA SAFE)
 ====================================================== */
 export const login = async (req, res) => {
   try {
@@ -252,6 +296,7 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
 /* ======================================================
    ADMIN — MANUAL EMAIL VERIFICATION OVERRIDE
 ====================================================== */
@@ -260,9 +305,7 @@ export const adminVerifyUser = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
     if (user.emailVerified) {
       return res.status(400).json({ msg: "User already verified" });
@@ -273,9 +316,19 @@ export const adminVerifyUser = async (req, res) => {
     await user.save();
 
     /* 🧾 Audit log */
-    console.log(
-      `[ADMIN VERIFY] Admin ${req.user?.id} verified ${user.email}`
-    );
+    try {
+      await AuditLog.create({
+        actorId: req.user.id,
+        actorRole: "admin",
+        action: "ADMIN_EMAIL_VERIFIED",
+        resource: "User",
+        resourceId: user._id,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    } catch {
+      console.warn("Audit log failed: ADMIN_EMAIL_VERIFIED");
+    }
 
     res.json({
       success: true,
