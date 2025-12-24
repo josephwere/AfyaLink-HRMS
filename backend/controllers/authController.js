@@ -16,6 +16,8 @@ const TRUSTED_DAYS =
   60 *
   1000;
 
+const RESEND_LIMIT = 60; // seconds (anti-spam)
+
 /* ======================================================
    HELPERS
 ====================================================== */
@@ -43,7 +45,7 @@ function emailTemplate(title, body) {
 }
 
 /* ======================================================
-   REGISTER (NO AUTO-LOGIN)
+   REGISTER (NO AUTO LOGIN)
 ====================================================== */
 export const register = async (req, res) => {
   try {
@@ -72,24 +74,21 @@ export const register = async (req, res) => {
     const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     await sendEmail({
-      to: user.email,
+      to: email,
       subject: "Verify your AfyaLink account",
       html: emailTemplate(
         "Verify Your Email",
-        `
-        <p>Welcome to AfyaLink 👋</p>
-        <p>Please verify your email to activate your account:</p>
-        <a href="${verifyLink}" style="display:inline-block;padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
-          Verify Email
-        </a>
-        <p>This link expires in 24 hours.</p>
-        `
+        `<p>Please verify your email:</p>
+         <a href="${verifyLink}" style="padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
+           Verify Email
+         </a>
+         <p>Link expires in 24 hours.</p>`
       ),
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: "Registration successful. Please check your email to verify your account.",
+      msg: "Registration successful. Check your email to verify your account.",
     });
   } catch (err) {
     console.error("Register error:", err);
@@ -98,49 +97,49 @@ export const register = async (req, res) => {
 };
 
 /* ======================================================
-   VERIFY EMAIL (REDIRECT)
+   VERIFY EMAIL (API FRIENDLY)
 ====================================================== */
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
+    if (!token) return res.status(400).json({ msg: "Invalid link" });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 
-    if (!user) {
-      return res.redirect(`${process.env.FRONTEND_URL}/verify-failed`);
-    }
+    if (!user) return res.status(400).json({ msg: "User not found" });
 
     if (!user.emailVerified) {
       user.emailVerified = true;
       await user.save();
     }
 
-    return res.redirect(`${process.env.FRONTEND_URL}/verify-success`);
+    res.json({ success: true });
   } catch (err) {
-    return res.redirect(`${process.env.FRONTEND_URL}/verify-failed`);
+    res.status(400).json({ msg: "Verification link expired or invalid" });
   }
 };
 
 /* ======================================================
-   RESEND VERIFICATION EMAIL
+   RESEND VERIFICATION EMAIL (RATE LIMITED)
 ====================================================== */
 export const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ msg: "Email is required" });
-    }
+    if (!email) return res.status(400).json({ msg: "Email required" });
 
     const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
     if (user.emailVerified) {
       return res.status(400).json({ msg: "Email already verified" });
+    }
+
+    const rateKey = `verify-resend:${user._id}`;
+    if (await redis.get(rateKey)) {
+      return res.status(429).json({
+        msg: "Please wait before requesting another verification email",
+      });
     }
 
     const token = jwt.sign(
@@ -152,41 +151,37 @@ export const resendVerificationEmail = async (req, res) => {
     const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     await sendEmail({
-      to: user.email,
+      to: email,
       subject: "Verify your AfyaLink account",
       html: emailTemplate(
         "Verify Your Email",
-        `
-        <p>Please verify your email to continue:</p>
-        <a href="${verifyLink}" style="display:inline-block;padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
-          Verify Email
-        </a>
-        <p>This link expires in 24 hours.</p>
-        `
+        `<a href="${verifyLink}">Verify Email</a>
+         <p>Expires in 24 hours.</p>`
       ),
     });
 
-    res.json({ msg: "Verification email resent successfully" });
+    await redis.set(rateKey, "1", { ex: RESEND_LIMIT });
+
+    res.json({ msg: "Verification email resent" });
   } catch (err) {
-    console.error("Resend verification error:", err);
+    console.error("Resend error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 };
 
 /* ======================================================
-   LOGIN
+   LOGIN (EMAIL + 2FA SAFE)
 ====================================================== */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ msg: "Invalid credentials" });
-    }
+    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
 
     if (!user.emailVerified) {
       return res.status(403).json({
+        requiresEmailVerification: true,
         msg: "Please verify your email before logging in",
       });
     }
@@ -201,9 +196,6 @@ export const login = async (req, res) => {
     );
 
     if (trusted && Date.now() - new Date(trusted.verifiedAt) < TRUSTED_DAYS) {
-      trusted.lastUsed = new Date();
-      await user.save();
-
       const accessToken = signAccessToken({
         id: user._id,
         role: user.role,
@@ -231,10 +223,7 @@ export const login = async (req, res) => {
       await sendEmail({
         to: user.email,
         subject: "AfyaLink Security Code",
-        html: emailTemplate(
-          "Security Verification",
-          `<h1>${otp}</h1><p>Expires in 5 minutes.</p>`
-        ),
+        html: emailTemplate("Security Code", `<h1>${otp}</h1>`),
       });
 
       return res.json({ requires2FA: true, userId: user._id });
