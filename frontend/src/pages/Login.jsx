@@ -16,12 +16,12 @@ export default function Login() {
   const [info, setInfo] = useState("");
 
   /* ---------------------------------------
-     Show verify message after register
+     Show verification message after register
   ---------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
-      setInfo("Check your email to verify your account before logging in.");
+      setInfo("Account created successfully. Please verify your email before logging in.");
     }
   }, [location.search]);
 
@@ -37,7 +37,7 @@ export default function Login() {
   }, []);
 
   /* ---------------------------------------
-     Submit handler (2FA SAFE)
+     Submit handler (2FA + email verification safe)
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +51,13 @@ export default function Login() {
         localStorage.removeItem("remember_email");
       }
 
-      const result = await login(email, password);
+      const result = await login(email.trim(), password);
+
+      // 🔐 EMAIL NOT VERIFIED
+      if (result?.requiresEmailVerification) {
+        setError("Please verify your email before logging in.");
+        return;
+      }
 
       // 🔐 2FA REQUIRED
       if (result?.requires2FA) {
@@ -67,7 +73,6 @@ export default function Login() {
       // ✅ SUCCESS
       navigate("/dashboard");
     } catch (err) {
-      // ✅ show backend message (email not verified, etc.)
       setError(err.message || "Invalid email or password");
     }
   };
