@@ -372,3 +372,43 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+/* ======================================================
+   resend2FA
+====================================================== */
+export const resend2FA = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user || !user.twoFactorEnabled) {
+      return res.status(400).json({ message: "2FA not enabled" });
+    }
+
+    // 🔐 Generate new OTP
+    const otp = generateOtp();
+    user.twoFactorOtp = otp;
+    user.twoFactorOtpExpires = Date.now() + 5 * 60 * 1000;
+    await user.save();
+
+    await send2FAOtp(user.email, otp);
+
+    // 🧾 Audit log
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "2FA_RESEND",
+      resource: "User",
+      resourceId: user._id,
+      success: true,
+    });
+
+    res.json({ message: "2FA code resent" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to resend 2FA code" });
+  }
+};
