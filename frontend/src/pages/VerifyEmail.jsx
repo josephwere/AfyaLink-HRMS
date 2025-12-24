@@ -31,7 +31,8 @@ export default function VerifyEmail() {
   }, [params, navigate]);
 
   return (
-    <div className="verify-page">
+    
+      <div className={`verify-page ${status}`}>
       {status === "loading" && (
         <>
           <h2>Verifying your email…</h2>
