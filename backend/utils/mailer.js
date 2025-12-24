@@ -1,16 +1,19 @@
 import nodemailer from "nodemailer";
 
-export const sendEmail = async ({ to, subject, html }) => {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: false, // true only for port 465
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // MUST be false for 587
+  auth: {
+    user: process.env.SMTP_USER, // your Gmail address
+    pass: process.env.SMTP_PASS, // 16-char App Password
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
 
+export const sendEmail = async ({ to, subject, html }) => {
   await transporter.sendMail({
     from: `"AfyaLink HRMS" <${process.env.SMTP_USER}>`,
     to,
