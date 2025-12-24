@@ -76,13 +76,9 @@ import NotificationsPage from "./pages/Admin/NotificationsPage";
 import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
 import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
 import AuditLogs from "./pages/Admin/AuditLogs";
-/* =====================================================
-    VerifySuccess 
-/* =====================================================
 
 import VerifySuccess from "./pages/VerifySuccess";
 
-<Route path="/verify-success" element={<VerifySuccess />} />
 /* =====================================================
    🔐 PROTECTED ROUTE (ROLE + 2FA ENFORCED)
 ===================================================== */
@@ -154,7 +150,11 @@ export default function App() {
 
             <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
 
-            {/* Super Admin */}
+
+             {/* VerifySuccess */}
+            <Route path="/verify-success" element={<VerifySuccess />} />
+            
+             {/* Super Admin */}
             <Route path="superadmin" element={<SuperAdminDashboard />} />
             <Route path="superadmin/rbac" element={<RBAC />} />
             <Route path="superadmin/ml" element={<ML />} />
