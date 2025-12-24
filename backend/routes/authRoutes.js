@@ -9,11 +9,13 @@ import { sendEmail } from "../utils/mailer.js";
 
 import auth from "../middleware/auth.js";
 import {
+  register,
   login,
-  verify2FAOtp,
   resend2FA,
+  verify2FAOtp,
   changePassword,
 } from "../controllers/authController.js";
+
 
 const router = express.Router();
 import { verifyEmail } from "../controllers/authController.js";
