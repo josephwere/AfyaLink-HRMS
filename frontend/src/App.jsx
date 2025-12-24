@@ -76,7 +76,13 @@ import NotificationsPage from "./pages/Admin/NotificationsPage";
 import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
 import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
 import AuditLogs from "./pages/Admin/AuditLogs";
+/* =====================================================
+    VerifySuccess 
+/* =====================================================
 
+import VerifySuccess from "./pages/VerifySuccess";
+
+<Route path="/verify-success" element={<VerifySuccess />} />
 /* =====================================================
    🔐 PROTECTED ROUTE (ROLE + 2FA ENFORCED)
 ===================================================== */
