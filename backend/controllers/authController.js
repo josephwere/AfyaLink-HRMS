@@ -243,6 +243,40 @@ export const resetPassword = async (req, res) => {
   await redis.del(`reset:${token}`);
   res.json({ msg: "Password reset successful" });
 };
+/* ======================================================
+   CHANGE PASSWORD (AUTHENTICATED)
+====================================================== */
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user?.id; // set by auth middleware
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ msg: "All fields are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Current password is incorrect" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // Optional but recommended: invalidate old refresh tokens
+    user.refreshTokens = [];
+    await user.save();
+
+    res.json({ msg: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
 
 /* ======================================================
    ADMIN ALERT (example)
