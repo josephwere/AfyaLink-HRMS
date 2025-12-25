@@ -209,7 +209,6 @@ export const resendVerificationEmail = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
-
 /* ======================================================
    LOGIN
 ====================================================== */
@@ -218,6 +217,10 @@ export const login = async (req, res) => {
 
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ msg: "Email and password are required" });
+    }
 
     const user = await User.findOne({ email }).select("+password");
 
@@ -234,24 +237,10 @@ export const login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("bcrypt match:", isMatch);
+
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
-    }
-
-    if (user.twoFactorEnabled) {
-      const otp = generateOtp();
-      await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
-
-      await sendEmail({
-        to: user.email,
-        subject: "Your AfyaLink Security Code",
-        html: emailTemplate("Security Code", `<h1>${otp}</h1>`),
-      });
-
-      return res.json({
-        requires2FA: true,
-        userId: user._id,
-      });
     }
 
     const accessToken = signAccessToken({
@@ -261,15 +250,25 @@ export const login = async (req, res) => {
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
+
+    user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    res.json({ accessToken, user });
+    res.json({
+      accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("❌ Login error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 };
+
 
 /* ======================================================
    VERIFY 2FA OTP
