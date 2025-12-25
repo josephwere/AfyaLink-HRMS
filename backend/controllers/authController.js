@@ -56,7 +56,14 @@ export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (await User.findOne({ email })) {
+    const existing = await User.findOne({ email });
+    if (existing) {
+      if (!existing.emailVerified) {
+        return res.status(403).json({
+          msg: "Account exists but email is not verified. Please verify your email.",
+          requiresEmailVerification: true,
+        });
+      }
       return res.status(400).json({ msg: "Email already registered" });
     }
 
@@ -145,14 +152,27 @@ export const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(404).json({ msg: "User not found" });
-    if (user.emailVerified)
-      return res.status(400).json({ msg: "Already verified" });
+    // 🔒 Prevent user enumeration + unblock recovery
+    if (!user) {
+      return res.json({
+        msg: "If the account exists, a verification email was sent.",
+        retryAfter: RESEND_LIMIT,
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ msg: "Email already verified." });
+    }
 
     const key = `verify-resend:${user._id}`;
     const ttl = await redis.ttl(key);
-    if (ttl > 0)
-      return res.status(429).json({ retryAfter: ttl });
+
+    if (ttl > 0) {
+      return res.status(429).json({
+        msg: "Please wait before requesting another verification email.",
+        retryAfter: ttl,
+      });
+    }
 
     const token = jwt.sign(
       { id: user._id },
@@ -181,7 +201,10 @@ export const resendVerificationEmail = async (req, res) => {
       resourceId: user._id,
     });
 
-    res.json({ msg: "Email resent", retryAfter: RESEND_LIMIT });
+    res.json({
+      msg: "Verification email resent.",
+      retryAfter: RESEND_LIMIT,
+    });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
   }
@@ -195,14 +218,21 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
-    if (!user.emailVerified)
-      return res.status(403).json({ requiresEmailVerification: true });
-
-    if (!(await bcrypt.compare(password, user.password)))
+    if (!user) {
       return res.status(400).json({ msg: "Invalid credentials" });
+    }
 
-    const deviceId = getDeviceId(req);
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        msg: "Please verify your email before logging in.",
+        requiresEmailVerification: true,
+        email: user.email,
+      });
+    }
+
+    if (!(await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ msg: "Invalid credentials" });
+    }
 
     if (user.twoFactorEnabled) {
       const otp = generateOtp();
@@ -268,7 +298,7 @@ export const verify2FAOtp = async (req, res) => {
     });
 
     res.json({ accessToken, user });
-  } catch (err) {
+  } catch {
     res.status(500).json({ msg: "2FA failed" });
   }
 };
@@ -281,8 +311,9 @@ export const resend2FA = async (req, res) => {
     const { userId } = req.body;
     const user = await User.findById(userId);
 
-    if (!user || !user.twoFactorEnabled)
+    if (!user || !user.twoFactorEnabled) {
       return res.status(400).json({ msg: "2FA not enabled" });
+    }
 
     const otp = generateOtp();
     await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
@@ -315,8 +346,9 @@ export const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id);
 
-    if (!(await bcrypt.compare(currentPassword, user.password)))
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(400).json({ msg: "Wrong password" });
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.refreshTokens = [];
@@ -327,6 +359,7 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
 /* ======================================================
    ADMIN VERIFY USER (OVERRIDE)
 ====================================================== */
@@ -355,9 +388,7 @@ export const adminVerifyUser = async (req, res) => {
       resourceId: user._id,
       ip: req.ip,
       userAgent: req.headers["user-agent"],
-      metadata: {
-        method: "admin_override",
-      },
+      metadata: { method: "admin_override" },
     });
 
     res.json({
@@ -365,7 +396,6 @@ export const adminVerifyUser = async (req, res) => {
       msg: "User email verified by admin",
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 };
