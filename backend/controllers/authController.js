@@ -214,6 +214,9 @@ export const resendVerificationEmail = async (req, res) => {
    LOGIN
 ====================================================== */
 export const login = async (req, res) => {
+  console.log("🔥 LOGIN CONTROLLER HIT");
+  try {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
