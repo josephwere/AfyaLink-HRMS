@@ -4,12 +4,16 @@ import bcrypt from "bcryptjs";
 const { Schema, model } = mongoose;
 
 /* ======================================================
-   USER SCHEMA — RBAC + ABAC READY
+   USER SCHEMA — RBAC + ABAC READY (FINAL)
 ====================================================== */
 const userSchema = new Schema(
   {
     /* ---------------- BASIC IDENTITY ---------------- */
-    name: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     email: {
       type: String,
@@ -19,12 +23,11 @@ const userSchema = new Schema(
       index: true,
     },
 
-    password: { type: String },
-     isEmailVerified: {
-  type: Boolean,
-  default: false,
-},
-
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
 
     /* ---------------- ROLE (RBAC) ---------------- */
     role: {
@@ -39,8 +42,25 @@ const userSchema = new Schema(
         "PATIENT",
         "GUEST",
       ],
+      default: "PATIENT",
       required: true,
       index: true,
+    },
+
+    /* ---------------- EMAIL VERIFICATION ---------------- */
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailVerifiedAt: {
+      type: Date,
+    },
+
+    /* ---------------- ACCOUNT STATE ---------------- */
+    active: {
+      type: Boolean,
+      default: true,
     },
 
     /* ---------------- ABAC SCOPE ---------------- */
@@ -50,19 +70,15 @@ const userSchema = new Schema(
       index: true,
     },
 
-    countryId: { type: String },
-
-    /* ---------------- PERMISSION OVERRIDES ---------------- */
-    // Optional fine-grained permissions (enterprise use)
-    permissions: {
-      type: [String], // e.g. ["appointments.override", "records.read_all"]
-      default: [],
+    countryId: {
+      type: String,
     },
 
-    /* ---------------- ACCOUNT STATE ---------------- */
-    active: { type: Boolean, default: true },
-
-    emailVerified: { type: Boolean, default: false },
+    /* ---------------- PERMISSION OVERRIDES ---------------- */
+    permissions: {
+      type: [String],
+      default: [],
+    },
 
     /* ---------------- AUTH TOKENS ---------------- */
     refreshTokens: {
@@ -80,7 +96,7 @@ const userSchema = new Schema(
     /* ---------------- TRUSTED DEVICES ---------------- */
     trustedDevices: [
       {
-        deviceId: { type: String, required: true }, // hashed
+        deviceId: { type: String, required: true },
         userAgent: String,
         lastUsed: { type: Date, default: Date.now },
         verifiedAt: Date,
@@ -103,20 +119,16 @@ const userSchema = new Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  if (this.password) {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-  }
-
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 /* ======================================================
    PASSWORD COMPARE
 ====================================================== */
-userSchema.methods.matchPassword = async function (entered) {
-  if (!this.password) return false;
-  return bcrypt.compare(entered, this.password);
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 /* ======================================================
