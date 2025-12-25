@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
+import { getVerificationWarning } from "../services/verificationReminderService.js";
 
 /* ======================================================
    CONFIG
@@ -50,7 +51,7 @@ function emailTemplate(title, body) {
 }
 
 /* ======================================================
-   REGISTER
+   REGISTER (START VERIFICATION COUNTDOWN)
 ====================================================== */
 export const register = async (req, res) => {
   try {
@@ -58,14 +59,13 @@ export const register = async (req, res) => {
 
     const existing = await User.findOne({ email });
     if (existing) {
-      if (!existing.emailVerified) {
-        return res.status(403).json({
-          msg: "Account exists but email is not verified. Please verify your email.",
-          requiresEmailVerification: true,
-        });
-      }
       return res.status(400).json({ msg: "Email already registered" });
     }
+
+    const now = new Date();
+    const verificationDeadline = new Date(
+      now.getTime() + 14 * 24 * 60 * 60 * 1000 // 14 days
+    );
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -75,8 +75,10 @@ export const register = async (req, res) => {
       password: hashed,
       role: "user",
       emailVerified: false,
+      verificationDeadline,
     });
 
+    // Optional verification email (non-blocking)
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -92,18 +94,17 @@ export const register = async (req, res) => {
         "Verify Your Email",
         `
         <p>Welcome to AfyaLink 👋</p>
-        <p>Please verify your email:</p>
+        <p>Please verify your email to secure your account.</p>
         <a href="${verifyLink}" style="padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
           Verify Email
         </a>
-        <p>This link expires in 24 hours.</p>
         `
       ),
     });
 
     res.status(201).json({
       success: true,
-      msg: "Registration successful. Check your email.",
+      msg: "Registration successful. You can log in immediately.",
     });
   } catch (err) {
     console.error(err);
@@ -152,7 +153,6 @@ export const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    // 🔒 Prevent user enumeration + unblock recovery
     if (!user) {
       return res.json({
         msg: "If the account exists, a verification email was sent.",
@@ -209,12 +209,11 @@ export const resendVerificationEmail = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
 /* ======================================================
-   LOGIN
+   LOGIN (NO BLOCKING + WARNING ATTACHED)
 ====================================================== */
 export const login = async (req, res) => {
-  console.log("🔥 LOGIN CONTROLLER HIT");
-
   try {
     const { email, password } = req.body;
 
@@ -223,22 +222,11 @@ export const login = async (req, res) => {
     }
 
     const user = await User.findOne({ email }).select("+password");
-
     if (!user) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        msg: "Please verify your email before logging in.",
-        requiresEmailVerification: true,
-        email: user.email,
-      });
-    }
-
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("bcrypt match:", isMatch);
-
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
@@ -255,20 +243,24 @@ export const login = async (req, res) => {
     user.refreshTokens.push(refreshToken);
     await user.save();
 
+    const verificationWarning = getVerificationWarning(user);
+
     res.json({
       accessToken,
       user: {
         id: user._id,
         email: user.email,
         role: user.role,
+        emailVerified: user.emailVerified,
+        verificationDeadline: user.verificationDeadline,
       },
+      verificationWarning,
     });
   } catch (err) {
     console.error("❌ Login error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 };
-
 
 /* ======================================================
    VERIFY 2FA OTP
@@ -351,7 +343,7 @@ export const resend2FA = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+password");
 
     if (!(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(400).json({ msg: "Wrong password" });
