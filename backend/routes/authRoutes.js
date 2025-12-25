@@ -24,6 +24,11 @@ router.post("/login", login);
    EMAIL VERIFICATION
 ====================================================== */
 router.get("/verify-email", verifyEmail);
+
+// 🔔 USER-INITIATED VERIFICATION (PROFILE BUTTON)
+router.post("/send-verification", auth, resendVerificationEmail);
+
+// ♻️ PUBLIC RESEND (EMAIL-BASED)
 router.post("/resend-verification", resendVerificationEmail);
 
 /* ======================================================
