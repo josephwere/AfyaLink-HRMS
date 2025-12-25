@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const { Schema, model } = mongoose;
 
 /* ======================================================
-   USER SCHEMA — RBAC + ABAC READY (FINAL)
+   USER SCHEMA — FINAL (STABLE)
 ====================================================== */
 const userSchema = new Schema(
   {
@@ -26,7 +26,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: true,
-      select: false,
+      select: false, // IMPORTANT
     },
 
     /* ---------------- ROLE (RBAC) ---------------- */
@@ -43,7 +43,6 @@ const userSchema = new Schema(
         "GUEST",
       ],
       default: "PATIENT",
-      required: true,
       index: true,
     },
 
@@ -53,9 +52,7 @@ const userSchema = new Schema(
       default: false,
     },
 
-    emailVerifiedAt: {
-      type: Date,
-    },
+    emailVerifiedAt: Date,
 
     /* ---------------- ACCOUNT STATE ---------------- */
     active: {
@@ -63,24 +60,7 @@ const userSchema = new Schema(
       default: true,
     },
 
-    /* ---------------- ABAC SCOPE ---------------- */
-    hospitalId: {
-      type: Schema.Types.ObjectId,
-      ref: "Hospital",
-      index: true,
-    },
-
-    countryId: {
-      type: String,
-    },
-
-    /* ---------------- PERMISSION OVERRIDES ---------------- */
-    permissions: {
-      type: [String],
-      default: [],
-    },
-
-    /* ---------------- AUTH TOKENS ---------------- */
+    /* ---------------- TOKENS ---------------- */
     refreshTokens: {
       type: [String],
       default: [],
@@ -103,24 +83,17 @@ const userSchema = new Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
-
-    /* ---------------- EXTENSIBILITY ---------------- */
-    metadata: {
-      type: Schema.Types.Mixed,
-      default: {},
-    },
   },
   { timestamps: true }
 );
 
 /* ======================================================
-   PASSWORD HASH
+   PASSWORD HASH (SINGLE SOURCE OF TRUTH)
 ====================================================== */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -132,7 +105,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 /* ======================================================
-   MODEL EXPORT
+   EXPORT
 ====================================================== */
 const User = mongoose.models.User || model("User", userSchema);
 export default User;
