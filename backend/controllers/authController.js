@@ -215,8 +215,7 @@ export const resendVerificationEmail = async (req, res) => {
 ====================================================== */
 export const login = async (req, res) => {
   console.log("🔥 LOGIN CONTROLLER HIT");
-  try {
-export const login = async (req, res) => {
+
   try {
     const { email, password } = req.body;
 
@@ -249,7 +248,10 @@ export const login = async (req, res) => {
         html: emailTemplate("Security Code", `<h1>${otp}</h1>`),
       });
 
-      return res.json({ requires2FA: true, userId: user._id });
+      return res.json({
+        requires2FA: true,
+        userId: user._id,
+      });
     }
 
     const accessToken = signAccessToken({
