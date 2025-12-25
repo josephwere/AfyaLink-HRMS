@@ -12,6 +12,22 @@ import attachWebSocketServer from './wsServer.js';
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+/* ======================================================
+   VERIFICATION CLEANUP CRON (DAILY @ MIDNIGHT)
+====================================================== */
+import cron from "node-cron";
+import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
+
+cron.schedule(
+  "0 0 * * *", // every day at 00:00
+  async () => {
+    console.log("⏰ Running daily verification cleanup job...");
+    await cleanupUnverifiedUsers();
+  },
+  {
+    timezone: "Africa/Nairobi",
+  }
+);
 
 // =======================================================
 // ✅ SAFE SOCKET.IO CORS (MATCHES EXPRESS CORS)
