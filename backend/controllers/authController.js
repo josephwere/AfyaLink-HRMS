@@ -216,7 +216,8 @@ export const resendVerificationEmail = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(400).json({ msg: "Invalid credentials" });
@@ -230,7 +231,8 @@ export const login = async (req, res) => {
       });
     }
 
-    if (!(await bcrypt.compare(password, user.password))) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
@@ -259,6 +261,7 @@ export const login = async (req, res) => {
 
     res.json({ accessToken, user });
   } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 };
