@@ -4,6 +4,8 @@ import { useAuth } from "../utils/auth";
 import { apiFetch } from "../utils/apiFetch";
 import PasswordInput from "../components/PasswordInput";
 
+const COOLDOWN_KEY = "verifyCooldownUntil";
+
 export default function Login() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
@@ -16,70 +18,74 @@ export default function Login() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
-  // 🔁 Resend verification states
   const [resendLoading, setResendLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [showResend, setShowResend] = useState(false);
 
   /* ---------------------------------------
-     Restore cooldown from localStorage
+     Restore cooldown (ABSOLUTE timestamp)
   ---------------------------------------- */
   useEffect(() => {
-    const saved = Number(localStorage.getItem("verifyCooldown"));
-    if (saved > 0) setCooldown(saved);
+    const until = Number(localStorage.getItem(COOLDOWN_KEY));
+    if (!until) return;
+
+    const remaining = Math.ceil((until - Date.now()) / 1000);
+    if (remaining > 0) {
+      setCooldown(remaining);
+    } else {
+      localStorage.removeItem(COOLDOWN_KEY);
+    }
   }, []);
 
   /* ---------------------------------------
-     Persist cooldown to localStorage
+     Tick cooldown
   ---------------------------------------- */
   useEffect(() => {
-    if (cooldown > 0) {
-      localStorage.setItem("verifyCooldown", cooldown);
-    } else {
-      localStorage.removeItem("verifyCooldown");
-    }
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) {
+          localStorage.removeItem(COOLDOWN_KEY);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [cooldown]);
 
   /* ---------------------------------------
-     Show verification message after register
+     Post-register message
   ---------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
-      setInfo(
-        "Account created successfully. Please verify your email before logging in."
-      );
+      setInfo("Account created. Please verify your email before logging in.");
+      setShowResend(true);
     }
   }, [location.search]);
 
   /* ---------------------------------------
-     Load remembered email
+     Remembered email
   ---------------------------------------- */
   useEffect(() => {
-    const savedEmail = localStorage.getItem("remember_email");
-    if (savedEmail) {
-      setEmail(savedEmail);
+    const saved = localStorage.getItem("remember_email");
+    if (saved) {
+      setEmail(saved);
       setRememberMe(true);
     }
   }, []);
 
   /* ---------------------------------------
-     Cooldown timer (anti-spam)
-  ---------------------------------------- */
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = setInterval(() => {
-      setCooldown((c) => c - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [cooldown]);
-
-  /* ---------------------------------------
-     Submit handler
+     Submit
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setInfo("");
+    setShowResend(false);
 
     try {
       if (rememberMe) {
@@ -90,29 +96,34 @@ export default function Login() {
 
       const result = await login(email.trim(), password);
 
-      // 🔐 EMAIL NOT VERIFIED
       if (result?.requiresEmailVerification) {
-        setError("Please verify your email before logging in.");
+        setError("Email not verified.");
+        setShowResend(true);
         return;
       }
 
-      // 🔐 2FA REQUIRED
       if (result?.requires2FA) {
-        navigate("/2fa", {
-          state: { userId: result.userId, email },
-        });
+        navigate("/2fa", { state: { userId: result.userId, email } });
         return;
       }
 
-      // ✅ SUCCESS
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      const msg = err.message || "Login failed";
+
+      setError(msg);
+
+      // 🔑 CRITICAL FIX:
+      // If backend blocks login for unverified email,
+      // still show resend button
+      if (msg.toLowerCase().includes("verify")) {
+        setShowResend(true);
+      }
     }
   };
 
   /* ---------------------------------------
-     Resend verification handler (SYNCED)
+     Resend verification
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -129,13 +140,20 @@ export default function Login() {
 
       if (!res.ok) {
         if (data.retryAfter) {
+          const until = Date.now() + data.retryAfter * 1000;
+          localStorage.setItem(COOLDOWN_KEY, until);
           setCooldown(data.retryAfter);
         }
         throw new Error(data.msg);
       }
 
-      setInfo("Verification email resent. Check your inbox.");
-      setCooldown(data.retryAfter || 60);
+      const seconds = data.retryAfter || 60;
+      const until = Date.now() + seconds * 1000;
+
+      localStorage.setItem(COOLDOWN_KEY, until);
+      setCooldown(seconds);
+
+      setInfo("Verification email sent. Check your inbox.");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -152,13 +170,13 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
 
-        {/* 🔁 RESEND VERIFICATION BUTTON */}
-        {error?.toLowerCase().includes("verify") && (
+        {/* 🔁 RESEND VERIFICATION */}
+        {showResend && (
           <button
             type="button"
             onClick={handleResendVerification}
             disabled={resendLoading || cooldown > 0}
-            className="resend-btn"
+            className={`resend-btn ${cooldown > 0 ? "disabled" : ""}`}
           >
             {cooldown > 0
               ? `Resend available in ${cooldown}s`
@@ -171,7 +189,6 @@ export default function Login() {
         <label>Email address</label>
         <input
           type="email"
-          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -210,4 +227,4 @@ export default function Login() {
       </form>
     </div>
   );
-  }
+            }
