@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const { Schema, model } = mongoose;
 
 /* ======================================================
-   USER SCHEMA — FINAL (STABLE)
+   USER SCHEMA — FINAL (STABLE + VERIFICATION FLOW READY)
 ====================================================== */
 const userSchema = new Schema(
   {
@@ -53,6 +53,18 @@ const userSchema = new Schema(
     },
 
     emailVerifiedAt: Date,
+
+    // ⬇️ NEW (NON-BREAKING)
+    verificationDeadline: {
+      type: Date,
+      index: true,
+    },
+
+    verificationRemindersSent: {
+      type: [String], // ["14d", "3d", "2h"]
+      default: [],
+      select: false,
+    },
 
     /* ---------------- ACCOUNT STATE ---------------- */
     active: {
