@@ -6,16 +6,31 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // 🔐 Email verification state
+  const [emailVerified, setEmailVerified] = useState(true);
+  const [verificationWarning, setVerificationWarning] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
+
   useEffect(() => {
     loadStatus();
   }, []);
 
   const loadStatus = async () => {
     try {
+      // 2FA status
       const res = await apiFetch("/api/2fa/status");
       if (!res.ok) throw new Error("Failed to load 2FA status");
       const data = await res.json();
       setEnabled(Boolean(data.enabled));
+
+      // 🔐 verification status (from /me or similar endpoint)
+      const meRes = await apiFetch("/api/users/me");
+      if (meRes.ok) {
+        const me = await meRes.json();
+        setEmailVerified(me.emailVerified);
+        setVerificationWarning(me.verificationWarning || null);
+      }
     } catch (err) {
       setError("Unable to load security settings");
     } finally {
@@ -38,11 +53,60 @@ export default function Profile() {
     }
   };
 
+  const resendVerification = async () => {
+    try {
+      setSending(true);
+      setMessage("");
+      const res = await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Failed");
+      setMessage("📩 Verification email sent. Check your inbox.");
+    } catch {
+      setMessage("❌ Failed to send verification email");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const renderVerificationWarning = () => {
+    if (emailVerified || !verificationWarning) return null;
+
+    const map = {
+      "14d": "Your profile will be deleted in 14 days.",
+      "3d": "Your profile will be deleted in 3 days.",
+      "2h": "Your profile will be deleted in 2 hours.",
+      EXPIRED: "Your account has expired and will be deleted.",
+    };
+
+    return (
+      <div className="warning-card">
+        <strong>⚠️ Kindly verify your account</strong>
+        <p>{map[verificationWarning.type]}</p>
+
+        {verificationWarning.type !== "EXPIRED" && (
+          <button
+            className="primary"
+            disabled={sending}
+            onClick={resendVerification}
+          >
+            {sending ? "Sending..." : "Verify Account"}
+          </button>
+        )}
+
+        {message && <p style={{ marginTop: 8 }}>{message}</p>}
+      </div>
+    );
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
     <div className="premium-card">
       <h2>🔐 Security Settings</h2>
+
+      {renderVerificationWarning()}
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -63,4 +127,4 @@ export default function Profile() {
       </p>
     </div>
   );
-}
+    }
