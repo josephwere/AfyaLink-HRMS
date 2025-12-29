@@ -1,6 +1,14 @@
 import User from "../models/User.js";
 import { sendEmail } from "../utils/mailer.js";
 import AuditLog from "../models/AuditLog.js";
+import { sendSMS } from "../utils/sms.js";
+
+if (user.phone) {
+  await sendSMS(
+    user.phone,
+    `AfyaLink: Verify your account. It will be deleted in ${tag}.`
+  );
+}
 
 ...
 
