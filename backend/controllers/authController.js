@@ -57,54 +57,39 @@ export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ msg: "Email already registered" });
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({
+        msg: "Email already registered",
+      });
     }
 
     const now = new Date();
     const verificationDeadline = new Date(
-      now.getTime() + 14 * 24 * 60 * 60 * 1000 // 14 days
+      now.getTime() + 14 * 24 * 60 * 60 * 1000
     );
-
-    const hashed = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       email,
-      password: hashed,
-      role: "user",
+      password, // ⚠️ DO NOT HASH HERE
+      role: "PATIENT",
       emailVerified: false,
       verificationDeadline,
+      verificationRemindersSent: [],
     });
 
-    // Optional verification email (non-blocking)
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
-    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
-    await sendEmail({
-      to: email,
-      subject: "Verify your AfyaLink account",
-      html: emailTemplate(
-        "Verify Your Email",
-        `
-        <p>Welcome to AfyaLink 👋</p>
-        <p>Please verify your email to secure your account.</p>
-        <a href="${verifyLink}" style="padding:10px 20px;background:#0a7cff;color:#fff;border-radius:5px;text-decoration:none">
-          Verify Email
-        </a>
-        `
-      ),
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "USER_REGISTERED",
+      resource: "User",
+      resourceId: user._id,
     });
 
     res.status(201).json({
       success: true,
-      msg: "Registration successful. You can log in immediately.",
+      msg: "Registration successful",
     });
   } catch (err) {
     console.error(err);
@@ -218,7 +203,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ msg: "Email and password are required" });
+      return res.status(400).json({ msg: "Invalid credentials" });
     }
 
     const user = await User.findOne({ email }).select("+password");
@@ -226,7 +211,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
@@ -234,30 +219,27 @@ export const login = async (req, res) => {
     const accessToken = signAccessToken({
       id: user._id,
       role: user.role,
-      twoFactorVerified: true,
+      twoFactorVerified: !user.twoFactorEnabled,
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
 
-    user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
-
-    const verificationWarning = getVerificationWarning(user);
 
     res.json({
       accessToken,
       user: {
         id: user._id,
+        name: user.name,
         email: user.email,
         role: user.role,
         emailVerified: user.emailVerified,
         verificationDeadline: user.verificationDeadline,
       },
-      verificationWarning,
     });
   } catch (err) {
-    console.error("❌ Login error:", err);
+    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 };
