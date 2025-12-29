@@ -7,6 +7,65 @@ import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
 import { getVerificationWarning } from "../services/verificationReminderService.js";
+import { OAuth2Client } from "google-auth-library";
+/* =========================
+   GOOGLE 
+========================= */
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        role: "PATIENT",
+        verificationRemindersSent: [],
+      });
+
+      await AuditLog.create({
+        actorId: user._id,
+        actorRole: user.role,
+        action: "USER_REGISTERED_GOOGLE",
+        resource: "User",
+        resourceId: user._id,
+      });
+    }
+
+    const accessToken = signAccessToken({
+      id: user._id,
+      role: user.role,
+      twoFactorVerified: true,
+    });
+
+    const refreshToken = signRefreshToken({ id: user._id });
+    user.refreshTokens.push(refreshToken);
+    await user.save();
+
+    res.json({
+      accessToken,
+      user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ msg: "Google authentication failed" });
+  }
+};
+
 
 /* ======================================================
    CONFIG
