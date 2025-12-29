@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import PasswordInput from "../components/PasswordInput";
 import { apiFetch } from "../utils/apiFetch";
+import { useAuth } from "../utils/auth";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { loginWithToken } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -65,7 +68,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     Submit
+     Submit (Email + Password)
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,16 +98,18 @@ export default function Register() {
       if (!res.ok) {
         const msg = data?.message || data?.msg || "Registration failed";
 
-        // 🔑 CRITICAL FIX:
-        // Email already exists but NOT verified
-        if (msg.toLowerCase().includes("email")) {
+        // 🔔 Email exists but not verified → allow resend
+        if (
+          msg.toLowerCase().includes("exists") ||
+          msg.toLowerCase().includes("verify")
+        ) {
           setShowResend(true);
         }
 
         throw new Error(msg);
       }
 
-      // ✅ Success → ask user to verify
+      // ✅ Success → redirect to login with verify notice
       navigate("/login?verify=true");
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -144,11 +149,34 @@ export default function Register() {
       localStorage.setItem(COOLDOWN_KEY, until);
       setCooldown(seconds);
 
-      setInfo("Verification email resent. Check your inbox.");
+      setInfo("Verification email sent. Check your inbox.");
     } catch (err) {
       setError(err.message);
     } finally {
       setResendLoading(false);
+    }
+  };
+
+  /* ---------------------------------------
+     Google Sign-Up
+  ---------------------------------------- */
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setError("");
+      const res = await apiFetch("/api/auth/google", {
+        method: "POST",
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.msg || "Google sign-up failed");
+
+      loginWithToken(data.accessToken, data.user);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -219,6 +247,14 @@ export default function Register() {
           {loading ? "Creating account..." : "Create account"}
         </button>
 
+        {/* 🌐 GOOGLE SIGN-UP */}
+        <div className="divider">or</div>
+
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError("Google authentication failed")}
+        />
+
         <div className="auth-footer">
           <span>Already have an account?</span>
           <Link to="/login">Login</Link>
@@ -226,4 +262,4 @@ export default function Register() {
       </form>
     </div>
   );
-}
+                                }
