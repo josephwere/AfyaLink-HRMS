@@ -9,17 +9,42 @@ export default function Sidebar() {
 
   if (!user) return null;
 
+  const UnverifiedBadge = () =>
+    !user.emailVerified ? (
+      <span
+        style={{
+          marginLeft: 6,
+          background: "#dc2626",
+          color: "#fff",
+          borderRadius: "50%",
+          width: 16,
+          height: 16,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 11,
+          fontWeight: 700,
+        }}
+      >
+        !
+      </span>
+    ) : null;
+
   /* ================= GUEST (DEMO MODE) ================= */
   if (user.role === "guest") {
     return (
       <aside className="sidebar">
         <nav>
           <ul>
-            <li><Link to="/guest">Demo Home</Link></li>
+            <li>
+              <Link to="/guest">Demo Home</Link>
+            </li>
 
             <Section title="Demo">
               {can("ai", "chat") && <Item to="/ai/chatbot">AI Chatbot</Item>}
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
+              {can("ai", "medical") && (
+                <Item to="/ai/medical">AI Assistant</Item>
+              )}
             </Section>
           </ul>
         </nav>
@@ -35,7 +60,12 @@ export default function Sidebar() {
     <aside className="sidebar">
       <nav>
         <ul>
-          <li><Link to="/">Home</Link></li>
+          {/* 🔴 HOME BADGE */}
+          <li>
+            <Link to="/">
+              Home <UnverifiedBadge />
+            </Link>
+          </li>
 
           {/* ================= SUPER ADMIN ================= */}
           {can("superadmin", "read") && (
@@ -75,17 +105,27 @@ export default function Sidebar() {
               {can("appointments", "read") && (
                 <Item to="/doctor/appointments">Appointments</Item>
               )}
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
-              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
-              {can("ai", "voice") && <Item to="/ai/voice">Voice Dictation</Item>}
+              {can("ai", "medical") && (
+                <Item to="/ai/medical">AI Assistant</Item>
+              )}
+              {can("ai", "triage") && (
+                <Item to="/ai/triage">Triage</Item>
+              )}
+              {can("ai", "voice") && (
+                <Item to="/ai/voice">Voice Dictation</Item>
+              )}
             </Section>
           )}
 
           {/* ================= NURSE ================= */}
           {can("nurse", "read") && (
             <Section title="Nurse">
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
-              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
+              {can("ai", "medical") && (
+                <Item to="/ai/medical">AI Assistant</Item>
+              )}
+              {can("ai", "triage") && (
+                <Item to="/ai/triage">Triage</Item>
+              )}
             </Section>
           )}
 
@@ -101,8 +141,12 @@ export default function Sidebar() {
           {can("patient", "read") && (
             <Section title="Patient">
               <Item to="/patient">Dashboard</Item>
-              {can("payments", "read") && <Item to="/payments">Payments</Item>}
-              {can("ai", "chat") && <Item to="/ai/chatbot">Health Chatbot</Item>}
+              {can("payments", "read") && (
+                <Item to="/payments">Payments</Item>
+              )}
+              {can("ai", "chat") && (
+                <Item to="/ai/chatbot">Health Chatbot</Item>
+              )}
             </Section>
           )}
 
@@ -120,6 +164,13 @@ export default function Sidebar() {
               <Item to="/ai/ws">Live AI Chat</Item>
             </Section>
           )}
+
+          {/* 🔴 PROFILE LINK WITH BADGE */}
+          <Section title="Account">
+            <Item to="/profile">
+              Profile <UnverifiedBadge />
+            </Item>
+          </Section>
         </ul>
       </nav>
 
