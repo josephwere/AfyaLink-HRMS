@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../utils/auth";
 import { apiFetch } from "../utils/apiFetch";
 import PasswordInput from "../components/PasswordInput";
@@ -7,7 +8,7 @@ import PasswordInput from "../components/PasswordInput";
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Login() {
-  const { login, loading } = useAuth();
+  const { login, loading, loginWithToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,7 +24,7 @@ export default function Login() {
   const [showResend, setShowResend] = useState(false);
 
   /* ---------------------------------------
-     Restore cooldown (ABSOLUTE timestamp)
+     Restore cooldown
   ---------------------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
@@ -57,12 +58,12 @@ export default function Login() {
   }, [cooldown]);
 
   /* ---------------------------------------
-     Post-register message
+     Post-register notice
   ---------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
-      setInfo("Account created. Please verify your email before logging in.");
+      setInfo("Account created. Please verify your email.");
       setShowResend(true);
     }
   }, [location.search]);
@@ -79,7 +80,7 @@ export default function Login() {
   }, []);
 
   /* ---------------------------------------
-     Submit
+     Submit (Password Login)
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,29 +97,26 @@ export default function Login() {
 
       const result = await login(email.trim(), password);
 
-      if (result?.requiresEmailVerification) {
-        setError("Email not verified.");
-        setShowResend(true);
-        return;
+      if (!result?.user) {
+        throw new Error("Login failed");
       }
 
-      if (result?.requires2FA) {
-        navigate("/2fa", { state: { userId: result.userId, email } });
+      // 🔔 Unverified warning (NOT blocked)
+      if (!result.user.emailVerified) {
+        setInfo("Your email is not verified. Some features are disabled.");
+        setShowResend(true);
+      }
+
+      if (result.requires2FA) {
+        navigate("/2fa", {
+          state: { userId: result.userId, email },
+        });
         return;
       }
 
       navigate("/dashboard");
     } catch (err) {
-      const msg = err.message || "Login failed";
-
-      setError(msg);
-
-      // 🔑 CRITICAL FIX:
-      // If backend blocks login for unverified email,
-      // still show resend button
-      if (msg.toLowerCase().includes("verify")) {
-        setShowResend(true);
-      }
+      setError(err.message || "Invalid credentials");
     }
   };
 
@@ -158,6 +156,29 @@ export default function Login() {
       setError(err.message);
     } finally {
       setResendLoading(false);
+    }
+  };
+
+  /* ---------------------------------------
+     Google Login
+  ---------------------------------------- */
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setError("");
+      const res = await apiFetch("/api/auth/google", {
+        method: "POST",
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.msg || "Google login failed");
+
+      loginWithToken(data.accessToken, data.user);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -220,6 +241,14 @@ export default function Login() {
           {loading ? "Signing in..." : "Sign in"}
         </button>
 
+        {/* 🌐 GOOGLE LOGIN */}
+        <div className="divider">or</div>
+
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError("Google authentication failed")}
+        />
+
         <div className="auth-footer">
           <span>Don’t have an account?</span>
           <Link to="/register">Create account</Link>
@@ -227,4 +256,4 @@ export default function Login() {
       </form>
     </div>
   );
-            }
+}
