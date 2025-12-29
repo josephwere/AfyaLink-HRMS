@@ -80,6 +80,37 @@ import AuditLogs from "./pages/Admin/AuditLogs";
 import VerifySuccess from "./pages/VerifySuccess";
 
 /* =====================================================
+   ⚠️ EMAIL VERIFICATION WARNING BANNER
+===================================================== */
+function VerificationBanner({ user }) {
+  if (!user || user.emailVerified || !user.verificationWarning) return null;
+
+  const map = {
+    "14d": "Your profile will be deleted in 14 days.",
+    "3d": "Your profile will be deleted in 3 days.",
+    "2h": "Your profile will be deleted in 2 hours.",
+    EXPIRED: "Your account has expired and will be deleted.",
+  };
+
+  return (
+    <div
+      style={{
+        background: "#fff3cd",
+        border: "1px solid #ffecb5",
+        padding: "12px 16px",
+        borderRadius: 10,
+        marginBottom: 16,
+      }}
+    >
+      <strong>⚠️ Kindly verify your account</strong>
+      <div style={{ marginTop: 4 }}>
+        {map[user.verificationWarning.type]}
+      </div>
+    </div>
+  );
+}
+
+/* =====================================================
    🔐 PROTECTED ROUTE (ROLE + 2FA ENFORCED)
 ===================================================== */
 function Protected({ roles }) {
@@ -117,6 +148,7 @@ function AppLayout() {
         {user && <Sidebar />}
         <main className="main">
           {user && <Notifications />}
+          {user && <VerificationBanner user={user} />}
           <Outlet />
         </main>
       </div>
@@ -150,11 +182,9 @@ export default function App() {
 
             <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
 
-
-             {/* VerifySuccess */}
             <Route path="/verify-success" element={<VerifySuccess />} />
-            
-             {/* Super Admin */}
+
+            {/* Super Admin */}
             <Route path="superadmin" element={<SuperAdminDashboard />} />
             <Route path="superadmin/rbac" element={<RBAC />} />
             <Route path="superadmin/ml" element={<ML />} />
@@ -183,13 +213,13 @@ export default function App() {
             <Route path="ai/voice" element={<VoiceDictation />} />
             <Route path="ai/ws" element={<AIChatWS />} />
 
-            {/* Admin Core */}
+            {/* Admin */}
             <Route path="admin" element={<AdminDashboard />} />
             <Route path="admin/realtime" element={<RealTimeIntegrations />} />
             <Route path="admin/crdt-patients" element={<CRDTPatientEditor />} />
             <Route path="admin/notifications" element={<NotificationsPage />} />
 
-            {/* 🔐 AUDIT LOGS (ADMIN + SUPER ADMIN ONLY) */}
+            {/* Audit Logs */}
             <Route
               element={
                 <Protected roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]} />
@@ -218,4 +248,4 @@ export default function App() {
       </Routes>
     </SocketProvider>
   );
-}
+   }
