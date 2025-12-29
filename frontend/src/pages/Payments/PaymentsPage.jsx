@@ -3,7 +3,11 @@ import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import WorkflowTimeline from "../../components/workflow/WorkflowTimeline";
 import WorkflowBadge from "../../components/workflow/WorkflowBadge";
+import RequireVerified from "../../components/RequireVerified";
 
+<RequireVerified>
+  <PaymentsPage />
+</RequireVerified>
 /**
  * PAYMENTS PAGE — WORKFLOW ENFORCED
  * - No double payment
