@@ -1,8 +1,9 @@
 import "./theme-d.css";
-import React from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "./utils/auth";
+import { apiFetch } from "./utils/apiFetch";
 import SocketProvider from "./utils/socket";
 
 import Navbar from "./components/Navbar";
@@ -67,7 +68,7 @@ import PaymentsPage from "./pages/Payments/PaymentsPage";
 import PaymentsPageFull from "./pages/Payments/PaymentsFull";
 
 /* =======================
-   ADMIN (ENTERPRISE)
+   ADMIN
 ======================= */
 import AdminDashboard from "./pages/Admin/Dashboard";
 import Analytics from "./pages/Admin/Analytics";
@@ -80,16 +81,55 @@ import AuditLogs from "./pages/Admin/AuditLogs";
 import VerifySuccess from "./pages/VerifySuccess";
 
 /* =====================================================
-   ⚠️ EMAIL VERIFICATION WARNING BANNER
+   ⚠️ VERIFICATION BANNER (FULL FEATURED)
 ===================================================== */
 function VerificationBanner({ user }) {
-  if (!user || user.emailVerified || !user.verificationWarning) return null;
+  const { logout, setUser } = useAuth();
+  const navigate = useNavigate();
 
-  const map = {
-    "14d": "Your profile will be deleted in 14 days.",
-    "3d": "Your profile will be deleted in 3 days.",
-    "2h": "Your profile will be deleted in 2 hours.",
-    EXPIRED: "Your account has expired and will be deleted.",
+  const [timeLeft, setTimeLeft] = useState("");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!user?.verificationDeadline) return;
+
+    const update = () => {
+      const ms = new Date(user.verificationDeadline) - new Date();
+
+      if (ms <= 0) {
+        logout();
+        return;
+      }
+
+      const mins = Math.floor(ms / 60000);
+      const hrs = Math.floor(mins / 60);
+      const days = Math.floor(hrs / 24);
+
+      if (days > 0) setTimeLeft(`${days} day(s) remaining`);
+      else if (hrs > 0) setTimeLeft(`${hrs} hour(s) remaining`);
+      else setTimeLeft(`${mins} minute(s) remaining`);
+    };
+
+    update();
+    const i = setInterval(update, 60000);
+    return () => clearInterval(i);
+  }, [user, logout]);
+
+  if (!user || user.emailVerified) return null;
+
+  const resend = async () => {
+    try {
+      setSending(true);
+      await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email: user.email }),
+      });
+      alert("Verification email sent 📩");
+    } catch {
+      alert("Failed to resend email");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -97,46 +137,56 @@ function VerificationBanner({ user }) {
       style={{
         background: "#fff3cd",
         border: "1px solid #ffecb5",
-        padding: "12px 16px",
-        borderRadius: 10,
+        padding: 16,
+        borderRadius: 12,
         marginBottom: 16,
       }}
     >
       <strong>⚠️ Kindly verify your account</strong>
-      <div style={{ marginTop: 4 }}>
-        {map[user.verificationWarning.type]}
+
+      <div style={{ marginTop: 6, fontSize: 14 }}>
+        Your profile will be deleted if not verified.
+      </div>
+
+      <div style={{ marginTop: 4, fontWeight: 600 }}>
+        ⏱ {timeLeft}
+      </div>
+
+      <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
+        <button
+          className="primary"
+          onClick={() => navigate("/verify-email")}
+        >
+          Verify now
+        </button>
+
+        <button
+          className="secondary"
+          disabled={sending}
+          onClick={resend}
+        >
+          {sending ? "Sending…" : "Resend email"}
+        </button>
       </div>
     </div>
   );
 }
 
 /* =====================================================
-   🔐 PROTECTED ROUTE (ROLE + 2FA ENFORCED)
+   🔐 PROTECTED
 ===================================================== */
 function Protected({ roles }) {
   const { user, loading } = useAuth();
-
   if (loading) return null;
-
   if (!user) return <Navigate to="/login" replace />;
-
-  if (user.role === "guest") {
-    return <Navigate to="/guest" replace />;
-  }
-
-  if (user.twoFactorRequired === true) {
-    return <Navigate to="/2fa" replace />;
-  }
-
-  if (roles && !roles.includes(user.role)) {
+  if (user.twoFactorRequired) return <Navigate to="/2fa" replace />;
+  if (roles && !roles.includes(user.role))
     return <Navigate to="/unauthorized" replace />;
-  }
-
   return <Outlet />;
 }
 
 /* =====================================================
-   APP LAYOUT
+   LAYOUT
 ===================================================== */
 function AppLayout() {
   const { user } = useAuth();
@@ -157,95 +207,31 @@ function AppLayout() {
 }
 
 /* =====================================================
-   APP ROUTER (FINAL)
+   APP
 ===================================================== */
 export default function App() {
   return (
     <SocketProvider>
       <Routes>
-
-        {/* -------- PUBLIC -------- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/verify-success" element={<VerifySuccess />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/2fa" element={<TwoFactor />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* -------- GUEST -------- */}
-        <Route path="/guest" element={<GuestDashboard />} />
-
-        {/* -------- AUTHENTICATED -------- */}
         <Route element={<Protected />}>
           <Route element={<AppLayout />}>
-
             <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
-
-            <Route path="/verify-success" element={<VerifySuccess />} />
-
-            {/* Super Admin */}
-            <Route path="superadmin" element={<SuperAdminDashboard />} />
-            <Route path="superadmin/rbac" element={<RBAC />} />
-            <Route path="superadmin/ml" element={<ML />} />
-
-            {/* Hospital Admin */}
-            <Route path="hospitaladmin" element={<HospitalAdminDashboard />} />
-            <Route path="hospitaladmin/patients" element={<Patients />} />
-            <Route path="hospitaladmin/financials" element={<Financials />} />
-            <Route path="hospitaladmin/branches" element={<Branches />} />
-
-            {/* Doctor */}
-            <Route path="doctor" element={<DoctorDashboard />} />
-            <Route path="doctor/appointments" element={<Appointments />} />
-
-            {/* Lab */}
-            <Route path="labtech/labs" element={<LabTests />} />
-            <Route path="lab" element={<Lab />} />
-
-            {/* Patient */}
             <Route path="patient" element={<PatientDashboard />} />
-
-            {/* AI */}
-            <Route path="ai/medical" element={<MedicalAssistant />} />
-            <Route path="ai/chatbot" element={<Chatbot />} />
-            <Route path="ai/triage" element={<Triage />} />
-            <Route path="ai/voice" element={<VoiceDictation />} />
-            <Route path="ai/ws" element={<AIChatWS />} />
-
-            {/* Admin */}
+            <Route path="doctor" element={<DoctorDashboard />} />
             <Route path="admin" element={<AdminDashboard />} />
-            <Route path="admin/realtime" element={<RealTimeIntegrations />} />
-            <Route path="admin/crdt-patients" element={<CRDTPatientEditor />} />
-            <Route path="admin/notifications" element={<NotificationsPage />} />
-
-            {/* Audit Logs */}
-            <Route
-              element={
-                <Protected roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]} />
-              }
-            >
-              <Route path="admin/audit" element={<AuditLogs />} />
-            </Route>
-
-            {/* Analytics & Reports */}
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="reports" element={<Reports />} />
-
-            {/* Pharmacy & Inventory */}
-            <Route path="pharmacy" element={<Pharmacy />} />
-            <Route path="inventory" element={<Inventory />} />
-
-            {/* Payments */}
-            <Route path="payments" element={<PaymentsPage />} />
-            <Route path="payments/full" element={<PaymentsPageFull />} />
-
-            {/* 404 */}
             <Route path="*" element={<div>404 — Page not found</div>} />
-
           </Route>
         </Route>
       </Routes>
     </SocketProvider>
   );
-   }
+}
