@@ -6,6 +6,24 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: #f5f6fa;
 }
+
+
+/* =========================
+   PROFILE
+========================= */
+.warning-card {
+  background: #fff3cd;
+  border: 1px solid #ffecb5;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.warning-card button {
+  margin-top: 10px;
+}
+
+
 /* =========================
    Verify Page
 ========================= */
