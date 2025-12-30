@@ -101,8 +101,12 @@ export const listEmergencyAccess = async (req, res) => {
       .lean();
 
     const activeEmergencies = emergencies.map((e) => {
-      const expiresAt = new Date(e.metadata?.expiresAt);
-      const active = expiresAt && expiresAt > new Date();
+       const expiresAt = e.metadata?.expiresAt
+  ? new Date(e.metadata.expiresAt)
+  : null;
+
+const active = expiresAt ? expiresAt > new Date() : false;
+
 
       return {
         hospital: e.hospital,
