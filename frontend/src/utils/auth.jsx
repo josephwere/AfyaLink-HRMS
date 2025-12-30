@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   /* --------------------------------------------------
-     Restore session (reload-safe + 2FA aware)
+     RESTORE SESSION (reload-safe + 2FA aware)
   -------------------------------------------------- */
   useEffect(() => {
     try {
@@ -51,12 +51,53 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* --------------------------------------------------
-     LOGIN (2FA AWARE)
+     LOGIN
+     - Email + Password
+     - Google (direct token)
+     - 2FA aware
   -------------------------------------------------- */
-  const login = async (email, password) => {
+  const login = async (emailOrToken, passwordOrOptions) => {
+    /* ============================
+       🔑 GOOGLE / DIRECT TOKEN
+    ============================ */
+    if (
+      typeof passwordOrOptions === "object" &&
+      passwordOrOptions?.directToken === true
+    ) {
+      const accessToken = emailOrToken;
+      const decoded = parseJwt(accessToken);
+
+      if (!decoded) {
+        throw new Error("Invalid access token");
+      }
+
+      const safeUser = {
+        id: decoded.id,
+        name: decoded.name,
+        email: decoded.email,
+        role: decoded.role,
+      };
+
+      localStorage.setItem("token", accessToken);
+      localStorage.setItem("user", JSON.stringify(safeUser));
+
+      setUser({
+        ...safeUser,
+        twoFactorVerified: true,
+      });
+
+      return { user: safeUser };
+    }
+
+    /* ============================
+       🔐 EMAIL / PASSWORD LOGIN
+    ============================ */
     const res = await apiFetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email: emailOrToken,
+        password: passwordOrOptions,
+      }),
     });
 
     const data = await res.json();
@@ -98,7 +139,7 @@ export function AuthProvider({ children }) {
   };
 
   /* --------------------------------------------------
-     COMPLETE 2FA (OTP VERIFIED)
+     COMPLETE 2FA
   -------------------------------------------------- */
   const complete2FA = (accessToken) => {
     localStorage.setItem("token", accessToken);
@@ -155,4 +196,4 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return ctx;
-}
+    }
