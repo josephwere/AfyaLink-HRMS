@@ -1,13 +1,13 @@
 import express from "express";
 import { protect, requireRole } from "../middleware/auth.js";
-import { featureGuard } from "../middleware/featureGuard.js"; // ✅ NEW
+import { featureGuard } from "../middleware/featureGuard.js";
 import AuditLog from "../models/AuditLog.js";
 
 const router = express.Router();
 
 /**
  * GET /api/audit
- * Filters: actorId, action, resource, from, to
+ * Filters: actor, action, resource, from, to
  *
  * RBAC:
  *  - SUPER_ADMIN → full access
@@ -20,11 +20,11 @@ router.get(
   "/",
   protect,
   requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
-  featureGuard("auditLogs"), // 🔐 ENTERPRISE GUARD
+  featureGuard("auditLogs"),
   async (req, res) => {
     try {
       const {
-        actorId,
+        actor,
         action,
         resource,
         from,
@@ -36,7 +36,7 @@ router.get(
       const filter = {};
 
       /* ================= FILTERS ================= */
-      if (actorId) filter.actorId = actorId;
+      if (actor) filter.actor = actor;
       if (action) filter.action = action;
       if (resource) filter.resource = resource;
 
@@ -48,7 +48,7 @@ router.get(
 
       /* ================= TENANCY ISOLATION ================= */
       // SUPER_ADMIN → full visibility
-      // HOSPITAL_ADMIN → scoped
+      // HOSPITAL_ADMIN → hospital-scoped
       if (req.user.role === "HOSPITAL_ADMIN") {
         filter.hospital = req.user.hospital;
       }
@@ -63,7 +63,7 @@ router.get(
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(safeLimit)
-          .populate("actorId", "name email role")
+          .populate("actor", "name email role")
           .lean(),
 
         AuditLog.countDocuments(filter),
