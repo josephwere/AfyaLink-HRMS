@@ -1,5 +1,6 @@
-import AuditLog from "../models/AuditLog.js";
+// backend/middleware/featureGuard.js
 import Hospital from "../models/Hospital.js";
+import { denyAudit } from "./denyAudit.js";
 
 /**
  * Feature Guard
@@ -12,32 +13,26 @@ export const featureGuard = (featureKey) => {
     try {
       const user = req.user;
 
-      // Super Admin bypass (platform owner)
+      // 🔓 SUPER_ADMIN bypass (platform owner)
       if (user.role === "SUPER_ADMIN") {
         return next();
       }
 
       if (!user.hospitalId) {
+        await denyAudit(req, res, "No hospital context");
         return res.status(403).json({ message: "No hospital context" });
       }
 
-      const hospital = await Hospital.findById(user.hospitalId);
+      const hospital = await Hospital.findById(user.hospitalId).lean();
 
       const enabled = hospital?.features?.[featureKey];
 
       if (!enabled) {
-        /* ================= AUDIT DENIAL ================= */
-        await AuditLog.create({
-          actorId: user._id,
-          actorRole: user.role,
-          action: "ACCESS_DENIED",
-          resource: featureKey,
-          hospital: user.hospitalId,
-          ip: req.ip,
-          userAgent: req.headers["user-agent"],
-          success: false,
-          error: `Feature '${featureKey}' disabled for hospital`,
-        });
+        await denyAudit(
+          req,
+          res,
+          `Feature '${featureKey}' disabled for hospital`
+        );
 
         return res.status(403).json({
           message: "Feature not enabled for your hospital",
