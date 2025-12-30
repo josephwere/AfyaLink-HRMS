@@ -9,15 +9,14 @@ import SocketProvider from "./utils/socket";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Notifications from "./components/Notifications";
-import AIChatWS from "./components/AIChatWS";
 
 /* =======================
    PUBLIC / AUTH
 ======================= */
-import GuestDashboard from "./pages/GuestDashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
+import VerifySuccess from "./pages/VerifySuccess";
 import Unauthorized from "./pages/Unauthorized";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -26,67 +25,22 @@ import TwoFactor from "./pages/TwoFactor";
 /* =======================
    DASHBOARDS
 ======================= */
-import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
-import HospitalAdminDashboard from "./pages/HospitalAdmin/Dashboard";
 import DoctorDashboard from "./pages/Doctor/Dashboard";
 import PatientDashboard from "./pages/Patient/Dashboard";
-
-/* =======================
-   SUPER ADMIN
-======================= */
-import RBAC from "./pages/SuperAdmin/RBAC";
-import ML from "./pages/SuperAdmin/ML";
-
-/* =======================
-   AI
-======================= */
-import MedicalAssistant from "./pages/AI/MedicalAssistant";
-import Chatbot from "./pages/AI/Chatbot";
-import Triage from "./pages/AI/Triage";
-import VoiceDictation from "./pages/AI/VoiceDictation";
-
-/* =======================
-   HOSPITAL ADMIN
-======================= */
-import Patients from "./pages/HospitalAdmin/Patients";
-import Financials from "./pages/HospitalAdmin/Financials";
-import Branches from "./pages/HospitalAdmin/Branches";
-import Pharmacy from "./pages/HospitalAdmin/Pharmacy";
-import Inventory from "./pages/HospitalAdmin/Inventory";
-
-/* =======================
-   DOCTOR / LAB
-======================= */
-import Appointments from "./pages/Doctor/Appointments";
-import LabTests from "./pages/LabTech/LabTests";
-import Lab from "./pages/LabTech/Lab";
-
-/* =======================
-   PAYMENTS
-======================= */
-import PaymentsPage from "./pages/Payments/PaymentsPage";
-import PaymentsPageFull from "./pages/Payments/PaymentsFull";
 
 /* =======================
    ADMIN
 ======================= */
 import AdminDashboard from "./pages/Admin/Dashboard";
-import Analytics from "./pages/Admin/Analytics";
-import Reports from "./pages/Admin/Reports";
-import NotificationsPage from "./pages/Admin/NotificationsPage";
-import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
-import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
 import AuditLogs from "./pages/Admin/AuditLogs";
-
-import VerifySuccess from "./pages/VerifySuccess";
+import CreateAdmin from "./pages/Admin/CreateAdmin";
 
 /* =====================================================
-   ⚠️ VERIFICATION BANNER (FULL FEATURED)
+   ⚠️ VERIFICATION BANNER
 ===================================================== */
 function VerificationBanner({ user }) {
-  const { logout, setUser } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
-
   const [timeLeft, setTimeLeft] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -95,7 +49,6 @@ function VerificationBanner({ user }) {
 
     const update = () => {
       const ms = new Date(user.verificationDeadline) - new Date();
-
       if (ms <= 0) {
         logout();
         return;
@@ -133,38 +86,16 @@ function VerificationBanner({ user }) {
   };
 
   return (
-    <div
-      style={{
-        background: "#fff3cd",
-        border: "1px solid #ffecb5",
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 16,
-      }}
-    >
+    <div style={{ background: "#fff3cd", padding: 16, borderRadius: 12 }}>
       <strong>⚠️ Kindly verify your account</strong>
-
-      <div style={{ marginTop: 6, fontSize: 14 }}>
-        Your profile will be deleted if not verified.
-      </div>
-
-      <div style={{ marginTop: 4, fontWeight: 600 }}>
-        ⏱ {timeLeft}
-      </div>
+      <div>⏱ {timeLeft}</div>
 
       <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
-        <button
-          className="primary"
-          onClick={() => navigate("/verify-email")}
-        >
+        <button className="primary" onClick={() => navigate("/verify-email")}>
           Verify now
         </button>
 
-        <button
-          className="secondary"
-          disabled={sending}
-          onClick={resend}
-        >
+        <button className="secondary" disabled={sending} onClick={resend}>
           {sending ? "Sending…" : "Resend email"}
         </button>
       </div>
@@ -213,6 +144,7 @@ export default function App() {
   return (
     <SocketProvider>
       <Routes>
+        {/* PUBLIC */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
@@ -222,12 +154,39 @@ export default function App() {
         <Route path="/2fa" element={<TwoFactor />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
+        {/* PROTECTED */}
         <Route element={<Protected />}>
           <Route element={<AppLayout />}>
             <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
             <Route path="patient" element={<PatientDashboard />} />
             <Route path="doctor" element={<DoctorDashboard />} />
-            <Route path="admin" element={<AdminDashboard />} />
+
+            {/* ADMIN AREA */}
+            <Route
+              path="admin"
+              element={
+                <Protected roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]} />
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+
+              <Route
+                path="audit-logs"
+                element={
+                  <Protected roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]} />
+                }
+              >
+                <Route index element={<AuditLogs />} />
+              </Route>
+
+              <Route
+                path="create-admin"
+                element={<Protected roles={["SUPER_ADMIN"]} />}
+              >
+                <Route index element={<CreateAdmin />} />
+              </Route>
+            </Route>
+
             <Route path="*" element={<div>404 — Page not found</div>} />
           </Route>
         </Route>
