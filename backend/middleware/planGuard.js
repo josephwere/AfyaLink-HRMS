@@ -1,25 +1,24 @@
-// backend/middleware/planGuard.js
-
 import Hospital from "../models/Hospital.js";
 import { denyAudit } from "./denyAudit.js";
 import { isBreakGlassActive } from "./breakGlassGuard.js";
-/* ================= BREAK-GLASS OVERRIDE ================= */
-const breakGlass = await isBreakGlassActive(hospitalId);
-if (breakGlass) {
-  req.breakGlass = true; // expose to controllers
-  return next();
-}
 
 /**
  * PLAN + LIMIT + FEATURE ENFORCEMENT
  * Source of truth: Hospital
  */
 export const planGuard =
-  ({ feature, limitKey }) =>
+  ({ feature, limitKey } = {}) =>
   async (req, res, next) => {
     try {
-      const hospitalId = req.user.hospitalId;
+      const hospitalId = req.user?.hospitalId;
       if (!hospitalId) return next();
+
+      /* ================= BREAK-GLASS OVERRIDE ================= */
+      const breakGlass = await isBreakGlassActive(hospitalId);
+      if (breakGlass) {
+        req.breakGlass = true; // expose to controllers
+        return next();
+      }
 
       const hospital = await Hospital.findOne({
         _id: hospitalId,
@@ -50,10 +49,7 @@ export const planGuard =
         const current = await getUsageCount(limitKey, hospitalId);
         const allowed = hospital.limits?.[limitKey];
 
-        if (
-          typeof allowed === "number" &&
-          current >= allowed
-        ) {
+        if (typeof allowed === "number" && current >= allowed) {
           await denyAudit(
             req,
             res,
@@ -76,9 +72,7 @@ export const planGuard =
 async function getUsageCount(key, hospitalId) {
   switch (key) {
     case "users": {
-      const { default: User } = await import(
-        "../models/User.js"
-      );
+      const { default: User } = await import("../models/User.js");
       return User.countDocuments({
         hospital: hospitalId,
         active: true,
@@ -86,9 +80,7 @@ async function getUsageCount(key, hospitalId) {
     }
 
     case "patients": {
-      const { default: Patient } = await import(
-        "../models/Patient.js"
-      );
+      const { default: Patient } = await import("../models/Patient.js");
       return Patient.countDocuments({
         hospital: hospitalId,
         active: true,
@@ -98,4 +90,4 @@ async function getUsageCount(key, hospitalId) {
     default:
       return 0;
   }
-}
+  }
