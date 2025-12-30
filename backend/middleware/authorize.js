@@ -1,8 +1,12 @@
+// backend/middleware/authorize.js
+
 import { hasPermission } from "../utils/hasPermission.js";
+import { denyAudit } from "./denyAudit.js";
 
 export const authorize = (resource, action) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.user) {
+      // ❌ Not authenticated → no audit (handled by auth middleware)
       return res.status(401).json({ msg: "Unauthorized" });
     }
 
@@ -14,6 +18,13 @@ export const authorize = (resource, action) => {
     );
 
     if (!allowed) {
+      // 🔐 AUDIT ACCESS DENIAL
+      await denyAudit(
+        req,
+        res,
+        `RBAC denied → ${resource}:${action}`
+      );
+
       return res.status(403).json({
         msg: "Forbidden",
         resource,
