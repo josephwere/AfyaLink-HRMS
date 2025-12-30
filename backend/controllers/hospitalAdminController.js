@@ -2,7 +2,10 @@ import Hospital from "../models/Hospital.js";
 import AuditLog from "../models/AuditLog.js";
 
 /* ======================================================
-   GET HOSPITAL FEATURES & LIMITS
+   GET HOSPITAL FEATURES, LIMITS & EMERGENCY STATE
+   - tenant-safe
+   - soft-delete safe
+   - break-glass transparent (NON-OPTIONAL)
 ====================================================== */
 export const getHospitalConfig = async (req, res) => {
   try {
@@ -23,19 +26,30 @@ export const getHospitalConfig = async (req, res) => {
       });
     }
 
-    res.json(hospital);
+    res.json({
+      ...hospital.toObject(),
+      /* 🚨 EMERGENCY BREAK-GLASS TRANSPARENCY */
+      breakGlassActive: req.breakGlass || false,
+      breakGlassExpiresAt: req.breakGlassExpiresAt || null,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to load hospital config" });
+    console.error(err);
+    res.status(500).json({
+      message: "Failed to load hospital config",
+    });
   }
 };
 
 /* ======================================================
    UPDATE FEATURE TOGGLES (AUDIT SAFE)
+   - no overwrite of unknown flags
+   - soft-delete guarded
+   - fully auditable
 ====================================================== */
 export const updateHospitalFeatures = async (req, res) => {
   try {
     const hospitalId = req.user.hospital;
-    const updates = req.body.features;
+    const updates = req.body.features || {};
 
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) {
@@ -51,7 +65,7 @@ export const updateHospitalFeatures = async (req, res) => {
 
     const before = { ...hospital.features };
 
-    // Update only known feature keys
+    /* 🔐 UPDATE ONLY KNOWN FEATURES */
     Object.keys(updates).forEach((key) => {
       if (key in hospital.features) {
         hospital.features[key] = updates[key];
@@ -60,16 +74,16 @@ export const updateHospitalFeatures = async (req, res) => {
 
     await hospital.save();
 
-    /* ================= AUDIT LOG ================= */
+    /* 🧾 AUDIT LOG (FORENSIC-GRADE) */
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
       action: "UPDATE_HOSPITAL_FEATURES",
       resource: "Hospital",
       resourceId: hospital._id,
+      hospital: hospital._id,
       before,
       after: hospital.features,
-      hospital: hospital._id,
       ip: req.ip,
       userAgent: req.headers["user-agent"],
     });
@@ -77,8 +91,14 @@ export const updateHospitalFeatures = async (req, res) => {
     res.json({
       message: "Features updated successfully",
       features: hospital.features,
+      /* 🚨 ALWAYS RETURN EMERGENCY STATE */
+      breakGlassActive: req.breakGlass || false,
+      breakGlassExpiresAt: req.breakGlassExpiresAt || null,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update features" });
+    console.error(err);
+    res.status(500).json({
+      message: "Failed to update features",
+    });
   }
 };
