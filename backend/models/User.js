@@ -2,6 +2,24 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 const { Schema, model } = mongoose;
+/* ======================================================
+   SUPER_ADMIN IMMUTABILITY GUARD
+====================================================== */
+userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
+  if (this.role === "SUPER_ADMIN") {
+    return next(new Error("SUPER_ADMIN account cannot be deleted"));
+  }
+  next();
+});
+
+userSchema.pre("save", function (next) {
+  if (!this.isModified("active")) return next();
+
+  if (this.role === "SUPER_ADMIN" && this.active === false) {
+    return next(new Error("SUPER_ADMIN account cannot be deactivated"));
+  }
+  next();
+});
 
 /* ======================================================
    USER SCHEMA — FINAL (STABLE + VERIFICATION FLOW READY)
