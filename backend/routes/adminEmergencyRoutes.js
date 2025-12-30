@@ -1,6 +1,7 @@
 import express from "express";
 import { getActiveEmergencies } from "../controllers/emergencyAdminController.js";
-import { requireAuth } from "../middleware/auth.js";
+import auth from "../middleware/auth.js";
+import { permit } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
@@ -9,7 +10,8 @@ const router = express.Router();
  */
 router.get(
   "/emergencies/active",
-  requireAuth,
+  auth,
+  permit("super_admin"),
   getActiveEmergencies
 );
 
