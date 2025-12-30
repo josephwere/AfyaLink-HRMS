@@ -1,7 +1,19 @@
+// backend/middleware/roleMiddleware.js
+
+/**
+ * Role-based access control
+ * Usage:
+ *   permit("ADMIN")
+ *   permit("ADMIN", "SUPER_ADMIN")
+ *   requireRole("ADMIN")
+ */
+
 export const permit = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.status(401).json({
+        message: "Not authenticated",
+      });
     }
 
     if (!allowedRoles.includes(req.user.role)) {
@@ -13,3 +25,8 @@ export const permit = (...allowedRoles) => {
     next();
   };
 };
+
+/**
+ * Alias for compatibility with routes expecting `requireRole`
+ */
+export const requireRole = (...roles) => permit(...roles);
