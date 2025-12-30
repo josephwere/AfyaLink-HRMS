@@ -111,3 +111,37 @@ export const updateHospitalFeatures = async (req, res, next) => {
     next(err);
   }
 };
+/* ================= SOFT DELETE (DEACTIVATE HOSPITAL) ================= */
+/* NEVER hard-delete hospitals */
+
+export const deactivateHospital = async (req, res, next) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id);
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    if (hospital.active === false) {
+      return res.json({ message: "Hospital already deactivated" });
+    }
+
+    hospital.active = false;
+    await hospital.save();
+
+    /* 🧹 CLEAR MENU CACHE (ALL USERS IN HOSPITAL) */
+    await cacheDel(`menu:*:${hospital._id}`);
+
+    /* 🧾 AUDIT */
+    await audit({
+      req,
+      action: "DEACTIVATE_HOSPITAL",
+      resource: "Hospital",
+      resourceId: hospital._id,
+    });
+
+    res.json({ message: "Hospital deactivated successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
