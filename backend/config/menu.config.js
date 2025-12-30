@@ -1,56 +1,58 @@
 export const MENU_CONFIG = [
   {
-    key: "dashboard",
-    label: "Dashboard",
-    icon: "home",
-    path: "/dashboard",
+    section: "General",
+    items: [
+      { label: "Dashboard", path: "/dashboard", icon: "home" },
+    ],
   },
+
   {
-    key: "patients",
-    label: "Patients",
-    icon: "users",
-    path: "/patients",
+    section: "Clinical",
+    feature: "patients",
+    items: [
+      { label: "Patients", path: "/patients", icon: "users" },
+    ],
   },
+
   {
-    key: "pharmacy",
-    label: "Pharmacy",
-    icon: "pill",
-    path: "/pharmacy",
+    section: "Pharmacy",
     feature: "pharmacy",
+    items: [
+      { label: "Pharmacy", path: "/pharmacy", icon: "pill" },
+    ],
   },
+
   {
-    key: "laboratory",
-    label: "Laboratory",
-    icon: "flask",
-    path: "/lab",
-    feature: "laboratory",
+    section: "Laboratory",
+    feature: "lab",
+    items: [
+      { label: "Lab Dashboard", path: "/lab", icon: "flask" },
+    ],
   },
+
   {
-    key: "billing",
-    label: "Billing",
-    icon: "credit-card",
-    path: "/billing",
-    feature: "billing",
+    section: "Billing",
+    feature: "payments",
+    items: [
+      { label: "Billing", path: "/billing", icon: "credit-card" },
+    ],
   },
+
   {
-    key: "inventory",
-    label: "Inventory",
-    icon: "boxes",
-    path: "/inventory",
-    feature: "inventory",
-  },
-  {
-    key: "hr",
-    label: "Staff",
-    icon: "id-card",
-    path: "/staff",
-    feature: "hr",
-  },
-  {
-    key: "admin",
-    label: "Admin",
-    icon: "shield",
-    path: "/admin",
+    section: "Administration",
     roles: ["SUPER_ADMIN", "HOSPITAL_ADMIN"],
+    items: [
+      { label: "Admin Dashboard", path: "/admin", icon: "shield" },
+      { label: "Audit Logs", path: "/admin/audit-logs", icon: "file-text" },
+    ],
+  },
+
+  {
+    section: "Super Admin",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Create Admin", path: "/admin/create-admin" },
+      { label: "Analytics", path: "/analytics" },
+    ],
   },
 ];
