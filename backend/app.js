@@ -6,6 +6,9 @@ import dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
 import { denyAudit } from "./middleware/denyAudit.js";
 import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
+import { trace } from "./middleware/traceMiddleware.js";
+
+
 
 // Load env
 const env = dotenv.config();
@@ -105,6 +108,7 @@ app.use("/api/insurance", insuranceRoutes);
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
+app.use(trace);
 
 // =======================================================
 // WORKFLOW (READ-ONLY, NO MUTATIONS)
