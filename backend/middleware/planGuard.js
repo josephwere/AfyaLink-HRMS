@@ -2,6 +2,13 @@
 
 import Hospital from "../models/Hospital.js";
 import { denyAudit } from "./denyAudit.js";
+import { isBreakGlassActive } from "./breakGlassGuard.js";
+/* ================= BREAK-GLASS OVERRIDE ================= */
+const breakGlass = await isBreakGlassActive(hospitalId);
+if (breakGlass) {
+  req.breakGlass = true; // expose to controllers
+  return next();
+}
 
 /**
  * PLAN + LIMIT + FEATURE ENFORCEMENT
