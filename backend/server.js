@@ -6,7 +6,7 @@ import { Server as IOServer } from "socket.io";
 import connectDB from "./config/db.js";
 import app from "./app.js";
 import { initSocket } from "./utils/socket.js";
-
+import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
 import seedSuperAdmin from "./seed/superAdmin.js";
 
@@ -22,6 +22,18 @@ cron.schedule(
   async () => {
     console.log("⏰ Running daily verification cleanup job...");
     await cleanupUnverifiedUsers();
+  },
+  {
+    timezone: "Africa/Nairobi",
+  }
+);
+/* ======================================================
+   🚨 BREAK-GLASS AUTO-EXPIRY (EVERY 5 MINUTES)
+====================================================== */
+cron.schedule(
+  "*/5 * * * *", // every 5 minutes
+  async () => {
+    await cleanupExpiredBreakGlass();
   },
   {
     timezone: "Africa/Nairobi",
