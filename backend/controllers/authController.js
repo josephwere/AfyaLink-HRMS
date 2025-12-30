@@ -8,8 +8,9 @@ import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
 import { getVerificationWarning } from "../services/verificationReminderService.js";
 import { OAuth2Client } from "google-auth-library";
+
 /* =========================
-   GOOGLE 
+   GOOGLE
 ========================= */
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -33,6 +34,7 @@ export const googleLogin = async (req, res) => {
         email,
         emailVerified: true,
         emailVerifiedAt: new Date(),
+        verificationDeadline: null, // ✅ prevent verification warnings
         role: "PATIENT",
         verificationRemindersSent: [],
       });
@@ -48,6 +50,8 @@ export const googleLogin = async (req, res) => {
 
     const accessToken = signAccessToken({
       id: user._id,
+      name: user.name,           // ✅ align with frontend JWT parsing
+      email: user.email,
       role: user.role,
       twoFactorVerified: true,
     });
@@ -58,14 +62,19 @@ export const googleLogin = async (req, res) => {
 
     res.json({
       accessToken,
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        emailVerified: true,
+      },
     });
   } catch (err) {
     console.error(err);
     res.status(401).json({ msg: "Google authentication failed" });
   }
 };
-
 
 /* ======================================================
    CONFIG
@@ -131,7 +140,7 @@ export const register = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      password, // ⚠️ DO NOT HASH HERE
+      password, // ⚠️ hashed in model
       role: "PATIENT",
       emailVerified: false,
       verificationDeadline,
@@ -255,7 +264,7 @@ export const resendVerificationEmail = async (req, res) => {
 };
 
 /* ======================================================
-   LOGIN (NO BLOCKING + WARNING ATTACHED)
+   LOGIN
 ====================================================== */
 export const login = async (req, res) => {
   try {
@@ -277,12 +286,13 @@ export const login = async (req, res) => {
 
     const accessToken = signAccessToken({
       id: user._id,
+      name: user.name,
+      email: user.email,
       role: user.role,
       twoFactorVerified: !user.twoFactorEnabled,
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
-
     user.refreshTokens.push(refreshToken);
     await user.save();
 
@@ -321,6 +331,8 @@ export const verify2FAOtp = async (req, res) => {
 
     const accessToken = signAccessToken({
       id: user._id,
+      name: user.name,
+      email: user.email,
       role: user.role,
       twoFactorVerified: true,
     });
