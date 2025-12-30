@@ -19,7 +19,7 @@ const router = express.Router();
 router.post(
   "/",
   auth,
-  allowRoles("SuperAdmin"),
+  allowRoles("SUPER_ADMIN"),
   createHospital
 );
 
@@ -32,7 +32,7 @@ router.post(
 router.get(
   "/",
   auth,
-  allowRoles("SuperAdmin", "HospitalAdmin"),
+  allowRoles("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   listHospitals
 );
 
@@ -49,7 +49,7 @@ router.get(
 router.get(
   "/:id/features",
   auth,
-  allowRoles("SuperAdmin"),
+  allowRoles("SUPER_ADMIN"),
   getHospitalFeatures
 );
 
@@ -59,7 +59,7 @@ router.get(
 router.put(
   "/:id/features",
   auth,
-  allowRoles("SuperAdmin"),
+  allowRoles("SUPER_ADMIN"),
   updateHospitalFeatures
 );
 
