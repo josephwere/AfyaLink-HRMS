@@ -1,5 +1,6 @@
 import Hospital from "../models/Hospital.js";
 import { MENU } from "../config/menuConfig.js";
+import { cacheGet, cacheSet } from "../utils/cache.js";
 
 export const getMenu = async (req, res) => {
   try {
@@ -7,6 +8,15 @@ export const getMenu = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    /* ================= CACHE KEY ================= */
+    const cacheKey = `menu:${user._id}:${user.role}:${user.hospital || "none"}`;
+
+    /* ================= CACHE HIT ================= */
+    const cachedMenu = await cacheGet(cacheKey);
+    if (cachedMenu) {
+      return res.json(cachedMenu);
     }
 
     /* ================= LOAD HOSPITAL FEATURES ================= */
@@ -57,12 +67,17 @@ export const getMenu = async (req, res) => {
       })
       .filter((section) => section.items.length > 0); // no empty sections
 
-    /* ================= RESPONSE ================= */
-    res.json({
+    const response = {
       role: user.role,
       hospital: user.hospital || null,
       menu,
-    });
+    };
+
+    /* ================= CACHE STORE ================= */
+    await cacheSet(cacheKey, response, 300); // 5 minutes
+
+    /* ================= RESPONSE ================= */
+    res.json(response);
   } catch (err) {
     console.error("Menu error:", err);
     res.status(500).json({ message: "Failed to load menu" });
