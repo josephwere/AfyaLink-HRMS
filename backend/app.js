@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
+import { denyAudit } from "./middleware/denyAudit.js";
 
 // Load env
 const env = dotenv.config();
@@ -204,6 +205,24 @@ app.use("/api/signaling", signalingTokenRoutes);
 // =======================================================
 app.get("/", (req, res) => {
   res.send("AfyaLink HRMS Backend is running 🚀");
+});
+// =======================================================
+// GLOBAL DENY AUDIT (UNKNOWN / HIDDEN ROUTES)
+// =======================================================
+app.use(async (req, res) => {
+  try {
+    if (req.user) {
+      await denyAudit(
+        req,
+        res,
+        "Unknown, hidden, or unmapped route access"
+      );
+    }
+  } catch (err) {
+    console.error("Deny audit failed:", err);
+  }
+
+  res.status(404).json({ message: "Not found" });
 });
 
 // =======================================================
