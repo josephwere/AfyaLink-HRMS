@@ -2,29 +2,69 @@ import Hospital from "../models/Hospital.js";
 import { MENU } from "../config/menuConfig.js";
 
 export const getMenu = async (req, res) => {
-  const user = req.user;
+  try {
+    const user = req.user;
 
-  if (!user) {
-    return res.status(401).json({ message: "Not authenticated" });
+    if (!user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    /* ================= LOAD HOSPITAL FEATURES ================= */
+    let features = {};
+
+    if (user.hospital) {
+      const hospital = await Hospital.findById(user.hospital)
+        .select("features")
+        .lean();
+
+      features = hospital?.features || {};
+    }
+
+    /* ================= FILTER MENU ================= */
+    const menu = MENU
+      .filter((section) => {
+        // Role-based visibility
+        if (section.roles && !section.roles.includes(user.role)) {
+          return false;
+        }
+
+        // Section-level feature toggle
+        if (section.feature && !features[section.feature]) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((section) => {
+        const items = section.items.filter((item) => {
+          // Feature toggle per item
+          if (item.feature && !features[item.feature]) {
+            return false;
+          }
+
+          // Hidden items → SUPER_ADMIN only
+          if (item.hidden && user.role !== "SUPER_ADMIN") {
+            return false;
+          }
+
+          return true;
+        });
+
+        return {
+          section: section.section,
+          items,
+        };
+      })
+      .filter((section) => section.items.length > 0); // no empty sections
+
+    /* ================= RESPONSE ================= */
+    res.json({
+      role: user.role,
+      hospital: user.hospital || null,
+      menu,
+    });
+  } catch (err) {
+    console.error("Menu error:", err);
+    res.status(500).json({ message: "Failed to load menu" });
   }
-
-  let hospital = null;
-  if (user.hospital) {
-    hospital = await Hospital.findById(user.hospital).lean();
-  }
-
-  const features = hospital?.features || {};
-
-  const filteredMenu = MENU.filter((section) => {
-    if (section.roles && !section.roles.includes(user.role)) return false;
-    if (section.feature && !features[section.feature]) return false;
-    return true;
-  }).map((section) => ({
-    ...section,
-    items: section.items.filter(
-      (item) => !item.hidden || user.role === "SUPER_ADMIN"
-    ),
-  }));
-
-  res.json(filteredMenu);
 };
