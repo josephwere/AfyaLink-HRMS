@@ -1,7 +1,10 @@
+// backend/routes/auditRoutes.js
+
 import express from "express";
 import { protect, requireRole } from "../middleware/auth.js";
 import { featureGuard } from "../middleware/featureGuard.js";
 import AuditLog from "../models/AuditLog.js";
+import Hospital from "../models/Hospital.js";
 
 const router = express.Router();
 
@@ -47,9 +50,22 @@ router.get(
       }
 
       /* ================= TENANCY ISOLATION ================= */
-      // SUPER_ADMIN → full visibility
-      // HOSPITAL_ADMIN → hospital-scoped
       if (req.user.role === "HOSPITAL_ADMIN") {
+        // 🔒 Ensure hospital still active
+        const hospital = await Hospital.findOne({
+          _id: req.user.hospital,
+          active: true,
+        }).select("_id");
+
+        if (!hospital) {
+          return res.json({
+            data: [],
+            total: 0,
+            page: Number(page),
+            pageSize: Number(limit),
+          });
+        }
+
         filter.hospital = req.user.hospital;
       }
 
