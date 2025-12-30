@@ -8,6 +8,9 @@ import { denyAudit } from "./middleware/denyAudit.js";
 import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
 import { trace } from "./middleware/traceMiddleware.js";
 import breakGlassRoutes from "./routes/breakGlassRoutes.js";
+import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
+
+
 
 
 // Load env
@@ -110,6 +113,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
 app.use("/api/break-glass", breakGlassRoutes);
+app.use("/api/admin", adminEmergencyRoutes);
 
 // =======================================================
 // WORKFLOW (READ-ONLY, NO MUTATIONS)
