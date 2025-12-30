@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "../../utils/axios"; // adjust if your axios path differs
+import apiFetch from "../../utils/apiFetch";
 
-export default function Page() {
+export default function Dashboard() {
   const [unverifiedCount, setUnverifiedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const res = await axios.get("/admin/dashboard");
+        const res = await apiFetch.get("/admin/dashboard");
         setUnverifiedCount(res.data?.stats?.unverifiedUsers || 0);
       } catch (err) {
         console.error("Admin stats failed:", err);
@@ -69,4 +69,4 @@ export default function Page() {
       </div>
     </div>
   );
-    }
+}
