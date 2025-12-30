@@ -26,7 +26,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: true,
-      select: false, // IMPORTANT
+      select: false,
     },
 
     /* ---------------- ROLE (RBAC) ---------------- */
@@ -46,6 +46,13 @@ const userSchema = new Schema(
       index: true,
     },
 
+    /* 🔒 PROTECTED ACCOUNT (SUPER_ADMIN SAFETY) */
+    protectedAccount: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
     /* ---------------- EMAIL VERIFICATION ---------------- */
     emailVerified: {
       type: Boolean,
@@ -54,14 +61,13 @@ const userSchema = new Schema(
 
     emailVerifiedAt: Date,
 
-    // ⬇️ NEW (NON-BREAKING)
     verificationDeadline: {
       type: Date,
       index: true,
     },
 
     verificationRemindersSent: {
-      type: [String], // ["14d", "3d", "2h"]
+      type: [String],
       default: [],
       select: false,
     },
@@ -72,17 +78,17 @@ const userSchema = new Schema(
       default: true,
     },
 
-    /* ---------------- GOOGLE---------------- */
-  googleId: {
-  type: String,
-  index: true,
-},
+    /* ---------------- GOOGLE ---------------- */
+    googleId: {
+      type: String,
+      index: true,
+    },
 
-authProvider: {
-  type: String,
-  enum: ["local", "google"],
-  default: "local",
-},
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
 
     /* ---------------- TOKENS ---------------- */
     refreshTokens: {
@@ -112,11 +118,35 @@ authProvider: {
 );
 
 /* ======================================================
-   PASSWORD HASH (SINGLE SOURCE OF TRUTH)
+   AUTO-PROTECT SUPER_ADMIN
+====================================================== */
+userSchema.pre("save", function (next) {
+  if (this.role === "SUPER_ADMIN") {
+    this.protectedAccount = true;
+  }
+  next();
+});
+
+/* ======================================================
+   BLOCK DELETION OF SUPER_ADMIN
+====================================================== */
+async function preventSuperAdminDelete(next) {
+  const user = await this.model.findOne(this.getQuery());
+  if (user?.role === "SUPER_ADMIN" || user?.protectedAccount) {
+    return next(new Error("SUPER_ADMIN accounts cannot be deleted"));
+  }
+  next();
+}
+
+userSchema.pre("deleteOne", { document: false, query: true }, preventSuperAdminDelete);
+userSchema.pre("findOneAndDelete", preventSuperAdminDelete);
+userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
+
+/* ======================================================
+   PASSWORD HASH
 ====================================================== */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
