@@ -1,9 +1,11 @@
+// backend/middleware/planGuard.js
+
 import Hospital from "../models/Hospital.js";
-import Subscription from "../models/Subscription.js";
 import { denyAudit } from "./denyAudit.js";
 
 /**
  * PLAN + LIMIT + FEATURE ENFORCEMENT
+ * Source of truth: Hospital
  */
 export const planGuard =
   ({ feature, limitKey }) =>
@@ -12,35 +14,26 @@ export const planGuard =
       const hospitalId = req.user.hospitalId;
       if (!hospitalId) return next();
 
-      const hospital = await Hospital.findById(hospitalId).lean();
-      if (!hospital || !hospital.active) {
-        return res.status(403).json({ message: "Hospital inactive" });
-      }
+      const hospital = await Hospital.findOne({
+        _id: hospitalId,
+        active: true,
+      }).lean();
 
-      const subscription = await Subscription.findOne({
-        hospital: hospitalId,
-        status: "ACTIVE",
-      })
-        .populate("plan")
-        .lean();
-
-      if (!subscription || !subscription.plan) {
+      if (!hospital) {
         return res.status(403).json({
-          message: "No active subscription",
+          message: "Hospital inactive",
         });
       }
 
-      const plan = subscription.plan;
-
       /* ================= FEATURE CHECK ================= */
-      if (feature && !plan.features?.[feature]) {
+      if (feature && !hospital.features?.[feature]) {
         await denyAudit(
           req,
           res,
           `Feature '${feature}' blocked by plan`
         );
 
-        return res.status(402).json({
+        return res.status(403).json({
           message: "Upgrade plan to access this feature",
         });
       }
@@ -48,10 +41,19 @@ export const planGuard =
       /* ================= LIMIT CHECK ================= */
       if (limitKey) {
         const current = await getUsageCount(limitKey, hospitalId);
-        const allowed = plan.limits?.[limitKey];
+        const allowed = hospital.limits?.[limitKey];
 
-        if (allowed !== undefined && current >= allowed) {
-          return res.status(402).json({
+        if (
+          typeof allowed === "number" &&
+          current >= allowed
+        ) {
+          await denyAudit(
+            req,
+            res,
+            `Plan limit exceeded (${limitKey})`
+          );
+
+          return res.status(429).json({
             message: `Plan limit reached (${limitKey})`,
           });
         }
@@ -66,21 +68,25 @@ export const planGuard =
 /* ================= USAGE COUNTS ================= */
 async function getUsageCount(key, hospitalId) {
   switch (key) {
-    case "users":
-      return (
-        await import("../models/User.js")
-      ).default.countDocuments({
+    case "users": {
+      const { default: User } = await import(
+        "../models/User.js"
+      );
+      return User.countDocuments({
         hospital: hospitalId,
         active: true,
       });
+    }
 
-    case "patients":
-      return (
-        await import("../models/Patient.js")
-      ).default.countDocuments({
+    case "patients": {
+      const { default: Patient } = await import(
+        "../models/Patient.js"
+      );
+      return Patient.countDocuments({
         hospital: hospitalId,
         active: true,
       });
+    }
 
     default:
       return 0;
