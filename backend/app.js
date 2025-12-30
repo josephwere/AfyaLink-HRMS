@@ -5,6 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
 import { denyAudit } from "./middleware/denyAudit.js";
+import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
 
 // Load env
 const env = dotenv.config();
@@ -138,6 +139,7 @@ app.use("/api/branches", branchesRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/appointments_admin", appointmentsAdminRoutes);
+app.use("/api/hospital-admin", hospitalAdminRoutes);
 
 // =======================================================
 // CLINICAL
