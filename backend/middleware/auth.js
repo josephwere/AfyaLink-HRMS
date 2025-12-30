@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 ====================================================== */
 export default function auth(req, res, next) {
   try {
-    // ✅ Allow refresh endpoint to bypass access-token auth
+    // Allow refresh endpoint to bypass access-token auth
     if (req.originalUrl === "/api/auth/refresh") {
       return next();
     }
@@ -19,18 +19,14 @@ export default function auth(req, res, next) {
     }
 
     const token = header.split(" ")[1];
-
-    // ✅ MUST match token creation
     const decoded = jwt.verify(token, process.env.ACCESS_SECRET);
 
-    // ✅ Attach trusted user info
     req.user = {
       id: decoded.id,
       role: decoded.role,
       twoFactorVerified: decoded.twoFactorVerified,
     };
 
-    // 🔐 Enforce 2FA only if explicitly false
     if (decoded.twoFactorVerified === false) {
       return res.status(403).json({
         message: "2FA verification required",
