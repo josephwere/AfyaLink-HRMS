@@ -40,21 +40,24 @@ const hospitalSchema = new mongoose.Schema(
       adminCreation: { type: Boolean, default: false },
     },
 
+    /* ================= SOFT DELETE ================= */
     active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
 /* ======================================================
-   🧠 HOSPITAL ONBOARDING DEFAULTS (PLAN-BASED)
+   🧠 HOSPITAL ONBOARDING DEFAULTS (PLAN-BASED, SAFE)
+   - Applies on creation
+   - Applies on plan change
+   - NEVER overwrites manual admin overrides
 ====================================================== */
 hospitalSchema.pre("save", function (next) {
-  // Apply only on creation OR when plan changes
   if (!this.isNew && !this.isModified("plan")) return next();
 
-  switch (this.plan) {
-    case "FREE":
-      this.features = {
+  const planDefaults = {
+    FREE: {
+      features: {
         ai: false,
         payments: false,
         pharmacy: false,
@@ -63,16 +66,16 @@ hospitalSchema.pre("save", function (next) {
         realtime: false,
         auditLogs: false,
         adminCreation: false,
-      };
-      this.limits = {
+      },
+      limits: {
         users: 5,
         patients: 100,
         storageMB: 512,
-      };
-      break;
+      },
+    },
 
-    case "BASIC":
-      this.features = {
+    BASIC: {
+      features: {
         ai: true,
         payments: true,
         pharmacy: false,
@@ -81,16 +84,16 @@ hospitalSchema.pre("save", function (next) {
         realtime: false,
         auditLogs: true,
         adminCreation: false,
-      };
-      this.limits = {
+      },
+      limits: {
         users: 20,
         patients: 1000,
         storageMB: 2048,
-      };
-      break;
+      },
+    },
 
-    case "PRO":
-      this.features = {
+    PRO: {
+      features: {
         ai: true,
         payments: true,
         pharmacy: true,
@@ -99,16 +102,16 @@ hospitalSchema.pre("save", function (next) {
         realtime: true,
         auditLogs: true,
         adminCreation: true,
-      };
-      this.limits = {
+      },
+      limits: {
         users: 100,
         patients: 10000,
         storageMB: 10240,
-      };
-      break;
+      },
+    },
 
-    case "ENTERPRISE":
-      this.features = {
+    ENTERPRISE: {
+      features: {
         ai: true,
         payments: true,
         pharmacy: true,
@@ -117,14 +120,27 @@ hospitalSchema.pre("save", function (next) {
         realtime: true,
         auditLogs: true,
         adminCreation: true,
-      };
-      this.limits = {
+      },
+      limits: {
         users: 1000,
         patients: 100000,
         storageMB: 51200,
-      };
-      break;
-  }
+      },
+    },
+  };
+
+  const defaults = planDefaults[this.plan];
+
+  /* 🧠 MERGE — preserve admin overrides */
+  this.features = {
+    ...defaults.features,
+    ...this.features,
+  };
+
+  this.limits = {
+    ...defaults.limits,
+    ...this.limits,
+  };
 
   next();
 });
