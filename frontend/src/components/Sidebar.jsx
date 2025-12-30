@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { useCan } from "../hooks/useCan";
+import { fetchMenu } from "../services/menuApi";
 
 export default function Sidebar() {
   const { user } = useAuth();
   const { can } = useCan();
+  const [dynamicMenu, setDynamicMenu] = useState([]);
+
+  useEffect(() => {
+    fetchMenu()
+      .then((res) => setDynamicMenu(res.menu || []))
+      .catch(() => setDynamicMenu([]));
+  }, []);
 
   if (!user) return null;
 
@@ -30,8 +38,8 @@ export default function Sidebar() {
       </span>
     ) : null;
 
-  /* ================= GUEST (DEMO MODE) ================= */
-  if (user.role === "guest") {
+  /* ================= GUEST ================= */
+  if (user.role === "GUEST") {
     return (
       <aside className="sidebar">
         <nav>
@@ -42,9 +50,7 @@ export default function Sidebar() {
 
             <Section title="Demo">
               {can("ai", "chat") && <Item to="/ai/chatbot">AI Chatbot</Item>}
-              {can("ai", "medical") && (
-                <Item to="/ai/medical">AI Assistant</Item>
-              )}
+              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
             </Section>
           </ul>
         </nav>
@@ -54,8 +60,7 @@ export default function Sidebar() {
     );
   }
 
-  /* ================= AUTHENTICATED USERS ================= */
-
+  /* ================= AUTHENTICATED ================= */
   return (
     <aside className="sidebar">
       <nav>
@@ -66,6 +71,17 @@ export default function Sidebar() {
               Home <UnverifiedBadge />
             </Link>
           </li>
+
+          {/* ================= BACKEND-DRIVEN MENU ================= */}
+          {dynamicMenu.map((section) => (
+            <Section key={section.section} title={section.section}>
+              {section.items.map((item) => (
+                <Item key={item.path} to={item.path}>
+                  {item.label}
+                </Item>
+              ))}
+            </Section>
+          ))}
 
           {/* ================= SUPER ADMIN ================= */}
           {can("superadmin", "read") && (
@@ -78,8 +94,7 @@ export default function Sidebar() {
                 <Item to="/reports">Reports</Item>
               </Section>
 
-              {/* 🔐 SECURITY & GOVERNANCE */}
-              <Section title="Security">
+              <Section title="Security & Governance">
                 <Item to="/admin/create-admin">Create Admin</Item>
                 <Item to="/admin/audit-logs">Audit Logs</Item>
               </Section>
@@ -113,31 +128,21 @@ export default function Sidebar() {
               {can("appointments", "read") && (
                 <Item to="/doctor/appointments">Appointments</Item>
               )}
-              {can("ai", "medical") && (
-                <Item to="/ai/medical">AI Assistant</Item>
-              )}
-              {can("ai", "triage") && (
-                <Item to="/ai/triage">Triage</Item>
-              )}
-              {can("ai", "voice") && (
-                <Item to="/ai/voice">Voice Dictation</Item>
-              )}
+              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
+              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
+              {can("ai", "voice") && <Item to="/ai/voice">Voice Dictation</Item>}
             </Section>
           )}
 
           {/* ================= NURSE ================= */}
           {can("nurse", "read") && (
             <Section title="Nurse">
-              {can("ai", "medical") && (
-                <Item to="/ai/medical">AI Assistant</Item>
-              )}
-              {can("ai", "triage") && (
-                <Item to="/ai/triage">Triage</Item>
-              )}
+              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
+              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
             </Section>
           )}
 
-          {/* ================= LAB TECH ================= */}
+          {/* ================= LAB ================= */}
           {can("lab", "read") && (
             <Section title="Laboratory">
               <Item to="/labtech/labs">Lab Tests</Item>
@@ -149,12 +154,8 @@ export default function Sidebar() {
           {can("patient", "read") && (
             <Section title="Patient">
               <Item to="/patient">Dashboard</Item>
-              {can("payments", "read") && (
-                <Item to="/payments">Payments</Item>
-              )}
-              {can("ai", "chat") && (
-                <Item to="/ai/chatbot">Health Chatbot</Item>
-              )}
+              {can("payments", "read") && <Item to="/payments">Payments</Item>}
+              {can("ai", "chat") && <Item to="/ai/chatbot">Health Chatbot</Item>}
             </Section>
           )}
 
@@ -187,9 +188,7 @@ export default function Sidebar() {
   );
 }
 
-/* ======================================================
-   SMALL HELPERS
-====================================================== */
+/* ================= HELPERS ================= */
 
 function Section({ title, children }) {
   return (
@@ -206,4 +205,4 @@ function Item({ to, children }) {
       <Link to={to}>{children}</Link>
     </li>
   );
-            }
+        }
