@@ -9,7 +9,7 @@ const API_BASE = import.meta.env.VITE_API_URL;
  * - Silent refresh on 401
  * - Infinite-loop protection
  */
-export async function apiFetch(path, options = {}, _retry = false) {
+async function apiFetch(path, options = {}, _retry = false) {
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -82,3 +82,7 @@ export function logout() {
   localStorage.removeItem("token");
   window.location.href = "/login";
 }
+
+/* ✅ EXPORTS (THIS FIXES VITE BUILD) */
+export default apiFetch;
+export { apiFetch };
