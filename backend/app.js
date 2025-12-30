@@ -59,7 +59,7 @@ import insuranceRoutes from "./routes/insuranceRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
 
-app.use("/api/menu", menuRoutes);
+
 
 // 🔐 WORKFLOW (READ-ONLY)
 import workflowRoutes from "./routes/workflowRoutes.js";
@@ -189,6 +189,7 @@ app.use("/api/integrations/dlq-admin", dlqAdminRoutes);
 app.use("/api/mapping", mappingRoutes);
 app.use("/api/offline", offlineRoutes);
 app.use("/api/admin/kpis", kpiRoutes);
+app.use("/api/menu", menuRoutes);
 
 // =======================================================
 // CRDT & SIGNALING
