@@ -4,8 +4,18 @@ import { authorize } from "../middleware/authorize.js";
 import { featureGuard } from "../middleware/featureGuard.js";
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
+import { revokeEmergencyAccess } from "../controllers/adminController.js";
 
 const router = express.Router();
+/* ======================================================
+   🚨 SUPERADMIN — REVOKE EMERGENCY ACCESS
+====================================================== */
+router.post(
+  "/emergency/:hospitalId/revoke",
+  auth,
+  authorize("superadmin", "emergency.revoke"),
+  revokeEmergencyAccess
+);
 
 /* ======================================================
    CREATE ADMIN — SUPER_ADMIN ONLY
