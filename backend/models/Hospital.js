@@ -17,6 +17,18 @@ const hospitalSchema = new mongoose.Schema(
       storageMB: Number,
     },
 
+    /* ================= FEATURE TOGGLES ================= */
+    features: {
+      ai: { type: Boolean, default: false },
+      payments: { type: Boolean, default: false },
+      pharmacy: { type: Boolean, default: false },
+      inventory: { type: Boolean, default: false },
+      lab: { type: Boolean, default: false },
+      realtime: { type: Boolean, default: false },
+      auditLogs: { type: Boolean, default: false },
+      adminCreation: { type: Boolean, default: false },
+    },
+
     active: { type: Boolean, default: true },
   },
   { timestamps: true }
