@@ -1,32 +1,63 @@
+// backend/routes/userRoutes.js
+
 import express from "express";
-import { getMe, listUsers, updateUser } from "../controllers/userController.js";
-import auth from "../middleware/auth.js";
-import { allowRoles } from "../middleware/roles.js";
+import {
+  getMe,
+  listUsers,
+  updateUser,
+  createUser,
+} from "../controllers/userController.js";
+
+import { protect } from "../middleware/authMiddleware.js";
+import { requireRole } from "../middleware/roleMiddleware.js";
+import { planGuard } from "../middleware/planGuard.js";
 
 const router = express.Router();
 
 /**
- * Get current user (any authenticated user)
+ * ======================================================
+ * 👤 CURRENT USER
+ * ======================================================
  */
-router.get("/me", auth, getMe);
+router.get("/me", protect, getMe);
 
 /**
- * List all users (ADMIN ONLY)
+ * ======================================================
+ * 👥 CREATE USER (STAFF) — PLAN LIMITED
+ * SUPER_ADMIN / HOSPITAL_ADMIN
+ * ======================================================
+ */
+router.post(
+  "/",
+  protect,
+  requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
+  planGuard({ limitKey: "users" }), // 🧍 STAFF LIMIT ENFORCED HERE
+  createUser
+);
+
+/**
+ * ======================================================
+ * 📋 LIST USERS (ACTIVE ONLY)
+ * SUPER_ADMIN / HOSPITAL_ADMIN
+ * ======================================================
  */
 router.get(
   "/",
-  auth,
-  allowRoles("SuperAdmin", "HospitalAdmin"),
+  protect,
+  requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   listUsers
 );
 
 /**
- * Update user (ADMIN ONLY)
+ * ======================================================
+ * ✏️ UPDATE USER
+ * SUPER_ADMIN / HOSPITAL_ADMIN
+ * ======================================================
  */
 router.patch(
   "/:id",
-  auth,
-  allowRoles("SuperAdmin", "HospitalAdmin"),
+  protect,
+  requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   updateUser
 );
 
