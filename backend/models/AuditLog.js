@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
-/* ================= METADATA ================= */
-metadata: {
-  type: Schema.Types.Mixed,
-},
 
 /* ======================================================
    AUDIT LOG — COMPLIANCE GRADE
@@ -63,6 +59,11 @@ const auditLogSchema = new Schema(
     },
 
     error: String,
+
+    /* ================= METADATA ================= */
+    metadata: {
+      type: Schema.Types.Mixed,
+    },
   },
   {
     timestamps: true,
