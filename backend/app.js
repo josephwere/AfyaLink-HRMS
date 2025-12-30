@@ -11,7 +11,8 @@ import breakGlassRoutes from "./routes/breakGlassRoutes.js";
 import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
 
 
-
+// 🔥 Emergency cleanup job (auto-expire)
+import "./jobs/emergencyCleanup.js";
 
 // Load env
 const env = dotenv.config();
