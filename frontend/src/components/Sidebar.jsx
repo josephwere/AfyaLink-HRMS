@@ -60,7 +60,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       <nav>
         <ul>
-          {/* 🔴 HOME BADGE */}
+          {/* HOME */}
           <li>
             <Link to="/">
               Home <UnverifiedBadge />
@@ -69,13 +69,21 @@ export default function Sidebar() {
 
           {/* ================= SUPER ADMIN ================= */}
           {can("superadmin", "read") && (
-            <Section title="Super Admin">
-              <Item to="/superadmin">Dashboard</Item>
-              <Item to="/superadmin/rbac">RBAC</Item>
-              <Item to="/superadmin/ml">ML</Item>
-              <Item to="/analytics">Analytics</Item>
-              <Item to="/reports">Reports</Item>
-            </Section>
+            <>
+              <Section title="Super Admin">
+                <Item to="/superadmin">Dashboard</Item>
+                <Item to="/superadmin/rbac">RBAC</Item>
+                <Item to="/superadmin/ml">ML</Item>
+                <Item to="/analytics">Analytics</Item>
+                <Item to="/reports">Reports</Item>
+              </Section>
+
+              {/* 🔐 SECURITY & GOVERNANCE */}
+              <Section title="Security">
+                <Item to="/admin/create-admin">Create Admin</Item>
+                <Item to="/admin/audit-logs">Audit Logs</Item>
+              </Section>
+            </>
           )}
 
           {/* ================= HOSPITAL ADMIN ================= */}
@@ -165,7 +173,7 @@ export default function Sidebar() {
             </Section>
           )}
 
-          {/* 🔴 PROFILE LINK WITH BADGE */}
+          {/* ================= ACCOUNT ================= */}
           <Section title="Account">
             <Item to="/profile">
               Profile <UnverifiedBadge />
@@ -180,7 +188,7 @@ export default function Sidebar() {
 }
 
 /* ======================================================
-   SMALL HELPERS (CLEAN JSX)
+   SMALL HELPERS
 ====================================================== */
 
 function Section({ title, children }) {
@@ -198,4 +206,4 @@ function Item({ to, children }) {
       <Link to={to}>{children}</Link>
     </li>
   );
-}
+            }
