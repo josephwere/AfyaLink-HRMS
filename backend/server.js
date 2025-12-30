@@ -9,6 +9,7 @@ import { initSocket } from "./utils/socket.js";
 import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
 import seedSuperAdmin from "./seed/superAdmin.js";
+import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 
 dotenv.config();
 
@@ -39,7 +40,17 @@ cron.schedule(
     timezone: "Africa/Nairobi",
   }
 );
+/* ======================================================
+   EmergencyCleanup
+====================================================== */
 
+cron.schedule(
+  "*/5 * * * *",
+  async () => {
+    await cleanupExpiredEmergencyAccess();
+  },
+  { timezone: "Africa/Nairobi" }
+);
 /* ======================================================
    SAFE SOCKET.IO CORS (MATCHES EXPRESS)
 ====================================================== */
