@@ -5,12 +5,17 @@ import {
 } from "../controllers/pharmacyController.js";
 import protect from "../middleware/auth.js";
 import { authorize } from "../middleware/authorize.js";
+import { requireFeature } from "../middleware/requireFeature.js";
 
 const router = express.Router();
 
 /* ======================================================
    PHARMACY WORKFLOW ROUTES (STRICT)
 ====================================================== */
+
+/* 🔐 GLOBAL GUARDS */
+router.use(protect);
+router.use(requireFeature("pharmacy"));
 
 /**
  * CREATE PRESCRIPTION
@@ -19,7 +24,6 @@ const router = express.Router();
  */
 router.post(
   "/prescriptions",
-  protect,
   authorize("doctor", "write"),
   createPrescription
 );
@@ -31,7 +35,6 @@ router.post(
  */
 router.post(
   "/dispense",
-  protect,
   authorize("pharmacy", "write"),
   dispenseMedication
 );
