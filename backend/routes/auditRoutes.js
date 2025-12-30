@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, requireRole } from "../middleware/auth.js";
+import { featureGuard } from "../middleware/featureGuard.js"; // ✅ NEW
 import AuditLog from "../models/AuditLog.js";
 
 const router = express.Router();
@@ -7,14 +8,19 @@ const router = express.Router();
 /**
  * GET /api/audit
  * Filters: actorId, action, resource, from, to
+ *
  * RBAC:
  *  - SUPER_ADMIN → full access
  *  - HOSPITAL_ADMIN → hospital-scoped
+ *
+ * FEATURE FLAG:
+ *  - auditLogs (per-hospital)
  */
 router.get(
   "/",
   protect,
   requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
+  featureGuard("auditLogs"), // 🔐 ENTERPRISE GUARD
   async (req, res) => {
     try {
       const {
@@ -41,8 +47,8 @@ router.get(
       }
 
       /* ================= TENANCY ISOLATION ================= */
-      // SUPER_ADMIN sees everything
-      // HOSPITAL_ADMIN is scoped
+      // SUPER_ADMIN → full visibility
+      // HOSPITAL_ADMIN → scoped
       if (req.user.role === "HOSPITAL_ADMIN") {
         filter.hospital = req.user.hospital;
       }
