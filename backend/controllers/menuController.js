@@ -14,49 +14,45 @@ export const getMenu = async (req, res) => {
     const cacheKey = `menu:${user._id}:${user.role}:${user.hospital || "none"}`;
 
     /* ================= CACHE HIT ================= */
-    const cachedMenu = await cacheGet(cacheKey);
-    if (cachedMenu) {
-      return res.json(cachedMenu);
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
 
     /* ================= LOAD HOSPITAL FEATURES ================= */
     let features = {};
 
     if (user.hospital) {
-      const hospital = await Hospital.findById(user.hospital)
+      const hospital = await Hospital.findOne({
+        _id: user.hospital,
+        active: true, // 🔒 SOFT-DELETE SAFE
+      })
         .select("features")
         .lean();
 
-      features = hospital?.features || {};
+      if (!hospital) {
+        // Hospital deactivated → no access
+        return res.json({
+          role: user.role,
+          hospital: null,
+          menu: [],
+        });
+      }
+
+      features = hospital.features || {};
     }
 
     /* ================= FILTER MENU ================= */
     const menu = MENU
       .filter((section) => {
-        // Role-based visibility
-        if (section.roles && !section.roles.includes(user.role)) {
-          return false;
-        }
-
-        // Section-level feature toggle
-        if (section.feature && !features[section.feature]) {
-          return false;
-        }
-
+        if (section.roles && !section.roles.includes(user.role)) return false;
+        if (section.feature && !features[section.feature]) return false;
         return true;
       })
       .map((section) => {
         const items = section.items.filter((item) => {
-          // Feature toggle per item
-          if (item.feature && !features[item.feature]) {
-            return false;
-          }
-
-          // Hidden items → SUPER_ADMIN only
-          if (item.hidden && user.role !== "SUPER_ADMIN") {
-            return false;
-          }
-
+          if (item.feature && !features[item.feature]) return false;
+          if (item.hidden && user.role !== "SUPER_ADMIN") return false;
           return true;
         });
 
@@ -65,7 +61,7 @@ export const getMenu = async (req, res) => {
           items,
         };
       })
-      .filter((section) => section.items.length > 0); // no empty sections
+      .filter((section) => section.items.length > 0);
 
     const response = {
       role: user.role,
@@ -74,9 +70,8 @@ export const getMenu = async (req, res) => {
     };
 
     /* ================= CACHE STORE ================= */
-    await cacheSet(cacheKey, response, 300); // 5 minutes
+    await cacheSet(cacheKey, JSON.stringify(response), 300); // 5 min
 
-    /* ================= RESPONSE ================= */
     res.json(response);
   } catch (err) {
     console.error("Menu error:", err);
