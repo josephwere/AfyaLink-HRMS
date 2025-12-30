@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Hospital from "../models/Hospital.js";
 import AuditLog from "../models/AuditLog.js";
+import BreakGlass from "../models/BreakGlass.js";
 
 /* ======================================================
    CREATE ADMIN (SUPER_ADMIN ONLY)
@@ -126,6 +127,69 @@ const active = expiresAt ? expiresAt > new Date() : false;
     console.error("Emergency dashboard error:", err);
     res.status(500).json({
       message: "Failed to load emergency dashboard",
+    });
+  }
+};
+
+
+/* ======================================================
+   🚨 SUPERADMIN — REVOKE EMERGENCY ACCESS
+====================================================== */
+export const revokeEmergencyAccess = async (req, res) => {
+  try {
+    if (req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { hospitalId } = req.params;
+
+    /* ================= FIND ACTIVE EMERGENCY ================= */
+    const activeBreakGlass = await BreakGlass.findOne({
+      hospital: hospitalId,
+      active: true,
+    });
+
+    if (!activeBreakGlass) {
+      return res.status(404).json({
+        message: "No active emergency found for this hospital",
+      });
+    }
+
+    /* ================= REVOKE ================= */
+    activeBreakGlass.active = false;
+    activeBreakGlass.metadata = {
+      ...activeBreakGlass.metadata,
+      revokedBy: req.user._id,
+      revokedAt: new Date(),
+    };
+
+    await activeBreakGlass.save();
+
+    /* ================= AUDIT ================= */
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "BREAK_GLASS_REVOKED",
+      resource: "Hospital",
+      resourceId: hospitalId,
+      hospital: hospitalId,
+      success: true,
+      metadata: {
+        breakGlassId: activeBreakGlass._id,
+        originalReason: activeBreakGlass.reason,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Emergency access revoked",
+      hospitalId,
+    });
+  } catch (err) {
+    console.error("Revoke emergency error:", err);
+
+    res.status(500).json({
+      message: "Failed to revoke emergency access",
     });
   }
 };
