@@ -72,6 +72,18 @@ const userSchema = new Schema(
       default: true,
     },
 
+    /* ---------------- GOOGLE---------------- */
+  googleId: {
+  type: String,
+  index: true,
+},
+
+authProvider: {
+  type: String,
+  enum: ["local", "google"],
+  default: "local",
+},
+
     /* ---------------- TOKENS ---------------- */
     refreshTokens: {
       type: [String],
