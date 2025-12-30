@@ -5,6 +5,8 @@ import { featureGuard } from "../middleware/featureGuard.js";
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 import { revokeEmergencyAccess } from "../controllers/adminController.js";
+import { emergencyAnalytics } from "../controllers/emergencyAnalyticsController.js";
+
 
 const router = express.Router();
 /* ======================================================
@@ -17,6 +19,15 @@ router.post(
   revokeEmergencyAccess
 );
 
+/* ======================================================
+   Emergency Analytics 
+====================================================== */
+router.get(
+  "/emergency-analytics",
+  auth,
+  authorize("superadmin", "read"),
+  emergencyAnalytics
+);
 /* ======================================================
    CREATE ADMIN — SUPER_ADMIN ONLY
 ====================================================== */
