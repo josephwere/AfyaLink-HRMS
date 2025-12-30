@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import { denyAudit } from "../middleware/denyAudit.js";
+import { audit } from "../utils/audit.js";
 
 /**
  * GET /api/users/me
@@ -7,6 +8,12 @@ import { denyAudit } from "../middleware/denyAudit.js";
  */
 export const getMe = async (req, res, next) => {
   try {
+    if (!req.user.active) {
+      return res.status(403).json({
+        message: "Account inactive",
+      });
+    }
+
     res.json(req.user);
   } catch (err) {
     next(err);
@@ -15,13 +22,13 @@ export const getMe = async (req, res, next) => {
 
 /**
  * GET /api/users
- * List users within SAME hospital only
+ * List ACTIVE users within SAME hospital only
  */
 export const listUsers = async (req, res, next) => {
   try {
-    // 🔐 Tenant isolation
     const users = await User.find({
-      hospital: req.user.hospitalId,
+      hospital: req.user.hospitalId, // 🔐 tenant scoped
+      active: true,                 // 🔒 soft-delete filter
     })
       .select("-password")
       .limit(500);
@@ -34,7 +41,7 @@ export const listUsers = async (req, res, next) => {
 
 /**
  * PUT /api/users/:id
- * Update user (same hospital only)
+ * Update user (same hospital only, active only)
  */
 export const updateUser = async (req, res, next) => {
   try {
@@ -42,11 +49,13 @@ export const updateUser = async (req, res, next) => {
     const updates = { ...req.body };
 
     // 🔐 Password changes handled elsewhere
-    if (updates.password) delete updates.password;
+    delete updates.password;
+    delete updates.hospital;
+    delete updates.active;
 
     const user = await User.findById(id);
 
-    if (!user) {
+    if (!user || !user.active) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -69,9 +78,60 @@ export const updateUser = async (req, res, next) => {
     Object.assign(user, updates);
     await user.save();
 
+    await audit({
+      req,
+      action: "UPDATE_USER",
+      resource: "User",
+      resourceId: user._id,
+    });
+
     res.json(
       user.toObject({ getters: true, versionKey: false })
     );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * DEACTIVATE USER (SOFT DELETE)
+ * ✔ audit-safe
+ * ✔ tenant-safe
+ * ✔ reversible
+ */
+export const deactivateUser = async (req, res, next) => {
+  try {
+    // 🚫 Prevent self-deactivation
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot deactivate your own account",
+      });
+    }
+
+    const user = await User.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        hospital: req.user.hospitalId, // 🔐 tenant scoped
+        active: true,
+      },
+      { active: false },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await audit({
+      req,
+      action: "DEACTIVATE_USER",
+      resource: "User",
+      resourceId: user._id,
+    });
+
+    res.json({
+      message: "User deactivated",
+    });
   } catch (err) {
     next(err);
   }
