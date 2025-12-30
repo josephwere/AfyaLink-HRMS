@@ -10,6 +10,8 @@ export const getMenu = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
+    const isSuperAdmin = user.role === "SUPER_ADMIN";
+
     /* ================= CACHE KEY ================= */
     const cacheKey = `menu:${user._id}:${user.role}:${user.hospital || "none"}`;
 
@@ -30,7 +32,7 @@ export const getMenu = async (req, res) => {
         .select("features")
         .lean();
 
-      if (!hospital) {
+      if (!hospital && !isSuperAdmin) {
         // Hospital deactivated → no access
         return res.json({
           role: user.role,
@@ -39,20 +41,22 @@ export const getMenu = async (req, res) => {
         });
       }
 
-      features = hospital.features || {};
+      features = hospital?.features || {};
     }
 
     /* ================= FILTER MENU ================= */
     const menu = MENU
       .filter((section) => {
         if (section.roles && !section.roles.includes(user.role)) return false;
-        if (section.feature && !features[section.feature]) return false;
+        if (section.feature && !features[section.feature] && !isSuperAdmin)
+          return false;
         return true;
       })
       .map((section) => {
         const items = section.items.filter((item) => {
-          if (item.feature && !features[item.feature]) return false;
-          if (item.hidden && user.role !== "SUPER_ADMIN") return false;
+          if (item.feature && !features[item.feature] && !isSuperAdmin)
+            return false;
+          if (item.hidden && !isSuperAdmin) return false;
           return true;
         });
 
@@ -70,7 +74,7 @@ export const getMenu = async (req, res) => {
     };
 
     /* ================= CACHE STORE ================= */
-    await cacheSet(cacheKey, JSON.stringify(response), 300); // 5 min
+    await cacheSet(cacheKey, JSON.stringify(response), 300); // 5 minutes
 
     res.json(response);
   } catch (err) {
