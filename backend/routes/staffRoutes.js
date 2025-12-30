@@ -1,23 +1,69 @@
-// routes/staffRoutes.js
-import express from 'express';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
+// backend/routes/staffRoutes.js
+
+import express from "express";
+import { authenticate, authorize } from "../middleware/authMiddleware.js";
+import { planGuard } from "../middleware/planGuard.js";
+
 import {
   getAllStaff,
   getStaffById,
   createStaff,
   updateStaff,
-  deleteStaff
-} from '../controllers/staffController.js';
+  deactivateStaff, // 👈 soft delete
+} from "../controllers/staffController.js";
 
 const router = express.Router();
 
-// Hospital Admin or Super Admin
-router.use(authenticate, authorize(['hospitaladmin', 'superadmin']));
+/**
+ * ======================================================
+ * 🔐 AUTH + ROLE GUARD
+ * ======================================================
+ */
+router.use(
+  authenticate,
+  authorize(["hospitaladmin", "superadmin"])
+);
 
-router.get('/', getAllStaff);
-router.get('/:id', getStaffById);
-router.post('/', createStaff);
-router.put('/:id', updateStaff);
-router.delete('/:id', deleteStaff);
+/**
+ * ======================================================
+ * 👥 LIST STAFF
+ * ======================================================
+ */
+router.get("/", getAllStaff);
+
+/**
+ * ======================================================
+ * 👤 GET STAFF BY ID
+ * ======================================================
+ */
+router.get("/:id", getStaffById);
+
+/**
+ * ======================================================
+ * ➕ CREATE STAFF — PLAN LIMITED
+ * ======================================================
+ */
+router.post(
+  "/",
+  planGuard({ limitKey: "users" }), // 🧍 STAFF LIMIT ENFORCED
+  createStaff
+);
+
+/**
+ * ======================================================
+ * ✏️ UPDATE STAFF
+ * ======================================================
+ */
+router.put("/:id", updateStaff);
+
+/**
+ * ======================================================
+ * 🚫 DEACTIVATE STAFF (SOFT DELETE)
+ * ✔ reversible
+ * ✔ auditable
+ * ✔ compliant
+ * ======================================================
+ */
+router.patch("/:id/deactivate", deactivateStaff);
 
 export default router;
