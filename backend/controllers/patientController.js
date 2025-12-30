@@ -1,16 +1,56 @@
 import Patient from "../models/Patient.js";
+import Hospital from "../models/Hospital.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 
 /**
  * CREATE PATIENT
- * Hospital is forced from logged-in user
+ * ✔ Hospital enforced from logged-in user
+ * ✔ Patient limit enforced
+ * ✔ Soft-delete safe
  */
 export const createPatient = async (req, res, next) => {
   try {
+    const hospitalId = req.user.hospitalId;
+
+    /* ================= LOAD HOSPITAL LIMITS ================= */
+    const hospital = await Hospital.findOne({
+      _id: hospitalId,
+      active: true,
+    }).select("limits");
+
+    if (!hospital) {
+      return res.status(403).json({
+        message: "Hospital inactive or not found",
+      });
+    }
+
+    /* ================= COUNT ACTIVE PATIENTS ================= */
+    const patientCount = await Patient.countDocuments({
+      hospital: hospitalId,
+      active: true,
+    });
+
+    if (
+      hospital.limits?.patients &&
+      patientCount >= hospital.limits.patients
+    ) {
+      await denyAudit(
+        req,
+        res,
+        "Patient limit exceeded"
+      );
+
+      return res.status(403).json({
+        message:
+          "Patient limit reached. Upgrade plan to add more patients.",
+      });
+    }
+
+    /* ================= CREATE PATIENT ================= */
     const patient = await Patient.create({
       ...req.body,
-      hospital: req.user.hospitalId, // 🔐 enforce tenant
+      hospital: hospitalId, // 🔐 tenant enforced
       createdBy: req.user._id,
       active: true,
     });
