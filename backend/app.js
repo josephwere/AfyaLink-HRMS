@@ -7,7 +7,7 @@ import dotenvExpand from "dotenv-expand";
 import { denyAudit } from "./middleware/denyAudit.js";
 import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
 import { trace } from "./middleware/traceMiddleware.js";
-
+import breakGlassRoutes from "./routes/breakGlassRoutes.js";
 
 
 // Load env
@@ -109,6 +109,7 @@ app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
+app.use("/api/break-glass", breakGlassRoutes);
 
 // =======================================================
 // WORKFLOW (READ-ONLY, NO MUTATIONS)
