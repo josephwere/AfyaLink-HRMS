@@ -9,6 +9,8 @@ import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
 import { trace } from "./middleware/traceMiddleware.js";
 import breakGlassRoutes from "./routes/breakGlassRoutes.js";
 import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
+import emergencyRoutes from "./routes/emergencyRoutes.js";
+
 
 
 // 🔥 Emergency cleanup job (auto-expire)
@@ -115,6 +117,7 @@ app.use(morgan("dev"));
 app.use(trace);
 app.use("/api/break-glass", breakGlassRoutes);
 app.use("/api/admin", adminEmergencyRoutes);
+app.use("/api/emergency", emergencyRoutes);
 
 // =======================================================
 // WORKFLOW (READ-ONLY, NO MUTATIONS)
