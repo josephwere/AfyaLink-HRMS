@@ -16,6 +16,13 @@ export const getHospitalConfig = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
+    /* 🔒 SOFT-DELETE GUARD */
+    if (hospital.active === false) {
+      return res.status(403).json({
+        message: "Hospital is deactivated",
+      });
+    }
+
     res.json(hospital);
   } catch (err) {
     res.status(500).json({ message: "Failed to load hospital config" });
@@ -33,6 +40,13 @@ export const updateHospitalFeatures = async (req, res) => {
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) {
       return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    /* 🔒 SOFT-DELETE GUARD */
+    if (hospital.active === false) {
+      return res.status(403).json({
+        message: "Cannot update features for deactivated hospital",
+      });
     }
 
     const before = { ...hospital.features };
