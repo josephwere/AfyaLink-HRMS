@@ -90,6 +90,17 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
+/* ================= BREAK-GLASS ================= */
+emergencyAccess: {
+  active: { type: Boolean, default: false, index: true },
+  reason: { type: String },
+  triggeredBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
+  triggeredAt: Date,
+  expiresAt: { type: Date, index: true },
+}
 /* ======================================================
    🔐 AUTO-PROTECT SUPER_ADMIN
 ====================================================== */
