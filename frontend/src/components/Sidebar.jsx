@@ -8,11 +8,18 @@ export default function Sidebar() {
   const { user } = useAuth();
   const { can } = useCan();
   const [dynamicMenu, setDynamicMenu] = useState([]);
+  const [menuLoaded, setMenuLoaded] = useState(false);
 
   useEffect(() => {
     fetchMenu()
-      .then((res) => setDynamicMenu(res.menu || []))
-      .catch(() => setDynamicMenu([]));
+      .then((res) => {
+        setDynamicMenu(res.menu || []);
+        setMenuLoaded(true);
+      })
+      .catch(() => {
+        setDynamicMenu([]);
+        setMenuLoaded(true);
+      });
   }, []);
 
   if (!user) return null;
@@ -50,7 +57,9 @@ export default function Sidebar() {
 
             <Section title="Demo">
               {can("ai", "chat") && <Item to="/ai/chatbot">AI Chatbot</Item>}
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
+              {can("ai", "medical") && (
+                <Item to="/ai/medical">AI Assistant</Item>
+              )}
             </Section>
           </ul>
         </nav>
@@ -72,106 +81,119 @@ export default function Sidebar() {
             </Link>
           </li>
 
-          {/* ================= BACKEND-DRIVEN MENU ================= */}
-          {dynamicMenu.map((section) => (
-            <Section key={section.section} title={section.section}>
-              {section.items.map((item) => (
-                <Item key={item.path} to={item.path}>
-                  {item.label}
-                </Item>
-              ))}
-            </Section>
-          ))}
+          {/* ================= BACKEND MENU (PRIMARY) ================= */}
+          {menuLoaded &&
+            dynamicMenu.length > 0 &&
+            dynamicMenu.map((section) => (
+              <Section key={section.section} title={section.section}>
+                {section.items.map((item) => (
+                  <Item key={item.path} to={item.path}>
+                    {item.label}
+                  </Item>
+                ))}
+              </Section>
+            ))}
 
-          {/* ================= SUPER ADMIN ================= */}
-          {can("superadmin", "read") && (
+          {/* ================= STATIC FALLBACK (ONLY IF BACKEND EMPTY) ================= */}
+          {menuLoaded && dynamicMenu.length === 0 && (
             <>
-              <Section title="Super Admin">
-                <Item to="/superadmin">Dashboard</Item>
-                <Item to="/superadmin/rbac">RBAC</Item>
-                <Item to="/superadmin/ml">ML</Item>
-                <Item to="/analytics">Analytics</Item>
-                <Item to="/reports">Reports</Item>
-              </Section>
+              {can("superadmin", "read") && (
+                <>
+                  <Section title="Super Admin">
+                    <Item to="/superadmin">Dashboard</Item>
+                    <Item to="/superadmin/rbac">RBAC</Item>
+                    <Item to="/superadmin/ml">ML</Item>
+                    <Item to="/analytics">Analytics</Item>
+                    <Item to="/reports">Reports</Item>
+                  </Section>
 
-              <Section title="Security & Governance">
-                <Item to="/admin/create-admin">Create Admin</Item>
-                <Item to="/admin/audit-logs">Audit Logs</Item>
-              </Section>
-            </>
-          )}
-
-          {/* ================= HOSPITAL ADMIN ================= */}
-          {can("hospital", "manage") && (
-            <>
-              <Section title="Hospital Admin">
-                <Item to="/hospitaladmin">Dashboard</Item>
-                <Item to="/hospitaladmin/patients">Patients</Item>
-                <Item to="/hospitaladmin/financials">Financials</Item>
-                <Item to="/hospitaladmin/branches">Branches</Item>
-                <Item to="/inventory">Inventory</Item>
-                <Item to="/pharmacy">Pharmacy</Item>
-              </Section>
-
-              <Section title="Integrations">
-                <Item to="/admin/realtime">Webhooks</Item>
-                <Item to="/admin/crdt-patients">CRDT Editor</Item>
-                <Item to="/admin/notifications">Notifications</Item>
-              </Section>
-            </>
-          )}
-
-          {/* ================= DOCTOR ================= */}
-          {can("doctor", "read") && (
-            <Section title="Doctor">
-              <Item to="/doctor">Dashboard</Item>
-              {can("appointments", "read") && (
-                <Item to="/doctor/appointments">Appointments</Item>
+                  <Section title="Security & Governance">
+                    <Item to="/admin/create-admin">Create Admin</Item>
+                    <Item to="/admin/audit-logs">Audit Logs</Item>
+                  </Section>
+                </>
               )}
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
-              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
-              {can("ai", "voice") && <Item to="/ai/voice">Voice Dictation</Item>}
-            </Section>
-          )}
 
-          {/* ================= NURSE ================= */}
-          {can("nurse", "read") && (
-            <Section title="Nurse">
-              {can("ai", "medical") && <Item to="/ai/medical">AI Assistant</Item>}
-              {can("ai", "triage") && <Item to="/ai/triage">Triage</Item>}
-            </Section>
-          )}
+              {can("hospital", "manage") && (
+                <>
+                  <Section title="Hospital Admin">
+                    <Item to="/hospitaladmin">Dashboard</Item>
+                    <Item to="/hospitaladmin/patients">Patients</Item>
+                    <Item to="/hospitaladmin/financials">Financials</Item>
+                    <Item to="/hospitaladmin/branches">Branches</Item>
+                    <Item to="/inventory">Inventory</Item>
+                    <Item to="/pharmacy">Pharmacy</Item>
+                  </Section>
 
-          {/* ================= LAB ================= */}
-          {can("lab", "read") && (
-            <Section title="Laboratory">
-              <Item to="/labtech/labs">Lab Tests</Item>
-              <Item to="/lab">Lab Dashboard</Item>
-            </Section>
-          )}
+                  <Section title="Integrations">
+                    <Item to="/admin/realtime">Webhooks</Item>
+                    <Item to="/admin/crdt-patients">CRDT Editor</Item>
+                    <Item to="/admin/notifications">Notifications</Item>
+                  </Section>
+                </>
+              )}
 
-          {/* ================= PATIENT ================= */}
-          {can("patient", "read") && (
-            <Section title="Patient">
-              <Item to="/patient">Dashboard</Item>
-              {can("payments", "read") && <Item to="/payments">Payments</Item>}
-              {can("ai", "chat") && <Item to="/ai/chatbot">Health Chatbot</Item>}
-            </Section>
-          )}
+              {can("doctor", "read") && (
+                <Section title="Doctor">
+                  <Item to="/doctor">Dashboard</Item>
+                  {can("appointments", "read") && (
+                    <Item to="/doctor/appointments">Appointments</Item>
+                  )}
+                  {can("ai", "medical") && (
+                    <Item to="/ai/medical">AI Assistant</Item>
+                  )}
+                  {can("ai", "triage") && (
+                    <Item to="/ai/triage">Triage</Item>
+                  )}
+                  {can("ai", "voice") && (
+                    <Item to="/ai/voice">Voice Dictation</Item>
+                  )}
+                </Section>
+              )}
 
-          {/* ================= PAYMENTS ================= */}
-          {can("payments", "read") && (
-            <Section title="Finance">
-              <Item to="/payments">Payments</Item>
-              <Item to="/payments/full">Advanced Payments</Item>
-            </Section>
-          )}
+              {can("nurse", "read") && (
+                <Section title="Nurse">
+                  {can("ai", "medical") && (
+                    <Item to="/ai/medical">AI Assistant</Item>
+                  )}
+                  {can("ai", "triage") && (
+                    <Item to="/ai/triage">Triage</Item>
+                  )}
+                </Section>
+              )}
 
-          {/* ================= REALTIME ================= */}
-          {can("realtime", "read") && (
-            <Section title="Realtime">
-              <Item to="/ai/ws">Live AI Chat</Item>
-            </Section>
+              {can("lab", "read") && (
+                <Section title="Laboratory">
+                  <Item to="/labtech/labs">Lab Tests</Item>
+                  <Item to="/lab">Lab Dashboard</Item>
+                </Section>
+              )}
+
+              {can("patient", "read") && (
+                <Section title="Patient">
+                  <Item to="/patient">Dashboard</Item>
+                  {can("payments", "read") && (
+                    <Item to="/payments">Payments</Item>
+                  )}
+                  {can("ai", "chat") && (
+                    <Item to="/ai/chatbot">Health Chatbot</Item>
+                  )}
+                </Section>
+              )}
+
+              {can("payments", "read") && (
+                <Section title="Finance">
+                  <Item to="/payments">Payments</Item>
+                  <Item to="/payments/full">Advanced Payments</Item>
+                </Section>
+              )}
+
+              {can("realtime", "read") && (
+                <Section title="Realtime">
+                  <Item to="/ai/ws">Live AI Chat</Item>
+                </Section>
+              )}
+            </>
           )}
 
           {/* ================= ACCOUNT ================= */}
@@ -205,4 +227,4 @@ function Item({ to, children }) {
       <Link to={to}>{children}</Link>
     </li>
   );
-        }
+          }
