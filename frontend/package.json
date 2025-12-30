@@ -14,7 +14,8 @@
 
     "socket.io-client": "^4.7.5",
     "automerge": "1.0.1-preview.7",
-    "localforage": "^1.10.0"
+    "localforage": "^1.10.0",
+    "@react-oauth/google": "^0.12.1"
   },
   "devDependencies": {
     "vite": "^5.4.0",
