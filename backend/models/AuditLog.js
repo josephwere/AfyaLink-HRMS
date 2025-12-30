@@ -62,8 +62,31 @@ const auditLogSchema = new Schema(
   },
   {
     timestamps: true,
+    versionKey: false,
   }
 );
+
+/* ======================================================
+   🔒 IMMUTABILITY — AUDIT-SAFE (NO EDIT / NO DELETE)
+====================================================== */
+auditLogSchema.pre("updateOne", () => {
+  throw new Error("Audit logs are immutable");
+});
+auditLogSchema.pre("updateMany", () => {
+  throw new Error("Audit logs are immutable");
+});
+auditLogSchema.pre("findOneAndUpdate", () => {
+  throw new Error("Audit logs are immutable");
+});
+auditLogSchema.pre("deleteOne", () => {
+  throw new Error("Audit logs cannot be deleted");
+});
+auditLogSchema.pre("deleteMany", () => {
+  throw new Error("Audit logs cannot be deleted");
+});
+auditLogSchema.pre("findOneAndDelete", () => {
+  throw new Error("Audit logs cannot be deleted");
+});
 
 /* ======================================================
    COMPOUND INDEXES (SCALE & FORENSICS)
