@@ -1,6 +1,7 @@
 import Hospital from "../models/Hospital.js";
 import { MENU } from "../config/menuConfig.js";
 import { cacheGet, cacheSet } from "../utils/cache.js";
+import { isBreakGlassActive } from "../utils/breakGlass.js"; // 🚨 ADD
 
 export const getMenu = async (req, res) => {
   try {
@@ -12,8 +13,11 @@ export const getMenu = async (req, res) => {
 
     const isSuperAdmin = user.role === "SUPER_ADMIN";
 
+    /* ================= EMERGENCY CHECK ================= */
+    const emergencyActive = await isBreakGlassActive(user.hospital);
+
     /* ================= CACHE KEY ================= */
-    const cacheKey = `menu:${user._id}:${user.role}:${user.hospital || "none"}`;
+    const cacheKey = `menu:${user._id}:${user.role}:${user.hospital || "none"}:${emergencyActive}`;
 
     /* ================= CACHE HIT ================= */
     const cached = await cacheGet(cacheKey);
@@ -33,7 +37,6 @@ export const getMenu = async (req, res) => {
         .lean();
 
       if (!hospital && !isSuperAdmin) {
-        // Hospital deactivated → no access
         return res.json({
           role: user.role,
           hospital: null,
@@ -45,7 +48,7 @@ export const getMenu = async (req, res) => {
     }
 
     /* ================= FILTER MENU ================= */
-    const menu = MENU
+    let menu = MENU
       .filter((section) => {
         if (section.roles && !section.roles.includes(user.role)) return false;
         if (section.feature && !features[section.feature] && !isSuperAdmin)
@@ -67,9 +70,26 @@ export const getMenu = async (req, res) => {
       })
       .filter((section) => section.items.length > 0);
 
+    /* ================= 🚨 EMERGENCY MENU INJECTION ================= */
+    if (emergencyActive) {
+      menu.unshift({
+        section: "🚨 Emergency Mode",
+        emergency: true,
+        items: [
+          {
+            label: "Emergency Access Active",
+            badge: "ACTIVE",
+            severity: "danger",
+            readonly: true,
+          },
+        ],
+      });
+    }
+
     const response = {
       role: user.role,
       hospital: user.hospital || null,
+      emergencyActive,
       menu,
     };
 
