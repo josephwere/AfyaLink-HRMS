@@ -95,7 +95,6 @@ const MENU_BY_ROLE = {
 ====================================================== */
 router.get("/", protect, (req, res) => {
   const role = req.user.role;
-
   const menu = MENU_BY_ROLE[role] || [];
 
   res.json({
