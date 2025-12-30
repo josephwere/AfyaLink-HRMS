@@ -1,6 +1,91 @@
 import User from "../models/User.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
+import Hospital from "../models/Hospital.js";
+
+/**
+ * POST /api/users
+ * CREATE USER (STAFF LIMIT ENFORCED)
+ */
+export const createUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const hospitalId = req.user.hospitalId;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const STAFF_ROLES = [
+      "HOSPITAL_ADMIN",
+      "DOCTOR",
+      "NURSE",
+      "LAB_TECH",
+      "PHARMACIST",
+    ];
+
+    const isStaff = STAFF_ROLES.includes(role);
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    /* ================= STAFF LIMIT ================= */
+    if (isStaff) {
+      const hospital = await Hospital.findOne({
+        _id: hospitalId,
+        active: true,
+      }).select("limits");
+
+      if (!hospital) {
+        return res.status(403).json({
+          message: "Hospital inactive or not found",
+        });
+      }
+
+      const staffCount = await User.countDocuments({
+        hospital: hospitalId,
+        active: true,
+        role: { $in: STAFF_ROLES },
+      });
+
+      if (staffCount >= hospital.limits.users) {
+        await denyAudit(req, res, "Staff limit exceeded");
+
+        return res.status(403).json({
+          message:
+            "Staff limit reached. Upgrade plan to add more users.",
+        });
+      }
+    }
+
+    /* ================= CREATE ================= */
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role,
+      hospital: hospitalId,
+      active: true,
+    });
+
+    await audit({
+      req,
+      action: "CREATE_USER",
+      resource: "User",
+      resourceId: user._id,
+      metadata: { role },
+    });
+
+    res.status(201).json({
+      message: "User created successfully",
+      userId: user._id,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 /**
  * GET /api/users/me
