@@ -57,6 +57,9 @@ import crdtChunkRoutes from "./routes/crdtChunkRoutes.js";
 import signalingTokenRoutes from "./routes/signalingTokenRoutes.js";
 import insuranceRoutes from "./routes/insuranceRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
+import menuRoutes from "./routes/menuRoutes.js";
+
+app.use("/api/menu", menuRoutes);
 
 // 🔐 WORKFLOW (READ-ONLY)
 import workflowRoutes from "./routes/workflowRoutes.js";
