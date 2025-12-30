@@ -86,21 +86,32 @@ const userSchema = new Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+
+    /* ======================================================
+       🚨 BREAK-GLASS / EMERGENCY ACCESS
+    ====================================================== */
+    emergencyAccess: {
+      active: { type: Boolean, default: false, index: true },
+      reason: { type: String },
+
+      triggeredBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+
+      triggeredAt: Date,
+      expiresAt: { type: Date, index: true },
+
+      revokedAt: Date,
+      revokedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    },
   },
   { timestamps: true }
 );
 
-/* ================= BREAK-GLASS ================= */
-emergencyAccess: {
-  active: { type: Boolean, default: false, index: true },
-  reason: { type: String },
-  triggeredBy: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-  },
-  triggeredAt: Date,
-  expiresAt: { type: Date, index: true },
-}
 /* ======================================================
    🔐 AUTO-PROTECT SUPER_ADMIN
 ====================================================== */
@@ -130,14 +141,18 @@ async function preventSuperAdminDelete(next) {
   next();
 }
 
-userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
-  if (this.role === "SUPER_ADMIN") {
-    return next(
-      new Error("SUPER_ADMIN accounts cannot be deleted")
-    );
+userSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  function (next) {
+    if (this.role === "SUPER_ADMIN") {
+      return next(
+        new Error("SUPER_ADMIN accounts cannot be deleted")
+      );
+    }
+    next();
   }
-  next();
-});
+);
 
 userSchema.pre("deleteOne", { document: false, query: true }, preventSuperAdminDelete);
 userSchema.pre("findOneAndDelete", preventSuperAdminDelete);
