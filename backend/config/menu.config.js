@@ -1,0 +1,56 @@
+export const MENU_CONFIG = [
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: "home",
+    path: "/dashboard",
+  },
+  {
+    key: "patients",
+    label: "Patients",
+    icon: "users",
+    path: "/patients",
+  },
+  {
+    key: "pharmacy",
+    label: "Pharmacy",
+    icon: "pill",
+    path: "/pharmacy",
+    feature: "pharmacy",
+  },
+  {
+    key: "laboratory",
+    label: "Laboratory",
+    icon: "flask",
+    path: "/lab",
+    feature: "laboratory",
+  },
+  {
+    key: "billing",
+    label: "Billing",
+    icon: "credit-card",
+    path: "/billing",
+    feature: "billing",
+  },
+  {
+    key: "inventory",
+    label: "Inventory",
+    icon: "boxes",
+    path: "/inventory",
+    feature: "inventory",
+  },
+  {
+    key: "hr",
+    label: "Staff",
+    icon: "id-card",
+    path: "/staff",
+    feature: "hr",
+  },
+  {
+    key: "admin",
+    label: "Admin",
+    icon: "shield",
+    path: "/admin",
+    roles: ["SUPER_ADMIN", "HOSPITAL_ADMIN"],
+  },
+];
