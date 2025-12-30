@@ -2,36 +2,13 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 const { Schema, model } = mongoose;
-/* ======================================================
-   SUPER_ADMIN IMMUTABILITY GUARD
-====================================================== */
-userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
-  if (this.role === "SUPER_ADMIN") {
-    return next(new Error("SUPER_ADMIN account cannot be deleted"));
-  }
-  next();
-});
-
-userSchema.pre("save", function (next) {
-  if (!this.isModified("active")) return next();
-
-  if (this.role === "SUPER_ADMIN" && this.active === false) {
-    return next(new Error("SUPER_ADMIN account cannot be deactivated"));
-  }
-  next();
-});
 
 /* ======================================================
-   USER SCHEMA — FINAL (STABLE + VERIFICATION FLOW READY)
+   USER SCHEMA
 ====================================================== */
 const userSchema = new Schema(
   {
-    /* ---------------- BASIC IDENTITY ---------------- */
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    name: { type: String, required: true, trim: true },
 
     email: {
       type: String,
@@ -47,7 +24,6 @@ const userSchema = new Schema(
       select: false,
     },
 
-    /* ---------------- ROLE (RBAC) ---------------- */
     role: {
       type: String,
       enum: [
@@ -64,43 +40,25 @@ const userSchema = new Schema(
       index: true,
     },
 
-    /* 🔒 PROTECTED ACCOUNT (SUPER_ADMIN SAFETY) */
     protectedAccount: {
       type: Boolean,
       default: false,
       index: true,
     },
 
-    /* ---------------- EMAIL VERIFICATION ---------------- */
-    emailVerified: {
-      type: Boolean,
-      default: false,
-    },
-
+    emailVerified: { type: Boolean, default: false },
     emailVerifiedAt: Date,
 
-    verificationDeadline: {
-      type: Date,
-      index: true,
-    },
-
+    verificationDeadline: { type: Date, index: true },
     verificationRemindersSent: {
       type: [String],
       default: [],
       select: false,
     },
 
-    /* ---------------- ACCOUNT STATE ---------------- */
-    active: {
-      type: Boolean,
-      default: true,
-    },
+    active: { type: Boolean, default: true },
 
-    /* ---------------- GOOGLE ---------------- */
-    googleId: {
-      type: String,
-      index: true,
-    },
+    googleId: { type: String, index: true },
 
     authProvider: {
       type: String,
@@ -108,20 +66,17 @@ const userSchema = new Schema(
       default: "local",
     },
 
-    /* ---------------- TOKENS ---------------- */
     refreshTokens: {
       type: [String],
       default: [],
       select: false,
     },
 
-    /* ---------------- 2FA ---------------- */
     twoFactorEnabled: {
       type: Boolean,
       default: false,
     },
 
-    /* ---------------- TRUSTED DEVICES ---------------- */
     trustedDevices: [
       {
         deviceId: { type: String, required: true },
@@ -136,32 +91,49 @@ const userSchema = new Schema(
 );
 
 /* ======================================================
-   AUTO-PROTECT SUPER_ADMIN
+   🔐 AUTO-PROTECT SUPER_ADMIN
 ====================================================== */
 userSchema.pre("save", function (next) {
   if (this.role === "SUPER_ADMIN") {
     this.protectedAccount = true;
+
+    if (this.isModified("active") && this.active === false) {
+      return next(
+        new Error("SUPER_ADMIN account cannot be deactivated")
+      );
+    }
   }
   next();
 });
 
 /* ======================================================
-   BLOCK DELETION OF SUPER_ADMIN
+   🚫 BLOCK SUPER_ADMIN DELETION (ALL PATHS)
 ====================================================== */
 async function preventSuperAdminDelete(next) {
   const user = await this.model.findOne(this.getQuery());
   if (user?.role === "SUPER_ADMIN" || user?.protectedAccount) {
-    return next(new Error("SUPER_ADMIN accounts cannot be deleted"));
+    return next(
+      new Error("SUPER_ADMIN accounts cannot be deleted")
+    );
   }
   next();
 }
+
+userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
+  if (this.role === "SUPER_ADMIN") {
+    return next(
+      new Error("SUPER_ADMIN accounts cannot be deleted")
+    );
+  }
+  next();
+});
 
 userSchema.pre("deleteOne", { document: false, query: true }, preventSuperAdminDelete);
 userSchema.pre("findOneAndDelete", preventSuperAdminDelete);
 userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
 
 /* ======================================================
-   PASSWORD HASH
+   🔑 PASSWORD HASH
 ====================================================== */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
