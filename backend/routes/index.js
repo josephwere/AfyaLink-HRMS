@@ -2,6 +2,8 @@ import express from 'express';
 import hospitalRoutes from './hospitalRoutes.js';
 import userRoutes from './userRoutes.js';
 import patientRoutes from './patientRoutes.js';
+import adminRoutes from "./admin.js";
+router.use("/admin", adminRoutes);
 
 const router = express.Router();
 
