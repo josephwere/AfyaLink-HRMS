@@ -1,3 +1,4 @@
+import { googleLogin } from "../controllers/googleAuthController.js";
 import express from "express";
 import auth from "../middleware/auth.js";
 import { requireRole } from "../middleware/requireRole.js";
