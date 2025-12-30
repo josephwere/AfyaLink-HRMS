@@ -4,6 +4,10 @@
     {
       "src": "/api/(.*)",
       "dest": "https://afyalink-hrms-4.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
