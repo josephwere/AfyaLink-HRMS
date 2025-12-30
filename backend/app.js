@@ -10,6 +10,8 @@ import { trace } from "./middleware/traceMiddleware.js";
 import breakGlassRoutes from "./routes/breakGlassRoutes.js";
 import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
 import emergencyRoutes from "./routes/emergencyRoutes.js";
+import emergencyDashboardRoutes from "./routes/emergencyDashboardRoutes.js";
+
 
 
 
@@ -118,6 +120,7 @@ app.use(trace);
 app.use("/api/break-glass", breakGlassRoutes);
 app.use("/api/admin", adminEmergencyRoutes);
 app.use("/api/emergency", emergencyRoutes);
+app.use("/api/admin", emergencyDashboardRoutes);
 
 // =======================================================
 // WORKFLOW (READ-ONLY, NO MUTATIONS)
