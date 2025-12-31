@@ -6,9 +6,10 @@ import { Server as IOServer } from "socket.io";
 import connectDB from "./config/db.js";
 import app from "./app.js";
 import { initSocket } from "./utils/socket.js";
+
+import seedSuperAdmin from "./seed/superAdmin.js";
 import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
-import seedSuperAdmin from "./seed/superAdmin.js";
 import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 
 dotenv.config();
@@ -16,88 +17,77 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 
 /* ======================================================
-   VERIFICATION CLEANUP CRON (DAILY @ MIDNIGHT)
-====================================================== */
-cron.schedule(
-  "0 0 * * *", // every day at 00:00
-  async () => {
-    console.log("⏰ Running daily verification cleanup job...");
-    await cleanupUnverifiedUsers();
-  },
-  {
-    timezone: "Africa/Nairobi",
-  }
-);
-/* ======================================================
-   🚨 BREAK-GLASS AUTO-EXPIRY (EVERY 5 MINUTES)
-====================================================== */
-cron.schedule(
-  "*/5 * * * *", // every 5 minutes
-  async () => {
-    await cleanupExpiredBreakGlass();
-  },
-  {
-    timezone: "Africa/Nairobi",
-  }
-);
-/* ======================================================
-   EmergencyCleanup
+   ⏰ CRON JOBS
 ====================================================== */
 
+// Unverified users cleanup (daily)
 cron.schedule(
-  "*/5 * * * *",
-  async () => {
-    await cleanupExpiredEmergencyAccess();
-  },
+  "0 0 * * *",
+  cleanupUnverifiedUsers,
   { timezone: "Africa/Nairobi" }
 );
+
+// Break-glass auto expiry (every 5 min)
+cron.schedule(
+  "*/5 * * * *",
+  cleanupExpiredBreakGlass,
+  { timezone: "Africa/Nairobi" }
+);
+
+// Emergency access auto expiry (every 5 min)
+cron.schedule(
+  "*/5 * * * *",
+  cleanupExpiredEmergencyAccess,
+  { timezone: "Africa/Nairobi" }
+);
+
 /* ======================================================
-   SAFE SOCKET.IO CORS (MATCHES EXPRESS)
+   🌐 ALLOWED ORIGINS (HTTP + SOCKET.IO)
 ====================================================== */
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL,                // main frontend
   "https://afya-link-hrms-frontend-4.vercel.app",
 ].filter(Boolean);
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // mobile apps, curl, postman
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith(".vercel.app")) return true; // preview deployments
+  return false;
+};
+
 /* ======================================================
-   SERVER START
+   🚀 SERVER START
 ====================================================== */
 const start = async () => {
   try {
-    // 🔌 Connect MongoDB
     await connectDB();
-
-    // 🌱 Seed SUPER_ADMIN (idempotent — safe to run every start)
     await seedSuperAdmin();
 
-    // 🌐 Create HTTP server
     const server = http.createServer(app);
 
-    // 🔗 Socket.IO server
     const io = new IOServer(server, {
       cors: {
         origin: (origin, callback) => {
-          if (!origin || allowedOrigins.includes(origin)) {
+          if (isAllowedOrigin(origin)) {
             callback(null, true);
           } else {
             callback(new Error(`Socket.IO CORS blocked: ${origin}`));
           }
         },
-        methods: ["GET", "POST", "PUT", "DELETE"],
         credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE"],
       },
     });
 
-    // 🔄 Initialize sockets
     initSocket(io);
 
-    // 🚀 Start server
     server.listen(PORT, () => {
-      console.log(`\n🚀 AfyaLink HRMS backend running on port ${PORT}`);
-      console.log(`🌐 Allowed Origins:`, allowedOrigins, "\n");
+      console.log(`🚀 AfyaLink HRMS backend running on port ${PORT}`);
+      console.log("🌍 Allowed origins:", allowedOrigins);
     });
   } catch (err) {
-    console.error("❌ Failed to start server", err);
+    console.error("❌ Server startup failed", err);
     process.exit(1);
   }
 };
