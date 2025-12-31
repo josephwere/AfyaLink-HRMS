@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+
 import { useAuth } from "../utils/auth";
 import { apiFetch } from "../utils/apiFetch";
+import { redirectByRole } from "../utils/redirectByRole";
 import PasswordInput from "../components/PasswordInput";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Login() {
-  const { login, loading, loginWithToken } = useAuth();
+  const { login, loading, loginWithToken, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,24 +25,30 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
   const [showResend, setShowResend] = useState(false);
 
-  /* ---------------------------------------
-     Restore cooldown
-  ---------------------------------------- */
+  /* --------------------------------------------------
+     🔒 Redirect if already logged in
+  -------------------------------------------------- */
+  useEffect(() => {
+    if (user) {
+      navigate(redirectByRole(user), { replace: true });
+    }
+  }, [user, navigate]);
+
+  /* --------------------------------------------------
+     Restore resend cooldown
+  -------------------------------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
     if (!until) return;
 
     const remaining = Math.ceil((until - Date.now()) / 1000);
-    if (remaining > 0) {
-      setCooldown(remaining);
-    } else {
-      localStorage.removeItem(COOLDOWN_KEY);
-    }
+    if (remaining > 0) setCooldown(remaining);
+    else localStorage.removeItem(COOLDOWN_KEY);
   }, []);
 
-  /* ---------------------------------------
-     Tick cooldown
-  ---------------------------------------- */
+  /* --------------------------------------------------
+     Cooldown timer
+  -------------------------------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -57,9 +65,9 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  /* ---------------------------------------
+  /* --------------------------------------------------
      Post-register notice
-  ---------------------------------------- */
+  -------------------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
@@ -68,9 +76,9 @@ export default function Login() {
     }
   }, [location.search]);
 
-  /* ---------------------------------------
+  /* --------------------------------------------------
      Remembered email
-  ---------------------------------------- */
+  -------------------------------------------------- */
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
     if (saved) {
@@ -79,9 +87,9 @@ export default function Login() {
     }
   }, []);
 
-  /* ---------------------------------------
-     Submit (Password Login)
-  ---------------------------------------- */
+  /* --------------------------------------------------
+     Email + Password Login
+  -------------------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -89,19 +97,13 @@ export default function Login() {
     setShowResend(false);
 
     try {
-      if (rememberMe) {
-        localStorage.setItem("remember_email", email);
-      } else {
-        localStorage.removeItem("remember_email");
-      }
+      rememberMe
+        ? localStorage.setItem("remember_email", email)
+        : localStorage.removeItem("remember_email");
 
       const result = await login(email.trim(), password);
+      if (!result?.user) throw new Error("Login failed");
 
-      if (!result?.user) {
-        throw new Error("Login failed");
-      }
-
-      // 🔔 Unverified warning (NOT blocked)
       if (!result.user.emailVerified) {
         setInfo("Your email is not verified. Some features are disabled.");
         setShowResend(true);
@@ -114,15 +116,15 @@ export default function Login() {
         return;
       }
 
-      navigate("/dashboard");
+      navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
       setError(err.message || "Invalid credentials");
     }
   };
 
-  /* ---------------------------------------
-     Resend verification
-  ---------------------------------------- */
+  /* --------------------------------------------------
+     Resend verification email
+  -------------------------------------------------- */
   const handleResendVerification = async () => {
     try {
       setResendLoading(true);
@@ -135,7 +137,6 @@ export default function Login() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         if (data.retryAfter) {
           const until = Date.now() + data.retryAfter * 1000;
@@ -146,9 +147,7 @@ export default function Login() {
       }
 
       const seconds = data.retryAfter || 60;
-      const until = Date.now() + seconds * 1000;
-
-      localStorage.setItem(COOLDOWN_KEY, until);
+      localStorage.setItem(COOLDOWN_KEY, Date.now() + seconds * 1000);
       setCooldown(seconds);
 
       setInfo("Verification email sent. Check your inbox.");
@@ -159,12 +158,13 @@ export default function Login() {
     }
   };
 
-  /* ---------------------------------------
+  /* --------------------------------------------------
      Google Login
-  ---------------------------------------- */
+  -------------------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setError("");
+
       const res = await apiFetch("/api/auth/google", {
         method: "POST",
         body: JSON.stringify({
@@ -176,12 +176,15 @@ export default function Login() {
       if (!res.ok) throw new Error(data.msg || "Google login failed");
 
       loginWithToken(data.accessToken, data.user);
-      navigate("/dashboard");
+      navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
       setError(err.message);
     }
   };
 
+  /* --------------------------------------------------
+     UI
+  -------------------------------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -191,7 +194,6 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
 
-        {/* 🔁 RESEND VERIFICATION */}
         {showResend && (
           <button
             type="button"
@@ -241,7 +243,6 @@ export default function Login() {
           {loading ? "Signing in..." : "Sign in"}
         </button>
 
-        {/* 🌐 GOOGLE LOGIN */}
         <div className="divider">or</div>
 
         <GoogleLogin
@@ -256,4 +257,4 @@ export default function Login() {
       </form>
     </div>
   );
-}
+            }
