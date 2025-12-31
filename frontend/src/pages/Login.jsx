@@ -10,7 +10,7 @@ import PasswordInput from "../components/PasswordInput";
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Login() {
-  const { login, loading, loginWithToken, user } = useAuth();
+  const { login, loading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,18 +25,18 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
   const [showResend, setShowResend] = useState(false);
 
-  /* --------------------------------------------------
-     🔒 Redirect if already logged in
-  -------------------------------------------------- */
+  /* -----------------------------------------
+     Redirect if already logged in
+  ----------------------------------------- */
   useEffect(() => {
     if (user) {
       navigate(redirectByRole(user), { replace: true });
     }
   }, [user, navigate]);
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      Restore resend cooldown
-  -------------------------------------------------- */
+  ----------------------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
     if (!until) return;
@@ -46,9 +46,9 @@ export default function Login() {
     else localStorage.removeItem(COOLDOWN_KEY);
   }, []);
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      Cooldown timer
-  -------------------------------------------------- */
+  ----------------------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -65,9 +65,9 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  /* --------------------------------------------------
-     Post-register notice
-  -------------------------------------------------- */
+  /* -----------------------------------------
+     Post-register message
+  ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
@@ -76,9 +76,9 @@ export default function Login() {
     }
   }, [location.search]);
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      Remembered email
-  -------------------------------------------------- */
+  ----------------------------------------- */
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
     if (saved) {
@@ -87,9 +87,9 @@ export default function Login() {
     }
   }, []);
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      Email + Password Login
-  -------------------------------------------------- */
+  ----------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -102,18 +102,16 @@ export default function Login() {
         : localStorage.removeItem("remember_email");
 
       const result = await login(email.trim(), password);
-      if (!result?.user) throw new Error("Login failed");
 
-      if (!result.user.emailVerified) {
-        setInfo("Your email is not verified. Some features are disabled.");
-        setShowResend(true);
-      }
-
-      if (result.requires2FA) {
+      if (result?.requires2FA) {
         navigate("/2fa", {
           state: { userId: result.userId, email },
         });
         return;
+      }
+
+      if (!result?.user) {
+        throw new Error("Login failed");
       }
 
       navigate(redirectByRole(result.user), { replace: true });
@@ -122,9 +120,9 @@ export default function Login() {
     }
   };
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      Resend verification email
-  -------------------------------------------------- */
+  ----------------------------------------- */
   const handleResendVerification = async () => {
     try {
       setResendLoading(true);
@@ -158,9 +156,9 @@ export default function Login() {
     }
   };
 
-  /* --------------------------------------------------
-     Google Login
-  -------------------------------------------------- */
+  /* -----------------------------------------
+     Google Login (FINAL FIX)
+  ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setError("");
@@ -173,18 +171,21 @@ export default function Login() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.msg || "Google login failed");
+      if (!res.ok) {
+        throw new Error(data.msg || "Google login failed");
+      }
 
-      loginWithToken(data.accessToken, data.user);
-      navigate(redirectByRole(data.user), { replace: true });
+      // ✅ Use existing auth logic
+      await login(data.accessToken, { directToken: true });
+      // Redirect happens automatically via useEffect
     } catch (err) {
       setError(err.message);
     }
   };
 
-  /* --------------------------------------------------
+  /* -----------------------------------------
      UI
-  -------------------------------------------------- */
+  ----------------------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -257,4 +258,4 @@ export default function Login() {
       </form>
     </div>
   );
-            }
+                                       }
