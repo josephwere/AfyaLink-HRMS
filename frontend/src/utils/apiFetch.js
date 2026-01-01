@@ -2,13 +2,22 @@
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-/**
- * Centralized API fetch with:
- * - Access token header
- * - HttpOnly refresh cookie
- * - Silent refresh on 401
- * - Infinite-loop protection
- */
+/* ======================================================
+   SAFE JSON PARSER (NO CRASH ON EMPTY BODY)
+====================================================== */
+export async function safeJson(res) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+/* ======================================================
+   CENTRALIZED API FETCH
+====================================================== */
 async function apiFetch(path, options = {}, _retry = false) {
   const token = localStorage.getItem("token");
 
@@ -17,7 +26,7 @@ async function apiFetch(path, options = {}, _retry = false) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  // Only set JSON header when body exists
+  // Only set JSON header if body exists
   if (options.body) {
     headers["Content-Type"] = "application/json";
   }
@@ -27,14 +36,14 @@ async function apiFetch(path, options = {}, _retry = false) {
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
-      credentials: "include", // 🔑 REQUIRED for refresh cookie
+      credentials: "include",
       headers,
     });
   } catch {
     throw new Error("Network error. Please check your connection.");
   }
 
-  // 🔁 Silent refresh (once)
+  /* 🔁 Silent refresh (once) */
   if (response.status === 401 && !_retry) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
@@ -45,9 +54,9 @@ async function apiFetch(path, options = {}, _retry = false) {
   return response;
 }
 
-/**
- * Refresh access token using HttpOnly cookie
- */
+/* ======================================================
+   REFRESH ACCESS TOKEN
+====================================================== */
 async function refreshAccessToken() {
   try {
     const res = await fetch(`${API_BASE}/api/auth/refresh`, {
@@ -60,7 +69,7 @@ async function refreshAccessToken() {
       return false;
     }
 
-    const data = await res.json();
+    const data = await safeJson(res);
 
     if (!data?.accessToken) {
       logout();
@@ -75,14 +84,14 @@ async function refreshAccessToken() {
   }
 }
 
-/**
- * Logout helper
- */
+/* ======================================================
+   LOGOUT HELPER
+====================================================== */
 export function logout() {
   localStorage.removeItem("token");
   window.location.href = "/login";
 }
 
-/* ✅ EXPORTS (THIS FIXES VITE BUILD) */
+/* EXPORTS */
 export default apiFetch;
 export { apiFetch };
