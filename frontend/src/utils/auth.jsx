@@ -4,7 +4,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { apiFetch, logout as apiLogout } from "./apiFetch";
+import { apiFetch, logout as apiLogout, safeJson } from "./apiFetch";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -107,12 +107,13 @@ export function AuthProvider({ children }) {
       }),
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
 
     if (!res.ok) {
       throw new Error(data.msg || "Login failed");
     }
 
+    /* 🔐 2FA REQUIRED */
     if (data.requires2FA) {
       localStorage.setItem("2fa_pending", "true");
       localStorage.setItem("2fa_user", data.userId);
@@ -202,4 +203,4 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return ctx;
-      }
+        }
