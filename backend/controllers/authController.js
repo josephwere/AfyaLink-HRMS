@@ -1,3 +1,5 @@
+// backend/controllers/authController.js
+
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 import bcrypt from "bcryptjs";
@@ -6,84 +8,14 @@ import jwt from "jsonwebtoken";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
-import { OAuth2Client } from "google-auth-library";
-
-/* =========================
-   GOOGLE
-========================= */
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-export const googleLogin = async (req, res) => {
-  try {
-    const { credential } = req.body;
-
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    const { email, name } = payload;
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({
-        name,
-        email,
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
-        verificationDeadline: null,
-        role: "PATIENT",
-        verificationRemindersSent: [],
-      });
-
-      await AuditLog.create({
-        actorId: user._id,
-        actorRole: user.role,
-        action: "USER_REGISTERED_GOOGLE",
-        resource: "User",
-        resourceId: user._id,
-      });
-    }
-
-    const accessToken = signAccessToken({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      twoFactorVerified: true,
-    });
-
-    const refreshToken = signRefreshToken({ id: user._id });
-    user.refreshTokens.push(refreshToken);
-    await user.save();
-
-    res.json({
-      accessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        emailVerified: true,
-      },
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(401).json({ msg: "Google authentication failed" });
-  }
-};
 
 /* ======================================================
    HELPERS
 ====================================================== */
-function generateOtp() {
-  return crypto.randomInt(100000, 999999).toString();
-}
+const generateOtp = () =>
+  crypto.randomInt(100000, 999999).toString();
 
-function emailTemplate(title, body) {
-  return `
+const emailTemplate = (title, body) => `
   <div style="font-family:Arial;background:#f4f6f8;padding:30px">
     <div style="max-width:600px;margin:auto;background:#fff;border-radius:8px;padding:30px">
       <h2 style="color:#0a7cff">${title}</h2>
@@ -93,8 +25,8 @@ function emailTemplate(title, body) {
         AfyaLink HRMS • Secure Healthcare Systems
       </p>
     </div>
-  </div>`;
-}
+  </div>
+`;
 
 /* ======================================================
    REGISTER
@@ -129,7 +61,10 @@ export const register = async (req, res) => {
       resourceId: user._id,
     });
 
-    res.status(201).json({ success: true, msg: "Registration successful" });
+    res.status(201).json({
+      success: true,
+      msg: "Registration successful",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
@@ -145,7 +80,9 @@ export const verifyEmail = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
-    if (!user) return res.status(400).json({ msg: "Invalid link" });
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid verification link" });
+    }
 
     if (!user.emailVerified) {
       user.emailVerified = true;
@@ -182,7 +119,7 @@ export const resendVerificationEmail = async (req, res) => {
     }
 
     if (user.emailVerified) {
-      return res.status(400).json({ msg: "Email already verified." });
+      return res.status(400).json({ msg: "Email already verified" });
     }
 
     const token = jwt.sign(
@@ -194,11 +131,12 @@ export const resendVerificationEmail = async (req, res) => {
     const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     await sendEmail({
-      to: email,
+      to: user.email,
       subject: "Verify your AfyaLink account",
       html: emailTemplate(
         "Verify Your Email",
-        `<a href="${verifyLink}">Verify Email</a>`
+        `<p>Click below to verify your account:</p>
+         <a href="${verifyLink}">Verify Email</a>`
       ),
     });
 
@@ -210,14 +148,14 @@ export const resendVerificationEmail = async (req, res) => {
       resourceId: user._id,
     });
 
-    res.json({ msg: "Verification email resent." });
+    res.json({ msg: "Verification email resent" });
   } catch {
     res.status(500).json({ msg: "Server error" });
   }
 };
 
 /* ======================================================
-   LOGIN (CRASH-PROOF)
+   LOGIN
 ====================================================== */
 export const login = async (req, res) => {
   try {
@@ -232,7 +170,8 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    if (!(await user.matchPassword(password))) {
+    const match = await user.matchPassword(password);
+    if (!match) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
@@ -273,7 +212,7 @@ export const login = async (req, res) => {
 };
 
 /* ======================================================
-   VERIFY 2FA
+   VERIFY 2FA OTP
 ====================================================== */
 export const verify2FAOtp = async (req, res) => {
   try {
@@ -310,7 +249,7 @@ export const verify2FAOtp = async (req, res) => {
 
     res.json({ accessToken, user });
   } catch {
-    res.status(500).json({ msg: "2FA failed" });
+    res.status(500).json({ msg: "2FA verification failed" });
   }
 };
 
@@ -357,7 +296,12 @@ export const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id).select("+password");
 
-    if (!(await bcrypt.compare(currentPassword, user.password))) {
+    const match = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!match) {
       return res.status(400).json({ msg: "Wrong password" });
     }
 
@@ -379,7 +323,9 @@ export const adminVerifyUser = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
     if (user.emailVerified) {
       return res.status(400).json({ msg: "User already verified" });
@@ -398,7 +344,10 @@ export const adminVerifyUser = async (req, res) => {
       metadata: { method: "ROLE_OVERRIDE" },
     });
 
-    res.json({ success: true, msg: "User email verified by admin" });
+    res.json({
+      success: true,
+      msg: "User email verified by admin",
+    });
   } catch {
     res.status(500).json({ msg: "Server error" });
   }
