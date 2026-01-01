@@ -1,7 +1,7 @@
-import { googleLogin } from "../controllers/googleAuthController.js";
 import express from "express";
 import auth from "../middleware/auth.js";
 import { requireRole } from "../middleware/requireRole.js";
+
 import {
   register,
   login,
@@ -10,16 +10,19 @@ import {
   resend2FA,
   verify2FAOtp,
   changePassword,
-  adminVerifyUser, // ✅ NOW EXISTS
+  adminVerifyUser,
 } from "../controllers/authController.js";
+
+import { refreshToken } from "../controllers/refreshController.js";
+import { googleLogin } from "../controllers/googleAuthController.js";
 
 const router = express.Router();
 
 /* =========================
    GOOGLE
 ========================= */
-
 router.post("/google", googleLogin);
+
 /* ======================================================
    AUTH
 ====================================================== */
@@ -27,14 +30,19 @@ router.post("/register", register);
 router.post("/login", login);
 
 /* ======================================================
+   TOKEN REFRESH  ✅ FIX
+====================================================== */
+router.post("/refresh", refreshToken);
+
+/* ======================================================
    EMAIL VERIFICATION
 ====================================================== */
 router.get("/verify-email", verifyEmail);
 
-// 🔔 USER-INITIATED VERIFICATION (PROFILE BUTTON)
+// 🔔 USER-INITIATED VERIFICATION
 router.post("/send-verification", auth, resendVerificationEmail);
 
-// ♻️ PUBLIC RESEND (EMAIL-BASED)
+// ♻️ PUBLIC RESEND
 router.post("/resend-verification", resendVerificationEmail);
 
 /* ======================================================
