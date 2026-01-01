@@ -1,3 +1,5 @@
+// backend/models/User.js
+
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -8,7 +10,11 @@ const { Schema, model } = mongoose;
 ====================================================== */
 const userSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     email: {
       type: String,
@@ -46,19 +52,36 @@ const userSchema = new Schema(
       index: true,
     },
 
-    emailVerified: { type: Boolean, default: false },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     emailVerifiedAt: Date,
 
-    verificationDeadline: { type: Date, index: true },
+    verificationDeadline: {
+      type: Date,
+      index: true,
+    },
+
     verificationRemindersSent: {
       type: [String],
       default: [],
       select: false,
     },
 
-    active: { type: Boolean, default: true },
+    active: {
+      type: Boolean,
+      default: true,
+    },
 
-    googleId: { type: String, index: true },
+    /* =========================
+       AUTH PROVIDERS
+    ========================= */
+    googleId: {
+      type: String,
+      index: true,
+    },
 
     authProvider: {
       type: String,
@@ -66,6 +89,9 @@ const userSchema = new Schema(
       default: "local",
     },
 
+    /* =========================
+       TOKENS & SECURITY
+    ========================= */
     refreshTokens: {
       type: [String],
       default: [],
@@ -79,11 +105,20 @@ const userSchema = new Schema(
 
     trustedDevices: [
       {
-        deviceId: { type: String, required: true },
+        deviceId: {
+          type: String,
+          required: true,
+        },
         userAgent: String,
-        lastUsed: { type: Date, default: Date.now },
+        lastUsed: {
+          type: Date,
+          default: Date.now,
+        },
         verifiedAt: Date,
-        createdAt: { type: Date, default: Date.now },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
 
@@ -91,8 +126,13 @@ const userSchema = new Schema(
        🚨 BREAK-GLASS / EMERGENCY ACCESS
     ====================================================== */
     emergencyAccess: {
-      active: { type: Boolean, default: false, index: true },
-      reason: { type: String },
+      active: {
+        type: Boolean,
+        default: false,
+        index: true,
+      },
+
+      reason: String,
 
       triggeredBy: {
         type: Schema.Types.ObjectId,
@@ -100,9 +140,14 @@ const userSchema = new Schema(
       },
 
       triggeredAt: Date,
-      expiresAt: { type: Date, index: true },
+
+      expiresAt: {
+        type: Date,
+        index: true,
+      },
 
       revokedAt: Date,
+
       revokedBy: {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -154,7 +199,12 @@ userSchema.pre(
   }
 );
 
-userSchema.pre("deleteOne", { document: false, query: true }, preventSuperAdminDelete);
+userSchema.pre(
+  "deleteOne",
+  { document: false, query: true },
+  preventSuperAdminDelete
+);
+
 userSchema.pre("findOneAndDelete", preventSuperAdminDelete);
 userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
 
@@ -168,7 +218,7 @@ userSchema.pre("save", async function (next) {
 });
 
 /* ======================================================
-   PASSWORD COMPARE
+   🔍 PASSWORD COMPARE
 ====================================================== */
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
@@ -177,5 +227,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 /* ======================================================
    EXPORT
 ====================================================== */
-const User = mongoose.models.User || model("User", userSchema);
+const User =
+  mongoose.models.User || model("User", userSchema);
+
 export default User;
