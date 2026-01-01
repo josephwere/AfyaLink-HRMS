@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Notifications from "./components/Notifications";
 import RequireRole from "./components/RequireRole";
+import AutoRedirect from "./components/AutoRedirect";
 
 /* =======================
    PUBLIC / AUTH
@@ -73,13 +74,15 @@ export default function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* ================= PROTECTED ROOT ================= */}
-        <Route
-          element={
-            <RequireRole>
-              <AppLayout />
-            </RequireRole>
-          }
-        >
+          <Route
+  element={
+    <RequireRole>
+      <AutoRedirect>
+        <AppLayout />
+      </AutoRedirect>
+    </RequireRole>
+  }
+>
           {/* Default */}
           <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
 
