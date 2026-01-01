@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+
 import PasswordInput from "../components/PasswordInput";
 import { apiFetch } from "../utils/apiFetch";
 import { useAuth } from "../utils/auth";
+import { redirectByRole } from "../utils/redirectByRole";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
@@ -27,7 +29,7 @@ export default function Register() {
   const [showResend, setShowResend] = useState(false);
 
   /* ---------------------------------------
-     Restore cooldown (absolute timestamp)
+     Restore resend cooldown
   ---------------------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
@@ -43,7 +45,7 @@ export default function Register() {
   }, []);
 
   /* ---------------------------------------
-     Tick cooldown
+     Cooldown timer
   ---------------------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -68,7 +70,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     Submit (Email + Password)
+     EMAIL + PASSWORD REGISTER
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,12 +95,20 @@ export default function Register() {
         }),
       });
 
-      const data = await res.json();
+      // 🔒 SAFE JSON PARSE
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
-        const msg = data?.message || data?.msg || "Registration failed";
+        const msg =
+          data.msg ||
+          data.message ||
+          "Registration failed";
 
-        // 🔔 Email exists but not verified → allow resend
         if (
           msg.toLowerCase().includes("exists") ||
           msg.toLowerCase().includes("verify")
@@ -109,7 +119,7 @@ export default function Register() {
         throw new Error(msg);
       }
 
-      // ✅ Success → redirect to login with verify notice
+      // ✅ Success → go to login with verify notice
       navigate("/login?verify=true");
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -119,7 +129,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     Resend verification
+     RESEND VERIFICATION
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -132,21 +142,24 @@ export default function Register() {
         body: JSON.stringify({ email: form.email }),
       });
 
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
-        if (data.retryAfter) {
-          const until = Date.now() + data.retryAfter * 1000;
-          localStorage.setItem(COOLDOWN_KEY, until);
-          setCooldown(data.retryAfter);
-        }
-        throw new Error(data.msg);
+        throw new Error(
+          data.msg || "Failed to resend verification email"
+        );
       }
 
       const seconds = data.retryAfter || 60;
-      const until = Date.now() + seconds * 1000;
-
-      localStorage.setItem(COOLDOWN_KEY, until);
+      localStorage.setItem(
+        COOLDOWN_KEY,
+        Date.now() + seconds * 1000
+      );
       setCooldown(seconds);
 
       setInfo("Verification email sent. Check your inbox.");
@@ -158,11 +171,12 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     Google Sign-Up
+     GOOGLE SIGN-UP (ROLE-SAFE)
   ---------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setError("");
+
       const res = await apiFetch("/api/auth/google", {
         method: "POST",
         body: JSON.stringify({
@@ -170,16 +184,27 @@ export default function Register() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.msg || "Google sign-up failed");
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Invalid server response");
+      }
+
+      if (!res.ok) {
+        throw new Error(data.msg || "Google sign-up failed");
+      }
 
       loginWithToken(data.accessToken, data.user);
-      navigate("/dashboard");
+      navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
       setError(err.message);
     }
   };
 
+  /* ---------------------------------------
+     UI
+  ---------------------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -189,7 +214,6 @@ export default function Register() {
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
 
-        {/* 🔁 RESEND VERIFICATION */}
         {showResend && (
           <button
             type="button"
@@ -210,7 +234,6 @@ export default function Register() {
           name="name"
           value={form.name}
           onChange={handleChange}
-          placeholder="Joseph Were"
           required
         />
 
@@ -220,7 +243,6 @@ export default function Register() {
           name="email"
           value={form.email}
           onChange={handleChange}
-          placeholder="you@example.com"
           required
         />
 
@@ -238,7 +260,10 @@ export default function Register() {
           label="Confirm password"
           value={form.confirmPassword}
           onChange={(e) =>
-            setForm({ ...form, confirmPassword: e.target.value })
+            setForm({
+              ...form,
+              confirmPassword: e.target.value,
+            })
           }
           required
         />
@@ -247,12 +272,13 @@ export default function Register() {
           {loading ? "Creating account..." : "Create account"}
         </button>
 
-        {/* 🌐 GOOGLE SIGN-UP */}
         <div className="divider">or</div>
 
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() => setError("Google authentication failed")}
+          onError={() =>
+            setError("Google authentication failed")
+          }
         />
 
         <div className="auth-footer">
@@ -262,4 +288,4 @@ export default function Register() {
       </form>
     </div>
   );
-                                }
+  }
