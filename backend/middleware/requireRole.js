@@ -1,11 +1,13 @@
-export const requireRole = (role) => {
+export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ msg: "Unauthorized" });
     }
 
-    if (req.user.role !== role) {
-      return res.status(403).json({ msg: "Forbidden: insufficient role" });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        msg: "Forbidden: insufficient role",
+      });
     }
 
     next();
