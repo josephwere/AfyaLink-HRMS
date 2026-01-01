@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   /* --------------------------------------------------
-     RESTORE SESSION (SAFE)
+     RESTORE SESSION (SAFE + EXP CHECK)
   -------------------------------------------------- */
   useEffect(() => {
     try {
@@ -47,13 +47,22 @@ export function AuthProvider({ children }) {
       const decoded = parseJwt(token);
       if (!decoded?.role) throw new Error("Invalid token");
 
+      // ⏱ Expired token → drop session
+      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+        throw new Error("Token expired");
+      }
+
       setUser({
         ...JSON.parse(storedUser),
         role: decoded.role,
         twoFactorVerified: decoded?.twoFactor !== false,
       });
     } catch {
-      localStorage.clear();
+      // ❗ only auth-related keys
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("2fa_pending");
+      localStorage.removeItem("2fa_user");
       setUser(null);
     } finally {
       setLoading(false);
@@ -171,7 +180,10 @@ export function AuthProvider({ children }) {
     try {
       await apiFetch("/api/auth/logout", { method: "POST" });
     } finally {
-      localStorage.clear();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("2fa_pending");
+      localStorage.removeItem("2fa_user");
       setUser(null);
       apiLogout();
     }
@@ -184,9 +196,16 @@ export function AuthProvider({ children }) {
         loading,
         isAuthenticated: Boolean(user),
         role: user?.role,
+
+        // existing (DO NOT BREAK)
         login,
         complete2FA,
         logout,
+
+        // ✅ safe additions (optional use)
+        hasRole: (...roles) => roles.includes(user?.role),
+        isAdmin: ["SUPER_ADMIN", "HOSPITAL_ADMIN"].includes(user?.role),
+        is2FAVerified: Boolean(user?.twoFactorVerified),
       }}
     >
       {!loading && children}
