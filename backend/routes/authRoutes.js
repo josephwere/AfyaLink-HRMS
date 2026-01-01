@@ -51,7 +51,7 @@ router.post("/resend-verification", resendVerificationEmail);
 router.post(
   "/admin/verify-user/:userId",
   auth,
-  requireRole("admin"),
+  requireRole("HOSPITAL_ADMIN", "SUPER_ADMIN"),
   adminVerifyUser
 );
 
