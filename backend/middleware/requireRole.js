@@ -1,3 +1,4 @@
+// middleware/requireRole.js
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
