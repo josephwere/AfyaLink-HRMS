@@ -125,14 +125,18 @@ export default function Login() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      // 🔒 SAFE JSON PARSE
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
       if (!res.ok) {
-        if (data.retryAfter) {
-          const until = Date.now() + data.retryAfter * 1000;
-          localStorage.setItem(COOLDOWN_KEY, until);
-          setCooldown(data.retryAfter);
-        }
-        throw new Error(data.msg);
+        throw new Error(
+          data.msg || "Failed to resend verification email"
+        );
       }
 
       const seconds = data.retryAfter || 60;
@@ -148,7 +152,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     GOOGLE LOGIN (FIXED)
+     GOOGLE LOGIN (CRASH-SAFE)
   ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -161,12 +165,21 @@ export default function Login() {
         }),
       });
 
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Invalid server response");
+      }
+
       if (!res.ok) {
         throw new Error(data.msg || "Google login failed");
       }
 
-      const result = await login(data.accessToken, { directToken: true });
+      const result = await login(data.accessToken, {
+        directToken: true,
+      });
+
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
       setError(err.message);
@@ -238,7 +251,9 @@ export default function Login() {
 
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() => setError("Google authentication failed")}
+          onError={() =>
+            setError("Google authentication failed")
+          }
         />
 
         <div className="auth-footer">
@@ -248,4 +263,4 @@ export default function Login() {
       </form>
     </div>
   );
-    }
+}
