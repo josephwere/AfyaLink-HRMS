@@ -7,50 +7,59 @@ import AuditLog from "../models/AuditLog.js";
 import { revokeEmergencyAccess } from "../controllers/adminController.js";
 import { emergencyAnalytics } from "../controllers/emergencyAnalyticsController.js";
 
-
 const router = express.Router();
+
 /* ======================================================
-   🚨 SUPERADMIN — REVOKE EMERGENCY ACCESS
+   🚨 SUPER_ADMIN — REVOKE EMERGENCY ACCESS
 ====================================================== */
 router.post(
   "/emergency/:hospitalId/revoke",
   auth,
-  authorize("superadmin", "emergency.revoke"),
+  authorize("SUPER_ADMIN"),
   revokeEmergencyAccess
 );
 
 /* ======================================================
-   Emergency Analytics 
+   📊 EMERGENCY ANALYTICS — SUPER_ADMIN ONLY
 ====================================================== */
 router.get(
   "/emergency-analytics",
   auth,
-  authorize("superadmin", "read"),
+  authorize("SUPER_ADMIN"),
   emergencyAnalytics
 );
+
 /* ======================================================
-   CREATE ADMIN — SUPER_ADMIN ONLY
+   👤 CREATE STAFF — SUPER_ADMIN & HOSPITAL_ADMIN
 ====================================================== */
 router.post(
   "/create-admin",
   auth,
-  authorize("admin", "create"),     // RBAC
-  featureGuard("adminCreation"),    // 🏥 Hospital feature toggle
+  authorize("SUPER_ADMIN", "HOSPITAL_ADMIN"),
+  featureGuard("adminCreation"),
   async (req, res) => {
     try {
       const { name, email, password, role, hospitalId } = req.body;
 
       if (!email || !password || !role) {
-        return res.status(400).json({ message: "Missing required fields" });
+        return res.status(400).json({ msg: "Missing required fields" });
       }
 
-      if (!["HOSPITAL_ADMIN", "DOCTOR", "NURSE", "LAB_TECH"].includes(role)) {
-        return res.status(400).json({ message: "Invalid admin role" });
+      if (
+        ![
+          "HOSPITAL_ADMIN",
+          "DOCTOR",
+          "NURSE",
+          "LAB_TECH",
+          "PHARMACIST",
+        ].includes(role)
+      ) {
+        return res.status(400).json({ msg: "Invalid staff role" });
       }
 
       const exists = await User.findOne({ email });
       if (exists) {
-        return res.status(409).json({ message: "User already exists" });
+        return res.status(409).json({ msg: "User already exists" });
       }
 
       const user = await User.create({
@@ -62,11 +71,10 @@ router.post(
         emailVerified: true,
       });
 
-      /* ================= AUDIT LOG ================= */
       await AuditLog.create({
         actorId: req.user._id,
         actorRole: req.user.role,
-        action: "CREATE_ADMIN",
+        action: "CREATE_STAFF",
         resource: "User",
         resourceId: user._id,
         hospital: hospitalId,
@@ -76,7 +84,7 @@ router.post(
       });
 
       res.status(201).json({
-        message: "Admin created successfully",
+        success: true,
         user: {
           id: user._id,
           email: user.email,
@@ -86,19 +94,10 @@ router.post(
     } catch (err) {
       console.error(err);
 
-      await AuditLog.create({
-        actorId: req.user?._id,
-        actorRole: req.user?.role,
-        action: "CREATE_ADMIN_FAILED",
-        resource: "User",
-        hospital: req.user?.hospitalId,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
+      res.status(500).json({
         success: false,
-        error: err.message,
+        msg: "Failed to create staff",
       });
-
-      res.status(500).json({ message: "Failed to create admin" });
     }
   }
 );
