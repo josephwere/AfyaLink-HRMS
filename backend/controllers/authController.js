@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
-import { getVerificationWarning } from "../services/verificationReminderService.js";
 import { OAuth2Client } from "google-auth-library";
 
 /* =========================
@@ -24,7 +23,7 @@ export const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, name, sub: googleId } = payload;
+    const { email, name } = payload;
 
     let user = await User.findOne({ email });
 
@@ -34,7 +33,7 @@ export const googleLogin = async (req, res) => {
         email,
         emailVerified: true,
         emailVerifiedAt: new Date(),
-        verificationDeadline: null, // ✅ prevent verification warnings
+        verificationDeadline: null,
         role: "PATIENT",
         verificationRemindersSent: [],
       });
@@ -50,7 +49,7 @@ export const googleLogin = async (req, res) => {
 
     const accessToken = signAccessToken({
       id: user._id,
-      name: user.name,           // ✅ align with frontend JWT parsing
+      name: user.name,
       email: user.email,
       role: user.role,
       twoFactorVerified: true,
@@ -77,29 +76,8 @@ export const googleLogin = async (req, res) => {
 };
 
 /* ======================================================
-   CONFIG
-====================================================== */
-const TRUSTED_DAYS =
-  Number(process.env.TRUSTED_DEVICE_DAYS || 14) *
-  24 *
-  60 *
-  60 *
-  1000;
-
-const RESEND_LIMIT = 60; // seconds
-
-/* ======================================================
    HELPERS
 ====================================================== */
-function getDeviceId(req) {
-  const raw =
-    req.headers["x-device-id"] ||
-    req.headers["user-agent"] ||
-    "unknown-device";
-
-  return crypto.createHash("sha256").update(raw).digest("hex");
-}
-
 function generateOtp() {
   return crypto.randomInt(100000, 999999).toString();
 }
@@ -119,28 +97,24 @@ function emailTemplate(title, body) {
 }
 
 /* ======================================================
-   REGISTER (START VERIFICATION COUNTDOWN)
+   REGISTER
 ====================================================== */
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(400).json({
-        msg: "Email already registered",
-      });
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ msg: "Email already registered" });
     }
 
-    const now = new Date();
     const verificationDeadline = new Date(
-      now.getTime() + 14 * 24 * 60 * 60 * 1000
+      Date.now() + 14 * 24 * 60 * 60 * 1000
     );
 
     const user = await User.create({
       name,
       email,
-      password, // ⚠️ hashed in model
+      password,
       role: "PATIENT",
       emailVerified: false,
       verificationDeadline,
@@ -155,10 +129,7 @@ export const register = async (req, res) => {
       resourceId: user._id,
     });
 
-    res.status(201).json({
-      success: true,
-      msg: "Registration successful",
-    });
+    res.status(201).json({ success: true, msg: "Registration successful" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
@@ -183,12 +154,10 @@ export const verifyEmail = async (req, res) => {
 
       await AuditLog.create({
         actorId: user._id,
-        actorRole: "user",
+        actorRole: user.role,
         action: "EMAIL_VERIFIED",
         resource: "User",
         resourceId: user._id,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
       });
     }
 
@@ -209,22 +178,11 @@ export const resendVerificationEmail = async (req, res) => {
     if (!user) {
       return res.json({
         msg: "If the account exists, a verification email was sent.",
-        retryAfter: RESEND_LIMIT,
       });
     }
 
     if (user.emailVerified) {
       return res.status(400).json({ msg: "Email already verified." });
-    }
-
-    const key = `verify-resend:${user._id}`;
-    const ttl = await redis.ttl(key);
-
-    if (ttl > 0) {
-      return res.status(429).json({
-        msg: "Please wait before requesting another verification email.",
-        retryAfter: ttl,
-      });
     }
 
     const token = jwt.sign(
@@ -244,27 +202,22 @@ export const resendVerificationEmail = async (req, res) => {
       ),
     });
 
-    await redis.set(key, "1", { ex: RESEND_LIMIT });
-
     await AuditLog.create({
       actorId: user._id,
-      actorRole: "user",
+      actorRole: user.role,
       action: "VERIFICATION_EMAIL_RESENT",
       resource: "User",
       resourceId: user._id,
     });
 
-    res.json({
-      msg: "Verification email resent.",
-      retryAfter: RESEND_LIMIT,
-    });
-  } catch (err) {
+    res.json({ msg: "Verification email resent." });
+  } catch {
     res.status(500).json({ msg: "Server error" });
   }
 };
 
 /* ======================================================
-   LOGIN
+   LOGIN (CRASH-PROOF)
 ====================================================== */
 export const login = async (req, res) => {
   try {
@@ -279,9 +232,15 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
+    if (!(await user.matchPassword(password))) {
       return res.status(400).json({ msg: "Invalid credentials" });
+    }
+
+    if (user.twoFactorEnabled) {
+      return res.json({
+        requires2FA: true,
+        userId: user._id,
+      });
     }
 
     const accessToken = signAccessToken({
@@ -289,7 +248,7 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      twoFactorVerified: !user.twoFactorEnabled,
+      twoFactorVerified: true,
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
@@ -314,7 +273,7 @@ export const login = async (req, res) => {
 };
 
 /* ======================================================
-   VERIFY 2FA OTP
+   VERIFY 2FA
 ====================================================== */
 export const verify2FAOtp = async (req, res) => {
   try {
@@ -413,16 +372,14 @@ export const changePassword = async (req, res) => {
 };
 
 /* ======================================================
-   ADMIN VERIFY USER (OVERRIDE)
+   ADMIN VERIFY USER
 ====================================================== */
 export const adminVerifyUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
     if (user.emailVerified) {
       return res.status(400).json({ msg: "User already verified" });
@@ -434,20 +391,15 @@ export const adminVerifyUser = async (req, res) => {
 
     await AuditLog.create({
       actorId: req.user.id,
-      actorRole: "admin",
+      actorRole: req.user.role,
       action: "ADMIN_EMAIL_VERIFIED",
       resource: "User",
       resourceId: user._id,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-      metadata: { method: "admin_override" },
+      metadata: { method: "ROLE_OVERRIDE" },
     });
 
-    res.json({
-      success: true,
-      msg: "User email verified by admin",
-    });
-  } catch (err) {
+    res.json({ success: true, msg: "User email verified by admin" });
+  } catch {
     res.status(500).json({ msg: "Server error" });
   }
 };
