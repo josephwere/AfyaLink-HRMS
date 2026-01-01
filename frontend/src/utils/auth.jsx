@@ -7,12 +7,19 @@ import {
 import { apiFetch, logout as apiLogout } from "./apiFetch";
 
 /* ======================================================
-   JWT PARSER
+   JWT PARSER (BASE64URL SAFE)
 ====================================================== */
 function parseJwt(token) {
   try {
-    const base64 = token.split(".")[1];
-    return JSON.parse(atob(base64));
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
   } catch {
     return null;
   }
@@ -28,23 +35,26 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   /* --------------------------------------------------
-     RESTORE SESSION (reload-safe + 2FA aware)
+     RESTORE SESSION (SAFE)
   -------------------------------------------------- */
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
       const token = localStorage.getItem("token");
 
-      if (storedUser && token) {
-        const decoded = parseJwt(token);
+      if (!storedUser || !token) return;
 
-        setUser({
-          ...JSON.parse(storedUser),
-          twoFactorVerified: decoded?.twoFactor !== false,
-        });
-      }
+      const decoded = parseJwt(token);
+      if (!decoded?.role) throw new Error("Invalid token");
+
+      setUser({
+        ...JSON.parse(storedUser),
+        role: decoded.role,
+        twoFactorVerified: decoded?.twoFactor !== false,
+      });
     } catch {
       localStorage.clear();
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -52,9 +62,6 @@ export function AuthProvider({ children }) {
 
   /* --------------------------------------------------
      LOGIN
-     - Email + Password
-     - Google (direct token)
-     - 2FA aware
   -------------------------------------------------- */
   const login = async (emailOrToken, passwordOrOptions) => {
     /* ============================
@@ -67,8 +74,8 @@ export function AuthProvider({ children }) {
       const accessToken = emailOrToken;
       const decoded = parseJwt(accessToken);
 
-      if (!decoded) {
-        throw new Error("Invalid access token");
+      if (!decoded?.role) {
+        throw new Error("Invalid Google token");
       }
 
       const safeUser = {
@@ -106,18 +113,16 @@ export function AuthProvider({ children }) {
       throw new Error(data.msg || "Login failed");
     }
 
-    /* 🔐 2FA REQUIRED */
     if (data.requires2FA) {
       localStorage.setItem("2fa_pending", "true");
       localStorage.setItem("2fa_user", data.userId);
-
-      return {
-        requires2FA: true,
-        userId: data.userId,
-      };
+      return { requires2FA: true, userId: data.userId };
     }
 
-    /* ✅ NORMAL LOGIN */
+    if (!data.user?.role) {
+      throw new Error("User role missing");
+    }
+
     const safeUser = {
       id: data.user.id,
       name: data.user.name,
@@ -142,19 +147,20 @@ export function AuthProvider({ children }) {
      COMPLETE 2FA
   -------------------------------------------------- */
   const complete2FA = (accessToken) => {
+    const decoded = parseJwt(accessToken);
+    if (!decoded?.role) return;
+
     localStorage.setItem("token", accessToken);
     localStorage.removeItem("2fa_pending");
     localStorage.removeItem("2fa_user");
 
-    const storedUser = localStorage.getItem("user");
-    const decoded = parseJwt(accessToken);
+    const storedUser = JSON.parse(localStorage.getItem("user"));
 
-    if (storedUser) {
-      setUser({
-        ...JSON.parse(storedUser),
-        twoFactorVerified: decoded?.twoFactor !== false,
-      });
-    }
+    setUser({
+      ...storedUser,
+      role: decoded.role,
+      twoFactorVerified: true,
+    });
   };
 
   /* --------------------------------------------------
@@ -196,4 +202,4 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return ctx;
-    }
+      }
