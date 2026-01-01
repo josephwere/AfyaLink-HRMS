@@ -1,9 +1,11 @@
 import express from "express";
 import auth from "../middleware/auth.js";
-import { authorize } from "../middleware/authorize.js";
+import { requireRole } from "../middleware/requireRole.js";
 import { featureGuard } from "../middleware/featureGuard.js";
+
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
+
 import { revokeEmergencyAccess } from "../controllers/adminController.js";
 import { emergencyAnalytics } from "../controllers/emergencyAnalyticsController.js";
 
@@ -15,7 +17,7 @@ const router = express.Router();
 router.post(
   "/emergency/:hospitalId/revoke",
   auth,
-  authorize("SUPER_ADMIN"),
+  requireRole("SUPER_ADMIN"),
   revokeEmergencyAccess
 );
 
@@ -25,7 +27,7 @@ router.post(
 router.get(
   "/emergency-analytics",
   auth,
-  authorize("SUPER_ADMIN"),
+  requireRole("SUPER_ADMIN"),
   emergencyAnalytics
 );
 
@@ -35,7 +37,7 @@ router.get(
 router.post(
   "/create-admin",
   auth,
-  authorize("SUPER_ADMIN", "HOSPITAL_ADMIN"),
+  requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   featureGuard("adminCreation"),
   async (req, res) => {
     try {
@@ -45,15 +47,15 @@ router.post(
         return res.status(400).json({ msg: "Missing required fields" });
       }
 
-      if (
-        ![
-          "HOSPITAL_ADMIN",
-          "DOCTOR",
-          "NURSE",
-          "LAB_TECH",
-          "PHARMACIST",
-        ].includes(role)
-      ) {
+      const allowedRoles = [
+        "HOSPITAL_ADMIN",
+        "DOCTOR",
+        "NURSE",
+        "LAB_TECH",
+        "PHARMACIST",
+      ];
+
+      if (!allowedRoles.includes(role)) {
         return res.status(400).json({ msg: "Invalid staff role" });
       }
 
@@ -93,7 +95,6 @@ router.post(
       });
     } catch (err) {
       console.error(err);
-
       res.status(500).json({
         success: false,
         msg: "Failed to create staff",
