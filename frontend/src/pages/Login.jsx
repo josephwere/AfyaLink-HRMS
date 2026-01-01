@@ -10,7 +10,7 @@ import PasswordInput from "../components/PasswordInput";
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Login() {
-  const { login, loading, user } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,15 +24,6 @@ export default function Login() {
   const [resendLoading, setResendLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [showResend, setShowResend] = useState(false);
-
-  /* -----------------------------------------
-     Redirect if already logged in
-  ----------------------------------------- */
-  useEffect(() => {
-    if (user) {
-      navigate(redirectByRole(user), { replace: true });
-    }
-  }, [user, navigate]);
 
   /* -----------------------------------------
      Restore resend cooldown
@@ -66,7 +57,7 @@ export default function Login() {
   }, [cooldown]);
 
   /* -----------------------------------------
-     Post-register message
+     Post-register notice
   ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -88,7 +79,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     Email + Password Login
+     EMAIL + PASSWORD LOGIN
   ----------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,7 +112,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     Resend verification email
+     RESEND VERIFICATION
   ----------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -157,7 +148,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     Google Login (FINAL FIX)
+     GOOGLE LOGIN (FIXED)
   ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -175,9 +166,8 @@ export default function Login() {
         throw new Error(data.msg || "Google login failed");
       }
 
-      // ✅ Use existing auth logic
-      await login(data.accessToken, { directToken: true });
-      // Redirect happens automatically via useEffect
+      const result = await login(data.accessToken, { directToken: true });
+      navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
       setError(err.message);
     }
@@ -258,4 +248,4 @@ export default function Login() {
       </form>
     </div>
   );
-                                       }
+    }
