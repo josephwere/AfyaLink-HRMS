@@ -91,6 +91,9 @@ import branchesRoutes from "./routes/branchesRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
 import accessVerificationRoutes from "./routes/accessVerificationRoutes.js";
+import securityDashboardRoutes from "./routes/securityDashboardRoutes.js";
+
+
 
 
 /* ======================================================
@@ -163,6 +166,7 @@ app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/hospital-admin", hospitalAdminRoutes);
 app.use("/api/branches", branchesRoutes);
 app.use("/api/access", accessVerificationRoutes);
+app.use("/api/security", securityDashboardRoutes);
 
 
 /* ======================================================
