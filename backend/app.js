@@ -90,6 +90,8 @@ import insuranceRoutes from "./routes/insuranceRoutes.js";
 import branchesRoutes from "./routes/branchesRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
+import accessVerificationRoutes from "./routes/accessVerificationRoutes.js";
+
 
 /* ======================================================
    🚀 APP
@@ -160,6 +162,8 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/hospital-admin", hospitalAdminRoutes);
 app.use("/api/branches", branchesRoutes);
+app.use("/api/access", accessVerificationRoutes);
+
 
 /* ======================================================
    🧑‍⚕️ CLINICAL
