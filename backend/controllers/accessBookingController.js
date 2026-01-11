@@ -1,5 +1,5 @@
 import AccessEntry from "../models/AccessEntry.js";
-import Visitor from "../models/Visitor.js";
+import Visitor from "../models/Visitor.js"; 
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 import { generateAccessCode } from "../utils/accessCodeGenerator.js";
