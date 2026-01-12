@@ -1,8 +1,9 @@
 import AccessEntry from "../models/AccessEntry.js";
-import Visitor from "../models/Visitor.js"; 
+import Visitor from "../models/Visitor.js";
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 import { generateAccessCode } from "../utils/accessCodeGenerator.js";
+import { generateQRToken } from "../utils/qrToken.js"; // ✅ ADDED
 
 /* ======================================================
    👥 VISITOR SELF / STAFF BOOKING
@@ -60,6 +61,9 @@ export const bookVisitorAccess = async (req, res) => {
       },
     });
 
+    /* ========= GENERATE QR TOKEN ========= */
+    const qrToken = generateQRToken(accessEntry);
+
     /* ========= AUDIT LOG ========= */
     await AuditLog.create({
       actorId: req.user._id,
@@ -78,6 +82,7 @@ export const bookVisitorAccess = async (req, res) => {
       success: true,
       message: "Visitor access booked successfully",
       accessCode: accessEntry.code,
+      qrToken,               // ✅ ADDED
       expiresAt,
     });
   } catch (error) {
@@ -136,6 +141,9 @@ export const bookStaffOrContractorAccess = async (req, res) => {
       approvedBy: req.user._id,
     });
 
+    /* ========= GENERATE QR TOKEN ========= */
+    const qrToken = generateQRToken(accessEntry);
+
     /* ========= AUDIT LOG ========= */
     await AuditLog.create({
       actorId: req.user._id,
@@ -155,6 +163,7 @@ export const bookStaffOrContractorAccess = async (req, res) => {
       success: true,
       message: "Internal access granted successfully",
       accessCode: accessEntry.code,
+      qrToken,               // ✅ ADDED
       expiresAt,
     });
   } catch (error) {
