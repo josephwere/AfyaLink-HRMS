@@ -7,6 +7,7 @@ import { verifyAccessCode } from "../controllers/accessVerificationController.js
 import { checkIn, checkOut } from "../controllers/accessMovementController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/authorize.js";
+import { emergencyGuard } from "../middleware/emergencyGuard.js"; // ✅ import emergencyGuard
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post(
   "/book/visitor",
   protect,
+  emergencyGuard, // 🚨 always before authorize
   authorize("ACCESS_ENTRY", "CREATE_VISITOR"),
   bookVisitorAccess
 );
@@ -24,6 +26,7 @@ router.post(
 router.post(
   "/book/staff",
   protect,
+  emergencyGuard, // 🚨 always before authorize
   authorize("ACCESS_ENTRY", "CREATE_STAFF"),
   bookStaffOrContractorAccess
 );
@@ -35,6 +38,7 @@ router.post(
 router.post(
   "/verify",
   protect,
+  emergencyGuard, // 🚨 always before authorize
   authorize("ACCESS_ENTRY", "VERIFY"),
   verifyAccessCode
 );
@@ -46,6 +50,7 @@ router.post(
 router.post(
   "/check-in",
   protect,
+  emergencyGuard, // 🚨 always before authorize
   authorize("ACCESS_ENTRY", "CHECK_IN"),
   checkIn
 );
@@ -53,6 +58,7 @@ router.post(
 router.post(
   "/check-out",
   protect,
+  emergencyGuard, // 🚨 always before authorize
   authorize("ACCESS_ENTRY", "CHECK_OUT"),
   checkOut
 );
