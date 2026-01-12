@@ -30,15 +30,29 @@ const userSchema = new Schema(
       select: false,
     },
 
+    /* ======================================================
+       🔐 ROLES (HAVSS + MEDICAL)
+    ====================================================== */
     role: {
       type: String,
       enum: [
+        // System
         "SUPER_ADMIN",
+
+        // Hospital Management
         "HOSPITAL_ADMIN",
+
+        // Medical Staff
         "DOCTOR",
         "NURSE",
         "LAB_TECH",
         "PHARMACIST",
+
+        // Security (HAVSS)
+        "SECURITY_OFFICER",
+        "SECURITY_ADMIN",
+
+        // Public
         "PATIENT",
         "GUEST",
       ],
@@ -174,7 +188,7 @@ userSchema.pre("save", function (next) {
 });
 
 /* ======================================================
-   🚫 BLOCK SUPER_ADMIN DELETION (ALL PATHS)
+   🚫 BLOCK SUPER_ADMIN DELETION
 ====================================================== */
 async function preventSuperAdminDelete(next) {
   const user = await this.model.findOne(this.getQuery());
