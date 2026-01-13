@@ -5,13 +5,22 @@ import { isBreakGlassActive } from "./breakGlassGuard.js";
 /**
  * PLAN + LIMIT + FEATURE ENFORCEMENT
  * Source of truth: Hospital
+ *
+ * Usage:
+ * planGuard({ feature: "qrAccess", limitKey: "users" })
+ * planGuard({ feature: "emergencyMode" })
+ * planGuard({ limitKey: "patients" })
  */
 export const planGuard =
-  ({ feature, limitKey } = {}) =>
+  ({ feature = null, limitKey = null } = {}) =>
   async (req, res, next) => {
     try {
-      const hospitalId = req.user?.hospitalId;
-      if (!hospitalId) return next();
+      const hospitalId = req.user?.hospitalId || req.user?.hospital;
+
+      /* ================= NO HOSPITAL CONTEXT ================= */
+      if (!hospitalId) {
+        return next(); // do NOT crash or block
+      }
 
       /* ================= BREAK-GLASS OVERRIDE ================= */
       const breakGlass = await isBreakGlassActive(hospitalId);
@@ -27,48 +36,59 @@ export const planGuard =
 
       if (!hospital) {
         return res.status(403).json({
-          message: "Hospital inactive",
+          message: "Hospital inactive or not found",
         });
       }
 
       /* ================= FEATURE CHECK ================= */
-      if (feature && !hospital.features?.[feature]) {
-        await denyAudit(
-          req,
-          res,
-          `Feature '${feature}' blocked by plan`
-        );
+      if (feature) {
+        const enabled = hospital.features?.[feature];
 
-        return res.status(403).json({
-          message: "Upgrade plan to access this feature",
-        });
+        if (!enabled) {
+          await denyAudit(
+            req,
+            res,
+            `Feature '${feature}' blocked by plan`
+          );
+
+          return res.status(403).json({
+            message: "Feature not available in your plan",
+          });
+        }
       }
 
       /* ================= LIMIT CHECK ================= */
       if (limitKey) {
-        const current = await getUsageCount(limitKey, hospitalId);
         const allowed = hospital.limits?.[limitKey];
 
-        if (typeof allowed === "number" && current >= allowed) {
-          await denyAudit(
-            req,
-            res,
-            `Plan limit exceeded (${limitKey})`
-          );
+        // If limit is undefined/null → unlimited (safe default)
+        if (typeof allowed === "number") {
+          const current = await getUsageCount(limitKey, hospitalId);
 
-          return res.status(429).json({
-            message: `Plan limit reached (${limitKey})`,
-          });
+          if (current >= allowed) {
+            await denyAudit(
+              req,
+              res,
+              `Plan limit exceeded (${limitKey})`
+            );
+
+            return res.status(429).json({
+              message: `Plan limit reached (${limitKey})`,
+            });
+          }
         }
       }
 
       next();
     } catch (err) {
+      console.error("planGuard error:", err);
       next(err);
     }
   };
 
-/* ================= USAGE COUNTS ================= */
+/* ======================================================
+   📊 USAGE COUNTERS (SAFE + LAZY IMPORTS)
+====================================================== */
 async function getUsageCount(key, hospitalId) {
   switch (key) {
     case "users": {
@@ -88,6 +108,6 @@ async function getUsageCount(key, hospitalId) {
     }
 
     default:
-      return 0;
+      return 0; // unknown limit → do not block
   }
   }
