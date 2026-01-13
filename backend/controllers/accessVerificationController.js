@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import AccessEntry from "../models/AccessEntry.js";
 import AuditLog from "../models/AuditLog.js";
+import { isEmergencyActive } from "../utils/isEmergencyActive.js";
 
 /* ======================================================
    🔍 VERIFY QR TOKEN (ONLINE / MOBILE SCAN)
@@ -68,70 +69,97 @@ export const verifyQRToken = async (req, res) => {
 
 /* ======================================================
    🔍 VERIFY ACCESS CODE (MANUAL / SECURITY DESK)
+   🧨 EMERGENCY MODE BYPASS ENABLED
 ====================================================== */
 export const verifyAccessCode = async (req, res) => {
   try {
     const { code, area } = req.body;
+    const hospital = req.user.hospital;
 
     if (!code) {
-      return res.status(400).json({ message: "Access code required" });
-    }
-
-    const access = await AccessEntry.findOne({ code })
-      .populate("personRef", "name fullName email phone")
-      .populate("approvedBy", "name role")
-      .lean();
-
-    if (!access) {
-      return res.status(404).json({
-        status: "INVALID",
-        message: "Access code not found",
+      return res.status(400).json({
+        status: "DENIED",
+        reason: "Access code required",
       });
     }
 
-    const now = new Date();
+    const access = await AccessEntry.findOne({ code, hospital })
+      .populate("personRef", "name fullName email phone")
+      .populate("approvedBy", "name role");
+
+    if (!access) {
+      return res.status(404).json({
+        status: "DENIED",
+        reason: "Invalid code",
+      });
+    }
+
+    const emergency = await isEmergencyActive(hospital);
+    let violation = null;
 
     if (access.status === "REVOKED") {
-      return res.json({ status: "REVOKED" });
+      violation = "Access revoked";
     }
 
-    if (access.expiresAt && access.expiresAt < now) {
-      return res.json({ status: "EXPIRED" });
+    if (access.expiresAt && access.expiresAt < new Date()) {
+      violation = "Expired access";
     }
 
-    if (area && access.areasAllowed?.length) {
-      if (!access.areasAllowed.includes(area)) {
-        await AuditLog.create({
-          actorId: req.user._id,
-          actorRole: req.user.role,
-          action: "ACCESS_AREA_VIOLATION",
-          resource: "AccessEntry",
-          resourceId: access._id,
-          hospital: access.hospital,
-          metadata: { area },
-          success: false,
-        });
-
-        return res.json({
-          status: "AREA_VIOLATION",
-          allowedAreas: access.areasAllowed,
-        });
-      }
+    if (
+      area &&
+      access.areasAllowed?.length &&
+      !access.areasAllowed.includes(area)
+    ) {
+      violation = "Area not allowed";
     }
 
+    /* ======================================================
+       🚫 DENY ONLY IF NOT IN EMERGENCY
+    ====================================================== */
+    if (violation && !emergency) {
+      await AuditLog.create({
+        actorId: req.user._id,
+        actorRole: req.user.role,
+        action: "ACCESS_DENIED",
+        resource: "AccessEntry",
+        resourceId: access._id,
+        hospital,
+        success: false,
+        metadata: { area, violation, emergency },
+      });
+
+      return res.status(403).json({
+        status: "DENIED",
+        reason: violation,
+      });
+    }
+
+    /* ======================================================
+       📜 AUDIT (ALWAYS)
+    ====================================================== */
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
-      action: "ACCESS_VERIFIED",
+      action: emergency && violation
+        ? "EMERGENCY_ACCESS_OVERRIDE"
+        : "VERIFY_ACCESS",
       resource: "AccessEntry",
       resourceId: access._id,
-      hospital: access.hospital,
-      metadata: { area },
+      hospital,
       success: true,
+      metadata: {
+        area,
+        violation,
+        emergency,
+      },
     });
 
+    /* ======================================================
+       ✅ RESPONSE FOR FRONTEND
+    ====================================================== */
     res.json({
-      status: "VALID",
+      status: violation ? "WARNING" : "VALID",
+      emergency,
       personType: access.personType,
       person: access.personRef,
       purpose: access.purpose,
@@ -140,7 +168,10 @@ export const verifyAccessCode = async (req, res) => {
     });
   } catch (err) {
     console.error("Verify access error:", err);
-    res.status(500).json({ message: "Verification failed" });
+    res.status(500).json({
+      status: "DENIED",
+      reason: "Verification failed",
+    });
   }
 };
 
