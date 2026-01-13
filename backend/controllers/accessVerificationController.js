@@ -1,8 +1,73 @@
+import jwt from "jsonwebtoken";
 import AccessEntry from "../models/AccessEntry.js";
 import AuditLog from "../models/AuditLog.js";
 
 /* ======================================================
-   🔍 VERIFY ACCESS CODE (ENTRY / CHECK)
+   🔍 VERIFY QR TOKEN (ONLINE / MOBILE SCAN)
+====================================================== */
+export const verifyQRToken = async (req, res) => {
+  try {
+    const { qrToken, area } = req.body;
+
+    if (!qrToken) {
+      return res.status(400).json({
+        status: "DENIED",
+        reason: "QR token required",
+      });
+    }
+
+    const decoded = jwt.verify(qrToken, process.env.QR_SECRET);
+
+    const accessEntry = await AccessEntry.findOne({
+      code: decoded.code,
+      hospital: decoded.hospital,
+      active: true,
+    }).populate("personRef");
+
+    if (!accessEntry) {
+      return res.status(404).json({
+        status: "DENIED",
+        reason: "Invalid or revoked access",
+      });
+    }
+
+    if (accessEntry.expiresAt && accessEntry.expiresAt < new Date()) {
+      return res.status(403).json({
+        status: "DENIED",
+        reason: "Access expired",
+      });
+    }
+
+    if (area && accessEntry.areasAllowed?.length) {
+      if (!accessEntry.areasAllowed.includes(area)) {
+        return res.status(403).json({
+          status: "DENIED",
+          reason: "Area not allowed",
+        });
+      }
+    }
+
+    res.json({
+      status: "VALID",
+      person: {
+        name:
+          accessEntry.personRef?.fullName ||
+          accessEntry.personRef?.name ||
+          "Staff",
+        type: accessEntry.personType,
+      },
+      expiresAt: accessEntry.expiresAt,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: "DENIED",
+      reason: "Invalid QR token",
+    });
+  }
+};
+
+/* ======================================================
+   🔍 VERIFY ACCESS CODE (MANUAL / SECURITY DESK)
 ====================================================== */
 export const verifyAccessCode = async (req, res) => {
   try {
@@ -24,7 +89,6 @@ export const verifyAccessCode = async (req, res) => {
       });
     }
 
-    /* ========= STATUS CHECK ========= */
     const now = new Date();
 
     if (access.status === "REVOKED") {
@@ -35,7 +99,6 @@ export const verifyAccessCode = async (req, res) => {
       return res.json({ status: "EXPIRED" });
     }
 
-    /* ========= AREA CHECK ========= */
     if (area && access.areasAllowed?.length) {
       if (!access.areasAllowed.includes(area)) {
         await AuditLog.create({
@@ -56,7 +119,6 @@ export const verifyAccessCode = async (req, res) => {
       }
     }
 
-    /* ========= SUCCESS ========= */
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
@@ -65,6 +127,7 @@ export const verifyAccessCode = async (req, res) => {
       resourceId: access._id,
       hospital: access.hospital,
       metadata: { area },
+      success: true,
     });
 
     res.json({
@@ -84,11 +147,14 @@ export const verifyAccessCode = async (req, res) => {
 /* ======================================================
    🚪 CHECK-IN (ENTRY)
 ====================================================== */
-export const checkInAccess = async (req, res) => {
+export const checkIn = async (req, res) => {
   try {
     const { code } = req.body;
 
-    const access = await AccessEntry.findOne({ code, status: "ACTIVE" });
+    const access = await AccessEntry.findOne({
+      code,
+      status: "ACTIVE",
+    });
 
     if (!access) {
       return res.status(404).json({ message: "Invalid access code" });
@@ -119,7 +185,7 @@ export const checkInAccess = async (req, res) => {
 /* ======================================================
    🚪 CHECK-OUT (EXIT)
 ====================================================== */
-export const checkOutAccess = async (req, res) => {
+export const checkOut = async (req, res) => {
   try {
     const { code } = req.body;
 
