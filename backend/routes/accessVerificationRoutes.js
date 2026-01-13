@@ -1,35 +1,57 @@
 import express from "express";
-import auth from "../middleware/auth.js";
+import { protect } from "../middleware/authMiddleware.js";
+import { emergencyGuard } from "../middleware/emergencyGuard.js";
 import { authorize } from "../middleware/authorize.js";
 
 import {
   verifyAccessCode,
-  checkInAccess,
-  checkOutAccess,
+  verifyQRToken,
+  checkIn,
+  checkOut,
 } from "../controllers/accessVerificationController.js";
 
 const router = express.Router();
 
-/* ================= SECURITY VERIFICATION ================= */
+/* ==========================
+   🔍 SECURITY VERIFICATION
+========================== */
+
+// Manual / Desk verification
 router.post(
   "/verify",
-  auth,
-  authorize("security", "verify"),
+  protect,
+  emergencyGuard, // 🚨 always before authorize
+  authorize("ACCESS_ENTRY", "VERIFY"),
   verifyAccessCode
 );
 
+// ONLINE / QR verification
+router.post(
+  "/verify-qr",
+  protect,
+  emergencyGuard, // 🚨 critical
+  authorize("SECURITY_OFFICER", "SECURITY_ADMIN"),
+  verifyQRToken
+);
+
+/* ==========================
+   🚪 MOVEMENT
+========================== */
+
 router.post(
   "/check-in",
-  auth,
-  authorize("security", "verify"),
-  checkInAccess
+  protect,
+  emergencyGuard,
+  authorize("ACCESS_ENTRY", "CHECK_IN"),
+  checkIn
 );
 
 router.post(
   "/check-out",
-  auth,
-  authorize("security", "verify"),
-  checkOutAccess
+  protect,
+  emergencyGuard,
+  authorize("ACCESS_ENTRY", "CHECK_OUT"),
+  checkOut
 );
 
 export default router;
