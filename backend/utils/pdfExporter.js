@@ -2,7 +2,11 @@ import PDFDocument from "pdfkit";
 import crypto from "crypto";
 import { signData } from "./pkiSigner.js";
 
-export const generateCourtPDF = (title, data, meta = {}) => {
+/* ===== OPTIONAL ADDITIVE IMPORTS (SAFE) ===== */
+import EvidenceAnchor from "../models/EvidenceAnchor.js";
+import { anchorHash } from "./blockchainAnchor.js";
+
+export const generateCourtPDF = async (title, data, meta = {}) => {
   const doc = new PDFDocument({ margin: 50 });
   const chunks = [];
 
@@ -41,9 +45,33 @@ export const generateCourtPDF = (title, data, meta = {}) => {
   doc.end();
 
   return new Promise((resolve) => {
-    doc.on("end", () => {
+    doc.on("end", async () => {
+      const buffer = Buffer.concat(chunks);
+
+      /* =========================
+         BLOCKCHAIN ANCHOR (NON-BLOCKING)
+      ========================= */
+      try {
+        if (meta?.hospital && meta?.resourceId) {
+          const { blockchain, txHash } = await anchorHash(hash);
+
+          await EvidenceAnchor.create({
+            hospital: meta.hospital,
+            resourceType: "PDF",
+            resourceId: meta.resourceId,
+            hash,
+            signature,
+            blockchain,
+            txHash,
+          });
+        }
+      } catch (err) {
+        // 🔒 Never block PDF generation
+        console.error("Blockchain anchoring failed:", err.message);
+      }
+
       resolve({
-        buffer: Buffer.concat(chunks),
+        buffer,
         hash,
         signature,
       });
