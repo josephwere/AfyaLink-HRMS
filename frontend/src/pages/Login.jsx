@@ -10,7 +10,7 @@ import PasswordInput from "../components/PasswordInput";
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Login() {
-  const { login, loading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +24,7 @@ export default function Login() {
   const [resendLoading, setResendLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [showResend, setShowResend] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   /* -----------------------------------------
      Restore resend cooldown
@@ -86,6 +87,7 @@ export default function Login() {
     setError("");
     setInfo("");
     setShowResend(false);
+    setSubmitting(true);
 
     try {
       rememberMe
@@ -108,6 +110,8 @@ export default function Login() {
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
       setError(err.message || "Invalid credentials");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -125,13 +129,10 @@ export default function Login() {
         body: JSON.stringify({ email }),
       });
 
-      // 🔒 SAFE JSON PARSE
       let data = {};
       try {
         data = await res.json();
-      } catch {
-        data = {};
-      }
+      } catch {}
 
       if (!res.ok) {
         throw new Error(
@@ -152,7 +153,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     GOOGLE LOGIN (CRASH-SAFE)
+     GOOGLE LOGIN (SAFE)
   ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -243,8 +244,8 @@ export default function Login() {
           </Link>
         </div>
 
-        <button disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+        <button disabled={submitting}>
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
 
         <div className="divider">or</div>
@@ -263,4 +264,4 @@ export default function Login() {
       </form>
     </div>
   );
-}
+    }
