@@ -9,25 +9,31 @@ export default function AutoRedirect({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading) return; // wait for auth to load
+    if (!user) return; // no user → do nothing
 
     const correctPath = redirectByRole(user);
 
     // Already in correct area → do nothing
     if (location.pathname.startsWith(correctPath)) return;
 
-    // Allow shared routes
+    // Allow shared/public routes
     const allowedShared = [
       "/unauthorized",
       "/verify-email",
       "/verify-success",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/reset-password",
+      "/2fa",
     ];
 
     if (allowedShared.includes(location.pathname)) return;
 
-    // 🔁 Redirect silently
+    // 🔁 Redirect silently to user's dashboard
     navigate(correctPath, { replace: true });
   }, [user, loading, location.pathname, navigate]);
 
   return children;
-}
+  }
