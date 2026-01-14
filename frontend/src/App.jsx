@@ -37,7 +37,7 @@ import AuditLogs from "./pages/Admin/AuditLogs";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
 
 /* =====================================================
-   APP LAYOUT
+   APP LAYOUT (PROTECTED)
 ===================================================== */
 function AppLayout() {
   const { user } = useAuth();
@@ -63,7 +63,8 @@ export default function App() {
   return (
     <SocketProvider>
       <Routes>
-        {/* ================= PUBLIC ================= */}
+        {/* ============ PUBLIC ROUTES ============ */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
@@ -73,22 +74,19 @@ export default function App() {
         <Route path="/2fa" element={<TwoFactor />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* ================= PROTECTED ROOT ================= */}
+        {/* ============ PROTECTED ROUTES ============ */}
+        <Route
+          element={
+            <RequireRole>
+              <AutoRedirect>
+                <AppLayout />
+              </AutoRedirect>
+            </RequireRole>
+          }
+        >
+          {/* PATIENT */}
           <Route
-  element={
-    <RequireRole>
-      <AutoRedirect>
-        <AppLayout />
-      </AutoRedirect>
-    </RequireRole>
-  }
->
-          {/* Default */}
-          <Route index element={<div>Welcome to AfyaLink HRMS 🚀</div>} />
-
-          {/* ================= PATIENT ================= */}
-          <Route
-            path="patient"
+            path="/patient"
             element={
               <RequireRole roles={["PATIENT"]}>
                 <PatientDashboard />
@@ -96,9 +94,9 @@ export default function App() {
             }
           />
 
-          {/* ================= DOCTOR ================= */}
+          {/* DOCTOR */}
           <Route
-            path="doctor"
+            path="/doctor"
             element={
               <RequireRole roles={["DOCTOR"]}>
                 <DoctorDashboard />
@@ -106,9 +104,9 @@ export default function App() {
             }
           />
 
-          {/* ================= ADMIN ================= */}
+          {/* ADMIN */}
           <Route
-            path="admin"
+            path="/admin"
             element={
               <RequireRole roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]}>
                 <Outlet />
@@ -116,16 +114,7 @@ export default function App() {
             }
           >
             <Route index element={<AdminDashboard />} />
-
-            <Route
-              path="audit-logs"
-              element={
-                <RequireRole roles={["SUPER_ADMIN", "HOSPITAL_ADMIN"]}>
-                  <AuditLogs />
-                </RequireRole>
-              }
-            />
-
+            <Route path="audit-logs" element={<AuditLogs />} />
             <Route
               path="create-admin"
               element={
@@ -135,11 +124,11 @@ export default function App() {
               }
             />
           </Route>
-
-          {/* ================= 404 ================= */}
-          <Route path="*" element={<div>404 — Page not found</div>} />
         </Route>
+
+        {/* ============ 404 ============ */}
+        <Route path="*" element={<div>404 — Page not found</div>} />
       </Routes>
     </SocketProvider>
   );
-             }
+}
