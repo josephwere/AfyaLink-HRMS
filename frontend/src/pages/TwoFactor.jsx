@@ -30,6 +30,8 @@ export default function TwoFactor() {
   ---------------------------------------- */
   const submitOtp = async (e) => {
     e.preventDefault();
+    if (otp.length !== 6) return;
+
     setError("");
     setLoading(true);
 
@@ -39,7 +41,10 @@ export default function TwoFactor() {
         body: JSON.stringify({ userId, otp }),
       });
 
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {}
 
       if (!res.ok) {
         throw new Error(data.msg || "Invalid or expired code");
@@ -50,7 +55,7 @@ export default function TwoFactor() {
 
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Verification failed");
     } finally {
       setLoading(false);
     }
@@ -70,7 +75,9 @@ export default function TwoFactor() {
           maxLength="6"
           placeholder="123456"
           value={otp}
-          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) =>
+            setOtp(e.target.value.replace(/\D/g, ""))
+          }
           required
         />
 
@@ -120,4 +127,4 @@ export default function TwoFactor() {
       `}</style>
     </div>
   );
-}
+      }
