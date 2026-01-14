@@ -11,7 +11,7 @@ const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { loginWithToken } = useAuth();
+  const { complete2FA, login } = useAuth(); // Use existing login flow
 
   const [form, setForm] = useState({
     name: "",
@@ -21,6 +21,7 @@ export default function Register() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
@@ -82,6 +83,7 @@ export default function Register() {
 
     try {
       setLoading(true);
+      setSubmitting(true);
       setError("");
       setInfo("");
       setShowResend(false);
@@ -95,19 +97,14 @@ export default function Register() {
         }),
       });
 
-      // 🔒 SAFE JSON PARSE
       let data = {};
       try {
         data = await res.json();
-      } catch {
-        data = {};
-      }
+      } catch {}
 
       if (!res.ok) {
         const msg =
-          data.msg ||
-          data.message ||
-          "Registration failed";
+          data.msg || data.message || "Registration failed";
 
         if (
           msg.toLowerCase().includes("exists") ||
@@ -125,6 +122,7 @@ export default function Register() {
       setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -145,9 +143,7 @@ export default function Register() {
       let data = {};
       try {
         data = await res.json();
-      } catch {
-        data = {};
-      }
+      } catch {}
 
       if (!res.ok) {
         throw new Error(
@@ -171,7 +167,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     GOOGLE SIGN-UP (ROLE-SAFE)
+     GOOGLE SIGN-UP (SAFE)
   ---------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -195,7 +191,9 @@ export default function Register() {
         throw new Error(data.msg || "Google sign-up failed");
       }
 
-      loginWithToken(data.accessToken, data.user);
+      // Use login flow from AuthProvider
+      await login(data.accessToken, { directToken: true });
+
       navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
       setError(err.message);
@@ -260,16 +258,13 @@ export default function Register() {
           label="Confirm password"
           value={form.confirmPassword}
           onChange={(e) =>
-            setForm({
-              ...form,
-              confirmPassword: e.target.value,
-            })
+            setForm({ ...form, confirmPassword: e.target.value })
           }
           required
         />
 
-        <button disabled={loading}>
-          {loading ? "Creating account..." : "Create account"}
+        <button disabled={submitting}>
+          {submitting ? "Creating account..." : "Create account"}
         </button>
 
         <div className="divider">or</div>
@@ -288,4 +283,4 @@ export default function Register() {
       </form>
     </div>
   );
-  }
+         }
