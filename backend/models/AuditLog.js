@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Hospital from "./Hospital.js"; // To check ISO compliance
 
 const { Schema, model } = mongoose;
 
@@ -73,24 +74,42 @@ const auditLogSchema = new Schema(
 
 /* ======================================================
    🔒 IMMUTABILITY — AUDIT-SAFE (NO EDIT / NO DELETE)
+   Enforced only when hospital.isoCompliance.enabled = true
 ====================================================== */
-auditLogSchema.pre("updateOne", () => {
-  throw new Error("Audit logs are immutable");
+async function isoCheck(next, doc, query) {
+  try {
+    const hospitalId = doc?.hospital || query?._update?.hospital || query?.hospital;
+    if (!hospitalId) return next();
+
+    const hospital = await Hospital.findById(hospitalId).lean();
+    if (hospital?.isoCompliance?.enabled) {
+      throw new Error("Audit logs are immutable under ISO compliance");
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Apply hooks for ISO protection
+auditLogSchema.pre("updateOne", function (next) {
+  return isoCheck(next, this.getFilter(), this.getUpdate());
 });
-auditLogSchema.pre("updateMany", () => {
-  throw new Error("Audit logs are immutable");
+auditLogSchema.pre("updateMany", function (next) {
+  return isoCheck(next, this.getFilter(), this.getUpdate());
 });
-auditLogSchema.pre("findOneAndUpdate", () => {
-  throw new Error("Audit logs are immutable");
+auditLogSchema.pre("findOneAndUpdate", function (next) {
+  return isoCheck(next, this.getFilter(), this.getUpdate());
 });
-auditLogSchema.pre("deleteOne", () => {
-  throw new Error("Audit logs cannot be deleted");
+auditLogSchema.pre("deleteOne", function (next) {
+  return isoCheck(next, this.getFilter());
 });
-auditLogSchema.pre("deleteMany", () => {
-  throw new Error("Audit logs cannot be deleted");
+auditLogSchema.pre("deleteMany", function (next) {
+  return isoCheck(next, this.getFilter());
 });
-auditLogSchema.pre("findOneAndDelete", () => {
-  throw new Error("Audit logs cannot be deleted");
+auditLogSchema.pre("findOneAndDelete", function (next) {
+  return isoCheck(next, this.getFilter());
 });
 
 /* ======================================================
