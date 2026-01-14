@@ -40,6 +40,24 @@ const hospitalSchema = new mongoose.Schema(
       adminCreation: { type: Boolean, default: false },
     },
 
+    /* ================= ISO COMPLIANCE (NEW) ================= */
+    isoCompliance: {
+      enabled: { type: Boolean, default: false },
+      auditLevel: {
+        type: String,
+        enum: ["STANDARD", "STRICT"],
+        default: "STANDARD",
+      },
+      evidenceRetentionDays: {
+        type: Number,
+        default: 365, // 1 year
+      },
+      requireDualApprovalFor: {
+        type: [String],
+        default: ["EMERGENCY_ACCESS", "DATA_EXPORT"],
+      },
+    },
+
     /* ================= SOFT DELETE ================= */
     active: { type: Boolean, default: true },
   },
