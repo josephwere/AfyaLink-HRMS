@@ -58,7 +58,6 @@ export function AuthProvider({ children }) {
         twoFactorVerified: decoded?.twoFactor !== false,
       });
     } catch {
-      // ❗ only auth-related keys
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("2fa_pending");
@@ -197,18 +196,18 @@ export function AuthProvider({ children }) {
         isAuthenticated: Boolean(user),
         role: user?.role,
 
-        // existing (DO NOT BREAK)
+        // existing
         login,
         complete2FA,
         logout,
 
-        // ✅ safe additions (optional use)
+        // helpers
         hasRole: (...roles) => roles.includes(user?.role),
         isAdmin: ["SUPER_ADMIN", "HOSPITAL_ADMIN"].includes(user?.role),
         is2FAVerified: Boolean(user?.twoFactorVerified),
       }}
     >
-      {!loading && children}
+      {loading ? <div /> : children}
     </AuthContext.Provider>
   );
 }
@@ -222,4 +221,4 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return ctx;
-        }
+}
