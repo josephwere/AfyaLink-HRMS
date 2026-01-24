@@ -23,16 +23,22 @@ async function apiFetch(path, options = {}, _retry = false) {
 
   const headers = {
     ...(options.headers || {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  // Only set JSON header if body exists
+  // Skip Authorization header for login
+  if (token && !path.includes("/auth/login")) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Auto‑stringify body if it’s an object
   if (options.body) {
+    if (typeof options.body === "object") {
+      options.body = JSON.stringify(options.body);
+    }
     headers["Content-Type"] = "application/json";
   }
 
   let response;
-
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
