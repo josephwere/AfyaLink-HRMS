@@ -11,7 +11,7 @@ export async function safeJson(res) {
   try {
     return JSON.parse(text);
   } catch {
-    return {};
+    return { raw: text }; // fallback: return raw text if not valid JSON
   }
 }
 
@@ -49,6 +49,20 @@ async function apiFetch(path, options = {}, _retry = false) {
     throw new Error("Network error. Please check your connection.");
   }
 
+  // 🔎 Log response details for debugging
+  const data = await safeJson(response);
+  if (!response.ok) {
+    console.error("API Error:", {
+      status: response.status,
+      statusText: response.statusText,
+      path,
+      data,
+    });
+    throw new Error(
+      `Request failed: ${response.status} ${response.statusText} — ${JSON.stringify(data)}`
+    );
+  }
+
   /* 🔁 Silent refresh (once) */
   if (response.status === 401 && !_retry) {
     const refreshed = await refreshAccessToken();
@@ -57,7 +71,7 @@ async function apiFetch(path, options = {}, _retry = false) {
     }
   }
 
-  return response;
+  return data;
 }
 
 /* ======================================================
