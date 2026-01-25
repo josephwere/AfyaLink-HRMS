@@ -70,61 +70,65 @@ export default function Register() {
     setInfo("");
   };
 
-  /* ---------------------------------------
-     EMAIL + PASSWORD REGISTER
-  ---------------------------------------- */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ /* ---------------------------------------
+   EMAIL + PASSWORD REGISTER
+---------------------------------------- */
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+  if (form.password !== form.confirmPassword) {
+    setError("Passwords do not match");
+    return;
+  }
 
+  try {
+    setLoading(true);
+    setSubmitting(true);
+    setError("");
+    setInfo("");
+    setShowResend(false);
+
+    const res = await apiFetch("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: form.name.trim(),
+        email: form.email.toLowerCase().trim(),
+        password: form.password,
+      }),
+    });
+
+    let data = {};
     try {
-      setLoading(true);
-      setSubmitting(true);
-      setError("");
-      setInfo("");
-      setShowResend(false);
+      data = await res.json();
+    } catch {}
 
-      const res = await apiFetch("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.toLowerCase().trim(),
-          password: form.password,
-        }),
-      });
+    if (!res.ok) {
+      const msg =
+        data.msg || data.message || "Registration failed";
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {}
-
-      if (!res.ok) {
-        const msg =
-          data.msg || data.message || "Registration failed";
-
-        if (
-          msg.toLowerCase().includes("exists") ||
-          msg.toLowerCase().includes("verify")
-        ) {
-          setShowResend(true);
-        }
-
-        throw new Error(msg);
+      if (
+        msg.toLowerCase().includes("exists") ||
+        msg.toLowerCase().includes("verify")
+      ) {
+        setShowResend(true);
       }
 
-      // ✅ Success → go to login with verify notice
-      navigate("/login?verify=true");
-    } catch (err) {
-      setError(err.message || "Registration failed");
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
+      throw new Error(msg);
     }
-  };
+
+    // ✅ Success → go to login with verify notice
+    const successMsg = data.msg || data.message || "Registration successful";
+    setInfo(successMsg);
+
+    navigate("/login?verify=true");
+  } catch (err) {
+    setError(err.message || "Registration failed");
+  } finally {
+    setLoading(false);
+    setSubmitting(false);
+  }
+};
+
 
   /* ---------------------------------------
      RESEND VERIFICATION
