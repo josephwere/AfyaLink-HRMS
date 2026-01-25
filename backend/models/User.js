@@ -36,23 +36,14 @@ const userSchema = new Schema(
     role: {
       type: String,
       enum: [
-        // System
         "SUPER_ADMIN",
-
-        // Hospital Management
         "HOSPITAL_ADMIN",
-
-        // Medical Staff
         "DOCTOR",
         "NURSE",
         "LAB_TECH",
         "PHARMACIST",
-
-        // Security (HAVSS)
         "SECURITY_OFFICER",
         "SECURITY_ADMIN",
-
-        // Public
         "PATIENT",
         "GUEST",
       ],
@@ -108,8 +99,7 @@ const userSchema = new Schema(
     ========================= */
     refreshTokens: {
       type: [String],
-      default: [],
-      select: false,
+      default: [],   // ✅ ensures array exists
     },
 
     twoFactorEnabled: {
@@ -119,20 +109,11 @@ const userSchema = new Schema(
 
     trustedDevices: [
       {
-        deviceId: {
-          type: String,
-          required: true,
-        },
+        deviceId: { type: String, required: true },
         userAgent: String,
-        lastUsed: {
-          type: Date,
-          default: Date.now,
-        },
+        lastUsed: { type: Date, default: Date.now },
         verifiedAt: Date,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
 
@@ -140,32 +121,13 @@ const userSchema = new Schema(
        🚨 BREAK-GLASS / EMERGENCY ACCESS
     ====================================================== */
     emergencyAccess: {
-      active: {
-        type: Boolean,
-        default: false,
-        index: true,
-      },
-
+      active: { type: Boolean, default: false, index: true },
       reason: String,
-
-      triggeredBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-
+      triggeredBy: { type: Schema.Types.ObjectId, ref: "User" },
       triggeredAt: Date,
-
-      expiresAt: {
-        type: Date,
-        index: true,
-      },
-
+      expiresAt: { type: Date, index: true },
       revokedAt: Date,
-
-      revokedBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
+      revokedBy: { type: Schema.Types.ObjectId, ref: "User" },
     },
   },
   { timestamps: true }
@@ -179,9 +141,7 @@ userSchema.pre("save", function (next) {
     this.protectedAccount = true;
 
     if (this.isModified("active") && this.active === false) {
-      return next(
-        new Error("SUPER_ADMIN account cannot be deactivated")
-      );
+      return next(new Error("SUPER_ADMIN account cannot be deactivated"));
     }
   }
   next();
@@ -193,32 +153,19 @@ userSchema.pre("save", function (next) {
 async function preventSuperAdminDelete(next) {
   const user = await this.model.findOne(this.getQuery());
   if (user?.role === "SUPER_ADMIN" || user?.protectedAccount) {
-    return next(
-      new Error("SUPER_ADMIN accounts cannot be deleted")
-    );
+    return next(new Error("SUPER_ADMIN accounts cannot be deleted"));
   }
   next();
 }
 
-userSchema.pre(
-  "deleteOne",
-  { document: true, query: false },
-  function (next) {
-    if (this.role === "SUPER_ADMIN") {
-      return next(
-        new Error("SUPER_ADMIN accounts cannot be deleted")
-      );
-    }
-    next();
+userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
+  if (this.role === "SUPER_ADMIN") {
+    return next(new Error("SUPER_ADMIN accounts cannot be deleted"));
   }
-);
+  next();
+});
 
-userSchema.pre(
-  "deleteOne",
-  { document: false, query: true },
-  preventSuperAdminDelete
-);
-
+userSchema.pre("deleteOne", { document: false, query: true }, preventSuperAdminDelete);
 userSchema.pre("findOneAndDelete", preventSuperAdminDelete);
 userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
 
@@ -241,7 +188,5 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 /* ======================================================
    EXPORT
 ====================================================== */
-const User =
-  mongoose.models.User || model("User", userSchema);
-
+const User = mongoose.models.User || model("User", userSchema);
 export default User;
