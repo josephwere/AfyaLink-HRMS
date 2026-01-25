@@ -157,26 +157,72 @@ export const resendVerificationEmail = async (req, res) => {
 /* ======================================================
    LOGIN
 ====================================================== */
+/* ======================================================
+   LOGIN (FIXED & HARDENED)
+====================================================== */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        msg: "Email is required",
+      });
     }
 
     const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+      return res.status(401).json({
+        success: false,
+        msg: "Invalid credentials",
+      });
+    }
+
+    /* 🔐 BLOCK GOOGLE USERS FROM PASSWORD LOGIN */
+    if (user.authProvider === "google") {
+      return res.status(400).json({
+        success: false,
+        msg: "Please sign in using Google",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        msg: "Password is required",
+      });
+    }
+
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        msg: "Password login not enabled for this account",
+      });
     }
 
     const match = await user.matchPassword(password);
     if (!match) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+      return res.status(401).json({
+        success: false,
+        msg: "Invalid credentials",
+      });
     }
 
+    /* 🚫 BLOCK UNVERIFIED EMAILS (CLEAR MESSAGE) */
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        msg: "Please verify your email before logging in",
+        emailVerified: false,
+      });
+    }
+
+    /* 🔐 2FA FLOW */
     if (user.twoFactorEnabled) {
-      return res.json({
+      return res.status(200).json({
+        success: true,
         requires2FA: true,
         userId: user._id,
       });
@@ -191,10 +237,12 @@ export const login = async (req, res) => {
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
+
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    res.json({
+    res.status(200).json({
+      success: true,
       accessToken,
       user: {
         id: user._id,
@@ -206,8 +254,11 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Login failed",
+    });
   }
 };
 
