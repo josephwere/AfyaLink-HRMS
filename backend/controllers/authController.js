@@ -157,9 +157,8 @@ export const resendVerificationEmail = async (req, res) => {
 /* ======================================================
    LOGIN
 ====================================================== */
-/* ======================================================
-   LOGIN (FIXED & HARDENED)
-====================================================== */
+
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -180,11 +179,11 @@ export const login = async (req, res) => {
       });
     }
 
-    /* 🔐 BLOCK GOOGLE USERS FROM PASSWORD LOGIN */
+    /* 🔐 GOOGLE USER TRYING PASSWORD LOGIN */
     if (user.authProvider === "google") {
       return res.status(400).json({
         success: false,
-        msg: "Please sign in using Google",
+        msg: "Please login using Google",
       });
     }
 
@@ -198,7 +197,7 @@ export const login = async (req, res) => {
     if (!user.password) {
       return res.status(401).json({
         success: false,
-        msg: "Password login not enabled for this account",
+        msg: "Password login not available for this account",
       });
     }
 
@@ -210,16 +209,8 @@ export const login = async (req, res) => {
       });
     }
 
-    /* 🚫 BLOCK UNVERIFIED EMAILS (CLEAR MESSAGE) */
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        success: false,
-        msg: "Please verify your email before logging in",
-        emailVerified: false,
-      });
-    }
+    /* ✅ LOGIN ALLOWED EVEN IF EMAIL NOT VERIFIED */
 
-    /* 🔐 2FA FLOW */
     if (user.twoFactorEnabled) {
       return res.status(200).json({
         success: true,
@@ -233,6 +224,7 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      emailVerified: user.emailVerified,
       twoFactorVerified: true,
     });
 
