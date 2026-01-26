@@ -2,6 +2,7 @@ import http from "http";
 import dotenv from "dotenv";
 import cron from "node-cron";
 import { Server as IOServer } from "socket.io";
+import cors from "cors";   // ✅ add cors
 
 import connectDB from "./config/db.js";
 import app from "./app.js";
@@ -19,34 +20,18 @@ const PORT = process.env.PORT || 5000;
 /* ======================================================
    ⏰ CRON JOBS
 ====================================================== */
-
-// Unverified users cleanup (daily)
-cron.schedule(
-  "0 0 * * *",
-  cleanupUnverifiedUsers,
-  { timezone: "Africa/Nairobi" }
-);
-
-// Break-glass auto expiry (every 5 min)
-cron.schedule(
-  "*/5 * * * *",
-  cleanupExpiredBreakGlass,
-  { timezone: "Africa/Nairobi" }
-);
-
-// Emergency access auto expiry (every 5 min)
-cron.schedule(
-  "*/5 * * * *",
-  cleanupExpiredEmergencyAccess,
-  { timezone: "Africa/Nairobi" }
-);
+cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
+cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
+cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
 
 /* ======================================================
    🌐 ALLOWED ORIGINS (HTTP + SOCKET.IO)
 ====================================================== */
 const allowedOrigins = [
-  process.env.FRONTEND_URL,                // main frontend
+  process.env.FRONTEND_URL, // main frontend
   "https://afya-link-hrms-frontend-4.vercel.app",
+  "https://afya-link-hrms-frontend-4.onrender.com", // ✅ add Render domain
+  "http://localhost:3000" // ✅ allow local dev
 ].filter(Boolean);
 
 const isAllowedOrigin = (origin) => {
@@ -63,6 +48,25 @@ const start = async () => {
   try {
     await connectDB();
     await seedSuperAdmin();
+
+    // ✅ Apply CORS middleware for HTTP requests
+    app.use(cors({
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`HTTP CORS blocked: ${origin}`));
+        }
+      },
+      credentials: true
+    }));
+
+    // ✅ Fix Cross-Origin-Opener-Policy for Google OAuth popup
+    app.use((req, res, next) => {
+      res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+      res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+      next();
+    });
 
     const server = http.createServer(app);
 
