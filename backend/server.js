@@ -1,8 +1,8 @@
 import http from "http";
 import dotenv from "dotenv";
 import cron from "node-cron";
+import cors from "cors";
 import { Server as IOServer } from "socket.io";
-import cors from "cors";   // ✅ add cors
 
 import connectDB from "./config/db.js";
 import app from "./app.js";
@@ -11,88 +11,27 @@ import { initSocket } from "./utils/socket.js";
 import seedSuperAdmin from "./seed/superAdmin.js";
 import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
-import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";import express from "express";
-import { OAuth2Client } from "google-auth-library";
-import User from "./models/User.js"; // adjust path to your User model
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const router = express.Router();
-
-// ✅ Google OAuth route
-router.post("/api/auth/google", async (req, res) => {
-  try {
-    const { token } = req.body; // frontend should send { token: "id_token" }
-
-    if (!token) {
-      return res.status(400).json({ success: false, msg: "Missing Google token" });
-    }
-
-    // Verify the token against your client ID
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    const { sub, email, name, picture } = payload;
-
-    // Find or create user in DB
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        googleId: sub,
-        email,
-        name,
-        avatar: picture,
-      });
-    }
-
-    return res.json({
-      success: true,
-      msg: "Google login successful",
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar,
-      },
-    });
-  } catch (err) {
-    console.error("Google auth failed:", err);
-    return res.status(500).json({ success: false, msg: "Google authentication failed" });
-  }
-});
-
-// Mount the router
-app.use(router);
-
-
+import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
 /* ======================================================
-   ⏰ CRON JOBS
-====================================================== */
-cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
-cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
-cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
-
-/* ======================================================
-   🌐 ALLOWED ORIGINS (HTTP + SOCKET.IO)
+   🌐 ALLOWED ORIGINS
 ====================================================== */
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // main frontend
+  process.env.FRONTEND_URL,
   "https://afya-link-hrms-frontend-4.vercel.app",
-  "https://afya-link-hrms-frontend-4.onrender.com", // ✅ add Render domain
-  "http://localhost:3000" // ✅ allow local dev
+  "https://afya-link-hrms-frontend-4.onrender.com",
+  "http://localhost:3000",
+  "http://localhost:5173", // ✅ Vite FIX
 ].filter(Boolean);
 
 const isAllowedOrigin = (origin) => {
-  if (!origin) return true; // mobile apps, curl, postman
+  if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
-  if (origin.endsWith(".vercel.app")) return true; // preview deployments
+  if (origin.endsWith(".vercel.app")) return true;
   return false;
 };
 
@@ -104,24 +43,33 @@ const start = async () => {
     await connectDB();
     await seedSuperAdmin();
 
-    // ✅ Apply CORS middleware for HTTP requests
-    app.use(cors({
-      origin: (origin, callback) => {
-        if (isAllowedOrigin(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error(`HTTP CORS blocked: ${origin}`));
-        }
-      },
-      credentials: true
-    }));
+    // ✅ CORS MUST BE FIRST
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (isAllowedOrigin(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error(`CORS blocked: ${origin}`));
+          }
+        },
+        credentials: true,
+      })
+    );
 
-    // ✅ Fix Cross-Origin-Opener-Policy for Google OAuth popup
+    // ✅ Required for Google OAuth popup
     app.use((req, res, next) => {
       res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
       res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
       next();
     });
+
+    /* ======================================================
+       ⏰ CRON JOBS
+    ====================================================== */
+    cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
+    cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
+    cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
 
     const server = http.createServer(app);
 
@@ -135,7 +83,6 @@ const start = async () => {
           }
         },
         credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE"],
       },
     });
 
