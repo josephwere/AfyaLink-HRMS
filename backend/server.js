@@ -11,7 +11,62 @@ import { initSocket } from "./utils/socket.js";
 import seedSuperAdmin from "./seed/superAdmin.js";
 import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
-import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
+import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";import express from "express";
+import { OAuth2Client } from "google-auth-library";
+import User from "./models/User.js"; // adjust path to your User model
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const router = express.Router();
+
+// ✅ Google OAuth route
+router.post("/api/auth/google", async (req, res) => {
+  try {
+    const { token } = req.body; // frontend should send { token: "id_token" }
+
+    if (!token) {
+      return res.status(400).json({ success: false, msg: "Missing Google token" });
+    }
+
+    // Verify the token against your client ID
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub, email, name, picture } = payload;
+
+    // Find or create user in DB
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        googleId: sub,
+        email,
+        name,
+        avatar: picture,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: "Google login successful",
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+      },
+    });
+  } catch (err) {
+    console.error("Google auth failed:", err);
+    return res.status(500).json({ success: false, msg: "Google authentication failed" });
+  }
+});
+
+// Mount the router
+app.use(router);
+
+
 
 dotenv.config();
 
