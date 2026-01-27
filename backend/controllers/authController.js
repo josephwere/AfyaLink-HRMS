@@ -157,16 +157,14 @@ export const resendVerificationEmail = async (req, res) => {
 /* ======================================================
    LOGIN
 ====================================================== */
-
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        msg: "Email is required",
+        msg: "Email and password are required",
       });
     }
 
@@ -179,40 +177,23 @@ export const login = async (req, res) => {
       });
     }
 
-    /* 🔐 GOOGLE USER TRYING PASSWORD LOGIN */
     if (user.authProvider === "google") {
       return res.status(400).json({
         success: false,
-        msg: "Please login using Google",
+        msg: "Please sign in using Google",
       });
     }
 
-    if (!password) {
-      return res.status(400).json({
-        success: false,
-        msg: "Password is required",
-      });
-    }
-
-    if (!user.password) {
-      return res.status(401).json({
-        success: false,
-        msg: "Password login not available for this account",
-      });
-    }
-
-    const match = await user.matchPassword(password);
-    if (!match) {
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
         msg: "Invalid credentials",
       });
     }
 
-    /* ✅ LOGIN ALLOWED EVEN IF EMAIL NOT VERIFIED */
-
     if (user.twoFactorEnabled) {
-      return res.status(200).json({
+      return res.json({
         success: true,
         requires2FA: true,
         userId: user._id,
@@ -229,11 +210,10 @@ export const login = async (req, res) => {
     });
 
     const refreshToken = signRefreshToken({ id: user._id });
-
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    res.status(200).json({
+    res.json({
       success: true,
       accessToken,
       user: {
@@ -253,6 +233,9 @@ export const login = async (req, res) => {
     });
   }
 };
+
+
+
 
 /* ======================================================
    VERIFY 2FA OTP
