@@ -18,8 +18,7 @@ export const googleLogin = async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    const payload = ticket.getPayload();
-    const { sub, email, name, picture, email_verified } = payload;
+    const { sub, email, name, email_verified } = ticket.getPayload();
 
     if (!email_verified) {
       return res.status(403).json({
@@ -51,7 +50,10 @@ export const googleLogin = async (req, res) => {
 
     const accessToken = signAccessToken({
       id: user._id,
+      name: user.name,
+      email: user.email,
       role: user.role,
+      emailVerified: true,
       twoFactorVerified: true,
     });
 
@@ -68,6 +70,7 @@ export const googleLogin = async (req, res) => {
     });
 
     res.json({
+      success: true,
       accessToken,
       user: {
         id: user._id,
