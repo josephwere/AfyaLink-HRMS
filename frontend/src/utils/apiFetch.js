@@ -3,20 +3,18 @@
 const API_BASE = import.meta.env.VITE_API_URL;
 
 /* ======================================================
-   SAFE JSON PARSER (NO CRASH ON EMPTY BODY)
+   SAFE JSON PARSER (NO DOUBLE-CONSUME)
 ====================================================== */
-export async function safeJson(res) {
-  const text = await res.text();
-  if (!text) return {};
+async function safeJson(res) {
   try {
-    return JSON.parse(text);
+    return await res.json();
   } catch {
-    return { raw: text }; // fallback: return raw text if not valid JSON
+    return {};
   }
 }
 
 /* ======================================================
-   CENTRALIZED API FETCH
+   CENTRALIZED API FETCH (FIXED)
 ====================================================== */
 async function apiFetch(path, options = {}, _retry = false) {
   const token = localStorage.getItem("token");
@@ -25,16 +23,19 @@ async function apiFetch(path, options = {}, _retry = false) {
     ...(options.headers || {}),
   };
 
-  // Skip Authorization header for login
-  if (token && !path.includes("/auth/login")) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // 🚫 NEVER attach token to auth routes
+  const isAuthRoute =
+    path.includes("/auth/login") ||
+    path.includes("/auth/register") ||
+    path.includes("/auth/google") ||
+    path.includes("/auth/resend");
+
+  if (token && !isAuthRoute) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  // Auto‑stringify body if it’s an object
-  if (options.body) {
-    if (typeof options.body === "object") {
-      options.body = JSON.stringify(options.body);
-    }
+  if (options.body && typeof options.body === "object") {
+    options.body = JSON.stringify(options.body);
     headers["Content-Type"] = "application/json";
   }
 
@@ -49,26 +50,18 @@ async function apiFetch(path, options = {}, _retry = false) {
     throw new Error("Network error. Please check your connection.");
   }
 
-  // 🔎 Log response details for debugging
-  const data = await safeJson(response);
-  if (!response.ok) {
-    console.error("API Error:", {
-      status: response.status,
-      statusText: response.statusText,
-      path,
-      data,
-    });
-    throw new Error(
-      `Request failed: ${response.status} ${response.statusText} — ${JSON.stringify(data)}`
-    );
-  }
-
-  /* 🔁 Silent refresh (once) */
+  // 🔁 Handle 401 BEFORE reading body
   if (response.status === 401 && !_retry) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       return apiFetch(path, options, true);
     }
+  }
+
+  const data = await safeJson(response);
+
+  if (!response.ok) {
+    throw new Error(data.msg || "Request failed");
   }
 
   return data;
@@ -84,34 +77,26 @@ async function refreshAccessToken() {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      logout();
-      return false;
-    }
+    if (!res.ok) return false;
 
     const data = await safeJson(res);
 
-    if (!data?.accessToken) {
-      logout();
-      return false;
-    }
+    if (!data?.accessToken) return false;
 
     localStorage.setItem("token", data.accessToken);
     return true;
   } catch {
-    logout();
     return false;
   }
 }
 
 /* ======================================================
-   LOGOUT HELPER
+   LOGOUT
 ====================================================== */
 export function logout() {
   localStorage.removeItem("token");
   window.location.href = "/login";
 }
 
-/* EXPORTS */
 export default apiFetch;
 export { apiFetch };
