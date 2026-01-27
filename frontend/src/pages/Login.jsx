@@ -155,37 +155,33 @@ export default function Login() {
   /* -----------------------------------------
      GOOGLE LOGIN (SAFE)
   ----------------------------------------- */
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      setError("");
+const handleGoogleSuccess = async (credentialResponse) => {
+  try {
+    setError("");
 
-      const res = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: JSON.stringify({
-          credential: credentialResponse.credential,
-        }),
-      });
+    const res = await apiFetch("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        credential: credentialResponse.credential,
+      }),
+    });
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
+    const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.msg || "Google login failed");
-      }
-
-      const result = await login(data.accessToken, {
-        directToken: true,
-      });
-
-      navigate(redirectByRole(result.user), { replace: true });
-    } catch (err) {
-      setError(err.message);
+    if (!res.ok || !data.accessToken) {
+      throw new Error(data.msg || "Google login failed");
     }
-  };
+
+    const result = await login(data.accessToken, {
+      directToken: true,
+    });
+
+    navigate(redirectByRole(result.user), { replace: true });
+  } catch (err) {
+    setError(err.message || "Google authentication failed");
+  }
+};
+
 
   /* -----------------------------------------
      UI
