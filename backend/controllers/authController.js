@@ -235,6 +235,78 @@ export const login = async (req, res) => {
 };
 
 
+/* ======================================================
+   GOOGLE AUTH
+====================================================== */
+export const googleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ msg: "Missing Google credential" });
+    }
+
+    // Verify Google token
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+    );
+    const payload = await response.json();
+
+    if (!payload?.email) {
+      return res.status(401).json({ msg: "Invalid Google token" });
+    }
+
+    let user = await User.findOne({ email: payload.email });
+
+    // Create user if not exists
+    if (!user) {
+      user = await User.create({
+        name: payload.name || payload.email.split("@")[0],
+        email: payload.email,
+        password: crypto.randomBytes(16).toString("hex"),
+        role: "PATIENT",
+        emailVerified: true,
+        authProvider: "google",
+        emailVerifiedAt: new Date(),
+      });
+
+      await AuditLog.create({
+        actorId: user._id,
+        actorRole: user.role,
+        action: "USER_REGISTERED_GOOGLE",
+        resource: "User",
+        resourceId: user._id,
+      });
+    }
+
+    const accessToken = signAccessToken({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      emailVerified: true,
+      twoFactorVerified: true,
+    });
+
+    const refreshToken = signRefreshToken({ id: user._id });
+    user.refreshTokens.push(refreshToken);
+    await user.save();
+
+    res.json({
+      success: true,
+      accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("GOOGLE AUTH ERROR:", err);
+    res.status(500).json({ msg: "Google authentication failed" });
+  }
+};
 
 
 /* ======================================================
