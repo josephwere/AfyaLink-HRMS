@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
 import { useAuth } from "../utils/auth";
-import { apiFetch } from "../utils/apiFetch";
+import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import PasswordInput from "../components/PasswordInput";
 
@@ -80,7 +80,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     EMAIL + PASSWORD LOGIN
+     EMAIL + PASSWORD LOGIN (FINAL)
   ----------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +104,7 @@ export default function Login() {
       }
 
       if (!result?.user) {
-        throw new Error("Login failed");
+        throw new Error("Invalid credentials");
       }
 
       navigate(redirectByRole(result.user), { replace: true });
@@ -116,7 +116,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     RESEND VERIFICATION
+     RESEND VERIFICATION (FIXED)
   ----------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -124,21 +124,10 @@ export default function Login() {
       setError("");
       setInfo("");
 
-      const res = await apiFetch("/api/auth/resend-verification", {
+      const data = await apiFetch("/api/auth/resend", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: { email },
       });
-
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {}
-
-      if (!res.ok) {
-        throw new Error(
-          data.msg || "Failed to resend verification email"
-        );
-      }
 
       const seconds = data.retryAfter || 60;
       localStorage.setItem(COOLDOWN_KEY, Date.now() + seconds * 1000);
@@ -146,42 +135,32 @@ export default function Login() {
 
       setInfo("Verification email sent. Check your inbox.");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to resend verification email");
     } finally {
       setResendLoading(false);
     }
   };
 
   /* -----------------------------------------
-     GOOGLE LOGIN (SAFE)
+     GOOGLE LOGIN (FINAL + SAFE)
   ----------------------------------------- */
-const handleGoogleSuccess = async (credentialResponse) => {
-  try {
-    setError("");
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      if (!credentialResponse?.credential) {
+        throw new Error("Missing Google credential");
+      }
 
-    const res = await apiFetch("/api/auth/google", {
-      method: "POST",
-      body: JSON.stringify({
-        credential: credentialResponse.credential,
-      }),
-    });
+      const data = await apiFetch("/api/auth/google", {
+        method: "POST",
+        body: { credential: credentialResponse.credential },
+      });
 
-    const data = await res.json();
-
-    if (!res.ok || !data.accessToken) {
-      throw new Error(data.msg || "Google login failed");
+      await login(data.accessToken, { directToken: true });
+      navigate(redirectByRole(data.user), { replace: true });
+    } catch (err) {
+      setError(err.message || "Google authentication failed");
     }
-
-    const result = await login(data.accessToken, {
-      directToken: true,
-    });
-
-    navigate(redirectByRole(result.user), { replace: true });
-  } catch (err) {
-    setError(err.message || "Google authentication failed");
-  }
-};
-
+  };
 
   /* -----------------------------------------
      UI
@@ -248,9 +227,7 @@ const handleGoogleSuccess = async (credentialResponse) => {
 
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() =>
-            setError("Google authentication failed")
-          }
+          onError={() => setError("Google authentication failed")}
         />
 
         <div className="auth-footer">
@@ -260,4 +237,4 @@ const handleGoogleSuccess = async (credentialResponse) => {
       </form>
     </div>
   );
-    }
+}
