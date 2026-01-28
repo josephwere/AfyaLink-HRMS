@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
 import PasswordInput from "../components/PasswordInput";
-import { apiFetch } from "../utils/apiFetch";
+import apiFetch from "../utils/apiFetch";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
 
@@ -11,7 +11,7 @@ const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { complete2FA, login } = useAuth(); // Use existing login flow
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -20,7 +20,6 @@ export default function Register() {
     confirmPassword: "",
   });
 
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -70,41 +69,36 @@ export default function Register() {
     setInfo("");
   };
 
- /* ---------------------------------------
-   EMAIL + PASSWORD REGISTER
----------------------------------------- */
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  /* ---------------------------------------
+     EMAIL + PASSWORD REGISTER (FIXED)
+  ---------------------------------------- */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (form.password !== form.confirmPassword) {
-    setError("Passwords do not match");
-    return;
-  }
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    setSubmitting(true);
-    setError("");
-    setInfo("");
-    setShowResend(false);
-
-    const res = await apiFetch("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        name: form.name.trim(),
-        email: form.email.toLowerCase().trim(),
-        password: form.password,
-      }),
-    });
-
-    let data = {};
     try {
-      data = await res.json();
-    } catch {}
+      setSubmitting(true);
+      setError("");
+      setInfo("");
+      setShowResend(false);
 
-    if (!res.ok) {
-      const msg =
-        data.msg || data.message || "Registration failed";
+      const data = await apiFetch("/api/auth/register", {
+        method: "POST",
+        body: {
+          name: form.name.trim(),
+          email: form.email.toLowerCase().trim(),
+          password: form.password,
+        },
+      });
+
+      setInfo(data.msg || "Registration successful");
+      navigate("/login?verify=true");
+    } catch (err) {
+      const msg = err.message || "Registration failed";
 
       if (
         msg.toLowerCase().includes("exists") ||
@@ -113,25 +107,14 @@ const handleSubmit = async (e) => {
         setShowResend(true);
       }
 
-      throw new Error(msg);
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
-
-    // ✅ Success → go to login with verify notice
-    const successMsg = data.msg || data.message || "Registration successful";
-    setInfo(successMsg);
-
-    navigate("/login?verify=true");
-  } catch (err) {
-    setError(err.message || "Registration failed");
-  } finally {
-    setLoading(false);
-    setSubmitting(false);
-  }
-};
-
+  };
 
   /* ---------------------------------------
-     RESEND VERIFICATION
+     RESEND VERIFICATION (FIXED)
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -139,68 +122,39 @@ const handleSubmit = async (e) => {
       setError("");
       setInfo("");
 
-      const res = await apiFetch("/api/auth/resend-verification", {
+      const data = await apiFetch("/api/auth/resend-verification", {
         method: "POST",
-        body: JSON.stringify({ email: form.email }),
+        body: { email: form.email },
       });
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {}
-
-      if (!res.ok) {
-        throw new Error(
-          data.msg || "Failed to resend verification email"
-        );
-      }
-
       const seconds = data.retryAfter || 60;
-      localStorage.setItem(
-        COOLDOWN_KEY,
-        Date.now() + seconds * 1000
-      );
+      localStorage.setItem(COOLDOWN_KEY, Date.now() + seconds * 1000);
       setCooldown(seconds);
 
       setInfo("Verification email sent. Check your inbox.");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to resend verification email");
     } finally {
       setResendLoading(false);
     }
   };
 
   /* ---------------------------------------
-     GOOGLE SIGN-UP (SAFE)
+     GOOGLE SIGN-UP (FIXED)
   ---------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setError("");
 
-      const res = await apiFetch("/api/auth/google", {
+      const data = await apiFetch("/api/auth/google", {
         method: "POST",
-        body: JSON.stringify({
-          credential: credentialResponse.credential,
-        }),
+        body: { credential: credentialResponse.credential },
       });
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
-
-      if (!res.ok) {
-        throw new Error(data.msg || "Google sign-up failed");
-      }
-
-      // Use login flow from AuthProvider
       await login(data.accessToken, { directToken: true });
-
       navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Google authentication failed");
     }
   };
 
@@ -275,9 +229,7 @@ const handleSubmit = async (e) => {
 
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() =>
-            setError("Google authentication failed")
-          }
+          onError={() => setError("Google authentication failed")}
         />
 
         <div className="auth-footer">
@@ -287,4 +239,4 @@ const handleSubmit = async (e) => {
       </form>
     </div>
   );
-         }
+}
