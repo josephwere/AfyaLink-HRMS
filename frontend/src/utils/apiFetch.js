@@ -99,4 +99,5 @@ export function logout() {
 }
 
 export default apiFetch;
-export { apiFetch };
+export { apiFetch, safeJson };
+
