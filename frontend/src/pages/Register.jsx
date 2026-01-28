@@ -4,14 +4,12 @@ import { GoogleLogin } from "@react-oauth/google";
 
 import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
-import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -70,7 +68,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     EMAIL + PASSWORD REGISTER (FIXED)
+     EMAIL REGISTER (FINAL)
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,15 +93,12 @@ export default function Register() {
         },
       });
 
-      setInfo(data.msg || "Registration successful");
+      setInfo(data.msg || "Registration successful. Verify your email.");
       navigate("/login?verify=true");
     } catch (err) {
       const msg = err.message || "Registration failed";
 
-      if (
-        msg.toLowerCase().includes("exists") ||
-        msg.toLowerCase().includes("verify")
-      ) {
+      if (msg.toLowerCase().includes("verify")) {
         setShowResend(true);
       }
 
@@ -114,7 +109,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     RESEND VERIFICATION (FIXED)
+     RESEND VERIFICATION (MATCHES BACKEND)
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -122,7 +117,7 @@ export default function Register() {
       setError("");
       setInfo("");
 
-      const data = await apiFetch("/api/auth/resend-verification", {
+      const data = await apiFetch("/api/auth/resend", {
         method: "POST",
         body: { email: form.email },
       });
@@ -140,18 +135,20 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     GOOGLE SIGN-UP (FIXED)
+     GOOGLE SIGN-UP (SAFE)
   ---------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      setError("");
+      if (!credentialResponse?.credential) {
+        throw new Error("Missing Google credential");
+      }
 
       const data = await apiFetch("/api/auth/google", {
         method: "POST",
         body: { credential: credentialResponse.credential },
       });
 
-      await login(data.accessToken, { directToken: true });
+      localStorage.setItem("token", data.accessToken);
       navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
       setError(err.message || "Google authentication failed");
@@ -186,12 +183,7 @@ export default function Register() {
         )}
 
         <label>Full Name</label>
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
+        <input name="name" value={form.name} onChange={handleChange} required />
 
         <label>Email address</label>
         <input
