@@ -1,3 +1,5 @@
+// frontend/src/pages/Register.jsx
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
@@ -5,11 +7,13 @@ import { GoogleLogin } from "@react-oauth/google";
 import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
+import { useAuth } from "../auth/useAuth";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -61,6 +65,9 @@ export default function Register() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
+  /* ---------------------------------------
+     Form input handler
+  ---------------------------------------- */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
@@ -68,7 +75,8 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     EMAIL REGISTER (FINAL)
+     EMAIL REGISTER
+     Email verification happens post-login
   ---------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,8 +101,15 @@ export default function Register() {
         },
       });
 
-      setInfo(data.msg || "Registration successful. Verify your email.");
-      navigate("/login?verify=true");
+      // Log in automatically after registration
+      if (data.accessToken && data.user) {
+        await login(null, { directToken: true, token: data.accessToken, user: data.user });
+        setInfo("Account created! Verify your email in profile later.");
+        navigate(redirectByRole(data.user), { replace: true });
+      } else {
+        setInfo(data.msg || "Registration successful. You can now login.");
+        navigate("/login");
+      }
     } catch (err) {
       const msg = err.message || "Registration failed";
 
@@ -109,7 +124,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     RESEND VERIFICATION (MATCHES BACKEND)
+     RESEND VERIFICATION
   ---------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -117,7 +132,7 @@ export default function Register() {
       setError("");
       setInfo("");
 
-      const data = await apiFetch("/api/auth/resend", {
+      const data = await apiFetch("/api/auth/resend-verification", {
         method: "POST",
         body: { email: form.email },
       });
@@ -135,7 +150,7 @@ export default function Register() {
   };
 
   /* ---------------------------------------
-     GOOGLE SIGN-UP (SAFE)
+     GOOGLE SIGN-UP / LOGIN
   ---------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -148,7 +163,9 @@ export default function Register() {
         body: { credential: credentialResponse.credential },
       });
 
-      localStorage.setItem("token", data.accessToken);
+      // Save token and update auth context
+      await login(null, { directToken: true, token: data.accessToken, user: data.user });
+
       navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
       setError(err.message || "Google authentication failed");
@@ -191,7 +208,6 @@ export default function Register() {
           name="email"
           value={form.email}
           onChange={handleChange}
-          required
         />
 
         <PasswordInput
