@@ -26,7 +26,10 @@ const userSchema = new Schema(
 
     password: {
       type: String,
-      required: true,
+      // ✅ only required for local auth users
+      required: function () {
+        return this.authProvider === "local";
+      },
       select: false,
     },
 
@@ -99,7 +102,7 @@ const userSchema = new Schema(
     ========================= */
     refreshTokens: {
       type: [String],
-      default: [],   // ✅ ensures array exists
+      default: [],
     },
 
     twoFactorEnabled: {
@@ -174,7 +177,9 @@ userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
 ====================================================== */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
   next();
 });
 
