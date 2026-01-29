@@ -26,12 +26,14 @@ export const googleLogin = async (req, res) => {
       });
     }
 
+    // Find user by googleId or email
     let user = await User.findOne({
       $or: [{ googleId: sub }, { email }],
     });
 
+    // If user doesn't exist, create without password
     if (!user) {
-      user = await User.create({
+      user = new User({
         name,
         email,
         googleId: sub,
@@ -40,6 +42,11 @@ export const googleLogin = async (req, res) => {
         emailVerifiedAt: new Date(),
         role: "PATIENT",
       });
+
+      // Temporarily disable password validation
+      userSchemaPasswordOptional(user);
+
+      await user.save();
     } else if (!user.googleId) {
       user.googleId = sub;
       user.authProvider = "google";
@@ -88,3 +95,22 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
+
+/* ======================================================
+   Helper: skip password validation for Google users
+====================================================== */
+function userSchemaPasswordOptional(user) {
+  user.validate = async function () {
+    this.$isNew = true; // trick Mongoose to treat as new
+    // Temporarily mark password as not required
+    const schemaPassword = this.schema.paths.password;
+    const origRequired = schemaPassword.options.required;
+    schemaPassword.options.required = false;
+
+    try {
+      await this.validateSync();
+    } finally {
+      schemaPassword.options.required = origRequired;
+    }
+  };
+}
