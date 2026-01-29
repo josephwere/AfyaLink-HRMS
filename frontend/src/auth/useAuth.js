@@ -8,7 +8,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   /* ======================================================
-     FETCH CURRENT USER
+     FETCH CURRENT USER (BOOTSTRAP)
   ====================================================== */
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -30,10 +30,10 @@ export function useAuth() {
      LOGIN FUNCTION
      Supports:
        1. Email + password
-       2. Direct token (Google)
+       2. Direct token login (Google)
   ====================================================== */
   const login = async (emailOrToken, passwordOrOptions) => {
-    // Case 1: direct token login
+    // Direct token login (Google)
     if (passwordOrOptions?.directToken) {
       const { token, user } = passwordOrOptions;
       localStorage.setItem("token", token);
@@ -41,7 +41,7 @@ export function useAuth() {
       return { user };
     }
 
-    // Case 2: normal email/password login
+    // Email + password login
     try {
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
@@ -50,10 +50,11 @@ export function useAuth() {
 
       if (!data?.user) throw new Error("Invalid credentials");
 
+      // Save token and update context
       localStorage.setItem("token", data.accessToken);
       setUser(data.user);
 
-      // If 2FA required
+      // Handle 2FA
       if (data.requires2FA) {
         return { requires2FA: true, userId: data.user.id };
       }
@@ -73,5 +74,20 @@ export function useAuth() {
     apiLogout();
   };
 
-  return { user, loading, login, logout, fetchUser };
+  /* ======================================================
+     REFRESH USER (optional helper)
+     Can be called after token refresh or Google login
+  ====================================================== */
+  const refreshUser = async () => {
+    try {
+      const u = await apiFetch("/api/auth/me");
+      setUser(u);
+      return u;
+    } catch {
+      setUser(null);
+      return null;
+    }
+  };
+
+  return { user, loading, login, logout, fetchUser, refreshUser };
 }
