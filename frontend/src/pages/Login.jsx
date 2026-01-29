@@ -109,9 +109,7 @@ export default function Login() {
         return;
       }
 
-      if (!result?.user) {
-        throw new Error("Invalid credentials");
-      }
+      if (!result?.user) throw new Error("Invalid credentials");
 
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
@@ -158,21 +156,16 @@ export default function Login() {
   ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      if (!credentialResponse?.credential) {
-        throw new Error("Missing Google credential");
-      }
+      if (!credentialResponse?.credential) throw new Error("Missing Google credential");
 
-      // Send Google token to backend
       const data = await apiFetch("/api/auth/google", {
         method: "POST",
         body: { credential: credentialResponse.credential },
       });
 
-      // Save token as "token" to match apiFetch
-      localStorage.setItem("token", data.accessToken);
-
-      // Update auth context
-      login(null, { directToken: true, token: data.accessToken, user: data.user });
+      // Save token for apiFetch and update auth context
+      localStorage.setItem("token", data.token);
+      login(null, { directToken: true, token: data.token, user: data.user });
 
       // Redirect by role
       navigate(redirectByRole(data.user), { replace: true });
