@@ -154,25 +154,32 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     GOOGLE LOGIN (FINAL)
+     GOOGLE LOGIN 
   ----------------------------------------- */
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      if (!credentialResponse?.credential) {
-        throw new Error("Missing Google credential");
-      }
-
-      const data = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: { credential: credentialResponse.credential },
-      });
-
-      await login(data.accessToken, { directToken: true });
-      navigate(redirectByRole(data.user), { replace: true });
-    } catch (err) {
-      setError(err.message || "Google authentication failed");
+ const handleGoogleSuccess = async (credentialResponse) => {
+  try {
+    if (!credentialResponse?.credential) {
+      throw new Error("Missing Google credential");
     }
-  };
+
+    // 1️⃣ Send credential to backend
+    const data = await apiFetch("/api/auth/google", {
+      method: "POST",
+      body: { credential: credentialResponse.credential },
+    });
+
+    // 2️⃣ Save the access token in localStorage or your auth context
+    localStorage.setItem("accessToken", data.accessToken);
+
+    // 3️⃣ Optionally, update auth context if your hook supports it
+    login(null, { directToken: true, token: data.accessToken, user: data.user });
+
+    // 4️⃣ Redirect user by role
+    navigate(redirectByRole(data.user), { replace: true });
+  } catch (err) {
+    setError(err.message || "Google authentication failed");
+  }
+};
 
   /* -----------------------------------------
      UI
