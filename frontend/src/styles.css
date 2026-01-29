@@ -1,3 +1,6 @@
+yes
+
+frontend/src/styles.css
 /* =========================
    GLOBAL
 ========================= */
@@ -356,4 +359,133 @@ body {
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
+}
+/* =========================
+   PROFILE PAGE
+========================= */
+.profile-container {
+  max-width: 720px;
+  margin: 40px auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 20px;
+  color: #111827;
+}
+
+.card p {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+.card button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card button.primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.card button.primary:hover {
+  background-color: #1d4ed8;
+}
+
+.card button.success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.card button.success:hover {
+  background-color: #15803d;
+}
+
+.card button.danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.card button.danger:hover {
+  background-color: #b91c1c;
+}
+
+/* INPUTS */
+.card input[type="password"],
+.card input[type="text"],
+.card input[type="email"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.card input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* SUCCESS / ERROR MESSAGES */
+.auth-success {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.auth-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+/* VERIFICATION WARNING */
+.warning-card {
+  background: #fff3cd;
+  border: 1px solid #ffecb5;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.warning-card button {
+  margin-top: 12px;
+}
+
+/* 2FA ROW */
+.card .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.card .row span {
+  font-weight: 500;
+  color: #374151;
 }
