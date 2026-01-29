@@ -69,20 +69,17 @@ export default function Profile() {
   -------------------------- */
   const loadStatus = async () => {
     try {
-      // 2FA status
       const res2FA = await apiFetch("/api/2fa/status");
       if (!res2FA.ok) throw new Error("Failed to load 2FA status");
       const data2FA = await res2FA.json();
       setTwoFAEnabled(Boolean(data2FA.enabled));
 
-      // Email verification status
       const meRes = await apiFetch("/api/users/me");
       if (!meRes.ok) throw new Error("Failed to fetch user info");
       const me = await meRes.json();
-
       setEmailVerified(me.emailVerified);
       setVerificationWarning(me.verificationWarning || null);
-    } catch (err) {
+    } catch {
       setError("Unable to load security settings");
     } finally {
       setLoading(false);
@@ -99,7 +96,6 @@ export default function Profile() {
         method: "POST",
         body: { enabled: next },
       });
-
       if (!res.ok) throw new Error("Failed to update 2FA");
       setTwoFAEnabled(next);
     } catch {
@@ -148,8 +144,8 @@ export default function Profile() {
     };
 
     return (
-      <div className="warning-card">
-        <strong>⚠️ Kindly verify your account</strong>
+      <div className="card warning-card">
+        <h3>⚠️ Email Verification Required</h3>
         <p>{map[verificationWarning.type]}</p>
 
         {verificationWarning.type !== "EXPIRED" && (
@@ -209,32 +205,34 @@ export default function Profile() {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="premium-card">
-      <h2>🔐 Security Settings</h2>
-
-      {/* Email verification warning */}
+    <div className="profile-container">
+      {/* ============================
+         EMAIL VERIFICATION
+      ============================ */}
       {renderVerificationWarning()}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {/* 2FA */}
-      <div className="row" style={{ marginTop: 16 }}>
-        <span>Email OTP (2FA)</span>
+      {/* ============================
+         2FA SECTION
+      ============================ */}
+      <div className="card">
+        <h3>Two-Factor Authentication (2FA)</h3>
+        <p>
+          {twoFAEnabled
+            ? "2FA is enabled. You’ll be asked for a code at login."
+            : "2FA is disabled. Your account uses password only."}
+        </p>
         <button
           className={twoFAEnabled ? "danger" : "success"}
           onClick={toggle2FA}
         >
-          {twoFAEnabled ? "Disable" : "Enable"}
+          {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
         </button>
       </div>
-      <p style={{ opacity: 0.7, marginTop: 8 }}>
-        {twoFAEnabled
-          ? "2FA is enabled. You’ll be asked for a code at login."
-          : "2FA is disabled. Your account uses password only."}
-      </p>
 
-      {/* Change password */}
-      <div className="card" style={{ marginTop: 32 }}>
+      {/* ============================
+         CHANGE PASSWORD SECTION
+      ============================ */}
+      <div className="card" style={{ marginTop: 24 }}>
         <h3>Change Password</h3>
 
         {pwError && <div className="auth-error">{pwError}</div>}
@@ -270,6 +268,8 @@ export default function Profile() {
           </button>
         </form>
       </div>
+
+      {error && <p style={{ color: "red", marginTop: 16 }}>{error}</p>}
     </div>
   );
 }
