@@ -1,3 +1,5 @@
+// backend/controllers/googleAuthController.js
+
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
@@ -13,48 +15,44 @@ export const googleLogin = async (req, res) => {
       return res.status(400).json({ msg: "Missing Google credential" });
     }
 
+    // Verify Google token
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    const { sub, email, name, email_verified } = ticket.getPayload();
+    const { sub: googleId, email, name, email_verified } = ticket.getPayload();
 
     if (!email_verified) {
-      return res.status(403).json({
-        msg: "Google email not verified",
-      });
+      return res.status(403).json({ msg: "Google email not verified" });
     }
 
-    // Find user by googleId or email
+    // Find existing user by googleId or email
     let user = await User.findOne({
-      $or: [{ googleId: sub }, { email }],
+      $or: [{ googleId }, { email }],
     });
 
-    // If user doesn't exist, create without password
     if (!user) {
-      user = new User({
+      // Create new Google user (no password required)
+      user = await User.create({
         name,
         email,
-        googleId: sub,
+        googleId,
         authProvider: "google",
         emailVerified: true,
         emailVerifiedAt: new Date(),
         role: "PATIENT",
       });
-
-      // Temporarily disable password validation
-      userSchemaPasswordOptional(user);
-
-      await user.save();
     } else if (!user.googleId) {
-      user.googleId = sub;
+      // Existing user with email but no Google account linked
+      user.googleId = googleId;
       user.authProvider = "google";
       user.emailVerified = true;
       user.emailVerifiedAt = new Date();
       await user.save();
     }
 
+    // Generate tokens
     const accessToken = signAccessToken({
       id: user._id,
       name: user.name,
@@ -68,6 +66,7 @@ export const googleLogin = async (req, res) => {
     user.refreshTokens.push(refreshToken);
     await user.save();
 
+    // Log audit
     await AuditLog.create({
       actorId: user._id,
       actorRole: user.role,
@@ -76,13 +75,14 @@ export const googleLogin = async (req, res) => {
       resourceId: user._id,
     });
 
+    // Respond with user info
     res.json({
       success: true,
       accessToken,
       user: {
         id: user._id,
-        email: user.email,
         name: user.name,
+        email: user.email,
         role: user.role,
         emailVerified: true,
         authProvider: "google",
@@ -95,22 +95,3 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
-
-/* ======================================================
-   Helper: skip password validation for Google users
-====================================================== */
-function userSchemaPasswordOptional(user) {
-  user.validate = async function () {
-    this.$isNew = true; // trick Mongoose to treat as new
-    // Temporarily mark password as not required
-    const schemaPassword = this.schema.paths.password;
-    const origRequired = schemaPassword.options.required;
-    schemaPassword.options.required = false;
-
-    try {
-      await this.validateSync();
-    } finally {
-      schemaPassword.options.required = origRequired;
-    }
-  };
-}
