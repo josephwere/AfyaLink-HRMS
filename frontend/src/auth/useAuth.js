@@ -1,19 +1,32 @@
+// frontend/src/auth/useAuth.js
+
 import { useEffect, useState } from "react";
-import { apiFetch } from "../api/client";
-import { UserSchema } from "../api/schemas/user";
+import apiFetch from "../utils/apiFetch";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch("/auth/me")
+    let mounted = true;
+
+    apiFetch("/api/auth/me")
       .then((u) => {
-        UserSchema.safeParse(u);
+        if (!mounted) return;
         setUser(u);
       })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!mounted) return;
+        setUser(null);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return { user, loading };
