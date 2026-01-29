@@ -1,3 +1,5 @@
+// src/pages/Login.jsx
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
@@ -34,8 +36,12 @@ export default function Login() {
     if (!until) return;
 
     const remaining = Math.ceil((until - Date.now()) / 1000);
-    if (remaining > 0) setCooldown(remaining);
-    else localStorage.removeItem(COOLDOWN_KEY);
+    if (remaining > 0) {
+      setCooldown(remaining);
+      setShowResend(true);
+    } else {
+      localStorage.removeItem(COOLDOWN_KEY);
+    }
   }, []);
 
   /* -----------------------------------------
@@ -69,7 +75,7 @@ export default function Login() {
   }, [location.search]);
 
   /* -----------------------------------------
-     Remembered email
+     Remember email
   ----------------------------------------- */
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
@@ -80,7 +86,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     EMAIL + PASSWORD LOGIN (FINAL)
+     EMAIL + PASSWORD LOGIN
   ----------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,6 +115,12 @@ export default function Login() {
 
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
+      if (
+        err.message?.toLowerCase().includes("verify") ||
+        err.message?.toLowerCase().includes("verified")
+      ) {
+        setShowResend(true);
+      }
       setError(err.message || "Invalid credentials");
     } finally {
       setSubmitting(false);
@@ -116,7 +128,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     RESEND VERIFICATION (FIXED)
+     RESEND VERIFICATION (FINAL)
   ----------------------------------------- */
   const handleResendVerification = async () => {
     try {
@@ -124,7 +136,7 @@ export default function Login() {
       setError("");
       setInfo("");
 
-      const data = await apiFetch("/api/auth/resend", {
+      const data = await apiFetch("/api/auth/resend-verification", {
         method: "POST",
         body: { email },
       });
@@ -142,7 +154,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     GOOGLE LOGIN (FINAL + SAFE)
+     GOOGLE LOGIN (FINAL)
   ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
