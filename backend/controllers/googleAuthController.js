@@ -10,10 +10,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 export const googleLogin = async (req, res) => {
   try {
     const { credential } = req.body;
-
-    if (!credential) {
-      return res.status(400).json({ msg: "Missing Google credential" });
-    }
+    if (!credential) return res.status(400).json({ msg: "Missing Google credential" });
 
     // Verify Google token
     const ticket = await client.verifyIdToken({
@@ -23,17 +20,11 @@ export const googleLogin = async (req, res) => {
 
     const { sub: googleId, email, name, email_verified } = ticket.getPayload();
 
-    if (!email_verified) {
-      return res.status(403).json({ msg: "Google email not verified" });
-    }
+    if (!email_verified) return res.status(403).json({ msg: "Google email not verified" });
 
-    // Find existing user by googleId or email
-    let user = await User.findOne({
-      $or: [{ googleId }, { email }],
-    });
-
+    // Find or create user
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
     if (!user) {
-      // Create new Google user (no password required)
       user = await User.create({
         name,
         email,
@@ -44,7 +35,6 @@ export const googleLogin = async (req, res) => {
         role: "PATIENT",
       });
     } else if (!user.googleId) {
-      // Existing user with email but no Google account linked
       user.googleId = googleId;
       user.authProvider = "google";
       user.emailVerified = true;
@@ -52,7 +42,7 @@ export const googleLogin = async (req, res) => {
       await user.save();
     }
 
-    // Generate tokens
+    // Generate JWT tokens
     const accessToken = signAccessToken({
       id: user._id,
       name: user.name,
@@ -66,7 +56,7 @@ export const googleLogin = async (req, res) => {
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    // Log audit
+    // Audit log
     await AuditLog.create({
       actorId: user._id,
       actorRole: user.role,
@@ -75,10 +65,10 @@ export const googleLogin = async (req, res) => {
       resourceId: user._id,
     });
 
-    // Respond with user info
+    // ✅ Respond with user info and store token under "token"
     res.json({
       success: true,
-      accessToken,
+      token: accessToken, // <- important! matches frontend apiFetch
       user: {
         id: user._id,
         name: user.name,
@@ -90,8 +80,6 @@ export const googleLogin = async (req, res) => {
     });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({
-      msg: "Google authentication failed",
-    });
+    res.status(500).json({ msg: "Google authentication failed" });
   }
 };
