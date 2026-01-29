@@ -11,9 +11,9 @@ import {
   verify2FAOtp,
   changePassword,
   adminVerifyUser,
-  googleAuth,
 } from "../controllers/authController.js";
 
+import { googleLogin } from "../controllers/googleAuthController.js";
 import { refreshToken } from "../controllers/refreshController.js";
 
 const router = express.Router();
@@ -21,13 +21,20 @@ const router = express.Router();
 /* =========================
    GOOGLE
 ========================= */
-router.post("/google", googleAuth);
+router.post("/google", googleLogin);
 
 /* =========================
    AUTH
 ========================= */
 router.post("/register", register);
 router.post("/login", login);
+
+/* =========================
+   CURRENT USER (BOOTSTRAP)
+========================= */
+router.get("/me", auth, (req, res) => {
+  res.json(req.user);
+});
 
 /* =========================
    TOKEN REFRESH
