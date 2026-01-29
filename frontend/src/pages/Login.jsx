@@ -1,4 +1,5 @@
 // src/pages/Login.jsx
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
@@ -27,7 +28,9 @@ export default function Login() {
   const [showResend, setShowResend] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Restore resend cooldown
+  /* -----------------------------------------
+     Restore resend cooldown
+  ----------------------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
     if (!until) return;
@@ -41,7 +44,9 @@ export default function Login() {
     }
   }, []);
 
-  // Cooldown timer
+  /* -----------------------------------------
+     Cooldown timer
+  ----------------------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -58,7 +63,9 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  // Post-register notice
+  /* -----------------------------------------
+     Post-register notice
+  ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
@@ -67,7 +74,9 @@ export default function Login() {
     }
   }, [location.search]);
 
-  // Remember email
+  /* -----------------------------------------
+     Remember email
+  ----------------------------------------- */
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
     if (saved) {
@@ -76,7 +85,9 @@ export default function Login() {
     }
   }, []);
 
-  // EMAIL + PASSWORD LOGIN
+  /* -----------------------------------------
+     EMAIL + PASSWORD LOGIN
+  ----------------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -98,12 +109,9 @@ export default function Login() {
         return;
       }
 
-      if (!result?.user || !result?.accessToken) {
+      if (!result?.user) {
         throw new Error("Invalid credentials");
       }
-
-      // Save token for API calls
-      localStorage.setItem("accessToken", result.accessToken);
 
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
@@ -119,7 +127,9 @@ export default function Login() {
     }
   };
 
-  // RESEND VERIFICATION
+  /* -----------------------------------------
+     RESEND VERIFICATION
+  ----------------------------------------- */
   const handleResendVerification = async () => {
     try {
       setResendLoading(true);
@@ -143,7 +153,9 @@ export default function Login() {
     }
   };
 
-  // GOOGLE LOGIN
+  /* -----------------------------------------
+     GOOGLE LOGIN
+  ----------------------------------------- */
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       if (!credentialResponse?.credential) {
@@ -156,12 +168,8 @@ export default function Login() {
         body: { credential: credentialResponse.credential },
       });
 
-      if (!data?.accessToken || !data?.user) {
-        throw new Error("Google login failed");
-      }
-
-      // Save token for API requests
-      localStorage.setItem("accessToken", data.accessToken);
+      // Save token as "token" to match apiFetch
+      localStorage.setItem("token", data.accessToken);
 
       // Update auth context
       login(null, { directToken: true, token: data.accessToken, user: data.user });
@@ -173,6 +181,9 @@ export default function Login() {
     }
   };
 
+  /* -----------------------------------------
+     UI
+  ----------------------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
