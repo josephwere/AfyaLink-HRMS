@@ -1,13 +1,11 @@
-// src/pages/Login.jsx
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
 
-import { useAuth } from "../utils/auth";
+import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
-import PasswordInput from "../components/PasswordInput";
+import { useAuth } from "../auth/useAuth";
+import { useGoogleAuth } from "../auth/useGoogleAuth";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
@@ -15,6 +13,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { GoogleButton, error: googleError } = useGoogleAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,9 +27,9 @@ export default function Login() {
   const [showResend, setShowResend] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  /* -----------------------------------------
+  /* -------------------------
      Restore resend cooldown
-  ----------------------------------------- */
+  -------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
     if (!until) return;
@@ -44,9 +43,9 @@ export default function Login() {
     }
   }, []);
 
-  /* -----------------------------------------
+  /* -------------------------
      Cooldown timer
-  ----------------------------------------- */
+  -------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -63,9 +62,9 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  /* -----------------------------------------
+  /* -------------------------
      Post-register notice
-  ----------------------------------------- */
+  -------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("verify")) {
@@ -74,9 +73,9 @@ export default function Login() {
     }
   }, [location.search]);
 
-  /* -----------------------------------------
-     Remember email
-  ----------------------------------------- */
+  /* -------------------------
+     Restore remembered email
+  -------------------------- */
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
     if (saved) {
@@ -85,9 +84,9 @@ export default function Login() {
     }
   }, []);
 
-  /* -----------------------------------------
-     EMAIL + PASSWORD LOGIN
-  ----------------------------------------- */
+  /* -------------------------
+     Email/password login
+  -------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -103,9 +102,7 @@ export default function Login() {
       const result = await login(email.trim(), password);
 
       if (result?.requires2FA) {
-        navigate("/2fa", {
-          state: { userId: result.userId, email },
-        });
+        navigate("/2fa", { state: { userId: result.userId, email } });
         return;
       }
 
@@ -125,9 +122,9 @@ export default function Login() {
     }
   };
 
-  /* -----------------------------------------
-     RESEND VERIFICATION
-  ----------------------------------------- */
+  /* -------------------------
+     Resend verification email
+  -------------------------- */
   const handleResendVerification = async () => {
     try {
       setResendLoading(true);
@@ -151,32 +148,9 @@ export default function Login() {
     }
   };
 
-  /* -----------------------------------------
-     GOOGLE LOGIN
-  ----------------------------------------- */
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      if (!credentialResponse?.credential) throw new Error("Missing Google credential");
-
-      const data = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: { credential: credentialResponse.credential },
-      });
-
-      // Save token for apiFetch and update auth context
-      localStorage.setItem("token", data.token);
-      login(null, { directToken: true, token: data.token, user: data.user });
-
-      // Redirect by role
-      navigate(redirectByRole(data.user), { replace: true });
-    } catch (err) {
-      setError(err.message || "Google authentication failed");
-    }
-  };
-
-  /* -----------------------------------------
+  /* -------------------------
      UI
-  ----------------------------------------- */
+  -------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -185,6 +159,7 @@ export default function Login() {
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
+        {googleError && <div className="auth-error">{googleError}</div>}
 
         {showResend && (
           <button
@@ -237,10 +212,8 @@ export default function Login() {
 
         <div className="divider">or</div>
 
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => setError("Google authentication failed")}
-        />
+        {/* Google login */}
+        <GoogleButton />
 
         <div className="auth-footer">
           <span>Don’t have an account?</span>
