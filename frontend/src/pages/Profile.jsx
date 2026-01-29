@@ -20,6 +20,14 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
 
+  // Password change
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwMessage, setPwMessage] = useState("");
+  const [pwError, setPwError] = useState("");
+
   useEffect(() => {
     restoreCooldown();
     loadStatus();
@@ -127,7 +135,7 @@ export default function Profile() {
   };
 
   /* -------------------------
-     Render email verification warning
+     Render verification warning
   -------------------------- */
   const renderVerificationWarning = () => {
     if (emailVerified || !verificationWarning) return null;
@@ -163,17 +171,54 @@ export default function Profile() {
     );
   };
 
+  /* -------------------------
+     Change password
+  -------------------------- */
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPwMessage("");
+    setPwError("");
+
+    if (newPassword !== confirmPassword) {
+      setPwError("Passwords do not match");
+      return;
+    }
+
+    setPwLoading(true);
+
+    try {
+      const res = await apiFetch("/api/auth/change-password", {
+        method: "POST",
+        body: { oldPassword: currentPassword, newPassword },
+      });
+
+      const data = await res.json?.() || {};
+      if (!res.ok) throw new Error(data.msg || "Failed to change password");
+
+      setPwMessage("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPwError(err.message || "Password change failed");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
     <div className="premium-card">
       <h2>🔐 Security Settings</h2>
 
+      {/* Email verification warning */}
       {renderVerificationWarning()}
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div className="row">
+      {/* 2FA */}
+      <div className="row" style={{ marginTop: 16 }}>
         <span>Email OTP (2FA)</span>
         <button
           className={twoFAEnabled ? "danger" : "success"}
@@ -182,12 +227,49 @@ export default function Profile() {
           {twoFAEnabled ? "Disable" : "Enable"}
         </button>
       </div>
-
       <p style={{ opacity: 0.7, marginTop: 8 }}>
         {twoFAEnabled
           ? "2FA is enabled. You’ll be asked for a code at login."
           : "2FA is disabled. Your account uses password only."}
       </p>
+
+      {/* Change password */}
+      <div className="card" style={{ marginTop: 32 }}>
+        <h3>Change Password</h3>
+
+        {pwError && <div className="auth-error">{pwError}</div>}
+        {pwMessage && <div className="auth-success">{pwMessage}</div>}
+
+        <form onSubmit={handlePasswordChange}>
+          <label>Current password</label>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+
+          <label>New password</label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+
+          <label>Confirm new password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+
+          <button disabled={pwLoading} style={{ marginTop: 8 }}>
+            {pwLoading ? "Updating..." : "Change password"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
