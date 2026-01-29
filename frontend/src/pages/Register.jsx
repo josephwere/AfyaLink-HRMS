@@ -1,19 +1,18 @@
-// frontend/src/pages/Register.jsx
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
 
 import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../auth/useAuth";
+import { useGoogleAuth } from "../auth/useGoogleAuth";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { GoogleButton, error: googleError } = useGoogleAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -30,9 +29,9 @@ export default function Register() {
   const [cooldown, setCooldown] = useState(0);
   const [showResend, setShowResend] = useState(false);
 
-  /* ---------------------------------------
+  /* -------------------------
      Restore resend cooldown
-  ---------------------------------------- */
+  -------------------------- */
   useEffect(() => {
     const until = Number(localStorage.getItem(COOLDOWN_KEY));
     if (!until) return;
@@ -46,9 +45,9 @@ export default function Register() {
     }
   }, []);
 
-  /* ---------------------------------------
+  /* -------------------------
      Cooldown timer
-  ---------------------------------------- */
+  -------------------------- */
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -65,19 +64,18 @@ export default function Register() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  /* ---------------------------------------
+  /* -------------------------
      Form input handler
-  ---------------------------------------- */
+  -------------------------- */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
     setInfo("");
   };
 
-  /* ---------------------------------------
-     EMAIL REGISTER
-     Email verification happens post-login
-  ---------------------------------------- */
+  /* -------------------------
+     Email/password registration
+  -------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -101,7 +99,7 @@ export default function Register() {
         },
       });
 
-      // Log in automatically after registration
+      // Auto-login after registration if backend provides tokens
       if (data.accessToken && data.user) {
         await login(null, { directToken: true, token: data.accessToken, user: data.user });
         setInfo("Account created! Verify your email in profile later.");
@@ -112,20 +110,16 @@ export default function Register() {
       }
     } catch (err) {
       const msg = err.message || "Registration failed";
-
-      if (msg.toLowerCase().includes("verify")) {
-        setShowResend(true);
-      }
-
+      if (msg.toLowerCase().includes("verify")) setShowResend(true);
       setError(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  /* ---------------------------------------
-     RESEND VERIFICATION
-  ---------------------------------------- */
+  /* -------------------------
+     Resend verification email
+  -------------------------- */
   const handleResendVerification = async () => {
     try {
       setResendLoading(true);
@@ -149,32 +143,9 @@ export default function Register() {
     }
   };
 
-  /* ---------------------------------------
-     GOOGLE SIGN-UP / LOGIN
-  ---------------------------------------- */
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      if (!credentialResponse?.credential) {
-        throw new Error("Missing Google credential");
-      }
-
-      const data = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: { credential: credentialResponse.credential },
-      });
-
-      // Save token and update auth context
-      await login(null, { directToken: true, token: data.accessToken, user: data.user });
-
-      navigate(redirectByRole(data.user), { replace: true });
-    } catch (err) {
-      setError(err.message || "Google authentication failed");
-    }
-  };
-
-  /* ---------------------------------------
+  /* -------------------------
      UI
-  ---------------------------------------- */
+  -------------------------- */
   return (
     <div className="auth-bg">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -183,6 +154,7 @@ export default function Register() {
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
+        {googleError && <div className="auth-error">{googleError}</div>}
 
         {showResend && (
           <button
@@ -203,19 +175,12 @@ export default function Register() {
         <input name="name" value={form.name} onChange={handleChange} required />
 
         <label>Email address</label>
-        <input
-          type="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-        />
+        <input type="email" name="email" value={form.email} onChange={handleChange} />
 
         <PasswordInput
           label="Password"
           value={form.password}
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
           showStrength
           required
         />
@@ -223,9 +188,7 @@ export default function Register() {
         <PasswordInput
           label="Confirm password"
           value={form.confirmPassword}
-          onChange={(e) =>
-            setForm({ ...form, confirmPassword: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
           required
         />
 
@@ -235,10 +198,8 @@ export default function Register() {
 
         <div className="divider">or</div>
 
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => setError("Google authentication failed")}
-        />
+        {/* Google login/signup */}
+        <GoogleButton />
 
         <div className="auth-footer">
           <span>Already have an account?</span>
