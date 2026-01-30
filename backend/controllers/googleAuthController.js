@@ -5,12 +5,17 @@ import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import AuditLog from "../models/AuditLog.js";
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client({
+  clientId: process.env.GOOGLE_CLIENT_ID,
+});
 
 export const googleLogin = async (req, res) => {
   try {
     const { credential } = req.body;
-    if (!credential) return res.status(400).json({ msg: "Missing Google credential" });
+
+    if (!credential) {
+      return res.status(400).json({ msg: "Missing Google credential" });
+    }
 
     // Verify Google token
     const ticket = await client.verifyIdToken({
@@ -18,17 +23,33 @@ export const googleLogin = async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    const { sub: googleId, email, name, email_verified } = ticket.getPayload();
+    const payload = ticket.getPayload();
 
-    if (!email_verified) return res.status(403).json({ msg: "Google email not verified" });
+    if (!payload || !payload.email) {
+      return res.status(401).json({ msg: "Invalid Google token" });
+    }
+
+    const {
+      sub: googleId,
+      email,
+      name,
+      email_verified,
+      picture,
+    } = payload;
+
+    if (!email_verified) {
+      return res.status(403).json({ msg: "Google email not verified" });
+    }
 
     // Find or create user
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
     if (!user) {
       user = await User.create({
         name,
         email,
         googleId,
+        avatar: picture,
         authProvider: "google",
         emailVerified: true,
         emailVerifiedAt: new Date(),
@@ -45,8 +66,6 @@ export const googleLogin = async (req, res) => {
     // Generate JWT tokens
     const accessToken = signAccessToken({
       id: user._id,
-      name: user.name,
-      email: user.email,
       role: user.role,
       emailVerified: true,
       twoFactorVerified: true,
@@ -65,10 +84,9 @@ export const googleLogin = async (req, res) => {
       resourceId: user._id,
     });
 
-    // ✅ Respond with user info and store token under "token"
-    res.json({
+    return res.json({
       success: true,
-      token: accessToken, // <- important! matches frontend apiFetch
+      accessToken,
       user: {
         id: user._id,
         name: user.name,
@@ -79,7 +97,7 @@ export const googleLogin = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Google login error:", err);
-    res.status(500).json({ msg: "Google authentication failed" });
+    console.error("❌ Google login failed:", err.message);
+    return res.status(401).json({ msg: "Invalid Google token" });
   }
 };
