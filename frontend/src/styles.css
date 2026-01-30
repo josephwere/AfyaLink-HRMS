@@ -489,3 +489,9 @@ body {
   font-weight: 500;
   color: #374151;
 }
+.divider {
+  text-align: center;
+  margin: 18px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
