@@ -11,6 +11,14 @@ export function useAuth() {
      FETCH CURRENT USER (BOOTSTRAP)
   ====================================================== */
   const fetchUser = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const u = await apiFetch("/api/auth/me");
@@ -33,28 +41,40 @@ export function useAuth() {
        2. Direct token login (Google)
   ====================================================== */
   const login = async (emailOrToken, passwordOrOptions) => {
-    // Direct token login (Google)
+    /* ----------------------
+       Google / direct token
+    ----------------------- */
     if (passwordOrOptions?.directToken) {
       const { token, user } = passwordOrOptions;
+
+      if (!token || !user) {
+        throw new Error("Invalid authentication response");
+      }
+
       localStorage.setItem("token", token);
       setUser(user);
       return { user };
     }
 
-    // Email + password login
+    /* ----------------------
+       Email + password
+    ----------------------- */
     try {
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
-        body: { email: emailOrToken, password: passwordOrOptions },
+        body: {
+          email: emailOrToken,
+          password: passwordOrOptions,
+        },
       });
 
-      if (!data?.user) throw new Error("Invalid credentials");
+      if (!data?.user || !data?.accessToken) {
+        throw new Error("Invalid credentials");
+      }
 
-      // Save token and update context
       localStorage.setItem("token", data.accessToken);
       setUser(data.user);
 
-      // Handle 2FA
       if (data.requires2FA) {
         return { requires2FA: true, userId: data.user.id };
       }
@@ -76,7 +96,6 @@ export function useAuth() {
 
   /* ======================================================
      REFRESH USER (optional helper)
-     Can be called after token refresh or Google login
   ====================================================== */
   const refreshUser = async () => {
     try {
@@ -89,5 +108,12 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, login, logout, fetchUser, refreshUser };
+  return {
+    user,
+    loading,
+    login,
+    logout,
+    fetchUser,
+    refreshUser,
+  };
 }
