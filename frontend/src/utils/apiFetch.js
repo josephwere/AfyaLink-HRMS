@@ -1,9 +1,9 @@
-// src/utils/apiFetch.js
+// frontend/src/utils/apiFetch.js
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
 /* ======================================================
-   SAFE JSON PARSER (NO DOUBLE-CONSUME)
+   SAFE JSON PARSER
 ====================================================== */
 async function safeJson(res) {
   try {
@@ -14,21 +14,23 @@ async function safeJson(res) {
 }
 
 /* ======================================================
-   CENTRALIZED API FETCH (FIXED)
+   CENTRALIZED API FETCH (FINAL)
 ====================================================== */
 async function apiFetch(path, options = {}, _retry = false) {
   const token = localStorage.getItem("token");
 
   const headers = {
+    Accept: "application/json",
     ...(options.headers || {}),
   };
 
-  // 🚫 NEVER attach token to auth routes
+  /* ----------------------------------
+     AUTH ROUTES (NO TOKEN / NO REFRESH)
+  ----------------------------------- */
   const isAuthRoute =
     path.includes("/auth/login") ||
     path.includes("/auth/register") ||
-    path.includes("/auth/google") ||
-    path.includes("/auth/resend");
+    path.includes("/auth/google");
 
   if (token && !isAuthRoute) {
     headers.Authorization = `Bearer ${token}`;
@@ -50,18 +52,24 @@ async function apiFetch(path, options = {}, _retry = false) {
     throw new Error("Network error. Please check your connection.");
   }
 
-  // 🔁 Handle 401 BEFORE reading body
-  if (response.status === 401 && !_retry) {
+  /* ----------------------------------
+     401 → TRY REFRESH (ONCE, NON-AUTH)
+  ----------------------------------- */
+  if (response.status === 401 && !_retry && !isAuthRoute) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       return apiFetch(path, options, true);
     }
+
+    // hard logout if refresh fails
+    logout();
+    throw new Error("Session expired. Please sign in again.");
   }
 
   const data = await safeJson(response);
 
   if (!response.ok) {
-    throw new Error(data.msg || "Request failed");
+    throw new Error(data.msg || data.message || "Request failed");
   }
 
   return data;
@@ -75,6 +83,9 @@ async function refreshAccessToken() {
     const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
     });
 
     if (!res.ok) return false;
@@ -100,4 +111,3 @@ export function logout() {
 
 export default apiFetch;
 export { apiFetch, safeJson };
-
