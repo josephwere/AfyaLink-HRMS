@@ -13,7 +13,13 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { GoogleButton, error: googleError } = useGoogleAuth();
+
+  // Google auth (clearError is optional-safe)
+  const {
+    GoogleButton,
+    error: googleError,
+    clearError,
+  } = useGoogleAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,6 +99,7 @@ export default function Login() {
     setInfo("");
     setShowResend(false);
     setSubmitting(true);
+    clearError?.();
 
     try {
       rememberMe
@@ -130,6 +137,7 @@ export default function Login() {
       setResendLoading(true);
       setError("");
       setInfo("");
+      clearError?.();
 
       const data = await apiFetch("/api/auth/resend-verification", {
         method: "POST",
@@ -213,7 +221,15 @@ export default function Login() {
         <div className="divider">or</div>
 
         {/* Google login */}
-        <GoogleButton />
+        <div
+          onClick={() => {
+            setError("");
+            setInfo("");
+            clearError?.();
+          }}
+        >
+          <GoogleButton />
+        </div>
 
         <div className="auth-footer">
           <span>Don’t have an account?</span>
