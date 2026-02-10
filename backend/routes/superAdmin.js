@@ -1,12 +1,12 @@
+import express from "express";
+import { protect, requireRole } from "../middleware/authMiddleware.js";
+import { registerHospitalAdmin, getHospitals } from "../controllers/superAdmin.js";
 
-import express from 'express';
 const router = express.Router();
-import { authenticate, authorizeRoles } from '../middleware/auth.js';
-import superAdmin from '../controllers/superAdmin.js';
 
-router.use(authenticate, authorizeRoles("superadmin"));
+router.use(protect, requireRole("SUPER_ADMIN"));
 
-router.post("/register-hospital-admin", superAdmin.registerHospitalAdmin);
-router.get("/hospitals", superAdmin.getHospitals);
+router.post("/register-hospital-admin", registerHospitalAdmin);
+router.get("/hospitals", getHospitals);
 
 export default router;
