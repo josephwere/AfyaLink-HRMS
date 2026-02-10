@@ -1,4 +1,4 @@
-import { exportExpiringUsersCSV } from "../controllers/adminVerificationController.js"
+import { exportExpiringUsersCSV } from "../controllers/adminVerificationController.js";
 import express from "express";
 import { createAdmin } from "../controllers/adminController.js";
 import auth from "../middleware/auth.js";
@@ -16,10 +16,11 @@ router.post(
   createAdmin
 );
 
-export default router;
 router.get(
   "/export/unverified-users",
   auth,
-  requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
+  allowRoles("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   exportExpiringUsersCSV
 );
+
+export default router;
