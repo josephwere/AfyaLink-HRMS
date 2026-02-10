@@ -6,7 +6,8 @@ import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
-import { useGoogleAuth } from "../auth/useGoogleAuth";
+import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
+
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
