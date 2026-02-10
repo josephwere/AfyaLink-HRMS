@@ -1,10 +1,11 @@
+// frontend/src/pages/Register.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
