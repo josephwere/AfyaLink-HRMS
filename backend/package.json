@@ -54,7 +54,8 @@
     "node-cron": "^3.0.3",
     "ws": "^8.14.2",
     "google-auth-library": "^9.6.0",
-    "json2csv": "^6.0.0"
+    "json2csv": "5.0.7"
+
 
   },
   "devDependencies": {
