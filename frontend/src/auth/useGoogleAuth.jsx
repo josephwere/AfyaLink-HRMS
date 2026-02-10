@@ -1,10 +1,9 @@
-// frontend/src/auth/useGoogleAuth.js
-
+// frontend/src/auth/useGoogleAuth.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import apiFetch from "../utils/apiFetch";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
 
 export function useGoogleAuth() {
@@ -25,9 +24,10 @@ export function useGoogleAuth() {
         body: { credential: credentialResponse.credential },
       });
 
+      const token = data.accessToken || data.token;
       await login(null, {
         directToken: true,
-        token: data.accessToken,
+        token,
         user: data.user,
       });
 
