@@ -1,10 +1,11 @@
+// frontend/src/utils/auth.jsx
 import {
   createContext,
   useContext,
   useEffect,
   useState,
 } from "react";
-import { apiFetch, logout as apiLogout, safeJson } from "./apiFetch";
+import { apiFetch, logout as apiLogout } from "./apiFetch";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -79,7 +80,10 @@ export function AuthProvider({ children }) {
       typeof passwordOrOptions === "object" &&
       passwordOrOptions?.directToken === true
     ) {
-      const accessToken = emailOrToken;
+      const accessToken = passwordOrOptions?.token || emailOrToken;
+      if (!accessToken) {
+        throw new Error("Missing access token");
+      }
       const decoded = parseJwt(accessToken);
 
       if (!decoded?.role) {
@@ -107,19 +111,13 @@ export function AuthProvider({ children }) {
     /* ============================
        🔐 EMAIL / PASSWORD LOGIN
     ============================ */
-    const res = await apiFetch("/api/auth/login", {
+    const data = await apiFetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({
+      body: {
         email: emailOrToken,
         password: passwordOrOptions,
-      }),
+      },
     });
-
-    const data = await safeJson(res);
-
-    if (!res.ok) {
-      throw new Error(data.msg || "Login failed");
-    }
 
     /* 🔐 2FA REQUIRED */
     if (data.requires2FA) {
