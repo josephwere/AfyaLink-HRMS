@@ -1,3 +1,4 @@
+// backend/controllers/googleAuthController.js
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
@@ -72,6 +73,7 @@ export const googleLogin = async (req, res) => {
     // Respond with token
     res.json({
       success: true,
+      accessToken,
       token: accessToken,
       user: {
         id: user._id,
