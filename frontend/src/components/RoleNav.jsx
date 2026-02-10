@@ -1,5 +1,6 @@
+// frontend/src/components/RoleNav.jsx
 import { NAV_BY_ROLE } from "../config/navByRole";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../utils/auth";
 
 export default function RoleNav() {
   const { user } = useAuth();
