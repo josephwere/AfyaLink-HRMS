@@ -28,10 +28,13 @@ import "./workers/workflowSlaWorker.js";
    🧠 ROUTES
 ====================================================== */
 import authRoutes from "./routes/authRoutes.js";
+import adminRoutes from "./routes/admin.js";
 import userRoutes from "./routes/userRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import hospitalRoutes from "./routes/hospitalRoutes.js";
 import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
+import hospitalAdminStaffRoutes from "./routes/hospitalAdmin.js";
+import superAdminRoutes from "./routes/superAdmin.js";
 
 import emergencyRoutes from "./routes/emergencyRoutes.js";
 import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
@@ -156,6 +159,7 @@ app.use((req, _res, next) => {
    🔑 AUTH & CORE
 ====================================================== */
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
 
@@ -164,6 +168,8 @@ app.use("/api/profile", profileRoutes);
 ====================================================== */
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/hospital-admin", hospitalAdminRoutes);
+app.use("/api/hospital-admin", hospitalAdminStaffRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/branches", branchesRoutes);
 app.use("/api/access", accessVerificationRoutes);
 app.use("/api/security", securityDashboardRoutes);
