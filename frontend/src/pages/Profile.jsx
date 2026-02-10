@@ -1,11 +1,12 @@
+// frontend/src/pages/Profile.jsx
 import { useEffect, useState } from "react";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Profile() {
-  const { user, fetchUser } = useAuth();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
