@@ -148,10 +148,10 @@ export const API = {
     "POST": "/api/pay"
   },
   "REGISTER-HOSPITAL-ADMIN": {
-    "POST": "/api/register-hospital-admin"
+    "POST": "/api/super-admin/register-hospital-admin"
   },
   "REGISTER-STAFF": {
-    "POST": "/api/register-staff"
+    "POST": "/api/hospital-admin/register-staff"
   },
   "REVEAL_REQUEST": {
     "POST": "/api/reveal/request"
