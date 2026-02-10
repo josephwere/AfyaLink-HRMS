@@ -1,4 +1,4 @@
-
+// backend/controllers/superAdmin.js
 import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
 import jwt from 'jsonwebtoken';
@@ -19,7 +19,7 @@ export const registerHospitalAdmin = async (req, res) => {
     if (!hospital) return res.status(404).json({ msg: "Hospital not found" });
 
     // Create hospital admin
-    const admin = await User.create({ name, email, password, role: "hospitaladmin", hospital: hospital._id });
+    const admin = await User.create({ name, email, password, role: "HOSPITAL_ADMIN", hospital: hospital._id });
     hospital.admins.push(admin._id);
     await hospital.save();
 
