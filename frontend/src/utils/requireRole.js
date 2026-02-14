@@ -12,6 +12,11 @@ export function requireRole(user, ...allowedRoles) {
     };
   }
 
+  // If no roles are specified, this is auth-only protection.
+  if (!allowedRoles.length) {
+    return { allowed: true };
+  }
+
   const userRole = normalizeRole(user.role);
   const allowed = allowedRoles.map((role) => normalizeRole(role));
 
