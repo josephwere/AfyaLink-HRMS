@@ -160,6 +160,7 @@ function PublicOnly({ children }) {
 function AppLayout() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
+  const showAI = settings?.hospitalCustomization?.modules?.showAI !== false;
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
@@ -1437,4 +1438,3 @@ export default function App() {
     </SocketProvider>
   );
 }
-  const showAI = settings?.hospitalCustomization?.modules?.showAI !== false;
