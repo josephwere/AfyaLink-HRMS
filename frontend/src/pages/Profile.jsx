@@ -584,9 +584,9 @@ export default function Profile() {
   return (
     <div className="profile-container">
       {canRoleOverride && (
-        <div className="card">
+        <div className="card profile-card profile-hero-card">
           <h3>Role View Switcher</h3>
-          <p>
+          <p className="muted">
             Use this to switch and test account types.
             Your actual account stays <strong>{user?.actualRole || user?.role}</strong>.
           </p>
@@ -605,7 +605,7 @@ export default function Profile() {
               ? "Strict mode: access is limited to the switched role."
               : "Full access mode: founder/developer elevated permissions remain active while viewing another role."}
           </p>
-          <div className="profile-row">
+          <div className="profile-row profile-actions-row">
             <select
               value={viewRole}
               onChange={(e) => setViewRole(e.target.value)}
@@ -645,114 +645,113 @@ export default function Profile() {
       ============================ */}
       {renderVerificationWarning()}
 
-      {/* ============================
-         VERIFICATION STATUS
-      ============================ */}
-      <div className="card">
-        <h3>Verification Status</h3>
-        <div className="grid">
-          <div>
-            <strong>Email:</strong>{" "}
-            {emailVerified ? "Verified" : "Not verified"}
-          </div>
-          <div>
-            <strong>Phone:</strong>{" "}
-            {phoneVerified ? "Verified" : "Not verified"}
+      <div className="profile-content-grid">
+        {/* ============================
+           VERIFICATION STATUS
+        ============================ */}
+        <div className="card profile-card">
+          <h3>Verification Status</h3>
+          <div className="profile-status-grid">
+            <div className={`profile-status-pill ${emailVerified ? "ok" : "warn"}`}>
+              <strong>Email:</strong> {emailVerified ? "Verified" : "Not verified"}
+            </div>
+            <div className={`profile-status-pill ${phoneVerified ? "ok" : "warn"}`}>
+              <strong>Phone:</strong> {phoneVerified ? "Verified" : "Not verified"}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ============================
-         PHONE + NATIONAL ID
-      ============================ */}
-      <div className="card">
-        <h3>Phone & National ID</h3>
-        <p>
-          {phoneVerified
-            ? "Your phone number is verified."
-            : "Verify your phone number to keep your account active."}
-        </p>
+        {/* ============================
+           PHONE + NATIONAL ID
+        ============================ */}
+        <div className="card profile-card">
+          <h3>Phone & National ID</h3>
+          <p className="muted">
+            {phoneVerified
+              ? "Your phone number is verified."
+              : "Verify your phone number to keep your account active."}
+          </p>
 
-        <label>Phone number</label>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+1 555 123 4567"
-        />
-        <div className="profile-row">
-          <button
-            className="primary"
-            onClick={requestPhoneOtp}
-            disabled={phoneBusy || !phone.trim()}
-          >
-            {phoneBusy ? "Sending..." : "Send OTP"}
-          </button>
-
+          <label>Phone number</label>
           <input
-            value={phoneOtp}
-            onChange={(e) => setPhoneOtp(e.target.value)}
-            placeholder="Enter OTP"
-            style={{ maxWidth: 180 }}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1 555 123 4567"
+          />
+          <div className="profile-row profile-actions-row">
+            <button
+              className="primary"
+              onClick={requestPhoneOtp}
+              disabled={phoneBusy || !phone.trim()}
+            >
+              {phoneBusy ? "Sending..." : "Send OTP"}
+            </button>
+
+            <input
+              value={phoneOtp}
+              onChange={(e) => setPhoneOtp(e.target.value)}
+              placeholder="Enter OTP"
+              style={{ maxWidth: 220 }}
+            />
+            <button
+              className="success"
+              onClick={verifyPhoneOtp}
+              disabled={phoneBusy || !phoneOtp.trim()}
+            >
+              {phoneBusy ? "Verifying..." : "Verify"}
+            </button>
+          </div>
+          {phoneMsg && <p style={{ marginTop: 8 }}>{phoneMsg}</p>}
+
+          <hr style={{ margin: "18px 0" }} />
+
+          <label>National ID Number</label>
+          <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
+
+          <label>National ID Country</label>
+          <input
+            value={idCountry}
+            onChange={(e) => setIdCountry(e.target.value)}
+            placeholder="e.g. KE, US, NG"
           />
           <button
-            className="success"
-            onClick={verifyPhoneOtp}
-            disabled={phoneBusy || !phoneOtp.trim()}
+            className="primary"
+            onClick={saveNationalId}
+            disabled={idSaving}
+            style={{ marginTop: 8 }}
           >
-            {phoneBusy ? "Verifying..." : "Verify"}
+            {idSaving ? "Saving..." : "Save National ID"}
           </button>
+          {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
+
+          <hr style={{ margin: "18px 0" }} />
+
+          <label>Professional License Number</label>
+          <input
+            value={licenseNumber}
+            onChange={(e) => setLicenseNumber(e.target.value)}
+            placeholder="e.g. KMPDC-123456"
+          />
+
+          <label>License Expiry Date</label>
+          <input
+            type="date"
+            value={licenseExpiry}
+            onChange={(e) => setLicenseExpiry(e.target.value)}
+          />
+
+          <button
+            className="primary"
+            onClick={saveLicense}
+            disabled={licenseSaving}
+            style={{ marginTop: 8 }}
+          >
+            {licenseSaving ? "Saving..." : "Save License"}
+          </button>
+          {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
         </div>
-        {phoneMsg && <p style={{ marginTop: 8 }}>{phoneMsg}</p>}
 
-        <hr style={{ margin: "18px 0" }} />
-
-        <label>National ID Number</label>
-        <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
-
-        <label>National ID Country</label>
-        <input
-          value={idCountry}
-          onChange={(e) => setIdCountry(e.target.value)}
-          placeholder="e.g. KE, US, NG"
-        />
-        <button
-          className="primary"
-          onClick={saveNationalId}
-          disabled={idSaving}
-          style={{ marginTop: 8 }}
-        >
-          {idSaving ? "Saving..." : "Save National ID"}
-        </button>
-        {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
-
-        <hr style={{ margin: "18px 0" }} />
-
-        <label>Professional License Number</label>
-        <input
-          value={licenseNumber}
-          onChange={(e) => setLicenseNumber(e.target.value)}
-          placeholder="e.g. KMPDC-123456"
-        />
-
-        <label>License Expiry Date</label>
-        <input
-          type="date"
-          value={licenseExpiry}
-          onChange={(e) => setLicenseExpiry(e.target.value)}
-        />
-
-        <button
-          className="primary"
-          onClick={saveLicense}
-          disabled={licenseSaving}
-          style={{ marginTop: 8 }}
-        >
-          {licenseSaving ? "Saving..." : "Save License"}
-        </button>
-        {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
-      </div>
-
-      <div className="card">
+      <div className="card profile-card">
         <h3>Basic Information</h3>
         <label>Gender</label>
         <select
@@ -800,7 +799,7 @@ export default function Profile() {
         />
       </div>
 
-      <div className="card">
+      <div className="card profile-card">
         <h3>Employment Information</h3>
         <label>Employee ID</label>
         <input
@@ -865,7 +864,7 @@ export default function Profile() {
         />
       </div>
 
-      <div className="card">
+      <div className="card profile-card">
         <h3>Credentials & Professional Data</h3>
         <label>Specialization</label>
         <input
@@ -918,7 +917,7 @@ export default function Profile() {
         />
       </div>
 
-      <div className="card">
+      <div className="card profile-card">
         <h3>Financial Information</h3>
         <label>Bank Name</label>
         <input
@@ -975,7 +974,7 @@ export default function Profile() {
         />
       </div>
 
-      <div className="card">
+      <div className="card profile-card">
         <h3>System Data</h3>
         <label>Status</label>
         <select
@@ -1007,7 +1006,7 @@ export default function Profile() {
         {extendedMsg && <p style={{ marginTop: 8 }}>{extendedMsg}</p>}
       </div>
 
-      <div className="card">
+      <div className="card profile-card">
         <h3>Role-Specific Profile Checklist ({user?.role})</h3>
         <ul>
           {(roleProfileHints[user?.role] || roleProfileHints.GUEST).map((item) => (
@@ -1015,11 +1014,12 @@ export default function Profile() {
           ))}
         </ul>
       </div>
+      </div>
 
       {/* ============================
          2FA SECTION
       ============================ */}
-      <div className="card">
+      <div className="card profile-card">
         <h3>Two-Factor Authentication (2FA)</h3>
         <p>
           {twoFAEnabled
@@ -1037,7 +1037,7 @@ export default function Profile() {
       {/* ============================
          CHANGE PASSWORD SECTION
       ============================ */}
-      <div className="card" style={{ marginTop: 24 }}>
+      <div className="card profile-card" style={{ marginTop: 24 }}>
         <h3>Change Password</h3>
 
         {pwError && <div className="auth-error">{pwError}</div>}
