@@ -135,6 +135,43 @@ export const updateHospitalFeatures = async (req, res, next) => {
     next(err);
   }
 };
+
+/* ================= UPDATE HOSPITAL DETAILS ================= */
+
+export const updateHospital = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, address, contact, code, active, plan } = req.body || {};
+
+    const hospital = await Hospital.findById(id);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    const before = hospital.toObject();
+
+    if (name !== undefined) hospital.name = String(name).trim();
+    if (address !== undefined) hospital.address = String(address).trim();
+    if (contact !== undefined) hospital.contact = String(contact).trim();
+    if (code !== undefined) hospital.code = String(code).trim();
+    if (active !== undefined) hospital.active = Boolean(active);
+    if (plan !== undefined) hospital.plan = plan;
+
+    await hospital.save();
+
+    await audit({
+      req,
+      action: "UPDATE_HOSPITAL",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      metadata: diffObjects(before, hospital.toObject()),
+    });
+
+    res.json({ success: true, hospital });
+  } catch (err) {
+    next(err);
+  }
+};
 /* ================= SOFT DELETE (DEACTIVATE HOSPITAL) ================= */
 /* NEVER hard-delete hospitals */
 

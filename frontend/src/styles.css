@@ -94,12 +94,15 @@ body {
    AUTH PAGES
 ========================= */
 .auth-bg {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--login-bg) center/cover no-repeat,
     linear-gradient(135deg, #0f766e, #2563eb);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
 }
 
 .auth-card {
@@ -109,6 +112,13 @@ body {
   padding: 32px;
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) and (min-height: 820px) {
+  .auth-bg {
+    align-items: center;
+  }
 }
 
 .auth-card h1 {
@@ -1538,6 +1548,10 @@ body {
 .card.stat {
   padding: 16px;
   border: 1px solid var(--app-border);
+}
+
+.card.stat.stat-clickable {
+  cursor: pointer;
 }
 
 .card.stat.stat-good {

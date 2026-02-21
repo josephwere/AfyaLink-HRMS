@@ -4,6 +4,7 @@ import {
   listHospitals,
   getHospitalFeatures,
   updateHospitalFeatures,
+  updateHospital,
 } from "../controllers/hospitalController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
@@ -34,6 +35,13 @@ router.get(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
   listHospitals
+);
+
+router.put(
+  "/:id",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  updateHospital
 );
 
 /**

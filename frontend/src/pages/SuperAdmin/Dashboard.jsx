@@ -35,7 +35,11 @@ export default function Dashboard() {
       <section className="section">
         <h3>Global Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Total Hospitals" value={data?.totalHospitals ?? "—"} />
+          <StatCard
+            title="Total Hospitals"
+            value={data?.totalHospitals ?? "—"}
+            onClick={() => navigate("/super-admin/hospitals")}
+          />
           <StatCard title="Total Staff" value={data?.totalUsers ?? "—"} />
           <StatCard title="Active Patients" value={data?.totalPatients ?? "—"} />
           <StatCard title="Payroll This Month" value={data?.paymentsThisMonth ?? "—"} />

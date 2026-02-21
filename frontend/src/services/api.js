@@ -96,6 +96,14 @@ const api = {
     return { data: await r.json() };
   },
 
+  patch: async (path, body) => {
+    const r = await apiFetch(path, {
+      method: "PATCH",
+      body,
+    });
+    return { data: await r.json() };
+  },
+
   delete: async (path) => {
     const r = await apiFetch(path, {
       method: "DELETE",

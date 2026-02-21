@@ -38,8 +38,21 @@ export const StatCard = ({
   why = "",
   badge = "",
   onBadgeClick = null,
+  onClick = null,
 }) => (
-  <div className={`card stat stat-${status}`}>
+  <div
+    className={`card stat stat-${status}${typeof onClick === "function" ? " stat-clickable" : ""}`}
+    onClick={typeof onClick === "function" ? onClick : undefined}
+    role={typeof onClick === "function" ? "button" : undefined}
+    tabIndex={typeof onClick === "function" ? 0 : undefined}
+    onKeyDown={
+      typeof onClick === "function"
+        ? (e) => {
+            if (e.key === "Enter" || e.key === " ") onClick();
+          }
+        : undefined
+    }
+  >
     <div className="card-title-row">
       <div className="card-title">{title}</div>
       {badge ? (

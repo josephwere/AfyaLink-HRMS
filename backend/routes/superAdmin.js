@@ -6,6 +6,8 @@ import {
   getHospitals,
   registerSystemAdmin,
   registerDeveloper,
+  listHospitalAdmins,
+  updateHospitalAdmin,
 } from "../controllers/superAdmin.js";
 
 const router = express.Router();
@@ -28,5 +30,15 @@ router.post(
   registerDeveloper
 );
 router.get("/hospitals", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"), getHospitals);
+router.get(
+  "/hospital-admins",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  listHospitalAdmins
+);
+router.patch(
+  "/hospital-admins/:id",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  updateHospitalAdmin
+);
 
 export default router;

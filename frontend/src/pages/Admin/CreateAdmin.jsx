@@ -18,6 +18,7 @@ export default function CreateAdmin() {
     password: "",
     role: "HOSPITAL_ADMIN",
     hospitalId: "",
+    branch: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -75,6 +76,7 @@ export default function CreateAdmin() {
           email: form.email,
           password: form.password,
           hospitalId: form.hospitalId,
+          branch: form.branch,
         });
         setMsg("✅ Hospital admin created");
       }
@@ -84,6 +86,7 @@ export default function CreateAdmin() {
         password: "",
         role: "HOSPITAL_ADMIN",
         hospitalId: "",
+        branch: "",
       });
       setHospitalQuery("");
     } catch (err) {
@@ -182,6 +185,11 @@ export default function CreateAdmin() {
                 </option>
               ))}
             </select>
+            <input
+              placeholder="Branch (optional, e.g. Kisumu Branch)"
+              value={form.branch}
+              onChange={(e) => setForm({ ...form, branch: e.target.value })}
+            />
           </>
         )}
 

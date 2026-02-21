@@ -4,7 +4,7 @@ import Hospital from '../models/Hospital.js';
 
 // Create a Hospital Admin
 export const registerHospitalAdmin = async (req, res) => {
-  const { name, email, password, hospitalId } = req.body;
+  const { name, email, password, hospitalId, branch } = req.body;
 
   if (!name || !email || !password || !hospitalId) {
     return res.status(400).json({ msg: "All fields are required" });
@@ -24,11 +24,17 @@ export const registerHospitalAdmin = async (req, res) => {
       password,
       role: "HOSPITAL_ADMIN",
       hospital: hospital._id,
+      employment: {
+        ...(branch ? { branch: String(branch).trim() } : {}),
+      },
       emailVerified: true,
       twoFactorEnabled: true,
       protectedAccount: true,
     });
-    hospital.admins.push(admin._id);
+    hospital.admins = hospital.admins || [];
+    if (!hospital.admins.some((id) => String(id) === String(admin._id))) {
+      hospital.admins.push(admin._id);
+    }
     await hospital.save();
 
     // Return admin summary
@@ -40,6 +46,7 @@ export const registerHospitalAdmin = async (req, res) => {
         email: admin.email,
         role: admin.role,
         hospital: hospital._id,
+        branch: admin?.employment?.branch || null,
       },
     });
   } catch (err) {
@@ -127,10 +134,85 @@ export const registerDeveloper = async (req, res) => {
 // Get all hospitals
 export const getHospitals = async (req, res) => {
   try {
-    const hospitals = await Hospital.find().populate("admins", "name email");
+    const hospitals = await Hospital.find().populate(
+      "admins",
+      "name email employment.branch"
+    );
     res.json(hospitals);
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// List hospital admins with hospital/branch/search filters
+export const listHospitalAdmins = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "20", 10), 1), 100);
+    const hospitalId = req.query.hospitalId;
+    const branch = (req.query.branch || "").trim();
+    const q = (req.query.q || "").trim();
+
+    const filter = { role: "HOSPITAL_ADMIN" };
+    if (hospitalId) filter.hospital = hospitalId;
+    if (branch) filter["employment.branch"] = branch;
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      User.find(filter)
+        .select("name email hospital employment.branch active createdAt")
+        .populate("hospital", "name code")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(filter),
+    ]);
+
+    res.json({ items, total, page, limit });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+export const updateHospitalAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, branch, active } = req.body || {};
+
+    const admin = await User.findOne({ _id: id, role: "HOSPITAL_ADMIN" });
+    if (!admin) {
+      return res.status(404).json({ msg: "Hospital admin not found" });
+    }
+
+    if (name !== undefined) admin.name = String(name).trim();
+    if (email !== undefined) admin.email = String(email).trim().toLowerCase();
+    if (branch !== undefined) {
+      admin.employment = admin.employment || {};
+      admin.employment.branch = String(branch || "").trim();
+    }
+    if (active !== undefined) admin.active = Boolean(active);
+
+    await admin.save();
+
+    const out = await User.findById(admin._id)
+      .select("name email hospital employment.branch active createdAt")
+      .populate("hospital", "name code")
+      .lean();
+
+    return res.json({ success: true, admin: out });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(400).json({ msg: "Email already exists" });
+    }
+    console.error(err);
+    return res.status(500).json({ msg: "Server error" });
   }
 };

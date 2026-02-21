@@ -60,6 +60,14 @@ const hospitalSchema = new mongoose.Schema(
 
     /* ================= SOFT DELETE ================= */
     active: { type: Boolean, default: true },
+
+    /* ================= LINKED ADMINS ================= */
+    admins: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -164,7 +164,11 @@ export default function SystemAdminDashboard() {
           <StatCard title="Req / Min" value={devOverview?.queues?.integration?.completed ?? "—"} />
           <StatCard title="Failed Logins" value={metrics?.approvals?.total ?? "—"} />
           <StatCard title="Job Status" value={devOverview?.queues?.integration?.waiting ?? "—"} />
-          <StatCard title="Microservices" value={metrics?.hospitals ?? "—"} />
+          <StatCard
+            title="Total Hospitals"
+            value={metrics?.hospitals ?? "—"}
+            onClick={() => navigate("/super-admin/hospitals")}
+          />
           <StatCard title="Database Health" value={devOverview?.queues?.dlq?.failed ?? "—"} />
           <StatCard title="Workforce Breached" value={devOverview?.queues?.workforce?.breached ?? "—"} />
           <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} />
