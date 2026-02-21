@@ -1,7 +1,14 @@
 import api from "./api";
 
-export const listHospitals = async () => {
-  const res = await api.get("/api/super-admin/hospitals");
+export const listHospitals = async (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && String(v) !== "") {
+      qs.set(k, String(v));
+    }
+  });
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await api.get(`/api/super-admin/hospitals${query}`);
   return res.data;
 };
 

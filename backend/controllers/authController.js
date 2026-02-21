@@ -90,12 +90,29 @@ export const register = async (req, res) => {
         .json({ msg: "Name, password, and email or phone are required" });
     }
 
-    if (email && (await User.findOne({ email }))) {
+    const normalizedEmail = email ? String(email).toLowerCase().trim() : "";
+    const normalizedPhone = phone ? String(phone).trim() : "";
+    const normalizedNationalId = nationalIdNumber
+      ? String(nationalIdNumber).trim().toUpperCase()
+      : "";
+    const normalizedNationalIdCountry = nationalIdCountry
+      ? String(nationalIdCountry).trim().toUpperCase()
+      : "";
+
+    if (normalizedEmail && (await User.findOne({ email: normalizedEmail }))) {
       return res.status(400).json({ msg: "Email already registered" });
     }
 
-    if (phone && (await User.findOne({ phone }))) {
+    if (normalizedPhone && (await User.findOne({ phone: normalizedPhone }))) {
       return res.status(400).json({ msg: "Phone already registered" });
+    }
+    if (
+      normalizedNationalId &&
+      (await User.findOne({
+        nationalIdNumber: normalizedNationalId,
+      }))
+    ) {
+      return res.status(400).json({ msg: "National ID already registered" });
     }
 
     const verificationDeadline = new Date(
@@ -104,16 +121,16 @@ export const register = async (req, res) => {
 
     const user = await User.create({
       name,
-      email: email ? email.toLowerCase() : undefined,
-      phone,
+      email: normalizedEmail || undefined,
+      phone: normalizedPhone || undefined,
       password,
       role: "PATIENT",
       emailVerified: false,
       phoneVerified: false,
       verificationDeadline,
       verificationRemindersSent: [],
-      nationalIdNumber,
-      nationalIdCountry,
+      nationalIdNumber: normalizedNationalId || undefined,
+      nationalIdCountry: normalizedNationalIdCountry || undefined,
     });
 
     await AuditLog.create({
@@ -151,11 +168,11 @@ export const register = async (req, res) => {
       }).catch(() => {});
     }
 
-    if (phone) {
+    if (normalizedPhone) {
       const otp = generateOtp();
       await setOtp(`phone:${user._id}`, otp, 300);
       await sendSMS({
-        to: phone,
+        to: normalizedPhone,
         message: `Your AfyaLink verification code is ${otp}`,
       });
     }
@@ -163,7 +180,7 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       msg: "Registration successful",
-      phoneOtpSent: Boolean(phone),
+      phoneOtpSent: Boolean(normalizedPhone),
     });
   } catch (err) {
     console.error(err);
@@ -276,18 +293,23 @@ export const resendVerificationEmail = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, phone, identifier, password } = req.body;
-    const loginId = email || phone || identifier;
+    const loginId = String(email || phone || identifier || "").trim();
 
     if (!loginId || !password) {
       return res.status(400).json({
         success: false,
-        msg: "Email or phone and password are required",
+        msg: "Email, phone or national ID and password are required",
       });
     }
 
     const query = loginId.includes("@")
       ? { email: loginId.toLowerCase() }
-      : { phone: loginId };
+      : {
+          $or: [
+            { phone: loginId },
+            { nationalIdNumber: loginId.toUpperCase() },
+          ],
+        };
     const user = await User.findOne(query).select("+password");
 
     if (!user) {

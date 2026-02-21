@@ -84,6 +84,7 @@ import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
 import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
 import NotificationsPage from "./pages/Admin/NotificationsPage";
 import PaymentSettings from "./pages/Admin/PaymentSettings";
+import AccessControl from "./pages/Admin/AccessControl";
 
 /* =======================
    DASHBOARDS
@@ -1079,6 +1080,7 @@ export default function App() {
             <Route path="realtime" element={<RealTimeIntegrations />} />
             <Route path="crdt-patients" element={<CRDTPatientEditor />} />
             <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="access-control" element={<AccessControl />} />
             <Route
               path="payment-settings"
               element={

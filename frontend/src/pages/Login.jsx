@@ -111,11 +111,12 @@ export default function Login() {
         {info && <div className="auth-info">{info}</div>}
         {googleError && <div className="auth-error">{googleError}</div>}
 
-        <label>Email or phone</label>
+        <label>Email, phone or national ID</label>
         <input
           type="text"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
+          placeholder="you@example.com, +2547..., or ID number"
           required
         />
 

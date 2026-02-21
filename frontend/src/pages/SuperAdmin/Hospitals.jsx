@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
+import { useLocation } from "react-router-dom";
 import { createHospital, updateHospital } from "../../services/hospitalApi";
 import {
   createBranch,
@@ -18,6 +19,7 @@ import {
 
 export default function SuperAdminHospitals() {
   const { user } = useAuth();
+  const location = useLocation();
   const [hospitals, setHospitals] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -85,7 +87,11 @@ export default function SuperAdminHospitals() {
 
   const loadHospitals = async () => {
     try {
-      const data = await listHospitals();
+      const data = await listHospitals({
+        q: query || undefined,
+        page: 1,
+        limit: 1000,
+      });
       const items = Array.isArray(data)
         ? data
         : Array.isArray(data?.hospitals)
@@ -101,7 +107,13 @@ export default function SuperAdminHospitals() {
 
   useEffect(() => {
     loadHospitals();
-  }, []);
+  }, [query]);
+
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    const initialQ = qs.get("q") || "";
+    if (initialQ) setQuery(initialQ);
+  }, [location.search]);
 
   useEffect(() => {
     if (!branchHospitalId && hospitals.length) {

@@ -86,6 +86,7 @@ export const MENU = [
     roles: ["SUPER_ADMIN"],
     items: [
       { label: "Feature Toggles", path: "/super-admin/settings", icon: "settings" },
+      { label: "Delegated Access", path: "/admin/access-control", icon: "security" },
       { label: "API Keys", path: "/super-admin/settings", icon: "settings" },
       { label: "Integration Settings", path: "/admin/realtime", icon: "settings" },
       { label: "Email/SMS Config", path: "/super-admin/settings", icon: "settings" },
@@ -105,6 +106,7 @@ export const MENU = [
       { label: "Queue Monitor", path: "/developer/queue-replay", icon: "settings" },
       { label: "Database Health", path: "/system-admin", icon: "analytics" },
       { label: "Role Overrides", path: "/admin/create-admin", icon: "admin" },
+      { label: "Delegated Access", path: "/admin/access-control", icon: "security" },
       { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },
       { label: "Deployment Manager", path: "/developer", icon: "settings" },
       { label: "Integration Hub", path: "/admin/realtime", icon: "settings" },
@@ -121,6 +123,7 @@ export const MENU = [
       { label: "Leave Approvals", path: "/hospital-admin/approvals", icon: "notifications" },
       { label: "Hiring Requests", path: "/hospital-admin/approvals", icon: "hr" },
       { label: "Department Budgets", path: "/reports", icon: "reports" },
+      { label: "Access Delegation", path: "/admin/access-control", icon: "security" },
       { label: "Bed Capacity Monitor", path: "/hospital-admin", icon: "analytics" },
       { label: "Attendance Reports", path: "/reports", icon: "reports" },
       { label: "Incident Reports", path: "/security-admin", icon: "security" },

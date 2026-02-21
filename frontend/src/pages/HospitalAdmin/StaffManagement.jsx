@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 import { useAuth } from "../../utils/auth";
+import { useLocation } from "react-router-dom";
 
 export default function StaffManagement() {
   const { user } = useAuth();
+  const location = useLocation();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [total, setTotal] = useState(0);
 
-  if (user?.role !== "HOSPITAL_ADMIN" && user?.role !== "SUPER_ADMIN") {
+  if (
+    user?.role !== "HOSPITAL_ADMIN" &&
+    user?.role !== "SUPER_ADMIN" &&
+    user?.role !== "SYSTEM_ADMIN"
+  ) {
     return <p>🚫 Access denied</p>;
   }
 
@@ -16,8 +26,17 @@ export default function StaffManagement() {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await api.get("/api/users");
-      const items = res.data || [];
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (q.trim()) params.set("q", q.trim());
+      const res = await api.get(`/api/users?${params.toString()}`);
+      const items = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.items)
+        ? res.data.items
+        : [];
       const staffOnly = items.filter((u) =>
         [
           "HOSPITAL_ADMIN",
@@ -34,8 +53,10 @@ export default function StaffManagement() {
         ].includes(u.role)
       );
       setStaff(staffOnly);
+      setTotal(Number(res.data?.total || staffOnly.length));
     } catch {
       setMsg("Failed to load staff");
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -43,7 +64,21 @@ export default function StaffManagement() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [page]);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setPage(1);
+      load();
+    }, 300);
+    return () => clearTimeout(id);
+  }, [q]);
+
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    const initialQ = qs.get("q") || "";
+    if (initialQ) setQ(initialQ);
+  }, [location.search]);
 
   const deactivate = async (id) => {
     await api.patch(`/api/users/${id}`, { active: false });
@@ -63,6 +98,13 @@ export default function StaffManagement() {
           <p className="muted">Approve roles, deactivate accounts.</p>
         </div>
         <div className="welcome-actions">
+          <input
+            className="search-input"
+            placeholder="Search worker name, email, phone, ID, role..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ minWidth: 280 }}
+          />
           <button className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
@@ -126,6 +168,25 @@ export default function StaffManagement() {
               )}
             </tbody>
           </table>
+          <div className="pagination-row">
+            <button
+              className="btn-secondary"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+            >
+              Prev
+            </button>
+            <span className="muted">
+              Page {page} • {total} workers
+            </span>
+            <button
+              className="btn-secondary"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={loading || page * limit >= total}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </section>
     </div>

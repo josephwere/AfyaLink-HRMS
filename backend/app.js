@@ -105,6 +105,8 @@ import systemSettingsRoutes from "./routes/systemSettingsRoutes.js";
 import developerRoutes from "./routes/developerRoutes.js";
 import systemAdminRoutes from "./routes/systemAdminRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import delegatedPermissionRoutes from "./routes/delegatedPermissionRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
 
 
 
@@ -204,6 +206,8 @@ app.use("/api/system-settings", systemSettingsRoutes);
 app.use("/api/developer", developerRoutes);
 app.use("/api/system-admin", systemAdminRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/delegated-permissions", delegatedPermissionRoutes);
+app.use("/api/search", searchRoutes);
 
 
 /* ======================================================

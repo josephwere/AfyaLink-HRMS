@@ -6,6 +6,7 @@ import { getSearchCatalog } from "../config/searchCatalog";
 import { useTheme } from "../utils/theme.jsx";
 import { triggerAction } from "../services/actionApi";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { globalSearch } from "../services/searchApi";
 import {
   getDeveloperOverview,
   runWorkflowSlaScan,
@@ -138,6 +139,8 @@ export default function Navbar({ onToggleSidebar }) {
   const [notifCategory, setNotifCategory] = useState("ALL");
   const [notifRead, setNotifRead] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [remoteResults, setRemoteResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const [slaStatus, setSlaStatus] = useState(() => {
     try {
       const raw = localStorage.getItem("workflow_sla_last_scan");
@@ -156,13 +159,62 @@ export default function Navbar({ onToggleSidebar }) {
   const homePath = user ? redirectByRole(user) : "/";
 
   const catalog = useMemo(() => getSearchCatalog(user), [user]);
-  const results = useMemo(() => {
+  const localResults = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
     return catalog
       .filter((item) => item.label.toLowerCase().includes(q))
       .slice(0, 8);
   }, [search, catalog]);
+
+  useEffect(() => {
+    const query = search.trim();
+    if (!user || query.length < 2) {
+      setRemoteResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const role = String(user?.role || "").toUpperCase();
+    const canViewHospitals = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
+    const canViewWorkers = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
+    const id = setTimeout(() => {
+      globalSearch({ q: query, limit: 6 })
+        .then((data) => {
+          const hospitals = (data?.hospitals || []).map((h) => ({
+            label: `Hospital: ${h.name}${h.code ? ` (${h.code})` : ""}`,
+            path: canViewHospitals
+              ? `/super-admin/hospitals?q=${encodeURIComponent(h.name || h.code || "")}`
+              : homePath,
+            source: "remote-hospital",
+          }));
+          const workers = (data?.workers || []).map((w) => ({
+            label: `${w.name} • ${w.role}`,
+            path: canViewWorkers
+              ? `/hospital-admin/staff?q=${encodeURIComponent(w.name || w.email || "")}`
+              : "/profile",
+            source: "remote-worker",
+          }));
+          setRemoteResults([...hospitals, ...workers]);
+        })
+        .catch(() => setRemoteResults([]))
+        .finally(() => setSearching(false));
+    }, 250);
+
+    return () => clearTimeout(id);
+  }, [search, user, homePath]);
+
+  const results = useMemo(() => {
+    const seen = new Set();
+    const merged = [...remoteResults, ...localResults];
+    return merged.filter((item) => {
+      const key = `${item.path}|${item.label}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 12);
+  }, [localResults, remoteResults]);
 
   const unreadCount = useMemo(
     () => notifItems.filter((n) => !n.read).length,
@@ -316,11 +368,16 @@ export default function Navbar({ onToggleSidebar }) {
             Clear
           </button>
 
-          {results.length > 0 && (
+          {(results.length > 0 || searching) && (
             <div className="search-results">
+              {searching && (
+                <div className="search-result">
+                  <span className="result-title">Searching...</span>
+                </div>
+              )}
               {results.map((item) => (
                 <button
-                  key={item.path}
+                  key={`${item.path}-${item.label}`}
                   className="search-result"
                   onClick={() => {
                     navigate(item.path);

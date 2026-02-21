@@ -117,14 +117,30 @@ export const listUsers = async (req, res, next) => {
     const cursor = req.query.cursor || null;
     const q = (req.query.q || "").trim();
 
+    const actorRole = String(req.user?.role || "").toUpperCase();
+    const isGlobalAdmin = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
     const filter = {
-      hospital: req.user.hospitalId, // 🔐 tenant scoped
-      active: true,                 // 🔒 soft-delete filter
+      active: req.query.includeInactive === "1" ? { $in: [true, false] } : true,
     };
+
+    if (isGlobalAdmin) {
+      if (req.query.hospital) {
+        filter.hospital = req.query.hospital;
+      }
+    } else {
+      filter.hospital = req.user.hospitalId; // 🔐 tenant scoped for hospital users
+    }
+
+    const roleFilter = String(req.query.role || "").trim().toUpperCase();
+    if (roleFilter) filter.role = roleFilter;
+
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
         { email: { $regex: q, $options: "i" } },
+        { phone: { $regex: q, $options: "i" } },
+        { nationalIdNumber: { $regex: q, $options: "i" } },
+        { role: { $regex: q, $options: "i" } },
       ];
     }
 
@@ -193,9 +209,11 @@ export const updateUser = async (req, res, next) => {
     }
 
     // 🔐 TENANT ISOLATION (CRITICAL)
+    const actorRole = String(req.user?.role || "").toUpperCase();
+    const isGlobalAdmin = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
     if (
-      user.hospital.toString() !==
-      req.user.hospitalId.toString()
+      !isGlobalAdmin &&
+      user.hospital?.toString() !== req.user.hospitalId?.toString()
     ) {
       await denyAudit(
         req,

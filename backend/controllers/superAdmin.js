@@ -134,11 +134,29 @@ export const registerDeveloper = async (req, res) => {
 // Get all hospitals
 export const getHospitals = async (req, res) => {
   try {
-    const hospitals = await Hospital.find().populate(
-      "admins",
-      "name email employment.branch"
-    );
-    res.json(hospitals);
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
+    const q = String(req.query.q || "").trim();
+
+    const filter = {};
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { code: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      Hospital.find(filter)
+        .populate("admins", "name email employment.branch")
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Hospital.countDocuments(filter),
+    ]);
+
+    res.json({ items, total, page, limit });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });

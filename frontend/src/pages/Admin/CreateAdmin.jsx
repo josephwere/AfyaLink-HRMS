@@ -30,7 +30,7 @@ export default function CreateAdmin() {
   }
 
   React.useEffect(() => {
-    listHospitals()
+    listHospitals({ page: 1, limit: 1000 })
       .then((data) => {
         const rows = Array.isArray(data)
           ? data
