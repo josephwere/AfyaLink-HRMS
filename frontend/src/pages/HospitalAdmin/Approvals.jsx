@@ -380,6 +380,12 @@ export default function Approvals() {
     if (hasViewInQuery) {
       setViewMode(queryView === "breached" ? "BREACHED" : "ALL");
     }
+    const queryKind = String(qs.get("kind") || "").toUpperCase();
+    if (["LEAVE", "OVERTIME", "SHIFT"].includes(queryKind)) {
+      setQueueKindFilter(queryKind);
+    } else if (qs.has("kind")) {
+      setQueueKindFilter("ALL");
+    }
 
     const hash = window.location.hash;
     if (!hash) return;

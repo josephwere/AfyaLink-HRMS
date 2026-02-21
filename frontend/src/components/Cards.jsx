@@ -29,10 +29,35 @@ function Sparkline({ points = [] }) {
   );
 }
 
-export const StatCard = ({ title, value, subtitle, trend, status = "neutral" }) => (
+export const StatCard = ({
+  title,
+  value,
+  subtitle,
+  trend,
+  status = "neutral",
+  why = "",
+  badge = "",
+  onBadgeClick = null,
+}) => (
   <div className={`card stat stat-${status}`}>
-    <div className="card-title">{title}</div>
+    <div className="card-title-row">
+      <div className="card-title">{title}</div>
+      {badge ? (
+        typeof onBadgeClick === "function" ? (
+          <button
+            type="button"
+            className={`stat-badge stat-badge-${status}`}
+            onClick={onBadgeClick}
+          >
+            {badge}
+          </button>
+        ) : (
+          <span className={`stat-badge stat-badge-${status}`}>{badge}</span>
+        )
+      ) : null}
+    </div>
     <div className="card-value">{value}</div>
+    {why ? <div className="card-why" title={why}>Why: {why}</div> : null}
     {Array.isArray(trend) && trend.length > 1 && (
       <div style={{ marginTop: 6 }}>
         <Sparkline points={trend} />

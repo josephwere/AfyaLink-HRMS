@@ -21,6 +21,7 @@ export default function Dashboard() {
     if (n >= 45) return "warn";
     return "good";
   };
+  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
 
   const loadBurnout = async () => {
     try {
@@ -98,7 +99,16 @@ export default function Dashboard() {
       <section className="section">
         <h3>AI Wellbeing Signal</h3>
         <div className="grid info-grid">
-          <StatCard title="Burnout Risk Score" value={burnout?.score ?? "—"} trend={burnoutTrend} subtitle="Auto-refresh 45s" status={burnoutStatus(burnout?.score)} />
+          <StatCard
+            title="Burnout Risk Score"
+            value={burnout?.score ?? "—"}
+            trend={burnoutTrend}
+            subtitle="Auto-refresh 45s"
+            status={burnoutStatus(burnout?.score)}
+            badge={badgeFromStatus(burnoutStatus(burnout?.score))}
+            why={`Score ${burnout?.score ?? 0}; keep below 45 to remain in low-risk band.`}
+            onBadgeClick={() => navigate("/doctor/leave")}
+          />
           <StatCard title="Risk Band" value={burnout?.band ?? "—"} />
           <StatCard title="Recommendations" value={Array.isArray(burnout?.recommendations) ? burnout.recommendations.length : "—"} />
         </div>

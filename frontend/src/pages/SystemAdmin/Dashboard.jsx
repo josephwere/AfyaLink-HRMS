@@ -43,6 +43,8 @@ export default function SystemAdminDashboard() {
     return "good";
   };
 
+  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
+
   const loadAi = async () => {
     try {
       const [forecast, twin] = await Promise.all([
@@ -190,8 +192,26 @@ export default function SystemAdminDashboard() {
       <section className="section">
         <h3>AI Intelligence Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Doctor Gap" value={ai?.forecast?.forecast?.doctorGap ?? "—"} trend={aiTrend.doctorGap} subtitle="Auto-refresh 45s" status={gapStatus(ai?.forecast?.forecast?.doctorGap)} />
-          <StatCard title="Nurse Gap" value={ai?.forecast?.forecast?.nurseGap ?? "—"} trend={aiTrend.nurseGap} subtitle="Auto-refresh 45s" status={gapStatus(ai?.forecast?.forecast?.nurseGap)} />
+          <StatCard
+            title="Doctor Gap"
+            value={ai?.forecast?.forecast?.doctorGap ?? "—"}
+            trend={aiTrend.doctorGap}
+            subtitle="Auto-refresh 45s"
+            status={gapStatus(ai?.forecast?.forecast?.doctorGap)}
+            badge={badgeFromStatus(gapStatus(ai?.forecast?.forecast?.doctorGap))}
+            why={`Gap is ${ai?.forecast?.forecast?.doctorGap ?? 0}; >5 means critical staffing risk.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
+          />
+          <StatCard
+            title="Nurse Gap"
+            value={ai?.forecast?.forecast?.nurseGap ?? "—"}
+            trend={aiTrend.nurseGap}
+            subtitle="Auto-refresh 45s"
+            status={gapStatus(ai?.forecast?.forecast?.nurseGap)}
+            badge={badgeFromStatus(gapStatus(ai?.forecast?.forecast?.nurseGap))}
+            why={`Gap is ${ai?.forecast?.forecast?.nurseGap ?? 0}; >5 means critical staffing risk.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
+          />
           <StatCard
             title="Under-Capacity Units"
             value={
@@ -208,8 +228,28 @@ export default function SystemAdminDashboard() {
               1,
               2
             )}
+            badge={badgeFromStatus(
+              countStatus(
+                Array.isArray(ai?.twin?.twin?.departments)
+                  ? ai.twin.twin.departments.filter((d) => d.status === "UNDER_CAPACITY").length
+                  : 0,
+                1,
+                2
+              )
+            )}
+            why={`Units with unmet demand are flagged. 2+ under-capacity units are critical.`}
+            onBadgeClick={() => navigate("/system-admin/clinical-intelligence#digital-twin")}
           />
-          <StatCard title="Twin Pending Shifts" value={ai?.twin?.twin?.pendingRequests?.shifts ?? "—"} trend={aiTrend.pendingShifts} subtitle="Auto-refresh 45s" status={countStatus(ai?.twin?.twin?.pendingRequests?.shifts, 5, 15)} />
+          <StatCard
+            title="Twin Pending Shifts"
+            value={ai?.twin?.twin?.pendingRequests?.shifts ?? "—"}
+            trend={aiTrend.pendingShifts}
+            subtitle="Auto-refresh 45s"
+            status={countStatus(ai?.twin?.twin?.pendingRequests?.shifts, 5, 15)}
+            badge={badgeFromStatus(countStatus(ai?.twin?.twin?.pendingRequests?.shifts, 5, 15))}
+            why={`Pending shift requests above 15 indicate strong scheduling pressure.`}
+            onBadgeClick={() => navigate("/hospital-admin/approvals?kind=SHIFT&view=all")}
+          />
         </div>
       </section>
 

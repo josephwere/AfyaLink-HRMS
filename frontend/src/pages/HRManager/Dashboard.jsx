@@ -37,6 +37,7 @@ export default function HRManagerDashboard() {
     if (n < 3) return "warn";
     return "good";
   };
+  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
 
   const loadAi = async () => {
     try {
@@ -123,10 +124,37 @@ export default function HRManagerDashboard() {
       <section className="section">
         <h3>AI Workforce Intelligence</h3>
         <div className="grid info-grid">
-          <StatCard title="Burnout Score" value={burnout?.score ?? "—"} trend={trend.burnoutScore} subtitle="Auto-refresh 45s" status={burnoutStatus(burnout?.score)} />
+          <StatCard
+            title="Burnout Score"
+            value={burnout?.score ?? "—"}
+            trend={trend.burnoutScore}
+            subtitle="Auto-refresh 45s"
+            status={burnoutStatus(burnout?.score)}
+            badge={badgeFromStatus(burnoutStatus(burnout?.score))}
+            why={`Burnout score ${burnout?.score ?? 0}; >=75 high risk, 45-74 medium.`}
+            onBadgeClick={() => navigate("/workforce/requests?status=PENDING")}
+          />
           <StatCard title="Burnout Band" value={burnout?.band ?? "—"} />
-          <StatCard title="Projected KPI" value={causal?.projected ?? "—"} trend={trend.projectedKpi} subtitle="Auto-refresh 45s" status={changeStatus(causal?.changePct)} />
-          <StatCard title="Projected Change %" value={causal?.changePct ?? "—"} trend={trend.projectedChange} subtitle="Auto-refresh 45s" status={changeStatus(causal?.changePct)} />
+          <StatCard
+            title="Projected KPI"
+            value={causal?.projected ?? "—"}
+            trend={trend.projectedKpi}
+            subtitle="Auto-refresh 45s"
+            status={changeStatus(causal?.changePct)}
+            badge={badgeFromStatus(changeStatus(causal?.changePct))}
+            why={`Projected KPI is ${causal?.projected ?? 0}; negative expected change means risk.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff")}
+          />
+          <StatCard
+            title="Projected Change %"
+            value={causal?.changePct ?? "—"}
+            trend={trend.projectedChange}
+            subtitle="Auto-refresh 45s"
+            status={changeStatus(causal?.changePct)}
+            badge={badgeFromStatus(changeStatus(causal?.changePct))}
+            why={`Change ${causal?.changePct ?? 0}%; <0 is risk, 0-3 is watch.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff")}
+          />
         </div>
       </section>
     </div>

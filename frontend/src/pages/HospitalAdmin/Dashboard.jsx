@@ -30,6 +30,7 @@ export default function Dashboard() {
     if (n <= 3) return "warn";
     return "risk";
   };
+  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
 
   const loadForecast = async () => {
     try {
@@ -86,8 +87,26 @@ export default function Dashboard() {
         <div className="grid info-grid">
           <StatCard title="Required Doctors" value={forecast?.forecast?.requiredDoctors ?? "—"} trend={trend.requiredDoctors} subtitle="Auto-refresh 45s" />
           <StatCard title="Required Nurses" value={forecast?.forecast?.requiredNurses ?? "—"} trend={trend.requiredNurses} subtitle="Auto-refresh 45s" />
-          <StatCard title="Doctor Gap" value={forecast?.forecast?.doctorGap ?? "—"} trend={trend.doctorGap} subtitle="Auto-refresh 45s" status={gapStatus(forecast?.forecast?.doctorGap)} />
-          <StatCard title="Nurse Gap" value={forecast?.forecast?.nurseGap ?? "—"} trend={trend.nurseGap} subtitle="Auto-refresh 45s" status={gapStatus(forecast?.forecast?.nurseGap)} />
+          <StatCard
+            title="Doctor Gap"
+            value={forecast?.forecast?.doctorGap ?? "—"}
+            trend={trend.doctorGap}
+            subtitle="Auto-refresh 45s"
+            status={gapStatus(forecast?.forecast?.doctorGap)}
+            badge={badgeFromStatus(gapStatus(forecast?.forecast?.doctorGap))}
+            why={`Gap ${forecast?.forecast?.doctorGap ?? 0}; >3 requires urgent staffing intervention.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
+          />
+          <StatCard
+            title="Nurse Gap"
+            value={forecast?.forecast?.nurseGap ?? "—"}
+            trend={trend.nurseGap}
+            subtitle="Auto-refresh 45s"
+            status={gapStatus(forecast?.forecast?.nurseGap)}
+            badge={badgeFromStatus(gapStatus(forecast?.forecast?.nurseGap))}
+            why={`Gap ${forecast?.forecast?.nurseGap ?? 0}; >3 requires urgent staffing intervention.`}
+            onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
+          />
         </div>
       </section>
 

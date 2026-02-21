@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../../services/api";
 import { useAuth } from "../../utils/auth";
 
 export default function RegisterStaff() {
   const { user } = useAuth();
+  const location = useLocation();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -12,6 +14,26 @@ export default function RegisterStaff() {
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  React.useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    const role = String(qs.get("role") || "").toLowerCase();
+    const allowed = new Set([
+      "doctor",
+      "nurse",
+      "lab_tech",
+      "pharmacist",
+      "radiologist",
+      "therapist",
+      "receptionist",
+      "security_officer",
+      "hr_manager",
+      "payroll_officer",
+    ]);
+    if (allowed.has(role)) {
+      setForm((prev) => ({ ...prev, role }));
+    }
+  }, [location.search]);
 
   if (user?.role !== "HOSPITAL_ADMIN") {
     return <p>🚫 Access denied</p>;

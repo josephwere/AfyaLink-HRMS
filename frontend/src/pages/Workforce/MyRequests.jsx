@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 import {
   createLeave,
@@ -16,6 +16,7 @@ const MY_REQUESTS_CACHE_TTL_MS = 15 * 60 * 1000;
 export default function MyRequests() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [leave, setLeave] = useState([]);
@@ -203,13 +204,18 @@ export default function MyRequests() {
   }, [cacheReady, statusFilter]);
 
   useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    const status = String(qs.get("status") || "").toUpperCase();
+    if (["PENDING", "APPROVED", "REJECTED"].includes(status)) {
+      setStatusFilter(status);
+    }
     const hash = window.location.hash;
     if (!hash) return;
     const target = document.getElementById(hash.replace("#", ""));
     if (target) {
       setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 150);
     }
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     if (!cacheReady) return;
