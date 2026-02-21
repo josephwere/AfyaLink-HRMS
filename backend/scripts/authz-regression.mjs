@@ -144,6 +144,20 @@ function summarize(all) {
 
 async function main() {
   console.log(`AuthZ regression against ${BASE_URL}`);
+  try {
+    const ping = await fetch(`${BASE_URL}/healthz`, { method: "GET" });
+    if (!ping.ok) {
+      console.error(
+        `FAIL authz-regression: target server is reachable but unhealthy (${ping.status}).`
+      );
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error(
+      `FAIL authz-regression: cannot reach ${BASE_URL}. Start backend first (npm run dev).`
+    );
+    process.exit(1);
+  }
 
   const all = [];
   all.push(...(await runSuite(noAuthMatrix, "NO_AUTH")));

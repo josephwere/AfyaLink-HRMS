@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
+import { useNavigate } from "react-router-dom";
 
 function emptyInsurance() {
   return { code: "", name: "", country: "", enabled: true };
@@ -21,6 +22,7 @@ function emptyPayment() {
 }
 
 export default function CommerceConfig() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -70,6 +72,11 @@ export default function CommerceConfig() {
         <div>
           <h2>Hospital Insurance & Payment Setup</h2>
           <p className="muted">Configure insurance services (e.g. SHA) and payment methods visible to patients.</p>
+        </div>
+        <div className="welcome-actions">
+          <button className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>
+            Open Branding & Customization
+          </button>
         </div>
       </div>
 

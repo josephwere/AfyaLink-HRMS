@@ -1,0 +1,23 @@
+[Unit]
+Description=AfyaLink Backend Instance %i
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/afyalink/backend
+Environment=NODE_ENV=production
+Environment=PORT=%i
+EnvironmentFile=/etc/afyalink/backend.env
+ExecStart=/usr/bin/node /opt/afyalink/backend/server.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+

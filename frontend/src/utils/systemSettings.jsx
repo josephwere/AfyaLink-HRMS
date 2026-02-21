@@ -14,17 +14,59 @@ function setFavicon(href) {
 }
 
 export function SystemSettingsProvider({ children }) {
-  const [settings, setSettings] = useState(null);
+  const [baseSettings, setBaseSettings] = useState(null);
+  const [hospitalCustomization, setHospitalCustomization] = useState(null);
   const base = import.meta.env.VITE_API_URL || "";
+
+  const mergeSettings = (globalSettings, customization) => {
+    if (!customization?.enabled) return globalSettings || {};
+    const next = { ...(globalSettings || {}) };
+    next.branding = {
+      ...(globalSettings?.branding || {}),
+      ...(customization?.branding || {}),
+      appName:
+        customization?.branding?.appName ||
+        globalSettings?.branding?.appName ||
+        "AfyaLink",
+    };
+    next.hospitalCustomization = customization;
+    return next;
+  };
 
   useEffect(() => {
     fetch(`${base}/api/system-settings`)
       .then((r) => r.json())
       .then((data) => {
-        setSettings(data);
+        setBaseSettings(data);
       })
-      .catch(() => setSettings({}));
+      .catch(() => setBaseSettings({}));
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setHospitalCustomization(null);
+      return;
+    }
+
+    fetch(`${base}/api/hospital-admin/config`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then((data) => {
+        const customization = data?.customization || null;
+        setHospitalCustomization(customization);
+      })
+      .catch(() => setHospitalCustomization(null));
+  }, [base]);
+
+  const settings = useMemo(
+    () => mergeSettings(baseSettings, hospitalCustomization),
+    [baseSettings, hospitalCustomization]
+  );
 
   useEffect(() => {
     if (!settings) return;
@@ -37,14 +79,25 @@ export function SystemSettingsProvider({ children }) {
     if (branding.appIcon) root.style.setProperty("--brand-icon", `url(${branding.appIcon})`);
     if (branding.loginBackground) root.style.setProperty("--login-bg", `url(${branding.loginBackground})`);
     if (branding.homeBackground) root.style.setProperty("--home-bg", `url(${branding.homeBackground})`);
+    if (settings?.hospitalCustomization?.theme?.primaryColor) {
+      root.style.setProperty("--primary", settings.hospitalCustomization.theme.primaryColor);
+    }
+    if (settings?.hospitalCustomization?.theme?.accentColor) {
+      root.style.setProperty("--accent", settings.hospitalCustomization.theme.accentColor);
+    }
   }, [settings]);
+
+  const setSettings = (next) => {
+    setBaseSettings(next);
+  };
 
   const value = useMemo(
     () => ({
       settings,
       setSettings,
+      hospitalCustomization,
     }),
-    [settings]
+    [settings, hospitalCustomization]
   );
 
   return (

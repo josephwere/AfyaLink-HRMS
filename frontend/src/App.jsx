@@ -5,6 +5,8 @@ import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "./utils/auth";
 import apiFetch from "./utils/apiFetch";
 import SocketProvider from "./utils/socket";
+import { redirectByRole } from "./utils/redirectByRole";
+import { useSystemSettings } from "./utils/systemSettings.jsx";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -105,6 +107,7 @@ import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
 import HospitalAdminStaffManagement from "./pages/HospitalAdmin/StaffManagement";
 import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
 import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
+import HospitalCustomization from "./pages/HospitalAdmin/Customization";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -149,6 +152,7 @@ function PublicOnly({ children }) {
 ===================================================== */
 function AppLayout() {
   const { user } = useAuth();
+  const { settings } = useSystemSettings();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
@@ -535,7 +539,7 @@ function AppLayout() {
         </main>
       </div>
       {user && <FirstLoginTour />}
-      {user && <FloatingAI />}
+      {user && showAI && <FloatingAI />}
     </>
   );
 }
@@ -1073,6 +1077,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/hospital-admin/customization"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalCustomization />
+              </RequireRole>
+            }
+          />
 
           {/* SECURITY */}
           <Route
@@ -1315,3 +1327,4 @@ export default function App() {
     </SocketProvider>
   );
 }
+  const showAI = settings?.hospitalCustomization?.modules?.showAI !== false;

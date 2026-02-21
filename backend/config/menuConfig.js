@@ -126,6 +126,7 @@ export const MENU = [
       { label: "Department Budgets", path: "/reports", icon: "reports" },
       { label: "Access Delegation", path: "/admin/access-control", icon: "security" },
       { label: "Insurance & Payments", path: "/hospital-admin/commerce-config", icon: "payroll" },
+      { label: "Branding & Customization", path: "/hospital-admin/customization", icon: "settings" },
       { label: "Bed Capacity Monitor", path: "/hospital-admin", icon: "analytics" },
       { label: "Attendance Reports", path: "/reports", icon: "reports" },
       { label: "Incident Reports", path: "/security-admin", icon: "security" },

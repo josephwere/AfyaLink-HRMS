@@ -120,6 +120,40 @@ const hospitalSchema = new mongoose.Schema(
         enabled: { type: Boolean, default: true },
       },
     ],
+
+    customization: {
+      enabled: { type: Boolean, default: false },
+      branding: {
+        appName: { type: String, trim: true, default: "" },
+        tagline: { type: String, trim: true, default: "" },
+        logo: { type: String, trim: true, default: "" },
+        appIcon: { type: String, trim: true, default: "" },
+        favicon: { type: String, trim: true, default: "" },
+        loginBackground: { type: String, trim: true, default: "" },
+        homeBackground: { type: String, trim: true, default: "" },
+      },
+      theme: {
+        primaryColor: { type: String, trim: true, default: "" },
+        accentColor: { type: String, trim: true, default: "" },
+        sidebarStyle: {
+          type: String,
+          enum: ["DEFAULT", "COMPACT", "WIDE"],
+          default: "DEFAULT",
+        },
+        topbarStyle: {
+          type: String,
+          enum: ["DEFAULT", "MINIMAL", "DENSE"],
+          default: "DEFAULT",
+        },
+      },
+      modules: {
+        showAI: { type: Boolean, default: true },
+        showReports: { type: Boolean, default: true },
+        showAnalytics: { type: Boolean, default: true },
+      },
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      updatedAt: Date,
+    },
   },
   { timestamps: true }
 );

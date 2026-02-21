@@ -3,6 +3,7 @@ import {
   getHospitalConfig,
   updateHospitalFeatures,
   updateHospitalCommerceConfig,
+  updateHospitalCustomization,
 } from "../controllers/hospitalAdminController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
@@ -31,6 +32,13 @@ router.put(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
   updateHospitalCommerceConfig
+);
+
+router.put(
+  "/customization",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  updateHospitalCustomization
 );
 
 export default router;

@@ -45,6 +45,12 @@ export default function Sidebar({ open = true, onClose }) {
   const { can } = useCan();
   const { theme, setTheme } = useTheme();
   const { settings } = useSystemSettings();
+  const appName = settings?.branding?.appName || "AfyaLink";
+  const appTagline = settings?.branding?.tagline || null;
+  const hospitalModules = settings?.hospitalCustomization?.modules || {};
+  const showAI = hospitalModules.showAI !== false;
+  const showReports = hospitalModules.showReports !== false;
+  const showAnalytics = hospitalModules.showAnalytics !== false;
   const navigate = useNavigate();
   const [dynamicMenu, setDynamicMenu] = useState([]);
   const [menuLoaded, setMenuLoaded] = useState(false);
@@ -76,6 +82,14 @@ export default function Sidebar({ open = true, onClose }) {
   const UnverifiedBadge = () =>
     !user.emailVerified ? <span className="badge-dot">!</span> : null;
 
+  const allowMenuItem = (item) => {
+    const path = String(item?.path || "");
+    if (!showAI && path.startsWith("/ai")) return false;
+    if (!showReports && (path === "/reports" || path.startsWith("/reports"))) return false;
+    if (!showAnalytics && (path === "/analytics" || path.startsWith("/analytics"))) return false;
+    return true;
+  };
+
   if (user.role === "GUEST") {
     return (
       <aside
@@ -90,10 +104,10 @@ export default function Sidebar({ open = true, onClose }) {
                 style={{ backgroundImage: `url(${settings.branding.logo})` }}
               />
             ) : (
-              "AfyaLink"
+              appName
             )}
           </div>
-          <div className="brand-sub">Demo Workspace</div>
+          <div className="brand-sub">{appTagline || "Demo Workspace"}</div>
         </div>
         <div className="sidebar-scroll">
           <nav>
@@ -150,7 +164,7 @@ export default function Sidebar({ open = true, onClose }) {
               Sign Out
             </button>
           </div>
-          <div>AfyaLink • Demo Mode</div>
+          <div>{appName} • Demo Mode</div>
         </div>
       </aside>
     );
@@ -170,10 +184,10 @@ export default function Sidebar({ open = true, onClose }) {
               style={{ backgroundImage: `url(${settings.branding.logo})` }}
             />
           ) : (
-            "AfyaLink"
+            appName
           )}
         </div>
-        <div className="brand-sub">{user.role} Workspace</div>
+        <div className="brand-sub">{appTagline || `${user.role} Workspace`}</div>
       </div>
       <div className="sidebar-scroll">
         <nav>
@@ -183,7 +197,7 @@ export default function Sidebar({ open = true, onClose }) {
               dynamicMenu.map((section) => (
                 <Section key={section.section} title={section.section}>
                   {section.items.map((item, idx) =>
-                    item.path ? (
+                    item.path && allowMenuItem(item) ? (
                       <Item
                         key={item.path || `${section.section}-${idx}`}
                         to={item.path}

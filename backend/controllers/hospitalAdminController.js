@@ -1,6 +1,15 @@
 import Hospital from "../models/Hospital.js";
 import AuditLog from "../models/AuditLog.js";
 
+function resolveHospitalId(req) {
+  const role = String(req.user?.role || "").toUpperCase();
+  const privileged = role === "SUPER_ADMIN" || role === "SYSTEM_ADMIN" || role === "DEVELOPER";
+  if (privileged) {
+    return req.query?.hospitalId || req.body?.hospitalId || req.user?.hospital;
+  }
+  return req.user?.hospital;
+}
+
 /* ======================================================
    GET HOSPITAL FEATURES, LIMITS & EMERGENCY STATE
    - tenant-safe
@@ -9,10 +18,13 @@ import AuditLog from "../models/AuditLog.js";
 ====================================================== */
 export const getHospitalConfig = async (req, res) => {
   try {
-    const hospitalId = req.user.hospital;
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
 
     const hospital = await Hospital.findById(hospitalId).select(
-      "name plan features limits active subscription insuranceProviders patientPaymentMethods"
+      "name plan features limits active subscription insuranceProviders patientPaymentMethods customization"
     );
 
     if (!hospital) {
@@ -48,7 +60,10 @@ export const getHospitalConfig = async (req, res) => {
 ====================================================== */
 export const updateHospitalFeatures = async (req, res) => {
   try {
-    const hospitalId = req.user.hospital;
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
     const updates = req.body.features || {};
 
     const hospital = await Hospital.findById(hospitalId);
@@ -108,7 +123,10 @@ export const updateHospitalFeatures = async (req, res) => {
 ====================================================== */
 export const updateHospitalCommerceConfig = async (req, res) => {
   try {
-    const hospitalId = req.user.hospital;
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
     const { insuranceProviders, patientPaymentMethods } = req.body || {};
 
     const hospital = await Hospital.findById(hospitalId);
@@ -169,5 +187,67 @@ export const updateHospitalCommerceConfig = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Failed to update hospital payment/insurance config" });
+  }
+};
+
+/* ======================================================
+   UPDATE HOSPITAL CUSTOMIZATION
+====================================================== */
+export const updateHospitalCustomization = async (req, res) => {
+  try {
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
+    const payload = req.body?.customization || {};
+
+    const hospital = await Hospital.findById(hospitalId);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+    if (hospital.active === false) {
+      return res.status(403).json({ message: "Cannot customize deactivated hospital" });
+    }
+
+    const current = hospital.customization?.toObject?.() || hospital.customization || {};
+    const next = {
+      ...current,
+      ...payload,
+      branding: {
+        ...(current.branding || {}),
+        ...(payload.branding || {}),
+      },
+      theme: {
+        ...(current.theme || {}),
+        ...(payload.theme || {}),
+      },
+      modules: {
+        ...(current.modules || {}),
+        ...(payload.modules || {}),
+      },
+      updatedBy: req.user._id,
+      updatedAt: new Date(),
+    };
+    hospital.customization = next;
+    await hospital.save();
+
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "UPDATE_HOSPITAL_CUSTOMIZATION",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      hospital: hospital._id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
+    return res.json({
+      success: true,
+      customization: hospital.customization || {},
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to update hospital customization" });
   }
 };

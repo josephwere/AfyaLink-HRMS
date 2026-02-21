@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
+import mongoose from "mongoose";
 
 import errorHandler from "./middleware/errorHandler.js";
 import { trace } from "./middleware/traceMiddleware.js";
@@ -116,6 +117,7 @@ import recruitmentAdsRoutes from "./routes/recruitmentAdsRoutes.js";
    🚀 APP
 ====================================================== */
 const app = express();
+app.set("trust proxy", 1);
 
 /* ======================================================
    🌍 CORS — OAuth & Vercel SAFE
@@ -286,7 +288,43 @@ app.use("/api/menu", menuRoutes);
    ❤️ HEALTH CHECK
 ====================================================== */
 app.get("/", (_req, res) => {
-  res.send("AfyaLink HRMS Backend is running 🚀");
+  res.send("AfyaLink HRMS Backend is running");
+});
+
+app.get("/healthz", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "afyalink-backend",
+    uptimeSec: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/readyz", async (_req, res) => {
+  try {
+    const dbReady = mongoose.connection?.readyState === 1;
+    if (!dbReady) {
+      return res.status(503).json({
+        ok: false,
+        reason: "DATABASE_NOT_READY",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return res.json({
+      ok: true,
+      service: "afyalink-backend",
+      dbReady: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(503).json({
+      ok: false,
+      reason: "READINESS_CHECK_FAILED",
+      message: error?.message || "Unknown readiness error",
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /* ======================================================

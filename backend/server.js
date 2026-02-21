@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cron from "node-cron";
 import cors from "cors";
 import { Server as IOServer } from "socket.io";
+import mongoose from "mongoose";
 
 import connectDB from "./config/db.js";
 import app from "./app.js";
@@ -18,6 +19,9 @@ import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWo
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+let httpServer;
+let ioServer;
+let shuttingDown = false;
 
 /* ======================================================
    🌐 ALLOWED ORIGINS
@@ -111,6 +115,8 @@ const start = async () => {
     });
 
     initSocket(io);
+    ioServer = io;
+    httpServer = server;
 
     server.listen(PORT, () => {
       console.log(`🚀 AfyaLink HRMS backend running on port ${PORT}`);
@@ -121,5 +127,48 @@ const start = async () => {
     process.exit(1);
   }
 };
+
+const shutdown = async (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`[SHUTDOWN] received ${signal}, closing services...`);
+
+  const forceExitTimer = setTimeout(() => {
+    console.error("[SHUTDOWN] force exit after timeout");
+    process.exit(1);
+  }, 15000);
+
+  try {
+    if (ioServer) {
+      ioServer.close();
+    }
+
+    if (httpServer) {
+      await new Promise((resolve) => httpServer.close(() => resolve()));
+    }
+
+    if (mongoose.connection?.readyState) {
+      await mongoose.connection.close(false);
+    }
+
+    clearTimeout(forceExitTimer);
+    console.log("[SHUTDOWN] graceful shutdown complete");
+    process.exit(0);
+  } catch (error) {
+    clearTimeout(forceExitTimer);
+    console.error("[SHUTDOWN] error during graceful shutdown", error);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("unhandledRejection", (reason) => {
+  console.error("[PROCESS] unhandledRejection", reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("[PROCESS] uncaughtException", error);
+});
 
 start();

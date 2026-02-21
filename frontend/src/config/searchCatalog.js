@@ -44,6 +44,7 @@ const ROLE_ITEMS = {
     { label: "Register Staff", path: "/hospital-admin/register-staff" },
     { label: "Approvals", path: "/hospital-admin/approvals" },
     { label: "Staff Management", path: "/hospital-admin/staff" },
+    { label: "Hospital Customization", path: "/hospital-admin/customization" },
     { label: "Recruitment Ads", path: "/hospital-admin/recruitment-ads" },
     { label: "My Requests", path: "/workforce/requests" },
     { label: "Notifications", path: "/admin/notifications" },

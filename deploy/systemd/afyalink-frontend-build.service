@@ -1,0 +1,16 @@
+[Unit]
+Description=AfyaLink Frontend Build
+After=network.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/afyalink/frontend
+ExecStart=/usr/bin/npm ci
+ExecStart=/usr/bin/npm run build
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+

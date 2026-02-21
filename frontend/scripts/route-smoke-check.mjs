@@ -43,7 +43,7 @@ while ((match = routeElementRegex.exec(source)) !== null) {
   routeElementNames.add(match[1]);
 }
 
-const localsAllowed = new Set(["LayoutShell", "RequireRoleRoute"]);
+const localsAllowed = new Set(["LayoutShell", "RequireRoleRoute", "RootEntry", "PublicOnly", "AppLayout"]);
 for (const n of localsAllowed) importedNames.add(n);
 
 const missing = [...routeElementNames].filter((n) => !importedNames.has(n));
@@ -54,4 +54,3 @@ if (missing.length) {
 console.log(
   `PASS route-smoke-check: ${routeElementNames.size} routed elements resolved in src/App.jsx`
 );
-

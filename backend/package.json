@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon --watch . --exec \"node server.js\"",
-    "test": "jest --runInBand",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "authz:regression": "node scripts/authz-regression.mjs",
     "audit:route-lockdown": "node scripts/route-lockdown-audit.mjs",
     "audit:abac-tests": "node scripts/abac-regression-audit.mjs",
