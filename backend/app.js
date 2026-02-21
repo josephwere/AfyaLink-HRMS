@@ -109,6 +109,9 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import delegatedPermissionRoutes from "./routes/delegatedPermissionRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import recruitmentAdsRoutes from "./routes/recruitmentAdsRoutes.js";
+import migrationRoutes from "./routes/migrationRoutes.js";
+import communicationRoutes from "./routes/communicationRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
 
 
 
@@ -212,6 +215,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/delegated-permissions", delegatedPermissionRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/recruitment-ads", recruitmentAdsRoutes);
+app.use("/api/migrations", migrationRoutes);
+app.use("/api/communication", communicationRoutes);
+app.use("/api/audit", auditRoutes);
 
 
 /* ======================================================

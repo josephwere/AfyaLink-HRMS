@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAuditLogs } from "../../services/auditApi";
+import { fetchAuditLogs, fetchEvidenceBundle } from "../../services/auditApi";
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
@@ -38,6 +38,17 @@ export default function AuditLogs() {
     a.click();
   };
 
+  const exportEvidenceBundle = async () => {
+    const data = await fetchEvidenceBundle(filters);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "audit-evidence-bundle.json";
+    a.click();
+  };
+
   return (
     <div className="card">
       <h2>🧾 Audit Logs</h2>
@@ -57,6 +68,7 @@ export default function AuditLogs() {
         />
         <button onClick={load}>Filter</button>
         <button onClick={exportCSV}>Export CSV</button>
+        <button onClick={exportEvidenceBundle}>Export Evidence Bundle</button>
       </div>
 
       {loading ? (

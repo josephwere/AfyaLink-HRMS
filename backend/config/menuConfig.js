@@ -89,6 +89,8 @@ export const MENU = [
       { label: "Delegated Access", path: "/admin/access-control", icon: "security" },
       { label: "API Keys", path: "/super-admin/settings", icon: "settings" },
       { label: "Integration Settings", path: "/admin/realtime", icon: "settings" },
+      { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
       { label: "Email/SMS Config", path: "/super-admin/settings", icon: "settings" },
       { label: "Backup & Restore", path: "/super-admin/settings", icon: "settings" },
       { label: "System Health Monitor", path: "/system-admin", icon: "analytics" },
@@ -110,6 +112,8 @@ export const MENU = [
       { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },
       { label: "Deployment Manager", path: "/developer", icon: "settings" },
       { label: "Integration Hub", path: "/admin/realtime", icon: "settings" },
+      { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -126,6 +130,8 @@ export const MENU = [
       { label: "Department Budgets", path: "/reports", icon: "reports" },
       { label: "Access Delegation", path: "/admin/access-control", icon: "security" },
       { label: "Insurance & Payments", path: "/hospital-admin/commerce-config", icon: "payroll" },
+      { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
       { label: "Branding & Customization", path: "/hospital-admin/customization", icon: "settings" },
       { label: "Bed Capacity Monitor", path: "/hospital-admin", icon: "analytics" },
       { label: "Attendance Reports", path: "/reports", icon: "reports" },
@@ -145,6 +151,7 @@ export const MENU = [
       { label: "Emergency Protocols", path: "/security-admin", icon: "security" },
       { label: "Device Authorization", path: "/security-admin", icon: "security" },
       { label: "Blacklist Control", path: "/security-admin", icon: "security" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -158,6 +165,7 @@ export const MENU = [
       { label: "Incident Report Form", path: "/security-officer", icon: "notifications" },
       { label: "Emergency Alert", path: "/security-officer", icon: "security" },
       { label: "Patrol Logs", path: "/security-officer", icon: "reports" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -203,6 +211,8 @@ export const MENU = [
       { label: "System Logs", path: "/developer", icon: "reports" },
       { label: "Metrics Dashboard", path: "/analytics", icon: "analytics" },
       { label: "Integration Monitor", path: "/admin/realtime", icon: "settings" },
+      { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -225,6 +235,7 @@ export const MENU = [
       { label: "Leave Requests", path: "/doctor/leave", icon: "requests" },
       { label: "Reports & Notes", path: "/doctor/reports-notes", icon: "reports" },
       { label: "Settings", path: "/doctor/settings", icon: "settings" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -240,6 +251,7 @@ export const MENU = [
       { label: "Vitals Entry", path: "/nurse/vitals", icon: "reports" },
       { label: "Leave Requests", path: "/nurse/leave", icon: "requests" },
       { label: "Performance", path: "/nurse/performance", icon: "analytics" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -254,6 +266,7 @@ export const MENU = [
       { label: "Quality Control", path: "/lab-tech/qc", icon: "analytics" },
       { label: "Safety Checklist", path: "/lab-tech/safety", icon: "security" },
       { label: "Reports Archive", path: "/lab-tech/archive", icon: "reports" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 
@@ -269,6 +282,7 @@ export const MENU = [
       { label: "Expiry Alerts", path: "/pharmacy/expiry", icon: "notifications" },
       { label: "Supplier Orders", path: "/pharmacy/suppliers", icon: "reports" },
       { label: "Reports", path: "/pharmacy/reports", icon: "reports" },
+      { label: "Communication Center", path: "/communication", icon: "notifications" },
     ],
   },
 

@@ -5,6 +5,7 @@ import AuditLog from "../models/AuditLog.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import speakeasy from "speakeasy";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { redis } from "../utils/redis.js";
 import { sendEmail } from "../utils/mailer.js";
@@ -310,7 +311,7 @@ export const login = async (req, res) => {
             { nationalIdNumber: loginId.toUpperCase() },
           ],
         };
-    const user = await User.findOne(query).select("+password");
+    const user = await User.findOne(query).select("+password +twoFactorSecret +twoFactorRecoveryCodes");
 
     if (!user) {
       return res.status(401).json({
@@ -387,6 +388,17 @@ export const login = async (req, res) => {
     }
 
     if (user.twoFactorEnabled) {
+      const method = user.twoFactorMethod || "OTP";
+      if (method === "TOTP" && user.twoFactorSecret) {
+        return res.json({
+          success: true,
+          requires2FA: true,
+          reason: "ACCOUNT_2FA_TOTP",
+          method: "TOTP",
+          userId: user._id,
+        });
+      }
+
       const otp = generateOtp();
       await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
       await send2FACode(user, otp);
@@ -394,6 +406,7 @@ export const login = async (req, res) => {
         success: true,
         requires2FA: true,
         reason: "ACCOUNT_2FA",
+        method: "OTP",
         userId: user._id,
       });
     }
@@ -614,15 +627,44 @@ export const googleAuth = async (req, res) => {
 export const verify2FAOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
-    const savedOtp = await redis.get(`2fa:${userId}`);
+    if (!userId || !otp) {
+      return res.status(400).json({ msg: "userId and otp are required" });
+    }
+    const user = await User.findById(userId).select("+twoFactorSecret +twoFactorRecoveryCodes");
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
-    if (!savedOtp || savedOtp !== otp) {
+    let verified = false;
+    if (user.twoFactorEnabled && user.twoFactorMethod === "TOTP" && user.twoFactorSecret) {
+      verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token: String(otp).trim(),
+        window: 1,
+      });
+      if (!verified) {
+        const hashed = crypto
+          .createHash("sha256")
+          .update(String(otp).trim().toUpperCase())
+          .digest("hex");
+        const idx = (user.twoFactorRecoveryCodes || []).findIndex((h) => h === hashed);
+        if (idx >= 0) {
+          user.twoFactorRecoveryCodes.splice(idx, 1);
+          await user.save();
+          verified = true;
+        }
+      }
+    } else {
+      const savedOtp = await redis.get(`2fa:${userId}`);
+      verified = Boolean(savedOtp && savedOtp === String(otp));
+      if (verified) await redis.del(`2fa:${userId}`);
+    }
+
+    if (!verified) {
       return res.status(401).json({ msg: "Invalid or expired OTP" });
     }
 
-    await redis.del(`2fa:${userId}`);
-
-    const user = await User.findById(userId);
     const policy = await getRiskPolicy();
     const risk = assessLoginRisk(req, user, policy);
 
@@ -763,10 +805,13 @@ export const verifyPhoneOtp = async (req, res) => {
 export const resend2FA = async (req, res) => {
   try {
     const { userId } = req.body;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+twoFactorSecret");
 
     if (!user || !user.twoFactorEnabled) {
       return res.status(400).json({ msg: "2FA not enabled" });
+    }
+    if (user.twoFactorMethod === "TOTP" && user.twoFactorSecret) {
+      return res.status(400).json({ msg: "Authenticator app is enabled. Generate code in your app." });
     }
 
     const otp = generateOtp();

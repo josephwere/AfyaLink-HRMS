@@ -120,6 +120,8 @@ import MappingStudio from "./pages/SystemAdmin/MappingStudio";
 import NlpAnalytics from "./pages/SystemAdmin/NlpAnalytics";
 import RegulatoryReports from "./pages/SystemAdmin/RegulatoryReports";
 import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
+import SystemMigrations from "./pages/SystemAdmin/Migrations";
+import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
 import WebhookRetry from "./pages/Developer/WebhookRetry";
@@ -1025,6 +1027,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/system-admin/migrations"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
+                <SystemMigrations />
+              </RequireRole>
+            }
+          />
 
           {/* HOSPITAL ADMIN */}
           <Route
@@ -1149,6 +1159,30 @@ export default function App() {
 
           {/* SHARED PAGES */}
           <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/communication"
+            element={
+              <RequireRole
+                roles={[
+                  "SUPER_ADMIN",
+                  "SYSTEM_ADMIN",
+                  "DEVELOPER",
+                  "HOSPITAL_ADMIN",
+                  "DOCTOR",
+                  "NURSE",
+                  "LAB_TECH",
+                  "PHARMACIST",
+                  "SECURITY_ADMIN",
+                  "SECURITY_OFFICER",
+                  "RECEPTIONIST",
+                  "HR_MANAGER",
+                  "PAYROLL_OFFICER",
+                ]}
+              >
+                <CommunicationCenter />
+              </RequireRole>
+            }
+          />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/inventory" element={<Inventory />} />

@@ -46,6 +46,13 @@ export default function Profile() {
 
   // 2FA
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [twoFAMethod, setTwoFAMethod] = useState("OTP");
+  const [totpSecret, setTotpSecret] = useState("");
+  const [totpUrl, setTotpUrl] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState([]);
+  const [twoFAMsg, setTwoFAMsg] = useState("");
+  const [twoFABusy, setTwoFABusy] = useState(false);
 
   // Email verification
   const [emailVerified, setEmailVerified] = useState(true);
@@ -182,6 +189,7 @@ export default function Profile() {
     try {
       const data2FA = await apiFetch("/api/2fa/status");
       setTwoFAEnabled(Boolean(data2FA?.enabled));
+      setTwoFAMethod(data2FA?.method || "OTP");
 
       const me = await apiFetch("/api/profile");
       setEmailVerified(Boolean(me?.emailVerified));
@@ -345,8 +353,70 @@ export default function Profile() {
         body: { enabled: next },
       });
       setTwoFAEnabled(next);
+      setTwoFAMethod(next ? "OTP" : "OTP");
+      setTwoFAMsg(next ? "OTP 2FA enabled." : "2FA disabled.");
     } catch {
       setError("Failed to update 2FA setting");
+    }
+  };
+
+  const setupTotp = async () => {
+    setTwoFABusy(true);
+    setTwoFAMsg("");
+    try {
+      const data = await apiFetch("/api/2fa/setup-totp", { method: "POST" });
+      setTotpSecret(data?.secret || "");
+      setTotpUrl(data?.otpauthUrl || "");
+      setRecoveryCodes([]);
+      setTwoFAMsg("Scan the secret in Google Authenticator, then verify code.");
+    } catch (err) {
+      setTwoFAMsg(err.message || "Failed to initialize authenticator setup");
+    } finally {
+      setTwoFABusy(false);
+    }
+  };
+
+  const verifyTotp = async () => {
+    if (!totpCode.trim()) return;
+    setTwoFABusy(true);
+    setTwoFAMsg("");
+    try {
+      const data = await apiFetch("/api/2fa/verify-totp", {
+        method: "POST",
+        body: { code: totpCode.trim() },
+      });
+      setTwoFAEnabled(Boolean(data?.enabled));
+      setTwoFAMethod(data?.method || "TOTP");
+      setRecoveryCodes(Array.isArray(data?.recoveryCodes) ? data.recoveryCodes : []);
+      setTotpCode("");
+      setTwoFAMsg("Authenticator 2FA enabled.");
+    } catch (err) {
+      setTwoFAMsg(err.message || "Failed to verify authenticator code");
+    } finally {
+      setTwoFABusy(false);
+    }
+  };
+
+  const disableTotp = async () => {
+    if (!totpCode.trim()) return;
+    setTwoFABusy(true);
+    setTwoFAMsg("");
+    try {
+      await apiFetch("/api/2fa/disable", {
+        method: "POST",
+        body: { code: totpCode.trim() },
+      });
+      setTwoFAEnabled(false);
+      setTwoFAMethod("OTP");
+      setTotpSecret("");
+      setTotpUrl("");
+      setRecoveryCodes([]);
+      setTotpCode("");
+      setTwoFAMsg("Authenticator 2FA disabled.");
+    } catch (err) {
+      setTwoFAMsg(err.message || "Failed to disable authenticator 2FA");
+    } finally {
+      setTwoFABusy(false);
     }
   };
 
@@ -1112,12 +1182,59 @@ export default function Profile() {
             ? "2FA is enabled. You’ll be asked for a code at login."
             : "2FA is disabled. Your account uses password only."}
         </p>
+        <p className="muted">Current method: {twoFAMethod}</p>
         <button
           className={twoFAEnabled ? "danger" : "success"}
           onClick={toggle2FA}
         >
           {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
         </button>
+        <div style={{ marginTop: 12 }}>
+          <button className="btn-secondary" onClick={setupTotp} disabled={twoFABusy}>
+            Setup Google Authenticator
+          </button>
+        </div>
+        {totpSecret && (
+          <div className="subtle-banner" style={{ marginTop: 10 }}>
+            <div>
+              <strong>Authenticator secret:</strong> {totpSecret}
+            </div>
+            {totpUrl ? (
+              <div className="muted" style={{ wordBreak: "break-all" }}>
+                {totpUrl}
+              </div>
+            ) : null}
+          </div>
+        )}
+        {(totpSecret || twoFAMethod === "TOTP") && (
+          <div style={{ marginTop: 10 }}>
+            <label>Authenticator code</label>
+            <input
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+              placeholder="6-digit code"
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button className="btn-primary" onClick={verifyTotp} disabled={twoFABusy}>
+                Verify Authenticator
+              </button>
+              {twoFAMethod === "TOTP" && (
+                <button className="btn-secondary" onClick={disableTotp} disabled={twoFABusy}>
+                  Disable Authenticator
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {recoveryCodes.length > 0 && (
+          <div className="subtle-banner" style={{ marginTop: 10 }}>
+            <strong>Recovery codes (store securely):</strong>
+            <div style={{ marginTop: 6 }}>
+              {recoveryCodes.join(" • ")}
+            </div>
+          </div>
+        )}
+        {twoFAMsg ? <p className="muted" style={{ marginTop: 8 }}>{twoFAMsg}</p> : null}
       </div>
 
       {/* ============================

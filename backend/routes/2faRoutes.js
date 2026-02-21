@@ -1,37 +1,21 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import User from "../models/User.js";
+import {
+  disable2FASetting,
+  get2FAStatus,
+  regenerateRecoveryCodes,
+  setupTOTP,
+  toggle2FA,
+  verifyTOTPSetup,
+} from "../controllers/twoFactorController.js";
 
 const router = express.Router();
 
-/* ================================
-   GET 2FA STATUS
-================================ */
-router.get("/status", protect, async (req, res) => {
-  const user = await User.findById(req.user.id).select("twoFactorEnabled");
-
-  if (!user) {
-    return res.status(404).json({ msg: "User not found" });
-  }
-
-  res.json({ enabled: Boolean(user.twoFactorEnabled) });
-});
-
-/* ================================
-   TOGGLE 2FA
-================================ */
-router.post("/toggle", protect, async (req, res) => {
-  const { enabled } = req.body;
-
-  const user = await User.findById(req.user.id);
-  if (!user) {
-    return res.status(404).json({ msg: "User not found" });
-  }
-
-  user.twoFactorEnabled = Boolean(enabled);
-  await user.save();
-
-  res.json({ enabled: user.twoFactorEnabled });
-});
+router.get("/status", protect, get2FAStatus);
+router.post("/toggle", protect, toggle2FA);
+router.post("/setup-totp", protect, setupTOTP);
+router.post("/verify-totp", protect, verifyTOTPSetup);
+router.post("/recovery-codes/regenerate", protect, regenerateRecoveryCodes);
+router.post("/disable", protect, disable2FASetting);
 
 export default router;

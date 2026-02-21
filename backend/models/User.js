@@ -132,6 +132,28 @@ const userSchema = new Schema(
       default: false,
     },
 
+    twoFactorMethod: {
+      type: String,
+      enum: ["OTP", "TOTP"],
+      default: "OTP",
+    },
+
+    twoFactorSecret: {
+      type: String,
+      select: false,
+    },
+
+    twoFactorTempSecret: {
+      type: String,
+      select: false,
+    },
+
+    twoFactorRecoveryCodes: {
+      type: [String],
+      default: [],
+      select: false,
+    },
+
     trustedDevices: [
       {
         deviceId: { type: String, required: true },

@@ -30,7 +30,7 @@ export default function TwoFactor() {
   ---------------------------------------- */
   const submitOtp = async (e) => {
     e.preventDefault();
-    if (otp.length !== 6) return;
+    if (otp.trim().length < 6) return;
 
     setError("");
     setLoading(true);
@@ -55,24 +55,22 @@ export default function TwoFactor() {
   return (
     <div className="auth-card">
       <h2>🔐 Two-Factor Authentication</h2>
-      <p>Enter the 6-digit code sent to your email</p>
+      <p>Enter your 6-digit authenticator/OTP code. You can also use a recovery code.</p>
 
       {error && <p className="error">{error}</p>}
 
       <form onSubmit={submitOtp}>
         <input
           type="text"
-          inputMode="numeric"
-          maxLength="6"
-          placeholder="123456"
+          inputMode="text"
+          maxLength="20"
+          placeholder="123456 or ABCD1234"
           value={otp}
-          onChange={(e) =>
-            setOtp(e.target.value.replace(/\D/g, ""))
-          }
+          onChange={(e) => setOtp(e.target.value.trim())}
           required
         />
 
-        <button disabled={loading || otp.length !== 6}>
+        <button disabled={loading || otp.trim().length < 6}>
           {loading ? "Verifying..." : "Verify"}
         </button>
       </form>

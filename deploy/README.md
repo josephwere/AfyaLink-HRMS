@@ -42,6 +42,8 @@ Enable site:
 - `curl -f https://your-domain/healthz`
 - `curl -f https://your-domain/readyz`
 - `curl -f https://your-domain/api/system-settings`
+- `curl -f https://your-domain/api/migrations`
+- `curl -f https://your-domain/api/communication/channels`
 
 ## 6) Zero-downtime deploy flow
 1. Deploy new code to `/opt/afyalink`.
@@ -50,3 +52,10 @@ Enable site:
 4. Restart second backend instance, wait for `/readyz`.
 5. Monitor logs and latency.
 
+## 7) Migration rollout (legacy hospital systems)
+1. Create migration project from UI: `/system-admin/migrations`.
+2. Test source connector and interoperability (FHIR/HL7/API).
+3. Run dry-run and fix mapping/data quality issues.
+4. Enable parallel run (dual-write) for uninterrupted operations.
+5. Perform controlled cutover window.
+6. Validate workflows and export `/api/audit/evidence-bundle` for governance archive.

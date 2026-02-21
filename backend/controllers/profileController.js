@@ -59,7 +59,7 @@ export const updateProfile = async (req, res) => {
       insuranceProfile,
       systemProfile,
     } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+twoFactorSecret +twoFactorTempSecret");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (name !== undefined) user.name = name;
@@ -166,7 +166,7 @@ export const disable2FA = async (req, res) => {
       if (!user) return res.status(404).json({ message: "User not found" });
     } else {
       // Regular user disabling own 2FA
-      user = await User.findById(req.user.id);
+      user = await User.findById(req.user.id).select("+password +twoFactorSecret +twoFactorTempSecret");
       if (!user) return res.status(404).json({ message: "User not found" });
 
       const isMatch = await bcrypt.compare(password, user.password);
@@ -174,7 +174,10 @@ export const disable2FA = async (req, res) => {
     }
 
     user.twoFactorEnabled = false;
+    user.twoFactorMethod = "OTP";
     user.twoFactorSecret = null;
+    user.twoFactorTempSecret = null;
+    user.twoFactorRecoveryCodes = [];
 
     await user.save();
     res.json({ message: "2FA disabled successfully" });
