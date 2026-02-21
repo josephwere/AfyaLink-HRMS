@@ -126,6 +126,19 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AuditLogs from "./pages/Admin/AuditLogs";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
 
+function RootEntry() {
+  const { user, loading } = useAuth();
+  if (loading) return <div />;
+  return <Navigate to={user ? redirectByRole(user) : "/login"} replace />;
+}
+
+function PublicOnly({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div />;
+  if (user) return <Navigate to={redirectByRole(user)} replace />;
+  return children;
+}
+
 /* =====================================================
    APP LAYOUT (PROTECTED)
 ===================================================== */
@@ -530,9 +543,23 @@ export default function App() {
     <SocketProvider>
       <Routes>
         {/* ============ PUBLIC ROUTES ============ */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<RootEntry />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnly>
+              <Login />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicOnly>
+              <Register />
+            </PublicOnly>
+          }
+        />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/verify-success" element={<VerifySuccess />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -3,6 +3,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { apiFetch, logout as apiLogout } from "./apiFetch";
@@ -43,6 +44,7 @@ export function AuthProvider({ children }) {
     return localStorage.getItem(STRICT_IMPERSONATION_KEY) === "1";
   });
   const [loading, setLoading] = useState(true);
+  const refreshInFlightRef = useRef(false);
   const canRoleOverride =
     normalizeRole(baseUser?.role) === "SUPER_ADMIN" ||
     normalizeRole(baseUser?.role) === "DEVELOPER";
@@ -56,6 +58,72 @@ export function AuthProvider({ children }) {
         role: effectiveRole,
       }
     : null;
+
+  const refreshSession = async () => {
+    if (refreshInFlightRef.current) return false;
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) return false;
+
+    refreshInFlightRef.current = true;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken }),
+        }
+      );
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data?.accessToken || !data?.user) return false;
+
+      localStorage.setItem("token", data.accessToken);
+      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      const decoded = parseJwt(data.accessToken);
+      setBaseUser({
+        ...data.user,
+        role: normalizeRole(data.user.role),
+        twoFactorVerified: decoded?.twoFactor !== false,
+      });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlightRef.current = false;
+    }
+  };
+
+  const hydrateFromStoredSession = () => {
+    const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if (!token || !storedUser) {
+      setBaseUser(null);
+      return;
+    }
+    const decoded = parseJwt(token);
+    const decodedRole = normalizeRole(decoded?.role);
+    if (!decodedRole) {
+      setBaseUser(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(storedUser);
+      setBaseUser({
+        ...parsed,
+        role: decodedRole,
+        twoFactorVerified: decoded?.twoFactor !== false,
+      });
+    } catch {
+      setBaseUser(null);
+    }
+  };
 
   /* --------------------------------------------------
      RESTORE SESSION (SAFE + EXP CHECK)
@@ -139,6 +207,64 @@ export function AuthProvider({ children }) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!baseUser) return undefined;
+
+    const runKeepalive = async () => {
+      const token = localStorage.getItem("token");
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!token || !refreshToken) return;
+      if (document.hidden) return;
+
+      const decoded = parseJwt(token);
+      const expiresInMs = (decoded?.exp || 0) * 1000 - Date.now();
+
+      // Refresh only when token is close to expiry (~6 min) to avoid unnecessary calls.
+      if (expiresInMs <= 6 * 60 * 1000) {
+        await refreshSession();
+      }
+    };
+
+    const onVisible = () => {
+      if (!document.hidden) {
+        runKeepalive();
+      }
+    };
+
+    const onFocus = () => runKeepalive();
+
+    const id = setInterval(runKeepalive, 60 * 1000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [baseUser]);
+
+  useEffect(() => {
+    const watchKeys = new Set([
+      "token",
+      "refreshToken",
+      "user",
+      ROLE_OVERRIDE_KEY,
+      STRICT_IMPERSONATION_KEY,
+    ]);
+
+    const onStorage = (event) => {
+      if (event.storageArea !== localStorage) return;
+      if (event.key && !watchKeys.has(event.key)) return;
+
+      hydrateFromStoredSession();
+      setRoleOverrideState(localStorage.getItem(ROLE_OVERRIDE_KEY) || "");
+      setStrictImpersonationState(localStorage.getItem(STRICT_IMPERSONATION_KEY) === "1");
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   /* --------------------------------------------------
