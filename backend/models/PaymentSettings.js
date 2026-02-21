@@ -4,6 +4,8 @@ const PaymentSettingsSchema = new mongoose.Schema({
   stripe: { type: Object, default: {} },
   mpesa: { type: Object, default: {} },
   flutterwave: { type: Object, default: {} },
+  bank: { type: Object, default: {} },
+  card: { type: Object, default: {} },
   mode: { type: String, enum: ['test','live'], default: 'test' },
   // per-document salt for encryption key derivation
   salt: { type: String, default: null },

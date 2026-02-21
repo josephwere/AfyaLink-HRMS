@@ -1,51 +1,318 @@
-import React, {useEffect, useState} from 'react';
-import { apiFetch } from '../../services/api';
+import React, { useEffect, useState } from "react";
+import { apiFetch } from "../../services/api";
 
-function mask(s){ if(!s) return ''; return s.replace(/.(?=.{4})/g, '*'); }
+export default function PaymentSettings() {
+  const [meta, setMeta] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [step, setStep] = useState("edit");
+  const [revealed, setRevealed] = useState(null);
+  const [form, setForm] = useState({
+    mode: "test",
+    adminPassword: "",
+    otp: "",
 
-export default function PaymentSettings(){
-  const [meta,setMeta]=useState({});
-  const [form,setForm]=useState({ stripePublishable:'', stripeSecret:'', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', flutterSecret:'', mode:'test', adminPassword:'', otp:'' });
-  const [step,setStep]=useState('edit'); // edit, otp_requested
-  useEffect(()=>{ load(); },[]);
-  async function load(){ const r = await apiFetch('/api/payment-settings/get'); const js = await r.json(); setMeta(js); }
-  async function save(){
-    if(!form.adminPassword || form.adminPassword.length < 8){ alert('Admin password required and must be >=8 chars'); return; }
-    const payload = { stripe: { publishable: form.stripePublishable, secret: form.stripeSecret }, mpesa: { consumerKey: form.mpesaConsumerKey, consumerSecret: form.mpesaConsumerSecret, shortcode: form.mpesaShortcode }, flutterwave: { secret: form.flutterSecret }, mode: form.mode, adminPassword: form.adminPassword };
-    const r = await apiFetch('/api/payment-settings/save', { method:'POST', body: payload });
+    stripePublishable: "",
+    stripeSecret: "",
+
+    mpesaConsumerKey: "",
+    mpesaConsumerSecret: "",
+    mpesaShortcode: "",
+    mpesaPaybill: "",
+    mpesaTill: "",
+    mpesaAccountReference: "",
+    mpesaBusinessName: "",
+
+    flutterSecret: "",
+
+    bankName: "",
+    bankBranch: "",
+    bankAccountName: "",
+    bankAccountNumber: "",
+    bankSwiftCode: "",
+
+    cardHolderName: "",
+    cardBrand: "",
+    cardLast4: "",
+    cardExpiryMonth: "",
+    cardExpiryYear: "",
+    cardVaultRef: "",
+  });
+
+  const load = async () => {
+    const r = await apiFetch("/api/payment-settings/get");
     const js = await r.json();
-    alert(JSON.stringify(js));
-  }
-  async function requestOtp(){
-    const r = await apiFetch('/api/payment-settings/reveal/request', { method:'POST' });
-    const js = await r.json();
-    if(js.ok) setStep('otp_requested');
-    alert(js.message || JSON.stringify(js));
-  }
-  async function verify(){
-    const r = await apiFetch('/api/payment-settings/reveal/verify', { method:'POST', body: { code: form.otp, adminPassword: form.adminPassword } });
-    const js = await r.json();
-    if(js.ok){ alert('Secrets revealed: ' + JSON.stringify(js.secrets)); setStep('edit'); }
-    else alert(JSON.stringify(js));
-  }
-  async function rotate(){
-    const old = prompt('Enter OLD admin password');
-    const nw = prompt('Enter NEW admin password (store it safely)');
-    if(!old || !nw) return;
-    const r = await apiFetch('/api/payment-settings/rotate-password', { method:'POST', body: { oldPassword: old, newPassword: nw } });
-    const js = await r.json();
-    alert(JSON.stringify(js));
-  }
-  return (<div><h2>Payment Settings</h2>
-    <div><label>Stripe Publishable</label><input value={form.stripePublishable} onChange={e=>setForm(f=>({...f,stripePublishable:e.target.value}))} /></div>
-    <div><label>Stripe Secret</label><input value={form.stripeSecret} onChange={e=>setForm(f=>({...f,stripeSecret:e.target.value}))} /></div>
-    <div><label>MPESA Consumer Key</label><input value={form.mpesaConsumerKey} onChange={e=>setForm(f=>({...f,mpesaConsumerKey:e.target.value}))} /></div>
-    <div><label>MPESA Consumer Secret</label><input value={form.mpesaConsumerSecret} onChange={e=>setForm(f=>({...f,mpesaConsumerSecret:e.target.value}))} /></div>
-    <div><label>MPESA Shortcode</label><input value={form.mpesaShortcode} onChange={e=>setForm(f=>({...f,mpesaShortcode:e.target.value}))} /></div>
-    <div><label>Flutter Secret</label><input value={form.flutterSecret} onChange={e=>setForm(f=>({...f,flutterSecret:e.target.value}))} /></div>
-    <div><label>Admin Password (required to encrypt)</label><input type='password' value={form.adminPassword} onChange={e=>setForm(f=>({...f,adminPassword:e.target.value}))} /></div>
-    <div style={{marginTop:12}}><button onClick={save}>Save Settings (Encrypted)</button> <button onClick={requestOtp}>Request 2FA</button> <button onClick={rotate}>Rotate Admin Password</button></div>
-    {step==='otp_requested' && (<div style={{marginTop:12}}><label>Enter OTP</label><input value={form.otp} onChange={e=>setForm(f=>({...f,otp:e.target.value}))} /><button onClick={verify}>Verify & Reveal</button></div>)}
-    <div style={{marginTop:12}}><h4>Metadata</h4><pre>{JSON.stringify(meta,null,2)}</pre></div>
-  </div>);
+    setMeta(js || {});
+    setForm((prev) => ({
+      ...prev,
+      mode: js?.mode || "test",
+      stripePublishable: js?.stripe?.publishable || "",
+      mpesaShortcode: js?.mpesa?.shortcode || "",
+      mpesaPaybill: js?.mpesa?.paybillNumber || "",
+      mpesaTill: js?.mpesa?.tillNumber || "",
+      mpesaAccountReference: js?.mpesa?.accountReference || "",
+      mpesaBusinessName: js?.mpesa?.businessName || "",
+      bankName: js?.bank?.bankName || "",
+      bankBranch: js?.bank?.branch || "",
+      bankAccountName: js?.bank?.accountName || "",
+      bankSwiftCode: js?.bank?.swiftCode || "",
+      cardHolderName: js?.card?.holderName || "",
+      cardBrand: js?.card?.brand || "",
+      cardLast4: js?.card?.last4 || "",
+      cardExpiryMonth: js?.card?.expiryMonth || "",
+      cardExpiryYear: js?.card?.expiryYear || "",
+    }));
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async () => {
+    if (!form.adminPassword || form.adminPassword.length < 8) {
+      setMsg("Admin password is required (min 8 chars) to encrypt and save.");
+      return;
+    }
+    setBusy(true);
+    setMsg("");
+    try {
+      const payload = {
+        mode: form.mode,
+        adminPassword: form.adminPassword,
+        stripe: {
+          publishable: form.stripePublishable,
+          secret: form.stripeSecret,
+        },
+        mpesa: {
+          consumerKey: form.mpesaConsumerKey,
+          consumerSecret: form.mpesaConsumerSecret,
+          shortcode: form.mpesaShortcode,
+          paybillNumber: form.mpesaPaybill,
+          tillNumber: form.mpesaTill,
+          accountReference: form.mpesaAccountReference,
+          businessName: form.mpesaBusinessName,
+        },
+        flutterwave: {
+          secret: form.flutterSecret,
+        },
+        bank: {
+          bankName: form.bankName,
+          branch: form.bankBranch,
+          accountName: form.bankAccountName,
+          accountNumber: form.bankAccountNumber,
+          swiftCode: form.bankSwiftCode,
+        },
+        card: {
+          holderName: form.cardHolderName,
+          brand: form.cardBrand,
+          last4: form.cardLast4,
+          expiryMonth: form.cardExpiryMonth,
+          expiryYear: form.cardExpiryYear,
+          // This should be gateway token/reference, not CVV/full PAN.
+          vaultRef: form.cardVaultRef,
+        },
+      };
+
+      const r = await apiFetch("/api/payment-settings/save", {
+        method: "POST",
+        body: payload,
+      });
+      const js = await r.json();
+      if (!r.ok || js?.error) {
+        throw new Error(js?.error || "Failed to save payment settings");
+      }
+      setMsg("Payment settings saved and encrypted.");
+      await load();
+    } catch (e) {
+      setMsg(e.message || "Failed to save payment settings");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const requestOtp = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await apiFetch("/api/payment-settings/reveal/request", { method: "POST" });
+      const js = await r.json();
+      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to request OTP");
+      setStep("otp_requested");
+      setMsg(js.message || "OTP sent.");
+    } catch (e) {
+      setMsg(e.message || "Failed to request OTP");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await apiFetch("/api/payment-settings/reveal/verify", {
+        method: "POST",
+        body: { code: form.otp, adminPassword: form.adminPassword },
+      });
+      const js = await r.json();
+      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to verify OTP");
+      setRevealed(js?.secrets || {});
+      setStep("edit");
+      setMsg("Secrets revealed for this session.");
+    } catch (e) {
+      setMsg(e.message || "Failed to verify OTP");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rotatePassword = async () => {
+    const oldPassword = window.prompt("Enter OLD admin password");
+    const newPassword = window.prompt("Enter NEW admin password");
+    if (!oldPassword || !newPassword) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await apiFetch("/api/payment-settings/rotate-password", {
+        method: "POST",
+        body: { oldPassword, newPassword },
+      });
+      const js = await r.json();
+      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to rotate password");
+      setMsg("Encryption password rotated successfully.");
+    } catch (e) {
+      setMsg(e.message || "Failed to rotate password");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="dashboard">
+      <div className="welcome-panel">
+        <div>
+          <h2>Payment Settings</h2>
+          <p className="muted">
+            Manage founder payout details and gateway configuration from UI. Secrets are encrypted.
+          </p>
+        </div>
+      </div>
+
+      {msg && <div className="card">{msg}</div>}
+
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+        <div className="card form">
+          <h3>Global Mode & Admin Security</h3>
+          <label>Mode</label>
+          <select value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
+            <option value="test">Test</option>
+            <option value="live">Live</option>
+          </select>
+
+          <label>Admin Encryption Password</label>
+          <input
+            type="password"
+            value={form.adminPassword}
+            onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))}
+            placeholder="Required to save/reveal encrypted secrets"
+          />
+
+          <div className="welcome-actions">
+            <button className="btn-primary" onClick={save} disabled={busy}>Save Encrypted Settings</button>
+            <button className="btn-secondary" onClick={requestOtp} disabled={busy}>Request OTP</button>
+            <button className="btn-secondary" onClick={rotatePassword} disabled={busy}>Rotate Password</button>
+          </div>
+
+          {step === "otp_requested" && (
+            <>
+              <label>OTP Code</label>
+              <input
+                value={form.otp}
+                onChange={(e) => setForm((f) => ({ ...f, otp: e.target.value }))}
+                placeholder="Enter OTP sent to your phone/email"
+              />
+              <button className="btn-primary" onClick={verifyOtp} disabled={busy}>Verify & Reveal</button>
+            </>
+          )}
+        </div>
+
+        <div className="card form">
+          <h3>Bank Payout Details</h3>
+          <label>Bank Name</label>
+          <input value={form.bankName} onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))} />
+          <label>Bank Branch</label>
+          <input value={form.bankBranch} onChange={(e) => setForm((f) => ({ ...f, bankBranch: e.target.value }))} />
+          <label>Account Name</label>
+          <input value={form.bankAccountName} onChange={(e) => setForm((f) => ({ ...f, bankAccountName: e.target.value }))} />
+          <label>Account Number (encrypted)</label>
+          <input value={form.bankAccountNumber} onChange={(e) => setForm((f) => ({ ...f, bankAccountNumber: e.target.value }))} />
+          <label>SWIFT/BIC</label>
+          <input value={form.bankSwiftCode} onChange={(e) => setForm((f) => ({ ...f, bankSwiftCode: e.target.value }))} />
+          <p className="muted">Stored metadata: {meta?.bank?.bankName || "-"} • {meta?.bank?.accountName || "-"} • account encrypted: {meta?.bank?.hasAccountNumber ? "Yes" : "No"}</p>
+        </div>
+
+        <div className="card form">
+          <h3>Card Payout / Settlement</h3>
+          <label>Card Holder Name</label>
+          <input value={form.cardHolderName} onChange={(e) => setForm((f) => ({ ...f, cardHolderName: e.target.value }))} />
+          <label>Card Brand</label>
+          <input value={form.cardBrand} onChange={(e) => setForm((f) => ({ ...f, cardBrand: e.target.value }))} placeholder="Visa, Mastercard..." />
+          <label>Card Last 4</label>
+          <input value={form.cardLast4} onChange={(e) => setForm((f) => ({ ...f, cardLast4: e.target.value }))} placeholder="1234" />
+          <div className="profile-row">
+            <div style={{ flex: 1 }}>
+              <label>Expiry Month</label>
+              <input value={form.cardExpiryMonth} onChange={(e) => setForm((f) => ({ ...f, cardExpiryMonth: e.target.value }))} placeholder="MM" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Expiry Year</label>
+              <input value={form.cardExpiryYear} onChange={(e) => setForm((f) => ({ ...f, cardExpiryYear: e.target.value }))} placeholder="YYYY" />
+            </div>
+          </div>
+          <label>Vault/Token Reference (encrypted)</label>
+          <input value={form.cardVaultRef} onChange={(e) => setForm((f) => ({ ...f, cardVaultRef: e.target.value }))} placeholder="Use gateway token/reference, not CVV/full PAN" />
+          <p className="muted">Stored metadata: {meta?.card?.brand || "-"} • ****{meta?.card?.last4 || "----"} • vault encrypted: {meta?.card?.hasVaultRef ? "Yes" : "No"}</p>
+        </div>
+
+        <div className="card form">
+          <h3>M-Pesa Details</h3>
+          <label>Consumer Key</label>
+          <input value={form.mpesaConsumerKey} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerKey: e.target.value }))} />
+          <label>Consumer Secret (encrypted)</label>
+          <input value={form.mpesaConsumerSecret} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerSecret: e.target.value }))} />
+          <label>Shortcode</label>
+          <input value={form.mpesaShortcode} onChange={(e) => setForm((f) => ({ ...f, mpesaShortcode: e.target.value }))} />
+          <label>Paybill Number</label>
+          <input value={form.mpesaPaybill} onChange={(e) => setForm((f) => ({ ...f, mpesaPaybill: e.target.value }))} />
+          <label>Till Number</label>
+          <input value={form.mpesaTill} onChange={(e) => setForm((f) => ({ ...f, mpesaTill: e.target.value }))} />
+          <label>Account Reference</label>
+          <input value={form.mpesaAccountReference} onChange={(e) => setForm((f) => ({ ...f, mpesaAccountReference: e.target.value }))} />
+          <label>Business Name</label>
+          <input value={form.mpesaBusinessName} onChange={(e) => setForm((f) => ({ ...f, mpesaBusinessName: e.target.value }))} />
+        </div>
+
+        <div className="card form">
+          <h3>Gateway Keys</h3>
+          <label>Stripe Publishable Key</label>
+          <input value={form.stripePublishable} onChange={(e) => setForm((f) => ({ ...f, stripePublishable: e.target.value }))} />
+          <label>Stripe Secret Key (encrypted)</label>
+          <input value={form.stripeSecret} onChange={(e) => setForm((f) => ({ ...f, stripeSecret: e.target.value }))} />
+          <label>Flutterwave Secret (encrypted)</label>
+          <input value={form.flutterSecret} onChange={(e) => setForm((f) => ({ ...f, flutterSecret: e.target.value }))} />
+          <p className="muted">
+            Stripe secret saved: {meta?.stripe?.hasSecret ? "Yes" : "No"} • M-Pesa secret saved: {meta?.mpesa?.hasSecret ? "Yes" : "No"} • Flutterwave secret saved: {meta?.flutterwave?.hasSecret ? "Yes" : "No"}
+          </p>
+        </div>
+
+        {revealed && (
+          <div className="card">
+            <h3>Revealed Secrets (Session)</h3>
+            <pre>{JSON.stringify(revealed, null, 2)}</pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
+

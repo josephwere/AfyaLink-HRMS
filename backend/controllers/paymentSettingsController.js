@@ -9,7 +9,7 @@ import notifService from '../services/notificationService.js';
  */
 export async function saveSettings(req, res) {
   try {
-    const { stripe, mpesa, flutterwave, mode, adminPassword } = req.body;
+    const { stripe, mpesa, flutterwave, bank, card, mode, adminPassword } = req.body;
     if (!adminPassword)
       return res.status(400).json({ error: 'adminPassword required to encrypt' });
 
@@ -19,6 +19,8 @@ export async function saveSettings(req, res) {
       stripe: { ...stripe },
       mpesa: { ...mpesa },
       flutterwave: { ...flutterwave },
+      bank: { ...bank },
+      card: { ...card },
       mode
     };
 
@@ -35,6 +37,16 @@ export async function saveSettings(req, res) {
     if (payload.flutterwave?.secret) {
       payload.flutterwave._enc = encrypt(payload.flutterwave.secret, key);
       delete payload.flutterwave.secret;
+    }
+
+    if (payload.bank?.accountNumber) {
+      payload.bank._enc = encrypt(payload.bank.accountNumber, key);
+      delete payload.bank.accountNumber;
+    }
+
+    if (payload.card?.vaultRef) {
+      payload.card._enc = encrypt(payload.card.vaultRef, key);
+      delete payload.card.vaultRef;
     }
 
     let doc = await PaymentSettings.findOne();
@@ -87,10 +99,29 @@ export async function getSettings(req, res) {
       },
       mpesa: {
         shortcode: doc.mpesa?.shortcode || null,
+        paybillNumber: doc.mpesa?.paybillNumber || null,
+        tillNumber: doc.mpesa?.tillNumber || null,
+        accountReference: doc.mpesa?.accountReference || null,
+        businessName: doc.mpesa?.businessName || null,
         hasSecret: !!doc.mpesa?._enc
       },
       flutterwave: {
         hasSecret: !!doc.flutterwave?._enc
+      },
+      bank: {
+        accountName: doc.bank?.accountName || null,
+        bankName: doc.bank?.bankName || null,
+        branch: doc.bank?.branch || null,
+        swiftCode: doc.bank?.swiftCode || null,
+        hasAccountNumber: !!doc.bank?._enc
+      },
+      card: {
+        holderName: doc.card?.holderName || null,
+        brand: doc.card?.brand || null,
+        last4: doc.card?.last4 || null,
+        expiryMonth: doc.card?.expiryMonth || null,
+        expiryYear: doc.card?.expiryYear || null,
+        hasVaultRef: !!doc.card?._enc
       }
     };
 
@@ -175,6 +206,27 @@ export async function verifyReveal2FA(req, res) {
 
       if (doc.flutterwave?._enc)
         out.flutterwave = { secret: decrypt(doc.flutterwave._enc, key) };
+
+      if (doc.bank?._enc) {
+        out.bank = {
+          accountNumber: decrypt(doc.bank._enc, key),
+          accountName: doc.bank?.accountName || null,
+          bankName: doc.bank?.bankName || null,
+          branch: doc.bank?.branch || null,
+          swiftCode: doc.bank?.swiftCode || null
+        };
+      }
+
+      if (doc.card?._enc) {
+        out.card = {
+          vaultRef: decrypt(doc.card._enc, key),
+          holderName: doc.card?.holderName || null,
+          brand: doc.card?.brand || null,
+          last4: doc.card?.last4 || null,
+          expiryMonth: doc.card?.expiryMonth || null,
+          expiryYear: doc.card?.expiryYear || null
+        };
+      }
     } catch (e) {
       return res.status(400).json({ error: 'Decryption failed' });
     }
@@ -223,6 +275,12 @@ export async function rotateAdminPassword(req, res) {
       const flutterSecret = doc.flutterwave?._enc
         ? decrypt(doc.flutterwave._enc, oldKey)
         : null;
+      const bankAccountNumber = doc.bank?._enc
+        ? decrypt(doc.bank._enc, oldKey)
+        : null;
+      const cardVaultRef = doc.card?._enc
+        ? decrypt(doc.card._enc, oldKey)
+        : null;
 
       const newKey = deriveKeyFromPassword(newPassword);
 
@@ -230,6 +288,14 @@ export async function rotateAdminPassword(req, res) {
       if (mpesaSecret) doc.mpesa._enc = encrypt(mpesaSecret, newKey);
       if (flutterSecret)
         doc.flutterwave._enc = encrypt(flutterSecret, newKey);
+      if (bankAccountNumber) {
+        doc.bank = doc.bank || {};
+        doc.bank._enc = encrypt(bankAccountNumber, newKey);
+      }
+      if (cardVaultRef) {
+        doc.card = doc.card || {};
+        doc.card._enc = encrypt(cardVaultRef, newKey);
+      }
 
       await doc.save();
 
