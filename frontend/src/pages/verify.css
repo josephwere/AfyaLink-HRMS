@@ -1,0 +1,123 @@
+.verify-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f4f6f8;
+  padding: 16px;
+}
+
+.card {
+  background: #fff;
+  padding: 32px;
+  border-radius: 14px;
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.success {
+  border-top: 6px solid #2ecc71;
+}
+
+.error {
+  border-top: 6px solid #e74c3c;
+}
+
+.btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  background: #0069d9;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn.secondary {
+  background: #555;
+}
+
+/* ======================================
+   🔁 RESEND BUTTON (LOGIN + REGISTER)
+====================================== */
+
+.resend-btn {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #eef4ff;
+  color: #0a58ca;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resend-btn:hover {
+  background: #dbe8ff;
+}
+
+.resend-btn:active {
+  transform: scale(0.97);
+}
+
+/* 🚫 Disabled state (cooldown / sending) */
+.resend-btn.disabled,
+.resend-btn:disabled {
+  background: #f1f1f1;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ⏱️ Cooldown pulse */
+.resend-btn.disabled.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* ======================================
+   Animations
+====================================== */
+
+.pop {
+  animation: pop 0.5s ease;
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+  }

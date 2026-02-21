@@ -1,0 +1,366 @@
+export const MENU = [
+  {
+    section: "Dashboard",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Dashboard", path: "/super-admin", icon: "home" },
+      { label: "Global Overview", path: "/super-admin", icon: "analytics" },
+      { label: "Revenue Snapshot", path: "/payments/full", icon: "payroll" },
+      { label: "Workforce Snapshot", path: "/analytics", icon: "hr" },
+      { label: "Active Sessions", path: "/super-admin", icon: "security" },
+    ],
+  },
+  {
+    section: "Organization",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Hospitals", path: "/super-admin/hospitals", icon: "admin" },
+      { label: "Departments", path: "/hospital-admin", icon: "hr" },
+      { label: "Units / Wards", path: "/hospital-admin", icon: "staff" },
+      { label: "Branch Settings", path: "/super-admin/settings", icon: "settings" },
+    ],
+  },
+  {
+    section: "Workforce",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "All Employees", path: "/hospital-admin/staff", icon: "staff" },
+      { label: "Role Management", path: "/admin/create-admin", icon: "admin" },
+      { label: "Permission Matrix", path: "/super-admin/settings", icon: "security" },
+      { label: "Contract Management", path: "/hr-manager", icon: "hr" },
+      { label: "Workforce Analytics", path: "/analytics", icon: "analytics" },
+    ],
+  },
+  {
+    section: "Payroll",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Global Payroll", path: "/payments/full", icon: "payroll" },
+      { label: "Payroll Runs", path: "/payroll-officer", icon: "payroll" },
+      { label: "Allowances & Deductions", path: "/payroll-officer", icon: "payroll" },
+      { label: "Tax Config", path: "/payroll-officer", icon: "payroll" },
+      { label: "Loan Management", path: "/payroll-officer", icon: "payroll" },
+    ],
+  },
+  {
+    section: "Reports",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Financial Reports", path: "/reports", icon: "reports" },
+      { label: "HR Reports", path: "/reports", icon: "reports" },
+      { label: "Compliance Reports", path: "/reports", icon: "reports" },
+      { label: "Custom Reports Builder", path: "/reports", icon: "reports" },
+    ],
+  },
+  {
+    section: "Finance & Revenue",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Revenue Overview", path: "/payments/full", icon: "payroll" },
+      { label: "Billing Reports", path: "/reports", icon: "reports" },
+      { label: "Expense Reports", path: "/reports", icon: "reports" },
+    ],
+  },
+  {
+    section: "Compliance",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "License Monitoring", path: "/reports", icon: "reports" },
+      { label: "Regulatory Reports", path: "/reports", icon: "reports" },
+      { label: "Audit Logs", path: "/admin/audit-logs", icon: "security" },
+    ],
+  },
+  {
+    section: "Security",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Audit Logs", path: "/admin/audit-logs", icon: "security" },
+      { label: "Access Logs", path: "/security-admin", icon: "security" },
+      { label: "Incident Logs", path: "/security-admin", icon: "notifications" },
+      { label: "Security Policies", path: "/security-admin", icon: "security" },
+      { label: "Device Monitoring", path: "/security-admin", icon: "security" },
+    ],
+  },
+  {
+    section: "System",
+    roles: ["SUPER_ADMIN"],
+    items: [
+      { label: "Feature Toggles", path: "/super-admin/settings", icon: "settings" },
+      { label: "API Keys", path: "/super-admin/settings", icon: "settings" },
+      { label: "Integration Settings", path: "/admin/realtime", icon: "settings" },
+      { label: "Email/SMS Config", path: "/super-admin/settings", icon: "settings" },
+      { label: "Backup & Restore", path: "/super-admin/settings", icon: "settings" },
+      { label: "System Health Monitor", path: "/system-admin", icon: "analytics" },
+    ],
+  },
+
+  {
+    section: "System Admin",
+    roles: ["SYSTEM_ADMIN"],
+    items: [
+      { label: "System Dashboard", path: "/system-admin", icon: "home" },
+      { label: "Server Monitoring", path: "/system-admin", icon: "analytics" },
+      { label: "Error Logs", path: "/system-admin", icon: "reports" },
+      { label: "API Logs", path: "/developer", icon: "settings" },
+      { label: "Queue Monitor", path: "/developer/queue-replay", icon: "settings" },
+      { label: "Database Health", path: "/system-admin", icon: "analytics" },
+      { label: "Role Overrides", path: "/admin/create-admin", icon: "admin" },
+      { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },
+      { label: "Deployment Manager", path: "/developer", icon: "settings" },
+      { label: "Integration Hub", path: "/admin/realtime", icon: "settings" },
+    ],
+  },
+
+  {
+    section: "Hospital Admin",
+    roles: ["HOSPITAL_ADMIN"],
+    items: [
+      { label: "Hospital Overview", path: "/hospital-admin", icon: "home" },
+      { label: "Staff Directory", path: "/hospital-admin/staff", icon: "staff" },
+      { label: "Shift Scheduling", path: "/workforce/requests#shift", icon: "requests" },
+      { label: "Leave Approvals", path: "/hospital-admin/approvals", icon: "notifications" },
+      { label: "Hiring Requests", path: "/hospital-admin/approvals", icon: "hr" },
+      { label: "Department Budgets", path: "/reports", icon: "reports" },
+      { label: "Bed Capacity Monitor", path: "/hospital-admin", icon: "analytics" },
+      { label: "Attendance Reports", path: "/reports", icon: "reports" },
+      { label: "Incident Reports", path: "/security-admin", icon: "security" },
+      { label: "Announcements", path: "/admin/notifications", icon: "notifications" },
+    ],
+  },
+
+  {
+    section: "Security Admin",
+    roles: ["SECURITY_ADMIN"],
+    items: [
+      { label: "Access Logs", path: "/security-admin", icon: "security" },
+      { label: "Clearance Levels", path: "/security-admin", icon: "security" },
+      { label: "Incident Dashboard", path: "/security-admin", icon: "notifications" },
+      { label: "Visitor Management", path: "/security-admin", icon: "security" },
+      { label: "Emergency Protocols", path: "/security-admin", icon: "security" },
+      { label: "Device Authorization", path: "/security-admin", icon: "security" },
+      { label: "Blacklist Control", path: "/security-admin", icon: "security" },
+    ],
+  },
+
+  {
+    section: "Security Officer",
+    roles: ["SECURITY_OFFICER"],
+    items: [
+      { label: "My Shifts", path: "/security-officer", icon: "requests" },
+      { label: "Visitor Check-in", path: "/security-officer", icon: "security" },
+      { label: "Gate Scanner", path: "/security-officer", icon: "security" },
+      { label: "Incident Report Form", path: "/security-officer", icon: "notifications" },
+      { label: "Emergency Alert", path: "/security-officer", icon: "security" },
+      { label: "Patrol Logs", path: "/security-officer", icon: "reports" },
+    ],
+  },
+
+  {
+    section: "HR Manager",
+    roles: ["HR_MANAGER"],
+    items: [
+      { label: "HR Dashboard", path: "/hr-manager", icon: "home" },
+      { label: "Recruitment Pipeline", path: "/hr-manager", icon: "hr" },
+      { label: "Employee Profiles", path: "/hospital-admin/staff", icon: "staff" },
+      { label: "Onboarding", path: "/hospital-admin/register-staff", icon: "hr" },
+      { label: "Contracts", path: "/hr-manager", icon: "hr" },
+      { label: "Leave Management", path: "/workforce/requests#leave", icon: "requests" },
+      { label: "Performance Reviews", path: "/hr-manager", icon: "analytics" },
+      { label: "Disciplinary Records", path: "/hr-manager", icon: "reports" },
+      { label: "Training Tracker", path: "/hr-manager", icon: "analytics" },
+      { label: "Succession Planning", path: "/hr-manager", icon: "analytics" },
+    ],
+  },
+
+  {
+    section: "Payroll Officer",
+    roles: ["PAYROLL_OFFICER"],
+    items: [
+      { label: "Payroll Dashboard", path: "/payroll-officer", icon: "home" },
+      { label: "Run Payroll", path: "/payroll-officer", icon: "payroll" },
+      { label: "Overtime", path: "/workforce/requests#overtime", icon: "requests" },
+      { label: "Shift Differentials", path: "/payroll-officer", icon: "payroll" },
+      { label: "Payslip Generator", path: "/payments/full", icon: "payroll" },
+      { label: "Loan Deductions", path: "/payroll-officer", icon: "payroll" },
+      { label: "Tax Reports", path: "/reports", icon: "reports" },
+      { label: "Payroll Audit Trail", path: "/reports", icon: "reports" },
+    ],
+  },
+
+  {
+    section: "Developer",
+    roles: ["DEVELOPER"],
+    items: [
+      { label: "API Explorer", path: "/developer", icon: "settings" },
+      { label: "Webhooks", path: "/developer/webhook-retry", icon: "settings" },
+      { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },
+      { label: "System Logs", path: "/developer", icon: "reports" },
+      { label: "Metrics Dashboard", path: "/analytics", icon: "analytics" },
+      { label: "Integration Monitor", path: "/admin/realtime", icon: "settings" },
+    ],
+  },
+
+  {
+    section: "Doctor",
+    roles: ["DOCTOR"],
+    items: [
+      { label: "Dashboard", path: "/doctor", icon: "home" },
+      { label: "My Schedule", path: "/doctor/schedule", icon: "appointments" },
+      { label: "My Patients", path: "/doctor/patients", icon: "doctor" },
+      { label: "OPD Clinic", path: "/doctor/opd", icon: "doctor" },
+      { label: "Inpatient Ward", path: "/doctor/ward", icon: "staff" },
+      { label: "Surgery / Procedures", path: "/doctor/surgery", icon: "reports" },
+      { label: "Lab Results", path: "/doctor/lab-results", icon: "lab" },
+      { label: "Prescriptions", path: "/doctor/prescriptions", icon: "pharmacy" },
+      { label: "Medical Records", path: "/doctor/medical-records", icon: "reports" },
+      { label: "Referrals", path: "/doctor/referrals", icon: "reports" },
+      { label: "Performance", path: "/doctor/performance", icon: "analytics" },
+      { label: "CME & Certifications", path: "/doctor/cme", icon: "doctor" },
+      { label: "Leave Requests", path: "/doctor/leave", icon: "requests" },
+      { label: "Reports & Notes", path: "/doctor/reports-notes", icon: "reports" },
+      { label: "Settings", path: "/doctor/settings", icon: "settings" },
+    ],
+  },
+
+  {
+    section: "Nurse",
+    roles: ["NURSE"],
+    items: [
+      { label: "Dashboard", path: "/nurse", icon: "home" },
+      { label: "My Shift", path: "/nurse/shift", icon: "nurse" },
+      { label: "Assigned Patients", path: "/nurse/patients", icon: "staff" },
+      { label: "Medication Administration", path: "/nurse/medication", icon: "nurse" },
+      { label: "Incident Reports", path: "/nurse/incidents", icon: "notifications" },
+      { label: "Vitals Entry", path: "/nurse/vitals", icon: "reports" },
+      { label: "Leave Requests", path: "/nurse/leave", icon: "requests" },
+      { label: "Performance", path: "/nurse/performance", icon: "analytics" },
+    ],
+  },
+
+  {
+    section: "Lab Tech",
+    roles: ["LAB_TECH"],
+    items: [
+      { label: "Dashboard", path: "/lab-tech", icon: "home" },
+      { label: "Test Queue", path: "/lab-tech/test-queue", icon: "lab" },
+      { label: "Equipment Logs", path: "/lab-tech/equipment", icon: "lab" },
+      { label: "Sample Tracking", path: "/lab-tech/samples", icon: "lab" },
+      { label: "Quality Control", path: "/lab-tech/qc", icon: "analytics" },
+      { label: "Safety Checklist", path: "/lab-tech/safety", icon: "security" },
+      { label: "Reports Archive", path: "/lab-tech/archive", icon: "reports" },
+    ],
+  },
+
+  {
+    section: "Pharmacist",
+    roles: ["PHARMACIST"],
+    feature: "pharmacy",
+    items: [
+      { label: "Dashboard", path: "/pharmacy", icon: "home" },
+      { label: "Prescription Queue", path: "/pharmacy/queue", icon: "pharmacy" },
+      { label: "Inventory", path: "/pharmacy/inventory", icon: "inventory" },
+      { label: "Controlled Drugs Log", path: "/pharmacy/controlled", icon: "security" },
+      { label: "Expiry Alerts", path: "/pharmacy/expiry", icon: "notifications" },
+      { label: "Supplier Orders", path: "/pharmacy/suppliers", icon: "reports" },
+      { label: "Reports", path: "/pharmacy/reports", icon: "reports" },
+    ],
+  },
+
+  {
+    section: "Patient",
+    roles: ["PATIENT"],
+    items: [
+      { label: "Dashboard", path: "/patient", icon: "home" },
+      { label: "My Appointments", path: "/patient/appointments", icon: "appointments" },
+      { label: "Medical Records", path: "/patient/medical-records", icon: "reports" },
+      { label: "Prescriptions", path: "/patient/prescriptions", icon: "pharmacy" },
+      { label: "Lab Results", path: "/patient/lab-results", icon: "lab" },
+      { label: "Billing", path: "/patient/billing", icon: "payroll" },
+      { label: "Insurance", path: "/patient/insurance", icon: "reports" },
+      { label: "Feedback", path: "/patient/feedback", icon: "notifications" },
+    ],
+  },
+
+  {
+    section: "Guest",
+    roles: ["GUEST"],
+    items: [
+      { label: "Home", path: "/guest", icon: "home" },
+      { label: "Book Appointment", path: "/guest", icon: "appointments" },
+      { label: "Doctor Directory", path: "/guest", icon: "doctor" },
+      { label: "Services", path: "/guest", icon: "reports" },
+      { label: "Contact", path: "/guest", icon: "notifications" },
+      { label: "Public Info", path: "/guest", icon: "reports" },
+      { label: "Pre-Registration", path: "/register", icon: "home" },
+    ],
+  },
+
+  {
+    section: "Radiologist",
+    roles: ["RADIOLOGIST"],
+    items: [
+      { label: "Imaging Queue", path: "/staff", icon: "lab" },
+      { label: "Scan Viewer", path: "/staff", icon: "reports" },
+      { label: "Report Editor", path: "/staff", icon: "reports" },
+      { label: "Equipment Logs", path: "/staff", icon: "security" },
+      { label: "Performance Metrics", path: "/staff", icon: "analytics" },
+      { label: "My Requests", path: "/workforce/requests", icon: "requests" },
+    ],
+  },
+  {
+    section: "Therapist",
+    roles: ["THERAPIST"],
+    items: [
+      { label: "Session Schedule", path: "/staff", icon: "appointments" },
+      { label: "Patient Notes", path: "/staff", icon: "reports" },
+      { label: "Treatment Plans", path: "/staff", icon: "doctor" },
+      { label: "Progress Tracking", path: "/staff", icon: "analytics" },
+      { label: "Reports", path: "/staff", icon: "reports" },
+      { label: "My Requests", path: "/workforce/requests", icon: "requests" },
+    ],
+  },
+  {
+    section: "Receptionist",
+    roles: ["RECEPTIONIST"],
+    items: [
+      { label: "Dashboard", path: "/staff", icon: "home" },
+      { label: "Appointment Scheduling", path: "/staff", icon: "appointments" },
+      { label: "Patient Check-In", path: "/staff", icon: "staff" },
+      { label: "Billing Initiation", path: "/staff", icon: "payroll" },
+      { label: "Queue Management", path: "/staff", icon: "analytics" },
+      { label: "Visitor Log", path: "/staff", icon: "security" },
+      { label: "My Requests", path: "/workforce/requests", icon: "requests" },
+    ],
+  },
+
+  {
+    section: "Common",
+    items: [
+      { label: "Analytics", path: "/analytics", icon: "analytics" },
+      { label: "Reports", path: "/reports", icon: "reports" },
+      { label: "Notifications", path: "/admin/notifications", icon: "notifications" },
+      { label: "Profile", path: "/profile", icon: "settings" },
+    ],
+  },
+  {
+    section: "AI",
+    feature: "ai",
+    roles: [
+      "DOCTOR",
+      "NURSE",
+      "LAB_TECH",
+      "PHARMACIST",
+      "PATIENT",
+      "SUPER_ADMIN",
+      "HOSPITAL_ADMIN",
+      "DEVELOPER",
+      "SYSTEM_ADMIN",
+    ],
+    items: [
+      { label: "AI Assistant", path: "/ai/medical", icon: "ai" },
+      { label: "AI Triage", path: "/ai/triage", icon: "ai" },
+      { label: "Voice Dictation", path: "/ai/voice", icon: "ai" },
+      { label: "AI Chatbot", path: "/ai/chatbot", icon: "ai" },
+    ],
+  },
+];

@@ -1,0 +1,39 @@
+// backend/utils/normalizeRole.js
+
+const ROLE_MAP = Object.freeze({
+  SUPERADMIN: "SUPER_ADMIN",
+  SUPER_ADMIN: "SUPER_ADMIN",
+  SYSTEMADMIN: "SYSTEM_ADMIN",
+  SYSTEM_ADMIN: "SYSTEM_ADMIN",
+  DEVELOPER: "DEVELOPER",
+  HOSPITALADMIN: "HOSPITAL_ADMIN",
+  HOSPITAL_ADMIN: "HOSPITAL_ADMIN",
+  ADMIN: "HOSPITAL_ADMIN",
+  DOCTOR: "DOCTOR",
+  NURSE: "NURSE",
+  LABTECH: "LAB_TECH",
+  LAB_TECH: "LAB_TECH",
+  PHARMACIST: "PHARMACIST",
+  SECURITYOFFICER: "SECURITY_OFFICER",
+  SECURITY_OFFICER: "SECURITY_OFFICER",
+  SECURITYADMIN: "SECURITY_ADMIN",
+  SECURITY_ADMIN: "SECURITY_ADMIN",
+  HRMANAGER: "HR_MANAGER",
+  HR_MANAGER: "HR_MANAGER",
+  PAYROLLOFFICER: "PAYROLL_OFFICER",
+  PAYROLL_OFFICER: "PAYROLL_OFFICER",
+  RADIOLOGIST: "RADIOLOGIST",
+  THERAPIST: "THERAPIST",
+  RECEPTIONIST: "RECEPTIONIST",
+  PATIENT: "PATIENT",
+  GUEST: "GUEST",
+});
+
+export function normalizeRole(role) {
+  if (typeof role !== "string") return "";
+  const t = role.trim().replace(/[\s-]+/g, "_").toUpperCase();
+  const n = t.replace(/_/g, "");
+  return ROLE_MAP[t] || ROLE_MAP[n] || t;
+}
+
+export default normalizeRole;

@@ -1,0 +1,14 @@
+{
+  "created_files": [
+    "pages/LabTech/Lab/index.jsx",
+    "pages/Admin/Analytics/index.jsx",
+    "pages/Admin/Reports/index.jsx",
+    "lib/afya-crdt-sdk/index.js"
+  ],
+  "missing_after": [
+    [
+      "pages/Admin/CRDTPatientEditor.jsx",
+      "../lib/afya-crdt-sdk"
+    ]
+  ]
+}

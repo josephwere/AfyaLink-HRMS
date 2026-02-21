@@ -1,0 +1,79 @@
+name: Backend Security Gate
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-security-gate.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-security-gate.yml"
+  workflow_dispatch:
+
+jobs:
+  backend-security:
+    name: Backend Security Gate
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      MONGO_URI: mongodb://127.0.0.1:27017/afyalink_ci
+      BASE_URL: http://127.0.0.1:5000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify audit scripts syntax
+        run: |
+          node --check scripts/route-lockdown-audit.mjs
+          node --check scripts/authz-regression.mjs
+          node --check scripts/abac-regression-audit.mjs
+
+      - name: Start backend API
+        run: |
+          npm run start > /tmp/backend.log 2>&1 &
+          echo $! > /tmp/backend.pid
+
+      - name: Wait for backend API
+        run: |
+          for i in {1..60}; do
+            if curl -s http://127.0.0.1:5000 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend failed to start in time"
+          cat /tmp/backend.log
+          exit 1
+
+      - name: Run backend security gate
+        run: npm run security:gate
+
+      - name: Print backend log on failure
+        if: failure()
+        run: cat /tmp/backend.log
