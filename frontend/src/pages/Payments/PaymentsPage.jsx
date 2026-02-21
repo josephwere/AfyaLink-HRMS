@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
+import { useSearchParams } from "react-router-dom";
 import WorkflowTimeline from "../../components/workflow/WorkflowTimeline";
 import WorkflowBadge from "../../components/workflow/WorkflowBadge";
 import RequireVerified from "../../components/RequireVerified";
@@ -13,19 +14,40 @@ import RequireVerified from "../../components/RequireVerified";
 
 export default function PaymentsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const selectedHospitalId =
+    searchParams.get("hospitalId") ||
+    localStorage.getItem("afyalink_patient_hospital_id") ||
+    "";
 
   const [transactions, setTransactions] = useState([]);
+  const [hospitalInfo, setHospitalInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     if (user) loadTransactions();
-  }, [user]);
+  }, [user, selectedHospitalId]);
 
   async function loadTransactions() {
     try {
-      const data = await apiFetch("/api/billing/list");
-      setTransactions(data || []);
+      const qs = selectedHospitalId
+        ? `?hospitalId=${encodeURIComponent(selectedHospitalId)}`
+        : "";
+      const [data, market] = await Promise.all([
+        apiFetch(`/api/billing/list${qs}`),
+        selectedHospitalId
+          ? apiFetch(`/api/hospitals/marketplace?limit=100`)
+          : Promise.resolve(null),
+      ]);
+      const rows = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+      setTransactions(rows);
+      if (selectedHospitalId && Array.isArray(market?.items)) {
+        const byId = market.items.find((h) => String(h._id) === String(selectedHospitalId)) || null;
+        setHospitalInfo(byId);
+      } else {
+        setHospitalInfo(null);
+      }
     } catch {
       setMsg("Failed to load transactions");
     }
@@ -115,6 +137,16 @@ export default function PaymentsPage() {
   return (
     <div className="card premium-card">
       <h2>Payments</h2>
+      {selectedHospitalId && (
+        <p className="muted">
+          Hospital context: {hospitalInfo?.name || selectedHospitalId}
+        </p>
+      )}
+      {hospitalInfo && (
+        <div className="subtle-banner" style={{ marginBottom: 10 }}>
+          Available channels: {(hospitalInfo.patientPaymentMethods || []).map((m) => m.label || m.type).join(", ") || "Not configured"}
+        </div>
+      )}
 
       {msg && (
         <pre

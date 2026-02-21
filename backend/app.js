@@ -107,6 +107,7 @@ import systemAdminRoutes from "./routes/systemAdminRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import delegatedPermissionRoutes from "./routes/delegatedPermissionRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
+import recruitmentAdsRoutes from "./routes/recruitmentAdsRoutes.js";
 
 
 
@@ -208,6 +209,7 @@ app.use("/api/system-admin", systemAdminRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/delegated-permissions", delegatedPermissionRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/recruitment-ads", recruitmentAdsRoutes);
 
 
 /* ======================================================

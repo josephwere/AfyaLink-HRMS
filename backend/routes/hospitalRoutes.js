@@ -2,6 +2,7 @@ import express from "express";
 import {
   createHospital,
   listHospitals,
+  listMarketplaceHospitals,
   getHospitalFeatures,
   updateHospitalFeatures,
   updateHospital,
@@ -35,6 +36,13 @@ router.get(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
   listHospitals
+);
+
+router.get(
+  "/marketplace",
+  protect,
+  requireRole("PATIENT", "GUEST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  listMarketplaceHospitals
 );
 
 router.put(

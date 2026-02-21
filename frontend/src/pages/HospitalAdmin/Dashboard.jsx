@@ -69,6 +69,8 @@ export default function Dashboard() {
           <button className="btn-primary" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
           <button className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>Leave Approvals</button>
           <button className="btn-secondary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Requests</button>
+          <button className="btn-secondary" onClick={() => navigate("/hospital-admin/recruitment-ads")}>Recruitment Ads</button>
+          <button className="btn-secondary" onClick={() => navigate("/hospital-admin/commerce-config")}>Insurance & Payments</button>
         </div>
       </div>
 

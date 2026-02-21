@@ -51,6 +51,10 @@ export default function SuperAdminHospitals() {
     address: "",
     contact: "",
     active: true,
+    subscriptionStatus: "TRIAL",
+    subscriptionPaid: false,
+    trialEndsAt: "",
+    premiumPaused: false,
   });
   const [branchHospitalId, setBranchHospitalId] = useState("");
   const [branches, setBranches] = useState([]);
@@ -286,6 +290,12 @@ export default function SuperAdminHospitals() {
       address: hospital.address || "",
       contact: hospital.contact || "",
       active: hospital.active !== false,
+      subscriptionStatus: hospital?.subscriptionState?.status || hospital?.subscription?.status || "TRIAL",
+      subscriptionPaid: Boolean(hospital?.subscription?.paid),
+      trialEndsAt: hospital?.subscription?.trialEndsAt
+        ? String(hospital.subscription.trialEndsAt).slice(0, 10)
+        : "",
+      premiumPaused: Boolean(hospital?.subscriptionState?.premiumPaused || hospital?.subscription?.premiumPaused),
     });
   };
 
@@ -297,6 +307,10 @@ export default function SuperAdminHospitals() {
       address: "",
       contact: "",
       active: true,
+      subscriptionStatus: "TRIAL",
+      subscriptionPaid: false,
+      trialEndsAt: "",
+      premiumPaused: false,
     });
   };
 
@@ -304,7 +318,19 @@ export default function SuperAdminHospitals() {
     setSavingHospitalId(hospitalId);
     setMsg(null);
     try {
-      await updateHospital(hospitalId, editHospitalForm);
+      await updateHospital(hospitalId, {
+        name: editHospitalForm.name,
+        code: editHospitalForm.code,
+        address: editHospitalForm.address,
+        contact: editHospitalForm.contact,
+        active: editHospitalForm.active,
+        subscription: {
+          paid: editHospitalForm.subscriptionPaid,
+          status: editHospitalForm.subscriptionStatus,
+          trialEndsAt: editHospitalForm.trialEndsAt || undefined,
+          premiumPaused: editHospitalForm.premiumPaused,
+        },
+      });
       setMsg("✅ Hospital updated");
       cancelEditHospital();
       await loadHospitals();
@@ -839,6 +865,7 @@ export default function SuperAdminHospitals() {
                 <th>Address</th>
                 <th>Admins</th>
                 <th>Status</th>
+                <th>Subscription</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -923,6 +950,76 @@ export default function SuperAdminHospitals() {
                       )}
                     </td>
                     <td>
+                      {isEditing ? (
+                        <div className="action-list" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                          <select
+                            value={editHospitalForm.subscriptionStatus}
+                            onChange={(e) =>
+                              setEditHospitalForm({
+                                ...editHospitalForm,
+                                subscriptionStatus: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="TRIAL">TRIAL</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="PAST_DUE">PAST_DUE</option>
+                            <option value="PAUSED">PAUSED</option>
+                          </select>
+                          <label className="profile-inline-check">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(editHospitalForm.subscriptionPaid)}
+                              onChange={(e) =>
+                                setEditHospitalForm({
+                                  ...editHospitalForm,
+                                  subscriptionPaid: e.target.checked,
+                                })
+                              }
+                            />
+                            <span>Paid</span>
+                          </label>
+                          <label>Trial Ends</label>
+                          <input
+                            type="date"
+                            value={editHospitalForm.trialEndsAt}
+                            onChange={(e) =>
+                              setEditHospitalForm({
+                                ...editHospitalForm,
+                                trialEndsAt: e.target.value,
+                              })
+                            }
+                          />
+                          <label className="profile-inline-check">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(editHospitalForm.premiumPaused)}
+                              onChange={(e) =>
+                                setEditHospitalForm({
+                                  ...editHospitalForm,
+                                  premiumPaused: e.target.checked,
+                                })
+                              }
+                            />
+                            <span>Premium paused</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <>
+                          <div>{h?.subscriptionState?.status || "TRIAL"}</div>
+                          <div className="muted">
+                            Trial days left: {Number(h?.subscriptionState?.daysLeft || 0)}
+                          </div>
+                          <div className="muted">Paid: {h?.subscription?.paid ? "Yes" : "No"}</div>
+                          {h?.subscriptionState?.premiumPaused ? (
+                            <div className="muted" style={{ color: "var(--app-danger)" }}>
+                              Premium paused
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </td>
+                    <td>
                       {!isEditing ? (
                         <button
                           className="btn-secondary"
@@ -954,7 +1051,7 @@ export default function SuperAdminHospitals() {
               })}
               {paged.length === 0 && (
                 <tr>
-                  <td colSpan="6">No hospitals yet</td>
+                  <td colSpan="7">No hospitals yet</td>
                 </tr>
               )}
             </tbody>

@@ -2,6 +2,7 @@ import express from "express";
 import {
   createAppointment,
   listAppointments,
+  listHospitalDoctors,
   getAppointment,
   updateAppointment,
   deleteAppointment,
@@ -36,6 +37,13 @@ router.get(
   protect,
   authorize("appointments", "read"),
   listAppointments
+);
+
+router.get(
+  "/doctors",
+  protect,
+  authorize("appointments", "read"),
+  listHospitalDoctors
 );
 
 /**

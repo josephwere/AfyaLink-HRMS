@@ -9,7 +9,7 @@ export const getSystemSettings = async (_req, res) => {
 };
 
 export const updateSystemSettings = async (req, res) => {
-  const { branding, ai } = req.body || {};
+  const { branding, ai, monetization } = req.body || {};
   let doc = await SystemSettings.findOne();
   if (!doc) doc = await SystemSettings.create({});
 
@@ -26,6 +26,24 @@ export const updateSystemSettings = async (req, res) => {
   }
   if (ai) {
     doc.ai = { ...doc.ai, ...ai };
+  }
+  if (monetization) {
+    if (monetization.featureAccess) {
+      const existing =
+        doc.monetization?.featureAccess?.toObject?.() ||
+        doc.monetization?.featureAccess ||
+        {};
+      doc.monetization.featureAccess = {
+        ...existing,
+        ...monetization.featureAccess,
+      };
+    }
+    const { featureAccess, ...restMonetization } = monetization;
+    doc.monetization = {
+      ...doc.monetization,
+      ...restMonetization,
+      featureAccess: doc.monetization.featureAccess,
+    };
   }
 
   await doc.save();

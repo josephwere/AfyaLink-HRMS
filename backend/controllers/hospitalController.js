@@ -1,4 +1,5 @@
 import Hospital from "../models/Hospital.js";
+import Notification from "../models/Notification.js";
 import { v4 as uuidv4 } from "uuid";
 import { cacheDel } from "../utils/cache.js";
 import { diffObjects } from "../utils/diff.js";
@@ -15,19 +16,45 @@ export const createHospital = async (req, res, next) => {
       address,
       contact,
       code: code || "H-" + uuidv4().slice(0, 8),
+      subscription: {
+        paid: false,
+        status: "TRIAL",
+        trialStartedAt: new Date(),
+        trialEndsAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        premiumPaused: false,
+        reminderTagsSent: ["trial_started"],
+      },
 
       /* 🔐 DEFAULT FEATURE FLAGS (ONBOARDING SAFE) */
       features: {
-        ai: false,
-        payments: false,
-        pharmacy: false,
-        inventory: false,
-        lab: false,
-        realtime: false,
-        auditLogs: false,
-        adminCreation: false,
+        ai: true,
+        payments: true,
+        pharmacy: true,
+        inventory: true,
+        lab: true,
+        realtime: true,
+        auditLogs: true,
+        adminCreation: true,
+        advertising: true,
+        recruitmentAds: true,
+        advancedAnalytics: true,
+        heavyExports: true,
       },
     });
+
+    if (req.user?._id) {
+      await Notification.create({
+        title: "Free Trial Started",
+        body: `${hospital.name} has started a 3-month free trial. Premium features are active now.`,
+        user: req.user._id,
+        hospital: hospital._id,
+        category: "SUBSCRIPTION",
+        meta: {
+          type: "TRIAL_STARTED",
+          trialEndsAt: hospital.subscription?.trialEndsAt,
+        },
+      });
+    }
 
     res.json(hospital);
   } catch (err) {
@@ -55,7 +82,7 @@ export const listHospitals = async (req, res, next) => {
     if (active === "true") filter.active = true;
     if (active === "false") filter.active = false;
 
-    const [items, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       Hospital.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
@@ -63,6 +90,27 @@ export const listHospitals = async (req, res, next) => {
         .lean(),
       Hospital.countDocuments(filter),
     ]);
+
+    const now = new Date();
+    const items = rows.map((h) => {
+      const trialEndsAt = h?.subscription?.trialEndsAt ? new Date(h.subscription.trialEndsAt) : null;
+      const status = h?.subscription?.status || "TRIAL";
+      const paid = status === "ACTIVE";
+      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+      const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
+      return {
+        ...h,
+        subscriptionState: {
+          status,
+          trialEndsAt,
+          trialExpired,
+          premiumPaused,
+          daysLeft: trialEndsAt
+            ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+            : 0,
+        },
+      };
+    });
 
     res.json({ items, total, page, limit });
   } catch (err) {
@@ -141,7 +189,7 @@ export const updateHospitalFeatures = async (req, res, next) => {
 export const updateHospital = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, address, contact, code, active, plan } = req.body || {};
+    const { name, address, contact, code, active, plan, subscription } = req.body || {};
 
     const hospital = await Hospital.findById(id);
     if (!hospital) {
@@ -156,6 +204,49 @@ export const updateHospital = async (req, res, next) => {
     if (code !== undefined) hospital.code = String(code).trim();
     if (active !== undefined) hospital.active = Boolean(active);
     if (plan !== undefined) hospital.plan = plan;
+    if (subscription && typeof subscription === "object") {
+      hospital.subscription = hospital.subscription || {};
+      if (subscription.status !== undefined) {
+        hospital.subscription.status = String(subscription.status).toUpperCase();
+      }
+      if (subscription.paid !== undefined) {
+        hospital.subscription.paid = Boolean(subscription.paid);
+      }
+      if (subscription.trialEndsAt !== undefined) {
+        hospital.subscription.trialEndsAt = subscription.trialEndsAt
+          ? new Date(subscription.trialEndsAt)
+          : null;
+      }
+      if (subscription.premiumPaused !== undefined) {
+        hospital.subscription.premiumPaused = Boolean(subscription.premiumPaused);
+      }
+      if (subscription.lastPaymentAt !== undefined) {
+        hospital.subscription.lastPaymentAt = subscription.lastPaymentAt
+          ? new Date(subscription.lastPaymentAt)
+          : null;
+      }
+      if (subscription.nextBillingAt !== undefined) {
+        hospital.subscription.nextBillingAt = subscription.nextBillingAt
+          ? new Date(subscription.nextBillingAt)
+          : null;
+      }
+
+      const now = new Date();
+      const trialEndsAt = hospital.subscription?.trialEndsAt
+        ? new Date(hospital.subscription.trialEndsAt)
+        : null;
+      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+      if (hospital.subscription?.paid === true) {
+        hospital.subscription.status = "ACTIVE";
+        hospital.subscription.premiumPaused = false;
+      } else if (trialExpired) {
+        hospital.subscription.status = "PAUSED";
+        hospital.subscription.premiumPaused = true;
+      } else if (hospital.subscription?.status !== "ACTIVE") {
+        hospital.subscription.status = "TRIAL";
+        hospital.subscription.premiumPaused = false;
+      }
+    }
 
     await hospital.save();
 
@@ -204,5 +295,61 @@ export const deactivateHospital = async (req, res, next) => {
     res.json({ message: "Hospital deactivated successfully" });
   } catch (err) {
     next(err);
+  }
+};
+
+/* ================= PATIENT MARKETPLACE LIST ================= */
+export const listMarketplaceHospitals = async (req, res, next) => {
+  try {
+    const q = (req.query.q || "").trim();
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "20", 10), 1), 100);
+
+    const filter = { active: true };
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { code: { $regex: q, $options: "i" } },
+        { address: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      Hospital.find(filter)
+        .select("name code address contact insuranceProviders patientPaymentMethods subscription")
+        .sort({ name: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Hospital.countDocuments(filter),
+    ]);
+
+    const now = new Date();
+    const mapped = items.map((h) => {
+      const trialEndsAt = h?.subscription?.trialEndsAt ? new Date(h.subscription.trialEndsAt) : null;
+      const status = h?.subscription?.status || "TRIAL";
+      const paid = status === "ACTIVE";
+      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+      const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
+      return {
+        _id: h._id,
+        name: h.name,
+        code: h.code,
+        address: h.address,
+        contact: h.contact,
+        subscriptionState: {
+          status,
+          trialEndsAt,
+          trialExpired,
+          premiumPaused,
+        },
+        insuranceProviders: (h.insuranceProviders || []).filter((i) => i?.enabled !== false),
+        patientPaymentMethods: (h.patientPaymentMethods || []).filter((m) => m?.enabled !== false),
+      };
+    });
+
+    return res.json({ items: mapped, total, page, limit });
+  } catch (err) {
+    return next(err);
   }
 };

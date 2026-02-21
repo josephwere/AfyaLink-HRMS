@@ -146,7 +146,7 @@ export const getHospitals = async (req, res) => {
       ];
     }
 
-    const [items, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       Hospital.find(filter)
         .populate("admins", "name email employment.branch")
         .sort({ createdAt: -1, _id: -1 })
@@ -155,6 +155,27 @@ export const getHospitals = async (req, res) => {
         .lean(),
       Hospital.countDocuments(filter),
     ]);
+
+    const now = new Date();
+    const items = rows.map((h) => {
+      const trialEndsAt = h?.subscription?.trialEndsAt ? new Date(h.subscription.trialEndsAt) : null;
+      const status = h?.subscription?.status || "TRIAL";
+      const paid = status === "ACTIVE";
+      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+      const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
+      return {
+        ...h,
+        subscriptionState: {
+          status,
+          trialEndsAt,
+          trialExpired,
+          premiumPaused,
+          daysLeft: trialEndsAt
+            ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+            : 0,
+        },
+      };
+    });
 
     res.json({ items, total, page, limit });
   } catch (err) {

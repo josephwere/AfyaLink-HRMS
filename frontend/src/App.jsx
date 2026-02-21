@@ -80,6 +80,8 @@ import PatientLabResults from "./pages/Patient/LabResults";
 import PatientBilling from "./pages/Patient/Billing";
 import PatientInsurance from "./pages/Patient/Insurance";
 import PatientFeedback from "./pages/Patient/Feedback";
+import PatientHospitals from "./pages/Patient/Hospitals";
+import PatientAdsFeed from "./pages/Patient/AdsFeed";
 import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
 import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
 import NotificationsPage from "./pages/Admin/NotificationsPage";
@@ -101,6 +103,8 @@ import HospitalAdminDashboard from "./pages/HospitalAdmin/Dashboard";
 import HospitalAdminRegisterStaff from "./pages/HospitalAdmin/RegisterStaff";
 import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
 import HospitalAdminStaffManagement from "./pages/HospitalAdmin/StaffManagement";
+import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
+import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -638,10 +642,26 @@ export default function App() {
             }
           />
           <Route
+            path="/patient/hospitals"
+            element={
+              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PatientHospitals />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/patient/feedback"
             element={
               <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
                 <PatientFeedback />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/patient/ads"
+            element={
+              <RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PatientAdsFeed />
               </RequireRole>
             }
           />
@@ -946,7 +966,7 @@ export default function App() {
           <Route
             path="/super-admin/settings"
             element={
-              <RequireRole roles={["SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <SuperAdminSystemSettings />
               </RequireRole>
             }
@@ -1034,6 +1054,22 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "SUPER_ADMIN"]}>
                 <HospitalAdminStaffManagement />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/commerce-config"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminCommerceConfig />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/recruitment-ads"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminRecruitmentAds />
               </RequireRole>
             }
           />

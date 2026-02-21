@@ -11,26 +11,59 @@ import {
 } from '../controllers/billingController.js';
 
 router.use(protect);
-router.use(
+
+// Dashboard summary
+router.get(
+  '/',
   requireRole(
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
     "HOSPITAL_ADMIN",
     "PAYROLL_OFFICER",
     "DEVELOPER"
-  )
+  ),
+  index
 );
 
-// Dashboard summary
-router.get('/', index);
-
 // All transactions
-router.get('/list', list);
+router.get(
+  '/list',
+  requireRole(
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "HOSPITAL_ADMIN",
+    "PAYROLL_OFFICER",
+    "DEVELOPER",
+    "PATIENT"
+  ),
+  list
+);
 
 // Invoice PDF
-router.get('/invoice/:id', invoicePdf);
+router.get(
+  '/invoice/:id',
+  requireRole(
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "HOSPITAL_ADMIN",
+    "PAYROLL_OFFICER",
+    "DEVELOPER",
+    "PATIENT"
+  ),
+  invoicePdf
+);
 
 // Single transaction
-router.get('/:id', getOne);
+router.get(
+  '/:id',
+  requireRole(
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "HOSPITAL_ADMIN",
+    "PAYROLL_OFFICER",
+    "DEVELOPER"
+  ),
+  getOne
+);
 
 export default router;

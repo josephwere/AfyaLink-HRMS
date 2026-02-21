@@ -13,6 +13,7 @@ import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
 import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
 import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 import { runWorkforceAutomationSweep } from "./workers/workforceAutomationSweep.js";
+import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWorker.js";
 
 dotenv.config();
 
@@ -81,6 +82,16 @@ const start = async () => {
         }
       } catch (err) {
         console.error("[WORKFORCE_SWEEP] failed", err);
+      }
+    }, { timezone: "Africa/Nairobi" });
+    cron.schedule("0 * * * *", async () => {
+      try {
+        const result = await runSubscriptionLifecycleSweep();
+        if (result.updated > 0) {
+          console.log(`[SUBSCRIPTION_SWEEP] scanned=${result.scanned} updated=${result.updated}`);
+        }
+      } catch (err) {
+        console.error("[SUBSCRIPTION_SWEEP] failed", err);
       }
     }, { timezone: "Africa/Nairobi" });
 

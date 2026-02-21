@@ -21,8 +21,9 @@ export default function Dashboard() {
           <p className="muted">Appointments, records, lab results, billing and insurance in one place.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/patient")}>My Appointments</button>
+          <button className="btn-primary" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
           <button className="btn-secondary" onClick={() => navigate("/payments")}>Billing</button>
+          <button className="btn-secondary" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
           <button className="btn-secondary" onClick={() => navigate("/profile")}>Profile</button>
         </div>
       </div>
@@ -45,6 +46,7 @@ export default function Dashboard() {
             <button className="action-link" onClick={() => navigate("/patient")}>Prescriptions</button>
             <button className="action-link" onClick={() => navigate("/patient")}>Lab Results</button>
             <button className="action-link" onClick={() => navigate("/patient")}>Insurance</button>
+            <button className="action-link" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">

@@ -56,6 +56,7 @@ export const updateProfile = async (req, res) => {
       employment,
       credentials,
       financial,
+      insuranceProfile,
       systemProfile,
     } = req.body;
     const user = await User.findById(req.user.id);
@@ -114,6 +115,14 @@ export const updateProfile = async (req, res) => {
       user.systemProfile = {
         ...user.systemProfile,
         ...systemProfile,
+      };
+    }
+
+    if (insuranceProfile && typeof insuranceProfile === "object") {
+      user.insuranceProfile = {
+        ...user.insuranceProfile,
+        ...insuranceProfile,
+        updatedAt: new Date(),
       };
     }
 

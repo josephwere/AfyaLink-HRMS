@@ -2176,3 +2176,15 @@ body.auth-route {
   border: 1px solid var(--app-border);
   background: var(--app-surface-2);
 }
+
+.country-phone-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.country-dial-code {
+  text-align: center;
+  font-weight: 700;
+}

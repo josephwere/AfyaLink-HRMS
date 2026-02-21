@@ -26,6 +26,31 @@ const systemSettingsSchema = new Schema(
       digitalTwinEnabled: { type: Boolean, default: false },
       greeting: { type: String, default: "Hi, how can I help?" },
     },
+    monetization: {
+      strategy: { type: String, default: "CORE_FREE_PREMIUM_ADDONS" },
+      enforceUsageLimits: { type: Boolean, default: false },
+      featureAccess: {
+        type: Map,
+        of: {
+          type: String,
+          enum: ["FREE", "PREMIUM"],
+        },
+        default: {
+          ai: "PREMIUM",
+          payments: "FREE",
+          pharmacy: "FREE",
+          inventory: "FREE",
+          lab: "FREE",
+          realtime: "PREMIUM",
+          auditLogs: "PREMIUM",
+          adminCreation: "FREE",
+          advertising: "PREMIUM",
+          recruitmentAds: "PREMIUM",
+          advancedAnalytics: "PREMIUM",
+          heavyExports: "PREMIUM",
+        },
+      },
+    },
   },
   { timestamps: true }
 );

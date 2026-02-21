@@ -12,7 +12,7 @@ export const getHospitalConfig = async (req, res) => {
     const hospitalId = req.user.hospital;
 
     const hospital = await Hospital.findById(hospitalId).select(
-      "name plan features limits active"
+      "name plan features limits active subscription insuranceProviders patientPaymentMethods"
     );
 
     if (!hospital) {
@@ -100,5 +100,74 @@ export const updateHospitalFeatures = async (req, res) => {
     res.status(500).json({
       message: "Failed to update features",
     });
+  }
+};
+
+/* ======================================================
+   UPDATE HOSPITAL PAYMENT + INSURANCE CONFIG
+====================================================== */
+export const updateHospitalCommerceConfig = async (req, res) => {
+  try {
+    const hospitalId = req.user.hospital;
+    const { insuranceProviders, patientPaymentMethods } = req.body || {};
+
+    const hospital = await Hospital.findById(hospitalId);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+    if (hospital.active === false) {
+      return res.status(403).json({ message: "Cannot update deactivated hospital" });
+    }
+
+    if (Array.isArray(insuranceProviders)) {
+      hospital.insuranceProviders = insuranceProviders
+        .map((row) => ({
+          code: String(row?.code || "").trim().toUpperCase(),
+          name: String(row?.name || "").trim(),
+          country: String(row?.country || "").trim().toUpperCase(),
+          enabled: row?.enabled !== false,
+          metadata: row?.metadata && typeof row.metadata === "object" ? row.metadata : {},
+        }))
+        .filter((row) => row.code && row.name);
+    }
+
+    if (Array.isArray(patientPaymentMethods)) {
+      hospital.patientPaymentMethods = patientPaymentMethods
+        .map((row) => ({
+          type: String(row?.type || "").trim().toUpperCase(),
+          label: String(row?.label || "").trim(),
+          accountName: String(row?.accountName || "").trim(),
+          accountNumber: String(row?.accountNumber || "").trim(),
+          paybill: String(row?.paybill || "").trim(),
+          tillNumber: String(row?.tillNumber || "").trim(),
+          phone: String(row?.phone || "").trim(),
+          email: String(row?.email || "").trim(),
+          instructions: String(row?.instructions || "").trim(),
+          enabled: row?.enabled !== false,
+        }))
+        .filter((row) => row.type && row.label);
+    }
+
+    await hospital.save();
+
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "UPDATE_HOSPITAL_COMMERCE_CONFIG",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      hospital: hospital._id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
+    return res.json({
+      success: true,
+      insuranceProviders: hospital.insuranceProviders || [],
+      patientPaymentMethods: hospital.patientPaymentMethods || [],
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to update hospital payment/insurance config" });
   }
 };

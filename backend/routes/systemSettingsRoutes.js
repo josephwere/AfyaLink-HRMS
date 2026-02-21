@@ -9,6 +9,6 @@ import {
 const router = express.Router();
 
 router.get("/", protect, requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"), getSystemSettings);
-router.put("/", protect, requireRole("SUPER_ADMIN", "DEVELOPER"), updateSystemSettings);
+router.put("/", protect, requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"), updateSystemSettings);
 
 export default router;

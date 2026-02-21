@@ -1,20 +1,75 @@
 import workflowService from "../services/workflowService.js";
 import Appointment from "../models/Appointment.js";
+import Patient from "../models/Patient.js";
+import User from "../models/User.js";
 import { getIO } from "../utils/socket.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
+
+async function resolvePatientIdsForUser(userId, hospitalId = null) {
+  const user = await User.findById(userId).select("name phone nationalIdNumber");
+  if (!user) return [];
+
+  const filters = [];
+  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
+  if (user.phone) filters.push({ contact: user.phone });
+  filters.push({ "metadata.userId": userId });
+  if (!filters.length) return [];
+
+  const where = {
+    active: true,
+    $or: filters,
+  };
+  if (hospitalId) where.hospital = hospitalId;
+
+  const rows = await Patient.find(where).select("_id");
+  return rows.map((p) => String(p._id));
+}
 
 /* ======================================================
    CREATE APPOINTMENT (WORKFLOW ENTRY)
 ====================================================== */
 export const createAppointment = async (req, res, next) => {
   try {
-    const { patient, doctor, scheduledAt, reason } = req.body;
+    const role = normalizeRole(req.user.role);
+    const requestedHospitalId = req.body?.hospitalId || null;
+    const hospitalId = requestedHospitalId || req.user.hospitalId || req.user.hospital || null;
+    let { patient, doctor, scheduledAt, reason } = req.body;
 
-    if (!patient || !scheduledAt) {
+    if (role === "PATIENT") {
+      const ownPatientIds = await resolvePatientIdsForUser(req.user.id, hospitalId || null);
+      if (patient && !ownPatientIds.includes(String(patient))) {
+        return res.status(403).json({ msg: "You can only create appointments for your own patient profile" });
+      }
+      if (!patient) {
+        if (ownPatientIds.length) {
+          patient = ownPatientIds[0];
+        } else {
+          if (!hospitalId) {
+            return res.status(400).json({ msg: "Select a hospital first" });
+          }
+          const user = await User.findById(req.user.id).select("name phone nationalIdNumber");
+          const parts = String(user?.name || "Patient").trim().split(/\s+/);
+          const firstName = parts[0] || "Patient";
+          const lastName = parts.slice(1).join(" ") || "User";
+          const created = await Patient.create({
+            firstName,
+            lastName,
+            nationalId: user?.nationalIdNumber || undefined,
+            contact: user?.phone || undefined,
+            hospital: hospitalId,
+            metadata: { userId: req.user.id },
+            active: true,
+          });
+          patient = created._id;
+        }
+      }
+    }
+
+    if (!patient || !scheduledAt || !hospitalId) {
       return res
         .status(400)
-        .json({ msg: "patient and scheduledAt are required" });
+        .json({ msg: "patient, hospital and scheduledAt are required" });
     }
 
     /**
@@ -23,7 +78,7 @@ export const createAppointment = async (req, res, next) => {
     const wf = await workflowService.start("CONSULTATION", {
       patient,
       doctor,
-      hospital: req.user.hospitalId,
+      hospital: hospitalId,
       scheduledAt,
       reason,
       createdBy: req.user.id,
@@ -95,9 +150,18 @@ export const listAppointments = async (req, res, next) => {
     const cursor = req.query.cursor || null;
 
     const role = normalizeRole(user.role);
-    if (role === "PATIENT") filter.patient = user.id;
+    if (role === "PATIENT") {
+      const requestedHospitalId = req.query.hospitalId || null;
+      const ids = await resolvePatientIdsForUser(user.id, requestedHospitalId || null);
+      if (!ids.length) {
+        if (cursor) return res.json({ items: [], nextCursor: null, hasMore: false, limit });
+        return res.json({ items: [], total: 0, page, limit });
+      }
+      filter.patient = { $in: ids };
+      if (requestedHospitalId) filter.hospital = requestedHospitalId;
+    }
     if (role === "DOCTOR") filter.doctor = user.id;
-    if (user.hospital) filter.hospital = user.hospital;
+    if (role !== "PATIENT" && user.hospital) filter.hospital = user.hospital;
     if (req.query.status) filter.status = req.query.status;
 
     // Cursor mode: createdAt + _id descending
@@ -139,6 +203,37 @@ export const listAppointments = async (req, res, next) => {
     res.json({ items, total, page, limit });
   } catch (err) {
     next(err);
+  }
+};
+
+/* ======================================================
+   LIST AVAILABLE DOCTORS BY HOSPITAL
+====================================================== */
+export const listHospitalDoctors = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user.role);
+    const requestedHospitalId = req.query.hospitalId || null;
+    const hospitalId =
+      role === "PATIENT"
+        ? requestedHospitalId
+        : (requestedHospitalId || req.user.hospital || req.user.hospitalId || null);
+
+    if (!hospitalId) {
+      return res.status(400).json({ msg: "hospitalId is required" });
+    }
+
+    const rows = await User.find({
+      hospital: hospitalId,
+      role: "DOCTOR",
+      active: true,
+    })
+      .select("_id name email employment.department")
+      .sort({ name: 1 })
+      .lean();
+
+    return res.json({ items: rows });
+  } catch (err) {
+    return next(err);
   }
 };
 

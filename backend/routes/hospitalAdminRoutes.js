@@ -2,6 +2,7 @@ import express from "express";
 import {
   getHospitalConfig,
   updateHospitalFeatures,
+  updateHospitalCommerceConfig,
 } from "../controllers/hospitalAdminController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
@@ -23,6 +24,13 @@ router.put(
   protect,
   requireRole("SUPER_ADMIN", "HOSPITAL_ADMIN"),
   updateHospitalFeatures
+);
+
+router.put(
+  "/commerce-config",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  updateHospitalCommerceConfig
 );
 
 export default router;

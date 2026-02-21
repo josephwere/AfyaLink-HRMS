@@ -257,6 +257,21 @@ const userSchema = new Schema(
       deductions: { type: Number, default: 0 },
     },
 
+    insuranceProfile: {
+      providerCode: String, // SHA, NHIF, PRIVATE_X
+      providerName: String,
+      memberNumber: String,
+      balance: { type: Number, default: 0 },
+      currency: { type: String, default: "KES" },
+      status: {
+        type: String,
+        enum: ["ACTIVE", "INACTIVE", "PENDING"],
+        default: "PENDING",
+      },
+      metadata: { type: Schema.Types.Mixed, default: {} },
+      updatedAt: Date,
+    },
+
     /* =========================
        PROFILE: SYSTEM
     ========================= */

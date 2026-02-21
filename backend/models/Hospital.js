@@ -14,6 +14,29 @@ const hospitalSchema = new mongoose.Schema(
       index: true,
     },
 
+    subscription: {
+      paid: { type: Boolean, default: false, index: true },
+      status: {
+        type: String,
+        enum: ["TRIAL", "ACTIVE", "PAST_DUE", "PAUSED"],
+        default: "TRIAL",
+        index: true,
+      },
+      trialStartedAt: { type: Date, default: Date.now },
+      trialEndsAt: {
+        type: Date,
+        default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        index: true,
+      },
+      premiumPaused: { type: Boolean, default: false, index: true },
+      lastPaymentAt: Date,
+      nextBillingAt: Date,
+      reminderTagsSent: {
+        type: [String],
+        default: [],
+      },
+    },
+
     /* ================= LIMITS ================= */
     limits: {
       users: { type: Number, default: 5 },
@@ -38,6 +61,10 @@ const hospitalSchema = new mongoose.Schema(
       realtime: { type: Boolean, default: false },
       auditLogs: { type: Boolean, default: false },
       adminCreation: { type: Boolean, default: false },
+      advertising: { type: Boolean, default: false },
+      recruitmentAds: { type: Boolean, default: false },
+      advancedAnalytics: { type: Boolean, default: false },
+      heavyExports: { type: Boolean, default: false },
     },
 
     /* ================= ISO COMPLIANCE (NEW) ================= */
@@ -68,6 +95,31 @@ const hospitalSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+
+    insuranceProviders: [
+      {
+        code: { type: String, trim: true }, // SHA, NHIF, PRIVATE_X
+        name: { type: String, trim: true },
+        country: { type: String, trim: true }, // KE, US, NG...
+        enabled: { type: Boolean, default: true },
+        metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+      },
+    ],
+
+    patientPaymentMethods: [
+      {
+        type: { type: String, trim: true }, // MPESA, BANK, CARD, STRIPE, FLUTTERWAVE
+        label: { type: String, trim: true },
+        accountName: { type: String, trim: true },
+        accountNumber: { type: String, trim: true },
+        paybill: { type: String, trim: true },
+        tillNumber: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        email: { type: String, trim: true },
+        instructions: { type: String, trim: true },
+        enabled: { type: Boolean, default: true },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -95,6 +147,10 @@ hospitalSchema.pre("save", function (next) {
         realtime: false,
         auditLogs: false,
         adminCreation: false,
+        advertising: false,
+        recruitmentAds: false,
+        advancedAnalytics: false,
+        heavyExports: false,
       },
       limits: {
         users: 5,
@@ -113,6 +169,10 @@ hospitalSchema.pre("save", function (next) {
         realtime: false,
         auditLogs: true,
         adminCreation: false,
+        advertising: false,
+        recruitmentAds: false,
+        advancedAnalytics: false,
+        heavyExports: false,
       },
       limits: {
         users: 20,
@@ -131,6 +191,10 @@ hospitalSchema.pre("save", function (next) {
         realtime: true,
         auditLogs: true,
         adminCreation: true,
+        advertising: true,
+        recruitmentAds: true,
+        advancedAnalytics: true,
+        heavyExports: true,
       },
       limits: {
         users: 100,
@@ -149,6 +213,10 @@ hospitalSchema.pre("save", function (next) {
         realtime: true,
         auditLogs: true,
         adminCreation: true,
+        advertising: true,
+        recruitmentAds: true,
+        advancedAnalytics: true,
+        heavyExports: true,
       },
       limits: {
         users: 1000,
@@ -173,5 +241,22 @@ hospitalSchema.pre("save", function (next) {
 
   next();
 });
+
+hospitalSchema.methods.getSubscriptionState = function getSubscriptionState(now = new Date()) {
+  const trialEndsAt = this.subscription?.trialEndsAt;
+  const status = this.subscription?.status || "TRIAL";
+  const paid = status === "ACTIVE";
+  const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+  const premiumPaused = Boolean(this.subscription?.premiumPaused) || (trialExpired && !paid);
+  return {
+    status,
+    trialEndsAt,
+    trialExpired,
+    premiumPaused,
+    daysLeft: trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+      : 0,
+  };
+};
 
 export default mongoose.model("Hospital", hospitalSchema);

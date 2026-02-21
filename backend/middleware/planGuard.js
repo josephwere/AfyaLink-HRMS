@@ -1,4 +1,5 @@
 import Hospital from "../models/Hospital.js";
+import SystemSettings from "../models/SystemSettings.js";
 import { denyAudit } from "./denyAudit.js";
 import { isBreakGlassActive } from "./breakGlassGuard.js";
 
@@ -29,10 +30,13 @@ export const planGuard =
         return next();
       }
 
-      const hospital = await Hospital.findOne({
+      const [hospital, systemSettings] = await Promise.all([
+        Hospital.findOne({
         _id: hospitalId,
         active: true,
-      }).lean();
+      }).lean(),
+        SystemSettings.findOne().select("monetization").lean(),
+      ]);
 
       if (!hospital) {
         return res.status(403).json({
@@ -40,8 +44,67 @@ export const planGuard =
         });
       }
 
+      const premiumFeatures = new Set([
+        "ai",
+        "payments",
+        "realtime",
+        "auditLogs",
+        "adminCreation",
+        "lab",
+        "pharmacy",
+        "inventory",
+        "advertising",
+        "recruitmentAds",
+        "advancedAnalytics",
+        "heavyExports",
+      ]);
+      const monetization = systemSettings?.monetization || {};
+      const featureAccess =
+        (typeof monetization.featureAccess?.toObject === "function"
+          ? monetization.featureAccess.toObject()
+          : monetization.featureAccess) || {};
+      const now = new Date();
+      const subStatus = hospital?.subscription?.status || "TRIAL";
+      const trialEndsAt = hospital?.subscription?.trialEndsAt
+        ? new Date(hospital.subscription.trialEndsAt)
+        : null;
+      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+      const paid = Boolean(hospital?.subscription?.paid) || subStatus === "ACTIVE";
+      const premiumPaused =
+        Boolean(hospital?.subscription?.premiumPaused) || (trialExpired && !paid);
+      if (trialExpired && !paid && !hospital?.subscription?.premiumPaused) {
+        await Hospital.updateOne(
+          { _id: hospitalId },
+          {
+            $set: {
+              "subscription.status": "PAUSED",
+              "subscription.premiumPaused": true,
+            },
+          }
+        ).catch(() => {});
+      } else if (paid && (hospital?.subscription?.premiumPaused || subStatus !== "ACTIVE")) {
+        await Hospital.updateOne(
+          { _id: hospitalId },
+          {
+            $set: {
+              "subscription.status": "ACTIVE",
+              "subscription.premiumPaused": false,
+            },
+          }
+        ).catch(() => {});
+      }
+
       /* ================= FEATURE CHECK ================= */
       if (feature) {
+        const tier = String(featureAccess[feature] || (premiumFeatures.has(feature) ? "PREMIUM" : "FREE"))
+          .toUpperCase();
+        if (premiumPaused && tier === "PREMIUM") {
+          await denyAudit(req, res, `Premium feature '${feature}' blocked due to expired trial`);
+          return res.status(402).json({
+            message: "Hospital premium trial expired. Premium features are paused until payment.",
+            code: "PREMIUM_PAUSED",
+          });
+        }
         const enabled = hospital.features?.[feature];
 
         if (!enabled) {
@@ -59,6 +122,9 @@ export const planGuard =
 
       /* ================= LIMIT CHECK ================= */
       if (limitKey) {
+        if (monetization.enforceUsageLimits !== true) {
+          return next();
+        }
         const allowed = hospital.limits?.[limitKey];
 
         // If limit is undefined/null → unlimited (safe default)

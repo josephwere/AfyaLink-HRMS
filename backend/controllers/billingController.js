@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit";
 import workflowService from "../services/workflowService.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { recordExportEvent } from "../utils/exportAudit.js";
+import { normalizeRole } from "../utils/normalizeRole.js";
 
 
 /* ======================================================
@@ -32,10 +33,19 @@ export async function index(req, res) {
    LIST TRANSACTIONS
 ====================================================== */
 export async function list(req, res) {
+  const role = normalizeRole(req.user?.role);
+  let hospital = req.user.hospital || null;
+  if (role === "PATIENT") {
+    hospital = req.query.hospitalId || hospital;
+    if (!hospital) {
+      return res.json({ items: [], total: 0, page: 1, limit: 25 });
+    }
+  }
+
   const page = Math.max(parseInt(req.query.page || "1", 10), 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
   const cursor = req.query.cursor || null;
-  const filter = { hospital: req.user.hospital };
+  const filter = { hospital };
 
   if (cursor) {
     const parsed = decodeCursor(cursor);

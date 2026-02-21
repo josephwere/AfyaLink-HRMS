@@ -3,10 +3,12 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
+import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
+import { getCountryOptions } from "../utils/countryDialCodes";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,12 +18,14 @@ export default function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    phone: "",
+    phoneCountry: "",
+    phoneLocal: "",
     nationalIdNumber: "",
     nationalIdCountry: "",
     password: "",
     confirmPassword: "",
   });
+  const countries = React.useMemo(() => getCountryOptions(), []);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +66,10 @@ export default function Register() {
         body: {
           name: form.name.trim(),
           email: form.email ? form.email.toLowerCase().trim() : undefined,
-          phone: form.phone ? form.phone.trim() : undefined,
+          phone:
+            form.phoneCountry && form.phoneLocal
+              ? toE164(form.phoneCountry, form.phoneLocal)
+              : undefined,
           nationalIdNumber: form.nationalIdNumber || undefined,
           nationalIdCountry: form.nationalIdCountry || undefined,
           password: form.password,
@@ -109,8 +116,14 @@ export default function Register() {
         <label>Email address (optional)</label>
         <input type="email" name="email" value={form.email} onChange={handleChange} />
 
-        <label>Phone number (optional)</label>
-        <input name="phone" value={form.phone} onChange={handleChange} />
+        <CountryPhoneInput
+          countryLabel="Phone Country (optional)"
+          phoneLabel="Phone number (optional)"
+          countryCode={form.phoneCountry}
+          localNumber={form.phoneLocal}
+          onCountryCodeChange={(v) => setForm((prev) => ({ ...prev, phoneCountry: v }))}
+          onLocalNumberChange={(v) => setForm((prev) => ({ ...prev, phoneLocal: v }))}
+        />
 
         <label>National ID Number</label>
         <input
@@ -120,12 +133,18 @@ export default function Register() {
         />
 
         <label>National ID Country</label>
-        <input
+        <select
           name="nationalIdCountry"
           value={form.nationalIdCountry}
           onChange={handleChange}
-          placeholder="e.g. KE, US, NG"
-        />
+        >
+          <option value="">Select country</option>
+          {countries.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.name} ({country.code})
+            </option>
+          ))}
+        </select>
 
         <PasswordInput
           label="Password"

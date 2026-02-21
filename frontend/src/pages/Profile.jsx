@@ -1,9 +1,11 @@
 // frontend/src/pages/Profile.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
+import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
+import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
@@ -53,7 +55,8 @@ export default function Profile() {
   const [cooldown, setCooldown] = useState(0);
 
   // Phone verification + national ID
-  const [phone, setPhone] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("");
+  const [phoneLocal, setPhoneLocal] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneMsg, setPhoneMsg] = useState("");
@@ -79,6 +82,7 @@ export default function Profile() {
     emergencyRelationship: "",
     emergencyPhone: "",
   });
+  const countries = useMemo(() => getCountryOptions(), []);
   const [employment, setEmployment] = useState({
     employeeId: "",
     department: "",
@@ -113,6 +117,14 @@ export default function Profile() {
   const [systemProfile, setSystemProfile] = useState({
     status: "ACTIVE",
     accessExpiresAt: "",
+  });
+  const [insurance, setInsurance] = useState({
+    providerCode: "",
+    providerName: "",
+    memberNumber: "",
+    balance: "",
+    currency: "KES",
+    status: "PENDING",
   });
 
   // Password change
@@ -174,7 +186,9 @@ export default function Profile() {
       const me = await apiFetch("/api/profile");
       setEmailVerified(Boolean(me?.emailVerified));
       setPhoneVerified(Boolean(me?.phoneVerified));
-      setPhone(me?.phone || "");
+      const parsedPhone = splitDialAndLocal(me?.phone || "");
+      setPhoneCountry(parsedPhone.countryCode || "");
+      setPhoneLocal(parsedPhone.local || "");
       setIdNumber(me?.nationalIdNumber || "");
       setIdCountry(me?.nationalIdCountry || "");
       setLicenseNumber(me?.licenseNumber || "");
@@ -225,6 +239,17 @@ export default function Profile() {
         accessExpiresAt: me?.systemProfile?.accessExpiresAt
           ? me.systemProfile.accessExpiresAt.slice(0, 10)
           : "",
+      });
+      setInsurance({
+        providerCode: me?.insuranceProfile?.providerCode || "",
+        providerName: me?.insuranceProfile?.providerName || "",
+        memberNumber: me?.insuranceProfile?.memberNumber || "",
+        balance:
+          me?.insuranceProfile?.balance === null || me?.insuranceProfile?.balance === undefined
+            ? ""
+            : String(me.insuranceProfile.balance),
+        currency: me?.insuranceProfile?.currency || "KES",
+        status: me?.insuranceProfile?.status || "PENDING",
       });
     } catch {
       setError("Unable to load security settings");
@@ -290,6 +315,14 @@ export default function Profile() {
           systemProfile: {
             status: systemProfile.status || undefined,
             accessExpiresAt: systemProfile.accessExpiresAt || undefined,
+          },
+          insuranceProfile: {
+            providerCode: insurance.providerCode || undefined,
+            providerName: insurance.providerName || undefined,
+            memberNumber: insurance.memberNumber || undefined,
+            balance: insurance.balance === "" ? undefined : Number(insurance.balance),
+            currency: insurance.currency || undefined,
+            status: insurance.status || undefined,
           },
         },
       });
@@ -428,9 +461,10 @@ export default function Profile() {
     setPhoneBusy(true);
     setPhoneMsg("");
     try {
+      const formattedPhone = toE164(phoneCountry, phoneLocal);
       await apiFetch("/api/auth/phone/request-otp", {
         method: "POST",
-        body: { phone: phone.trim() },
+        body: { phone: formattedPhone || undefined },
       });
       setPhoneVerified(false);
       setPhoneMsg("OTP sent to your phone.");
@@ -672,17 +706,19 @@ export default function Profile() {
               : "Verify your phone number to keep your account active."}
           </p>
 
-          <label>Phone number</label>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 555 123 4567"
+          <CountryPhoneInput
+            countryLabel="Phone country"
+            phoneLabel="Phone number"
+            countryCode={phoneCountry}
+            localNumber={phoneLocal}
+            onCountryCodeChange={setPhoneCountry}
+            onLocalNumberChange={setPhoneLocal}
           />
           <div className="profile-row profile-actions-row">
             <button
               className="primary"
               onClick={requestPhoneOtp}
-              disabled={phoneBusy || !phone.trim()}
+              disabled={phoneBusy || !(phoneLocal || "").trim()}
             >
               {phoneBusy ? "Sending..." : "Send OTP"}
             </button>
@@ -709,11 +745,14 @@ export default function Profile() {
           <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
 
           <label>National ID Country</label>
-          <input
-            value={idCountry}
-            onChange={(e) => setIdCountry(e.target.value)}
-            placeholder="e.g. KE, US, NG"
-          />
+          <select value={idCountry} onChange={(e) => setIdCountry(e.target.value)}>
+            <option value="">Select country</option>
+            {countries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name} ({country.code})
+              </option>
+            ))}
+          </select>
           <button
             className="primary"
             onClick={saveNationalId}
@@ -771,10 +810,17 @@ export default function Profile() {
           onChange={(e) => setBasic({ ...basic, dateOfBirth: e.target.value })}
         />
         <label>Nationality</label>
-        <input
+        <select
           value={basic.nationality}
           onChange={(e) => setBasic({ ...basic, nationality: e.target.value })}
-        />
+        >
+          <option value="">Select country</option>
+          {countries.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.name} ({country.code})
+            </option>
+          ))}
+        </select>
         <label>Address</label>
         <input
           value={basic.address}
@@ -972,6 +1018,46 @@ export default function Profile() {
           value={financial.deductions}
           onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
         />
+      </div>
+
+      <div className="card profile-card">
+        <h3>Insurance Profile</h3>
+        <label>Provider Code</label>
+        <input
+          value={insurance.providerCode}
+          onChange={(e) => setInsurance({ ...insurance, providerCode: e.target.value.toUpperCase() })}
+          placeholder="SHA, NHIF, PRIVATE_X"
+        />
+        <label>Provider Name</label>
+        <input
+          value={insurance.providerName}
+          onChange={(e) => setInsurance({ ...insurance, providerName: e.target.value })}
+        />
+        <label>Member Number</label>
+        <input
+          value={insurance.memberNumber}
+          onChange={(e) => setInsurance({ ...insurance, memberNumber: e.target.value })}
+        />
+        <label>Balance</label>
+        <input
+          type="number"
+          value={insurance.balance}
+          onChange={(e) => setInsurance({ ...insurance, balance: e.target.value })}
+        />
+        <label>Currency</label>
+        <input
+          value={insurance.currency}
+          onChange={(e) => setInsurance({ ...insurance, currency: e.target.value.toUpperCase() })}
+        />
+        <label>Status</label>
+        <select
+          value={insurance.status}
+          onChange={(e) => setInsurance({ ...insurance, status: e.target.value })}
+        >
+          <option value="PENDING">Pending</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
       </div>
 
       <div className="card profile-card">

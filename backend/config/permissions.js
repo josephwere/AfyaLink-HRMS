@@ -49,7 +49,7 @@ PHARMACIST: {
 },
 
   PATIENT: {
-    appointments: ["create", "read_own"],
+    appointments: ["create", "read", "read_own"],
     records: ["read_own"],
     payments: ["create", "read_own"],
   },

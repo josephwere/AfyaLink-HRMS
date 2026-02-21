@@ -30,11 +30,29 @@ export default function SystemSettings() {
       url: "",
       greeting: "Hi, how can I help?",
     },
+    monetization: {
+      strategy: "CORE_FREE_PREMIUM_ADDONS",
+      enforceUsageLimits: false,
+      featureAccess: {
+        ai: "PREMIUM",
+        payments: "FREE",
+        pharmacy: "FREE",
+        inventory: "FREE",
+        lab: "FREE",
+        realtime: "PREMIUM",
+        auditLogs: "PREMIUM",
+        adminCreation: "FREE",
+        advertising: "PREMIUM",
+        recruitmentAds: "PREMIUM",
+        advancedAnalytics: "PREMIUM",
+        heavyExports: "PREMIUM",
+      },
+    },
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  if (!["SUPER_ADMIN", "DEVELOPER"].includes(user?.role)) {
+  if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(user?.role)) {
     return <p>🚫 Access denied</p>;
   }
 
@@ -44,6 +62,14 @@ export default function SystemSettings() {
         const next = {
           branding: { ...form.branding, ...(data.branding || {}) },
           ai: { ...form.ai, ...(data.ai || {}) },
+          monetization: {
+            ...form.monetization,
+            ...(data.monetization || {}),
+            featureAccess: {
+              ...(form.monetization.featureAccess || {}),
+              ...(data?.monetization?.featureAccess || {}),
+            },
+          },
         };
         setForm(next);
       })
@@ -105,6 +131,33 @@ export default function SystemSettings() {
     { key: "ai", label: "AI" },
     { key: "appointments", label: "Appointments" },
   ];
+
+  const monetizationFeatures = [
+    { key: "ai", label: "AI Assistant & Automation" },
+    { key: "payments", label: "Payments Core" },
+    { key: "pharmacy", label: "Pharmacy Module" },
+    { key: "inventory", label: "Inventory Module" },
+    { key: "lab", label: "Laboratory Module" },
+    { key: "realtime", label: "Realtime Integrations" },
+    { key: "auditLogs", label: "Audit Logs & Compliance Tools" },
+    { key: "adminCreation", label: "Admin Creation Tools" },
+    { key: "advertising", label: "Hospital Advertising Placements" },
+    { key: "recruitmentAds", label: "Recruitment Ad Marketplace" },
+    { key: "advancedAnalytics", label: "Advanced Analytics" },
+    { key: "heavyExports", label: "Heavy Data Export Jobs" },
+  ];
+
+  const setAllFeatureAccess = (tier) => {
+    setForm((f) => ({
+      ...f,
+      monetization: {
+        ...f.monetization,
+        featureAccess: Object.fromEntries(
+          monetizationFeatures.map((item) => [item.key, tier])
+        ),
+      },
+    }));
+  };
 
   return (
     <div className="dashboard">
@@ -170,6 +223,62 @@ export default function SystemSettings() {
           <a className="action-link" href="/admin/payment-settings">
             Open Payment Settings
           </a>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Free vs Premium Policy Control</h3>
+        <div className="card form">
+          <p className="muted">
+            Core model: patients always free, hospitals use core modules free. Premium only applies to features you mark as PREMIUM.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.monetization.enforceUsageLimits)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  monetization: {
+                    ...f.monetization,
+                    enforceUsageLimits: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Enforce plan usage limits (users/patients/storage)
+          </label>
+          <div className="action-list" style={{ marginBottom: 8 }}>
+            <button type="button" className="btn-secondary" onClick={() => setAllFeatureAccess("FREE")}>
+              Set All Free
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => setAllFeatureAccess("PREMIUM")}>
+              Set All Premium
+            </button>
+          </div>
+          {monetizationFeatures.map((item) => (
+            <div key={item.key} className="profile-row profile-actions-row">
+              <label style={{ flex: 1 }}>{item.label}</label>
+              <select
+                value={form.monetization.featureAccess?.[item.key] || "FREE"}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    monetization: {
+                      ...f.monetization,
+                      featureAccess: {
+                        ...(f.monetization.featureAccess || {}),
+                        [item.key]: e.target.value,
+                      },
+                    },
+                  }))
+                }
+              >
+                <option value="FREE">FREE</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
+            </div>
+          ))}
         </div>
       </section>
 
