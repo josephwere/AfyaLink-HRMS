@@ -35,34 +35,43 @@ export default function TransactionsDashboard(){
 
   const COLORS = ['#0088FE','#00C49F','#FFBB28','#FF8042'];
 
-  return (<div>
-    <h2>Transactions</h2>
-    <div style={{display:'flex',gap:12,alignItems:'center'}}>
-      <input placeholder='search' value={filters.search} onChange={e=>setFilters(f=>({...f,search:e.target.value}))} />
-      <select value={filters.provider} onChange={e=>setFilters(f=>({...f,provider:e.target.value}))}><option value=''>All</option><option value='stripe'>Stripe</option><option value='mpesa'>M-Pesa</option><option value='flutterwave'>Flutterwave</option></select>
-      <select value={filters.status} onChange={e=>setFilters(f=>({...f,status:e.target.value}))}><option value=''>All</option><option value='pending'>pending</option><option value='success'>success</option><option value='failed'>failed</option></select>
-      <input type='date' value={filters.start} onChange={e=>setFilters(f=>({...f,start:e.target.value}))} />
-      <input type='date' value={filters.end} onChange={e=>setFilters(f=>({...f,end:e.target.value}))} />
-      <button onClick={()=>fetchData(false)}>Apply</button>
-      <button onClick={()=>fetchData(true)}>Export CSV</button>
+  return (<div className="dashboard">
+    <div className="welcome-panel">
+      <div>
+        <h2>Transactions</h2>
+        <p className="muted">Filter, review, chart, and export transaction activity.</p>
+      </div>
+    </div>
+    <div className="card">
+      <div className="welcome-actions">
+        <input placeholder='search' value={filters.search} onChange={e=>setFilters(f=>({...f,search:e.target.value}))} />
+        <select value={filters.provider} onChange={e=>setFilters(f=>({...f,provider:e.target.value}))}><option value=''>All</option><option value='stripe'>Stripe</option><option value='mpesa'>M-Pesa</option><option value='flutterwave'>Flutterwave</option></select>
+        <select value={filters.status} onChange={e=>setFilters(f=>({...f,status:e.target.value}))}><option value=''>All</option><option value='pending'>pending</option><option value='success'>success</option><option value='failed'>failed</option></select>
+        <input type='date' value={filters.start} onChange={e=>setFilters(f=>({...f,start:e.target.value}))} />
+        <input type='date' value={filters.end} onChange={e=>setFilters(f=>({...f,end:e.target.value}))} />
+        <button className="btn-secondary" onClick={()=>fetchData(false)}>Apply</button>
+        <button className="btn-secondary" onClick={()=>fetchData(true)}>Export CSV</button>
+      </div>
     </div>
 
-    <div style={{display:'flex',gap:12,marginTop:12}}>
-      {summary.map((s,i)=>(<div key={i} style={{padding:12,background:'#fff1',borderRadius:8}}><div>{s._id}</div><div>{s.total}</div></div>))}
+    <div className="kpi-grid">
+      {summary.map((s,i)=>(<div key={i} className="kpi-card"><div className="kpi-label">{s._id}</div><div className="kpi-value">{s.total}</div></div>))}
     </div>
 
-    <div style={{height:300, marginTop:12}}>
+    <div className="card" style={{height:300}}>
       <ResponsiveContainer><LineChart data={chartData}><XAxis dataKey='_id'/><YAxis/><Tooltip/><Line type='monotone' dataKey='total' stroke='#8884d8' /></LineChart></ResponsiveContainer>
     </div>
 
-    <div style={{display:'flex',gap:12,marginTop:12}}>
-      <div style={{width:300,height:300}}>
+    <div className="grid" style={{gridTemplateColumns:"minmax(260px, 320px) minmax(0, 1fr)"}}>
+      <div className="card" style={{height:300}}>
         <h4>Provider Distribution</h4>
         <ResponsiveContainer><PieChart><Pie data={summary} dataKey='total' nameKey='_id' cx='50%' cy='50%' outerRadius={80}>{summary.map((entry, index)=>(<Cell key={index} fill={COLORS[index%COLORS.length]} />))}</Pie></PieChart></ResponsiveContainer>
       </div>
-      <div style={{flex:1}}>
-        <table style={{width:'100%'}}><thead><tr><th>Ref</th><th>Provider</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>{rows.map(r=>(<tr key={r._id}><td>{r.reference}</td><td>{r.provider}</td><td>{r.amount}</td><td>{r.status}</td><td>{new Date(r.createdAt).toLocaleString()}</td></tr>))}</tbody></table>
+      <div className="card">
+        <div className="table-wrap">
+          <table className="table lite"><thead><tr><th>Ref</th><th>Provider</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody>{rows.map(r=>(<tr key={r._id}><td>{r.reference}</td><td>{r.provider}</td><td>{r.amount}</td><td>{r.status}</td><td>{new Date(r.createdAt).toLocaleString()}</td></tr>))}</tbody></table>
+        </div>
       </div>
     </div>
   </div>);

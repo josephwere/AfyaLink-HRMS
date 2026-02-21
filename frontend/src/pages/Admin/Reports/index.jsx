@@ -41,21 +41,31 @@ export default function Reports(){
   }
 
   return (
-    <div style={{padding:20}}>
-      <h2>Reports</h2>
-      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
-        <label>From <input type="date" value={from} onChange={e=>setFrom(e.target.value)} /></label>
-        <label>To <input type="date" value={to} onChange={e=>setTo(e.target.value)} /></label>
-        <button onClick={downloadCSV}>Download CSV ({filtered.length})</button>
+    <div className="dashboard">
+      <div className="welcome-panel">
+        <div>
+          <h2>Reports</h2>
+          <p className="muted">Generate and download lab reports with date filters.</p>
+        </div>
       </div>
 
-      <table border="1" cellPadding="6" style={{width:"100%",borderCollapse:"collapse"}}>
-        <thead><tr><th>Patient</th><th>Test</th><th>Result</th><th>Date</th></tr></thead>
-        <tbody>
-          {filtered.map(t=> <tr key={t.id}><td>{t.patientName}</td><td>{t.testType}</td><td>{t.result}</td><td>{t.date}</td></tr>)}
-          {filtered.length===0 && <tr><td colSpan="4" style={{textAlign:"center"}}>No entries match filters.</td></tr>}
-        </tbody>
-      </table>
+      <div className="card">
+        <div className="welcome-actions" style={{ marginBottom: 12 }}>
+          <label>From <input type="date" value={from} onChange={e=>setFrom(e.target.value)} /></label>
+          <label>To <input type="date" value={to} onChange={e=>setTo(e.target.value)} /></label>
+          <button className="btn-secondary" onClick={downloadCSV}>Download CSV ({filtered.length})</button>
+        </div>
+
+        <div className="table-wrap">
+          <table className="table lite">
+            <thead><tr><th>Patient</th><th>Test</th><th>Result</th><th>Date</th></tr></thead>
+            <tbody>
+              {filtered.map(t=> <tr key={t.id}><td>{t.patientName}</td><td>{t.testType}</td><td>{t.result}</td><td>{t.date}</td></tr>)}
+              {filtered.length===0 && <tr><td colSpan="4" style={{textAlign:"center"}}>No entries match filters.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
