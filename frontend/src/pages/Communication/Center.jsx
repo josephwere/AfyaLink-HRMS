@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 import { useSocket } from "../../utils/socket";
+import {
+  enqueueOfflineAction,
+  listOfflineActions,
+  startOfflineAutoSync,
+} from "../../utils/offlineQueue";
 
 export default function CommunicationCenter() {
   const socket = useSocket();
@@ -11,6 +16,7 @@ export default function CommunicationCenter() {
   const [draft, setDraft] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingOffline, setPendingOffline] = useState(0);
 
   const current = useMemo(
     () => channels.find((c) => String(c._id) === String(activeChannel)) || null,
@@ -62,6 +68,18 @@ export default function CommunicationCenter() {
     if (!text || !activeChannel) return;
     setMsg("");
     try {
+      if (!navigator.onLine) {
+        enqueueOfflineAction({
+          feature: "COMMUNICATION",
+          path: `/api/communication/channels/${activeChannel}/messages`,
+          method: "POST",
+          body: { body: text },
+        });
+        setDraft("");
+        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
+        setMsg("Offline: message queued and will sync automatically.");
+        return;
+      }
       await apiFetch(`/api/communication/channels/${activeChannel}/messages`, {
         method: "POST",
         body: { body: text },
@@ -69,12 +87,40 @@ export default function CommunicationCenter() {
       setDraft("");
       await loadMessages(activeChannel, null, false);
     } catch (err) {
-      setMsg(err.message || "Failed to send message");
+      const textMsg = String(err.message || "");
+      if (textMsg.toLowerCase().includes("network")) {
+        enqueueOfflineAction({
+          feature: "COMMUNICATION",
+          path: `/api/communication/channels/${activeChannel}/messages`,
+          method: "POST",
+          body: { body: text },
+        });
+        setDraft("");
+        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
+        setMsg("Network unavailable: message queued for sync.");
+      } else {
+        setMsg(textMsg || "Failed to send message");
+      }
     }
   };
 
   useEffect(() => {
     loadChannels();
+    setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
+  }, []);
+
+  useEffect(() => {
+    const stop = startOfflineAutoSync(async (item) => {
+      await apiFetch(item.path, {
+        method: item.method,
+        body: item.body,
+        _skipOfflineQueue: true,
+      });
+      if (item.feature === "COMMUNICATION") {
+        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
+      }
+    });
+    return stop;
   }, []);
 
   useEffect(() => {
@@ -105,6 +151,7 @@ export default function CommunicationCenter() {
           <p className="muted">
             Real-time hospital channels for doctor-lab, lab-pharmacy, nurse-doctor, security-reception and operations.
           </p>
+          <p className="muted">Offline queued messages: {pendingOffline}</p>
         </div>
         <div className="welcome-actions">
           <button className="btn-secondary" onClick={bootstrapDefaultChannels}>

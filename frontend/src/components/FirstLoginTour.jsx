@@ -145,6 +145,19 @@ const ROLE_STEPS = {
       ctaPathByRole: { default: "/payroll-officer" },
     },
   ],
+  COMMUNITY_HEALTH_WORKER: [
+    {
+      title: "Community Outreach Workflow",
+      description: "Run household visits offline, sync later, and escalate to hospital teams.",
+      bullets: [
+        "Register households and record field visits from mobile-friendly screens",
+        "Track maternal/child, vaccination, chronic, and surveillance updates",
+        "Create referrals and communicate with hospital operations channel",
+      ],
+      ctaLabel: "Open CHW Dashboard",
+      ctaPathByRole: { default: "/community-health-worker" },
+    },
+  ],
   PATIENT: [
     {
       title: "Patient Self-Service",

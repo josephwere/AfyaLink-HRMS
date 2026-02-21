@@ -96,6 +96,7 @@ import insuranceRoutes from "./routes/insuranceRoutes.js";
 import branchesRoutes from "./routes/branchesRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
+import accessBookingRoutes from "./routes/accessBookingRoutes.js";
 import accessVerificationRoutes from "./routes/accessVerificationRoutes.js";
 import securityDashboardRoutes from "./routes/securityDashboardRoutes.js";
 import notificationsRoutes from "./routes/notificationsRoutes.js";
@@ -112,6 +113,8 @@ import recruitmentAdsRoutes from "./routes/recruitmentAdsRoutes.js";
 import migrationRoutes from "./routes/migrationRoutes.js";
 import communicationRoutes from "./routes/communicationRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
+import printingRoutes from "./routes/printingRoutes.js";
+import communityHealthWorkerRoutes from "./routes/communityHealthWorkerRoutes.js";
 
 
 
@@ -203,6 +206,7 @@ app.use("/api/hospital-admin", hospitalAdminStaffRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/branches", branchesRoutes);
+app.use("/api/access-bookings", accessBookingRoutes);
 app.use("/api/access", accessVerificationRoutes);
 app.use("/api/security", securityDashboardRoutes);
 app.use("/api/notifications", notificationsRoutes);
@@ -218,6 +222,8 @@ app.use("/api/recruitment-ads", recruitmentAdsRoutes);
 app.use("/api/migrations", migrationRoutes);
 app.use("/api/communication", communicationRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/printing", printingRoutes);
+app.use("/api/chw", communityHealthWorkerRoutes);
 
 
 /* ======================================================

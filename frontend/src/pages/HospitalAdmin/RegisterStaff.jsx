@@ -29,6 +29,7 @@ export default function RegisterStaff() {
       "security_officer",
       "hr_manager",
       "payroll_officer",
+      "community_health_worker",
     ]);
     if (allowed.has(role)) {
       setForm((prev) => ({ ...prev, role }));
@@ -102,6 +103,7 @@ export default function RegisterStaff() {
           <option value="security_officer">Security Officer</option>
           <option value="hr_manager">HR Manager</option>
           <option value="payroll_officer">Payroll Officer</option>
+          <option value="community_health_worker">Community Health Worker</option>
         </select>
         <button disabled={loading}>
           {loading ? "Creating..." : "Register Staff"}

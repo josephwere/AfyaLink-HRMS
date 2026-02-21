@@ -37,6 +37,7 @@ export default function Profile() {
     "SECURITY_ADMIN",
     "HR_MANAGER",
     "PAYROLL_OFFICER",
+    "COMMUNITY_HEALTH_WORKER",
     "PATIENT",
     "GUEST",
   ];
@@ -630,6 +631,11 @@ export default function Profile() {
       "Payroll processing and payslip generation",
       "Tax, pension, deductions and audit trail",
       "Overtime and shift differential reconciliation",
+    ],
+    COMMUNITY_HEALTH_WORKER: [
+      "Household outreach, maternal/child follow-up, and vaccination tracking",
+      "Disease surveillance and referral escalation to hospital teams",
+      "Offline-first field data capture with auto-sync when back online",
     ],
     DEVELOPER: [
       "API logs, webhook diagnostics and feature flags",

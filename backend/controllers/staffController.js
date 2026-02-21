@@ -11,6 +11,7 @@ const STAFF_ROLES = [
   "SECURITY_OFFICER",
   "HR_MANAGER",
   "PAYROLL_OFFICER",
+  "COMMUNITY_HEALTH_WORKER",
 ];
 
 function resolveHospital(req) {

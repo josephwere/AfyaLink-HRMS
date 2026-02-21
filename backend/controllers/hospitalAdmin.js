@@ -14,6 +14,8 @@ const STAFF_ROLE_MAP = {
   security_officer: "SECURITY_OFFICER",
   hr_manager: "HR_MANAGER",
   payroll_officer: "PAYROLL_OFFICER",
+  community_health_worker: "COMMUNITY_HEALTH_WORKER",
+  chw: "COMMUNITY_HEALTH_WORKER",
 };
 
 export const registerStaff = async (req, res) => {
@@ -52,7 +54,24 @@ export const registerStaff = async (req, res) => {
 // Get all hospital staff
 export const getHospitalStaff = async (req, res) => {
   try {
-    const staff = await User.find({ hospital: req.user.hospital, role: { $in: ["DOCTOR","NURSE","LAB_TECH"] } }).select("-password");
+    const staff = await User.find({
+      hospital: req.user.hospital,
+      role: {
+        $in: [
+          "DOCTOR",
+          "NURSE",
+          "LAB_TECH",
+          "PHARMACIST",
+          "RADIOLOGIST",
+          "THERAPIST",
+          "RECEPTIONIST",
+          "SECURITY_OFFICER",
+          "HR_MANAGER",
+          "PAYROLL_OFFICER",
+          "COMMUNITY_HEALTH_WORKER",
+        ],
+      },
+    }).select("-password");
     res.json(staff);
   } catch (err) {
     console.error(err);

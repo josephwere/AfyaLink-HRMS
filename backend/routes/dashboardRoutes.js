@@ -13,6 +13,7 @@ import {
   hospitalAdminDashboard,
   patientDashboard,
   superAdminDashboard,
+  communityHealthWorkerDashboard,
 } from "../controllers/dashboardController.js";
 
 const router = express.Router();
@@ -28,5 +29,6 @@ router.get("/security-officer", protect, requireRole("SECURITY_OFFICER"), securi
 router.get("/hospital-admin", protect, requireRole("HOSPITAL_ADMIN"), hospitalAdminDashboard);
 router.get("/patient", protect, requireRole("PATIENT"), patientDashboard);
 router.get("/super-admin", protect, requireRole("SUPER_ADMIN"), superAdminDashboard);
+router.get("/community-health-worker", protect, requireRole("COMMUNITY_HEALTH_WORKER"), communityHealthWorkerDashboard);
 
 export default router;

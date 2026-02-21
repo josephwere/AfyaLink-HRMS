@@ -11,6 +11,12 @@ import User from "../models/User.js";
 import SecurityIncident from "../models/SecurityIncident.js";
 import Notification from "../models/Notification.js";
 import Hospital from "../models/Hospital.js";
+import Household from "../models/Household.js";
+import FieldVisit from "../models/FieldVisit.js";
+import VaccinationRecord from "../models/VaccinationRecord.js";
+import MaternalRecord from "../models/MaternalRecord.js";
+import ChwReferral from "../models/ChwReferral.js";
+import DiseaseReport from "../models/DiseaseReport.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 
@@ -668,5 +674,63 @@ export async function superAdminDashboard(req, res) {
   } catch (err) {
     console.error("Super admin dashboard error:", err);
     res.status(500).json({ message: "Failed to load super admin dashboard" });
+  }
+}
+
+export async function communityHealthWorkerDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const chw = req.user._id;
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [
+      householdsAssigned,
+      visitsToday,
+      vaccinationsDue,
+      highRiskPatients,
+      referralsPending,
+      diseaseAlerts,
+    ] = await Promise.all([
+      Household.countDocuments({ ...hospital, chw, active: true }),
+      FieldVisit.countDocuments({
+        ...hospital,
+        chw,
+        createdAt: { $gte: todayStart, $lte: todayEnd },
+      }),
+      VaccinationRecord.countDocuments({
+        ...hospital,
+        chw,
+        administeredAt: { $gte: todayStart, $lte: todayEnd },
+      }),
+      MaternalRecord.countDocuments({
+        ...hospital,
+        chw,
+        highRiskPregnancy: true,
+      }),
+      ChwReferral.countDocuments({
+        ...hospital,
+        chw,
+        status: "PENDING",
+      }),
+      DiseaseReport.countDocuments({
+        ...hospital,
+        chw,
+        severity: { $in: ["HIGH", "CRITICAL"] },
+        createdAt: { $gte: todayStart },
+      }),
+    ]);
+
+    return res.json({
+      householdsAssigned,
+      visitsToday,
+      vaccinationsDue,
+      highRiskPatients,
+      referralsPending,
+      diseaseAlerts,
+    });
+  } catch (err) {
+    console.error("CHW dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load CHW dashboard" });
   }
 }

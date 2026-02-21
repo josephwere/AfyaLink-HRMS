@@ -34,17 +34,37 @@ export function SystemSettingsProvider({ children }) {
   };
 
   useEffect(() => {
-    fetch(`${base}/api/system-settings`)
-      .then((r) => r.json())
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setBaseSettings({});
+      return;
+    }
+
+    fetch(`${base}/api/system-settings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (r) => {
+        if (!r.ok) return {};
+        return r.json();
+      })
       .then((data) => {
-        setBaseSettings(data);
+        setBaseSettings(data || {});
       })
       .catch(() => setBaseSettings({}));
-  }, []);
+  }, [base]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    const rawUser = localStorage.getItem("user");
+    let role = "";
+    try {
+      role = JSON.parse(rawUser || "{}")?.role || "";
+    } catch {
+      role = "";
+    }
+
+    // Hospital customization endpoint is only valid for hospital-scoped roles.
+    if (!token || role !== "HOSPITAL_ADMIN") {
       setHospitalCustomization(null);
       return;
     }

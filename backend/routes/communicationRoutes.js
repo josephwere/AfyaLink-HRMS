@@ -25,7 +25,8 @@ router.use(
     "SECURITY_OFFICER",
     "RECEPTIONIST",
     "HR_MANAGER",
-    "PAYROLL_OFFICER"
+    "PAYROLL_OFFICER",
+    "COMMUNITY_HEALTH_WORKER"
   )
 );
 

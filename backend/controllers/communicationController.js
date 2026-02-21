@@ -45,6 +45,21 @@ const DEFAULT_CHANNELS = [
       "SECURITY_ADMIN",
       "HR_MANAGER",
       "PAYROLL_OFFICER",
+      "COMMUNITY_HEALTH_WORKER",
+    ],
+  },
+  {
+    key: "chw_hospital_operations",
+    name: "CHW ↔ Hospital Operations",
+    description: "Community health worker coordination with nurses, doctors, lab, pharmacy, and hospital admin.",
+    participantRoles: [
+      "COMMUNITY_HEALTH_WORKER",
+      "HOSPITAL_ADMIN",
+      "DOCTOR",
+      "NURSE",
+      "LAB_TECH",
+      "PHARMACIST",
+      "HR_MANAGER",
     ],
   },
 ];

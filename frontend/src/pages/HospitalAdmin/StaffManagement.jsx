@@ -50,6 +50,7 @@ export default function StaffManagement() {
           "SECURITY_OFFICER",
           "HR_MANAGER",
           "PAYROLL_OFFICER",
+          "COMMUNITY_HEALTH_WORKER",
         ].includes(u.role)
       );
       setStaff(staffOnly);
@@ -147,6 +148,7 @@ export default function StaffManagement() {
                       <option value="SECURITY_OFFICER">Security Officer</option>
                       <option value="HR_MANAGER">HR Manager</option>
                       <option value="PAYROLL_OFFICER">Payroll Officer</option>
+                      <option value="COMMUNITY_HEALTH_WORKER">Community Health Worker</option>
                     </select>
                   </td>
                   <td>{s.active === false ? "Inactive" : "Active"}</td>

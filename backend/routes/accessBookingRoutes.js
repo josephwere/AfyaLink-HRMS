@@ -12,7 +12,7 @@ const router = express.Router();
 router.post(
   "/visitor",
   protect,
-  requireRole("HOSPITAL_ADMIN", "SECURITY_OFFICER"),
+  requireRole("HOSPITAL_ADMIN", "SECURITY_ADMIN", "SECURITY_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN"),
   bookVisitorAccess
 );
 
@@ -20,7 +20,7 @@ router.post(
 router.post(
   "/internal",
   protect,
-  requireRole("HOSPITAL_ADMIN", "SECURITY_ADMIN"),
+  requireRole("HOSPITAL_ADMIN", "SECURITY_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"),
   bookStaffOrContractorAccess
 );
 

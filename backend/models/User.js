@@ -61,6 +61,7 @@ const userSchema = new Schema(
         "SECURITY_ADMIN",
         "HR_MANAGER",
         "PAYROLL_OFFICER",
+        "COMMUNITY_HEALTH_WORKER",
         "PATIENT",
         "GUEST",
       ],

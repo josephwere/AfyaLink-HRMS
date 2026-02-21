@@ -252,11 +252,9 @@ export function getCountryOptions(locale = (typeof navigator !== 'undefined' ? n
     ? new Intl.DisplayNames([locale], { type: 'region' })
     : null;
 
-  const supported = typeof Intl !== 'undefined' && Intl.supportedValuesOf
-    ? Intl.supportedValuesOf('region')
-    : [];
-
-  const codes = Array.from(new Set([...Object.keys(COUNTRY_DIAL_CODES), ...supported])).sort();
+  // Intl.supportedValuesOf("region") is not a valid key in many runtimes.
+  // Use dial-code map as source of truth for country list stability.
+  const codes = Object.keys(COUNTRY_DIAL_CODES).sort();
   return codes.map((code) => ({
     code,
     name: display ? display.of(code) || code : code,

@@ -1216,6 +1216,11 @@ body.auth-route {
   min-width: 0;
 }
 
+/* Extra safe scroll space for CHW long forms on mobile + low-height screens. */
+.chw-dashboard {
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+}
+
 .welcome-panel {
   background: #ffffff;
   border-radius: 14px;
