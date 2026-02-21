@@ -1,4 +1,20 @@
+import { canQueueOfflineMutation, queueOfflineMutation } from "../utils/offlineMutation";
 const base = import.meta.env.VITE_API_URL || "";
+
+function makeQueuedResponse(path, method, body) {
+  queueOfflineMutation({ path, method, body, feature: "API_SERVICE" });
+  return {
+    ok: true,
+    status: 202,
+    async json() {
+      return {
+        queued: true,
+        offlineQueued: true,
+        message: "Offline: action queued and will sync automatically.",
+      };
+    },
+  };
+}
 
 /* ======================================================
    LOW-LEVEL FETCH (USED INTERNALLY)
@@ -38,7 +54,15 @@ async function apiFetch(path, opts = {}) {
     };
   }
 
-  let r = await fetch(base + path, merged);
+  let r;
+  try {
+    r = await fetch(base + path, merged);
+  } catch (err) {
+    if (canQueueOfflineMutation(path, merged.method, merged.body)) {
+      return makeQueuedResponse(path, merged.method, merged.body);
+    }
+    throw err;
+  }
 
   // 🔁 Auto refresh on 401
   if (r.status === 401 && refreshToken) {
@@ -63,7 +87,14 @@ async function apiFetch(path, opts = {}) {
       if (data?.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);
       }
-      r = await fetch(base + path, merged);
+      try {
+        r = await fetch(base + path, merged);
+      } catch (err) {
+        if (canQueueOfflineMutation(path, merged.method, merged.body)) {
+          return makeQueuedResponse(path, merged.method, merged.body);
+        }
+        throw err;
+      }
     }
   }
 

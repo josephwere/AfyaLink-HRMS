@@ -1,5 +1,7 @@
 // frontend/src/utils/apiFetch.js
 
+import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation";
+
 const API_BASE = import.meta.env.VITE_API_URL;
 
 class ApiError extends Error {
@@ -27,11 +29,12 @@ async function safeJson(res) {
    CENTRALIZED API FETCH (FINAL)
 ====================================================== */
 async function apiFetch(path, options = {}, _retry = false) {
+  const { _skipOfflineQueue = false, ...requestOptions } = options || {};
   const token = localStorage.getItem("token");
 
   const headers = {
     Accept: "application/json",
-    ...(options.headers || {}),
+    ...(requestOptions.headers || {}),
   };
 
   /* ----------------------------------
@@ -54,19 +57,33 @@ async function apiFetch(path, options = {}, _retry = false) {
     }
   }
 
-  if (options.body && typeof options.body === "object") {
-    options.body = JSON.stringify(options.body);
+  if (requestOptions.body && typeof requestOptions.body === "object") {
+    requestOptions.body = JSON.stringify(requestOptions.body);
     headers["Content-Type"] = "application/json";
   }
 
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      ...options,
+      ...requestOptions,
       credentials: "include",
       headers,
     });
   } catch {
+    if (!_skipOfflineQueue && canQueueOfflineMutation(path, requestOptions.method, requestOptions.body)) {
+      queueOfflineMutation({
+        path,
+        method: requestOptions.method || "POST",
+        body: requestOptions.body,
+        feature: "API_FETCH",
+      });
+      return {
+        ok: true,
+        queued: true,
+        offlineQueued: true,
+        message: "Offline: action queued and will sync automatically.",
+      };
+    }
     throw new Error("Network error. Please check your connection.");
   }
 

@@ -29,6 +29,7 @@ function NavIcon({ name }) {
     inventory: "📦",
     ai: "🤖",
     appointments: "📅",
+    printer: "🖨️",
   };
 
   const custom = settings?.branding?.sidebarIcons?.[name];
@@ -251,6 +252,9 @@ export default function Sidebar({ open = true, onClose }) {
                     </Item>
                     <Item to="/staff" icon="staff" onSelect={onClose}>
                       Staff (Radiology/Therapy/Reception)
+                    </Item>
+                    <Item to="/community-health-worker" icon="staff" onSelect={onClose}>
+                      Community Health Worker
                     </Item>
                     <Item to="/security-admin" icon="security" onSelect={onClose}>
                       Security Admin
@@ -580,6 +584,11 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/crdt-patients" icon="settings" onSelect={onClose}>
                   Offline Sync
                 </Item>
+                {["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(normalizeRole(user.role)) && (
+                  <Item to="/admin/offline-ops" icon="analytics" onSelect={onClose}>
+                    Offline Ops Monitor
+                  </Item>
+                )}
               </Section>
 
               <Section title="Quick Actions">
@@ -602,6 +611,14 @@ export default function Sidebar({ open = true, onClose }) {
                   <Item to="/reports" icon="reports" onSelect={onClose}>
                     Help & Policies
                   </Item>
+                  <Item to="/admin/print-center" icon="printer" onSelect={onClose}>
+                    Print Center
+                  </Item>
+                  {["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(normalizeRole(user.role)) && (
+                    <Item to="/admin/offline-ops" icon="analytics" onSelect={onClose}>
+                      Offline Ops Monitor
+                    </Item>
+                  )}
                   <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
                     Activity Log
                   </Item>
@@ -723,6 +740,11 @@ function getQuickActions(role) {
       { label: "Run Payroll", path: "/payroll-officer" },
       { label: "Payment Operations", path: "/payments/full" },
     ],
+    COMMUNITY_HEALTH_WORKER: [
+      { label: "My Households", path: "/community-health-worker" },
+      { label: "Field Reports", path: "/community-health-worker" },
+      { label: "Referrals", path: "/community-health-worker" },
+    ],
     DOCTOR: [
       { label: "Start Consult", path: "/doctor" },
       { label: "Appointments", path: "/doctor/appointments" },
@@ -761,6 +783,7 @@ function getQuickActions(role) {
     "NURSE",
     "LAB_TECH",
     "PHARMACIST",
+    "COMMUNITY_HEALTH_WORKER",
     "RADIOLOGIST",
     "THERAPIST",
     "RECEPTIONIST",

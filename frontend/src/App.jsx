@@ -14,6 +14,8 @@ import FloatingAI from "./components/FloatingAI";
 import FirstLoginTour from "./components/FirstLoginTour";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
+import { getOfflineMetricsSnapshot, startOfflineAutoSync } from "./utils/offlineQueue";
+import { pushOfflineClientMetrics } from "./services/offlineOpsApi";
 
 /* =======================
    PUBLIC / AUTH
@@ -89,6 +91,8 @@ import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
 import NotificationsPage from "./pages/Admin/NotificationsPage";
 import PaymentSettings from "./pages/Admin/PaymentSettings";
 import AccessControl from "./pages/Admin/AccessControl";
+import PrintCenter from "./pages/Admin/PrintCenter";
+import OfflineOps from "./pages/Admin/OfflineOps";
 
 /* =======================
    DASHBOARDS
@@ -128,6 +132,7 @@ import WebhookRetry from "./pages/Developer/WebhookRetry";
 import DecisionCockpit from "./pages/Developer/DecisionCockpit";
 import ProvenanceVerify from "./pages/Developer/ProvenanceVerify";
 import AIExtractionHistory from "./pages/Developer/AIExtractionHistory";
+import CommunityHealthWorkerDashboard from "./pages/CommunityHealthWorker/Dashboard";
 
 /* =======================
    ADMIN
@@ -159,6 +164,15 @@ function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
+  const getOfflineDeviceId = () => {
+    const key = "afyalink_offline_device_id";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(key, id);
+    }
+    return id;
+  };
   const [dismissed, setDismissed] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("dismissed_reminders") || "[]");
@@ -187,6 +201,8 @@ function AppLayout() {
         return "/api/dashboard/security-officer";
       case "PATIENT":
         return "/api/dashboard/patient";
+      case "COMMUNITY_HEALTH_WORKER":
+        return "/api/dashboard/community-health-worker";
       case "SUPER_ADMIN":
         return "/api/dashboard/super-admin";
       case "RADIOLOGIST":
@@ -197,6 +213,41 @@ function AppLayout() {
         return null;
     }
   };
+
+  useEffect(() => {
+    const postMetrics = async (snapshot) => {
+      if (!user) return;
+      try {
+        await pushOfflineClientMetrics({
+          deviceId: getOfflineDeviceId(),
+          snapshot: {
+            ...(snapshot || getOfflineMetricsSnapshot()),
+            online: navigator.onLine,
+          },
+        });
+      } catch {
+        // swallow telemetry failures
+      }
+    };
+
+    const stop = startOfflineAutoSync(async (item) => {
+      await apiFetch(item.path, {
+        method: item.method,
+        body: item.body,
+        _skipOfflineQueue: true,
+      });
+    }, {
+      onMetrics: (snapshot) => postMetrics(snapshot),
+    });
+    const onMetricsUpdate = (ev) => postMetrics(ev?.detail || null);
+    window.addEventListener("afyalink:offline-metrics-updated", onMetricsUpdate);
+    const timer = setInterval(() => postMetrics(), 60000);
+    return () => {
+      stop?.();
+      window.removeEventListener("afyalink:offline-metrics-updated", onMetricsUpdate);
+      clearInterval(timer);
+    };
+  }, [user]);
 
   useEffect(() => {
     const onSecurity = (event) => {
@@ -596,6 +647,14 @@ export default function App() {
             element={
               <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
                 <PatientDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/community-health-worker"
+            element={
+              <RequireRole roles={["COMMUNITY_HEALTH_WORKER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HR_MANAGER"]}>
+                <CommunityHealthWorkerDashboard />
               </RequireRole>
             }
           />
@@ -1120,6 +1179,23 @@ export default function App() {
             element={
               <RequireRole roles={["GUEST"]}>
                 <GuestDashboard />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/admin/print-center"
+            element={
+              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "SECURITY_ADMIN", "HR_MANAGER", "PAYROLL_OFFICER", "DOCTOR", "NURSE", "LAB_TECH", "PHARMACIST"]}>
+                <PrintCenter />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/offline-ops"
+            element={
+              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
+                <OfflineOps />
               </RequireRole>
             }
           />

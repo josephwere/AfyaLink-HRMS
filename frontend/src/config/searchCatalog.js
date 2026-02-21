@@ -14,6 +14,7 @@ const BASE_ITEMS = [
   { label: "AI Voice Dictation", path: "/ai/voice" },
   { label: "AI Document Extract", path: "/ai/extract" },
   { label: "AI Chatbot", path: "/ai/chatbot" },
+  { label: "Print Center", path: "/admin/print-center" },
 ];
 
 const ROLE_ITEMS = {
@@ -26,6 +27,8 @@ const ROLE_ITEMS = {
     { label: "Integrations", path: "/admin/realtime" },
     { label: "System Admin Dashboard", path: "/system-admin" },
     { label: "Developer Console", path: "/developer" },
+    { label: "Print Center", path: "/admin/print-center" },
+    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
   ],
   SYSTEM_ADMIN: [
     { label: "System Admin Dashboard", path: "/system-admin" },
@@ -40,6 +43,8 @@ const ROLE_ITEMS = {
     { label: "Admin Controls", path: "/admin" },
     { label: "Audit Logs", path: "/admin/audit-logs" },
     { label: "Integrations", path: "/admin/realtime" },
+    { label: "Print Center", path: "/admin/print-center" },
+    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
   ],
   HOSPITAL_ADMIN: [
     { label: "Hospital Admin", path: "/hospital-admin" },
@@ -54,6 +59,8 @@ const ROLE_ITEMS = {
     { label: "Notifications", path: "/admin/notifications" },
     { label: "Offline Sync", path: "/admin/crdt-patients" },
     { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
+    { label: "Print Center", path: "/admin/print-center" },
+    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
   ],
   DOCTOR: [
     { label: "Doctor Dashboard", path: "/doctor" },
@@ -121,6 +128,13 @@ const ROLE_ITEMS = {
     { label: "Payroll Officer", path: "/payroll-officer" },
     { label: "My Requests", path: "/workforce/requests" },
   ],
+  COMMUNITY_HEALTH_WORKER: [
+    { label: "CHW Dashboard", path: "/community-health-worker" },
+    { label: "My Households", path: "/community-health-worker" },
+    { label: "Disease Surveillance", path: "/community-health-worker" },
+    { label: "Referrals", path: "/community-health-worker" },
+    { label: "Communication Center", path: "/communication" },
+  ],
   DEVELOPER: [
     { label: "Developer Console", path: "/developer" },
     { label: "Queue Replay", path: "/developer/queue-replay" },
@@ -137,9 +151,12 @@ const ROLE_ITEMS = {
     { label: "Communication Center", path: "/communication" },
     { label: "System Admin Dashboard", path: "/system-admin" },
     { label: "Super Admin Dashboard", path: "/super-admin" },
+    { label: "Print Center", path: "/admin/print-center" },
+    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
   ],
   SECURITY_ADMIN: [
     { label: "Security Admin", path: "/security-admin" },
+    { label: "Print Center", path: "/admin/print-center" },
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
   ],
