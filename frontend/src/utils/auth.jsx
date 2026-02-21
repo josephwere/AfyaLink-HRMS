@@ -32,11 +32,15 @@ function parseJwt(token) {
 ====================================================== */
 const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
+const STRICT_IMPERSONATION_KEY = "strict_impersonation";
 
 export function AuthProvider({ children }) {
   const [baseUser, setBaseUser] = useState(null);
   const [roleOverride, setRoleOverrideState] = useState(() => {
     return localStorage.getItem(ROLE_OVERRIDE_KEY) || "";
+  });
+  const [strictImpersonation, setStrictImpersonationState] = useState(() => {
+    return localStorage.getItem(STRICT_IMPERSONATION_KEY) === "1";
   });
   const [loading, setLoading] = useState(true);
   const canRoleOverride =
@@ -123,6 +127,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem("2fa_pending");
         localStorage.removeItem("2fa_user");
         localStorage.removeItem(ROLE_OVERRIDE_KEY);
+        localStorage.removeItem(STRICT_IMPERSONATION_KEY);
         if (mounted) setBaseUser(null);
       }
     };
@@ -272,6 +277,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("2fa_pending");
       localStorage.removeItem("2fa_user");
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
+      localStorage.removeItem(STRICT_IMPERSONATION_KEY);
       setBaseUser(null);
       apiLogout();
     }
@@ -290,12 +296,28 @@ export function AuthProvider({ children }) {
     return true;
   };
 
+  const setStrictImpersonation = (enabled) => {
+    if (!canRoleOverride) return false;
+    const next = Boolean(enabled);
+    if (next) {
+      localStorage.setItem(STRICT_IMPERSONATION_KEY, "1");
+    } else {
+      localStorage.removeItem(STRICT_IMPERSONATION_KEY);
+    }
+    setStrictImpersonationState(next);
+    return true;
+  };
+
   useEffect(() => {
     if (!canRoleOverride && roleOverride) {
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
       setRoleOverrideState("");
     }
-  }, [canRoleOverride, roleOverride]);
+    if (!canRoleOverride && strictImpersonation) {
+      localStorage.removeItem(STRICT_IMPERSONATION_KEY);
+      setStrictImpersonationState(false);
+    }
+  }, [canRoleOverride, roleOverride, strictImpersonation]);
 
   return (
     <AuthContext.Provider
@@ -306,8 +328,10 @@ export function AuthProvider({ children }) {
         role: user?.role,
         actualRole: user?.actualRole,
         roleOverride,
+        strictImpersonation,
         canRoleOverride,
         setRoleOverride,
+        setStrictImpersonation,
 
         // existing
         login,

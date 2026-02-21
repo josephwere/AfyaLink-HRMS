@@ -29,10 +29,12 @@ async function apiFetch(path, opts = {}) {
 
   if (token && !isAuthRoute) {
     const viewRole = localStorage.getItem("role_override");
+    const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";
     merged.headers = {
       ...merged.headers,
       Authorization: `Bearer ${token}`,
       ...(viewRole ? { "X-Afya-View-Role": viewRole } : {}),
+      ...(viewRole && strictImpersonation ? { "X-Afya-Strict-Impersonation": "1" } : {}),
     };
   }
 

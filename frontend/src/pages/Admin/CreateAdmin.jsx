@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   registerHospitalAdmin,
   registerSystemAdmin,
@@ -10,6 +10,7 @@ import { useAuth } from "../../utils/auth";
 export default function CreateAdmin() {
   const { user } = useAuth();
   const [hospitals, setHospitals] = useState([]);
+  const [hospitalQuery, setHospitalQuery] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -29,9 +30,24 @@ export default function CreateAdmin() {
 
   React.useEffect(() => {
     listHospitals()
-      .then((data) => setHospitals(Array.isArray(data) ? data : data.hospitals || []))
+      .then((data) => {
+        const rows = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.hospitals)
+          ? data.hospitals
+          : Array.isArray(data?.items)
+          ? data.items
+          : [];
+        setHospitals(rows);
+      })
       .catch(() => setHospitals([]));
   }, []);
+
+  const filteredHospitals = useMemo(() => {
+    const q = hospitalQuery.trim().toLowerCase();
+    if (!q) return hospitals;
+    return hospitals.filter((h) => String(h?.name || "").toLowerCase().includes(q));
+  }, [hospitals, hospitalQuery]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -69,8 +85,9 @@ export default function CreateAdmin() {
         role: "HOSPITAL_ADMIN",
         hospitalId: "",
       });
+      setHospitalQuery("");
     } catch (err) {
-      setMsg(err.response?.data?.msg || "Failed to create admin");
+      setMsg(err?.data?.msg || err?.message || "Failed to create admin");
     } finally {
       setLoading(false);
     }
@@ -122,20 +139,50 @@ export default function CreateAdmin() {
         </select>
 
         {form.role === "HOSPITAL_ADMIN" && (
-          <select
-            value={form.hospitalId}
-            onChange={(e) =>
-              setForm({ ...form, hospitalId: e.target.value })
-            }
-            required
-          >
-            <option value="">Select hospital</option>
-            {hospitals.map((h) => (
-              <option key={h._id} value={h._id}>
-                {h.name}
+          <>
+            <input
+              list="hospital-options"
+              placeholder="Type hospital name"
+              value={hospitalQuery}
+              onChange={(e) => {
+                const value = e.target.value;
+                setHospitalQuery(value);
+                const match = hospitals.find(
+                  (h) => String(h?.name || "").toLowerCase() === value.trim().toLowerCase()
+                );
+                setForm({ ...form, hospitalId: match?._id || "" });
+              }}
+              required
+            />
+            <datalist id="hospital-options">
+              {hospitals.map((h) => (
+                <option key={h._id} value={h.name} />
+              ))}
+            </datalist>
+
+            <select
+              value={form.hospitalId}
+              onChange={(e) => {
+                const hospitalId = e.target.value;
+                const selected = hospitals.find((h) => String(h._id) === String(hospitalId));
+                setForm({
+                  ...form,
+                  hospitalId,
+                });
+                if (selected?.name) setHospitalQuery(selected.name);
+              }}
+              required
+            >
+              <option value="">
+                {hospitals.length ? "Select hospital" : "No hospitals available"}
               </option>
-            ))}
-          </select>
+              {filteredHospitals.map((h) => (
+                <option key={h._id} value={h._id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          </>
         )}
 
         <button disabled={loading}>

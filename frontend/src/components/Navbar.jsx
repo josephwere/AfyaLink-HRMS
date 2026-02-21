@@ -127,7 +127,7 @@ function Icon({ name }) {
 }
 
 export default function Navbar({ onToggleSidebar }) {
-  const { user, logout, roleOverride } = useAuth();
+  const { user, logout, roleOverride, strictImpersonation } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, cycleTheme } = useTheme();
@@ -343,14 +343,18 @@ export default function Navbar({ onToggleSidebar }) {
               className="override-mode-badge"
               title={`Actual role: ${user.actualRole}`}
             >
-              Override Mode: Full Access • Viewing as: {user.role}
+              Override Mode: {strictImpersonation ? "Strict" : "Full Access"} • Viewing as: {user.role}
             </span>
             <button
               className="override-help"
               type="button"
               aria-label="Override mode help"
               title="Override mode help"
-              data-tip="Override active: all actions execute with full permissions of the selected role."
+              data-tip={
+                strictImpersonation
+                  ? "Strict impersonation active: actions are limited to the selected role permissions."
+                  : "Override active: all actions execute with founder/developer full permissions."
+              }
             >
               ?
             </button>

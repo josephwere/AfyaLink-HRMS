@@ -8,7 +8,14 @@ import { redirectByRole } from "../utils/redirectByRole";
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 export default function Profile() {
-  const { user, canRoleOverride, roleOverride, setRoleOverride } = useAuth();
+  const {
+    user,
+    canRoleOverride,
+    roleOverride,
+    strictImpersonation,
+    setRoleOverride,
+    setStrictImpersonation,
+  } = useAuth();
   const navigate = useNavigate();
   const [viewRole, setViewRole] = useState("");
 
@@ -580,8 +587,23 @@ export default function Profile() {
         <div className="card">
           <h3>Role View Switcher</h3>
           <p>
-            Use this to switch and test full permissions as different account types.
+            Use this to switch and test account types.
             Your actual account stays <strong>{user?.actualRole || user?.role}</strong>.
+          </p>
+          <label className="profile-inline-check" style={{ marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={Boolean(strictImpersonation)}
+              onChange={(e) => setStrictImpersonation(e.target.checked)}
+            />
+            <span>
+              Lock to exact role permissions (strict impersonation)
+            </span>
+          </label>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {strictImpersonation
+              ? "Strict mode: access is limited to the switched role."
+              : "Full access mode: founder/developer elevated permissions remain active while viewing another role."}
           </p>
           <div className="profile-row">
             <select

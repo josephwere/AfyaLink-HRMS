@@ -45,8 +45,12 @@ async function apiFetch(path, options = {}, _retry = false) {
   if (token && !isAuthRoute) {
     headers.Authorization = `Bearer ${token}`;
     const viewRole = localStorage.getItem("role_override");
+    const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";
     if (viewRole) {
       headers["X-Afya-View-Role"] = viewRole;
+      if (strictImpersonation) {
+        headers["X-Afya-Strict-Impersonation"] = "1";
+      }
     }
   }
 
