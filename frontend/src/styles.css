@@ -21,6 +21,10 @@ body {
   overflow: hidden;
 }
 
+body.auth-route {
+  overflow-y: auto;
+}
+
 :root {
   --app-bg: #f5f6fa;
   --app-surface: #ffffff;
@@ -95,6 +99,7 @@ body {
 ========================= */
 .auth-bg {
   min-height: 100dvh;
+  height: 100dvh;
   background: var(--login-bg) center/cover no-repeat,
     linear-gradient(135deg, #0f766e, #2563eb);
   display: flex;
@@ -113,6 +118,17 @@ body {
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .auth-bg {
+    padding: 12px 12px calc(120px + env(safe-area-inset-bottom));
+  }
+
+  .auth-card {
+    padding: 20px;
+    border-radius: 12px;
+  }
 }
 
 @media (min-width: 768px) and (min-height: 820px) {

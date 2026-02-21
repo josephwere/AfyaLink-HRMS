@@ -27,6 +27,11 @@ export default function Register() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
+  React.useEffect(() => {
+    document.body.classList.add("auth-route");
+    return () => document.body.classList.remove("auth-route");
+  }, []);
+
   /* -------------------------
      Form input handler
   -------------------------- */

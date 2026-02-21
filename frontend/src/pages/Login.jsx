@@ -46,6 +46,11 @@ export default function Login() {
     }
   }, []);
 
+  useEffect(() => {
+    document.body.classList.add("auth-route");
+    return () => document.body.classList.remove("auth-route");
+  }, []);
+
   /* -------------------------
      Email/password login
   -------------------------- */
