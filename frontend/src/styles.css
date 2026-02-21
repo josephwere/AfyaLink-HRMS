@@ -1818,6 +1818,64 @@ body.auth-route {
   padding: 14px;
 }
 
+/* =========================
+   DARK MODE CONTRAST FIXES
+========================= */
+[data-theme="dark"] .auth-card {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .kpi-label,
+[data-theme="dark"] .divider,
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .card-sub,
+[data-theme="dark"] .card p,
+[data-theme="dark"] .card .row span {
+  color: var(--app-muted);
+}
+
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .timeline-content,
+[data-theme="dark"] .guest-info {
+  background: var(--app-surface-2);
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .card {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .card h3,
+[data-theme="dark"] .card-value {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .card input[type="password"],
+[data-theme="dark"] .card input[type="text"],
+[data-theme="dark"] .card input[type="email"],
+[data-theme="dark"] .card textarea,
+[data-theme="dark"] .card select,
+[data-theme="dark"] .auth-card input:not([type="checkbox"]) {
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .table.lite th,
+[data-theme="dark"] .table.lite td,
+[data-theme="dark"] .doctor-table th,
+[data-theme="dark"] .doctor-table td {
+  border-bottom-color: var(--app-border);
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .doctor-table th {
+  background: var(--app-surface-2);
+}
+
 .doctor-panel {
   text-align: left;
 }

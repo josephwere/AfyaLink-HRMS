@@ -577,17 +577,6 @@ export default function Navbar({ onToggleSidebar }) {
         </button>
         <button
           className="icon-btn ghost"
-          title="Help"
-          onClick={async () => {
-            await triggerAction("OPEN_HELP");
-            navigate("/reports");
-          }}
-        >
-          <Icon name="help" />
-          Help
-        </button>
-        <button
-          className="icon-btn ghost"
           title="Theme"
           onClick={async () => {
             await triggerAction("TOGGLE_THEME");
@@ -597,18 +586,6 @@ export default function Navbar({ onToggleSidebar }) {
           <Icon name="sun" />
           {theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light"}
         </button>
-        <button
-          className="icon-btn ghost"
-          title="Settings"
-          onClick={async () => {
-            await triggerAction("OPEN_SETTINGS");
-            navigate("/profile");
-          }}
-        >
-          <Icon name="settings" />
-          Settings
-        </button>
-
         <div className="profile-wrap" ref={profileRef}>
           <button
             className="profile-btn"
