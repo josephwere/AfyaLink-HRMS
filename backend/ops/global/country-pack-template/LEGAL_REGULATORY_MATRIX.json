@@ -1,0 +1,26 @@
+{
+  "privacyLaw": {
+    "name": "",
+    "status": "pending",
+    "notes": ""
+  },
+  "healthRegulator": {
+    "name": "",
+    "status": "pending",
+    "notes": ""
+  },
+  "dataResidency": {
+    "required": false,
+    "status": "pending",
+    "notes": ""
+  },
+  "breachNotification": {
+    "timelineHours": null,
+    "status": "pending"
+  },
+  "crossBorderTransfer": {
+    "allowed": null,
+    "status": "pending",
+    "notes": ""
+  }
+}
