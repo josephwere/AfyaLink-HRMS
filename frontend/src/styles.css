@@ -19,6 +19,8 @@ body {
   background: var(--app-bg, #f5f6fa);
   color: var(--app-text, #111827);
   overflow: hidden;
+  zoom: var(--user-zoom, 1);
+  line-height: var(--user-line-height, 1.5);
 }
 
 p,
@@ -48,6 +50,9 @@ body.auth-route {
   --sidebar-text: #e5e7eb;
   --sidebar-muted: #94a3b8;
   --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --user-zoom: 1;
+  --user-line-height: 1.5;
+  --user-input-scale: 1;
 }
 
 [data-theme="dark"] {
@@ -1559,6 +1564,53 @@ body.auth-route {
   margin-bottom: 10px;
 }
 
+.dismissible-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dismissible-head h3 {
+  margin: 0;
+}
+
+.dismissible-close-btn {
+  flex: 0 0 auto;
+}
+
+.profile-collapsed-tile {
+  border: 1px dashed var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+  padding: 12px;
+}
+
+.profile-toggle-btn {
+  width: 100%;
+}
+
+.dismissible-collapsed-tile {
+  border: 1px dashed var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.dismissible-toggle-btn {
+  width: 100%;
+}
+
+.dismissible-section {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
 .profile-hero-card {
   background:
     radial-gradient(1200px 260px at 20% -20%, rgba(37, 99, 235, 0.12), transparent 45%),
@@ -1812,23 +1864,25 @@ body.auth-route {
 .card input[type="text"],
 .card input[type="email"] {
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 15px;
   border-radius: 10px;
   border: 1px solid #d1d5db;
   margin-top: 6px;
   margin-bottom: 12px;
-  font-size: 15px;
+  font-size: 16px;
+  min-height: 46px;
 }
 
 .card textarea,
 .card select {
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 15px;
   border-radius: 10px;
   border: 1px solid #d1d5db;
   margin-top: 6px;
   margin-bottom: 12px;
-  font-size: 15px;
+  font-size: 16px;
+  min-height: 46px;
   background: #ffffff;
 }
 
@@ -1837,6 +1891,12 @@ body.auth-route {
 .profile-card textarea {
   background: var(--app-surface);
   border: 1px solid var(--app-border);
+}
+
+.profile-card label {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .profile-card hr {
@@ -2064,7 +2124,7 @@ body.auth-route {
    PREMIUM FORM SYSTEM
 ========================= */
 :root {
-  --field-height: 44px;
+  --field-height: calc(44px * var(--user-input-scale, 1));
   --field-radius: 12px;
   --field-border: #cbd5e1;
   --field-bg: #ffffff;
@@ -2084,10 +2144,11 @@ body.auth-route {
 .card.form label {
   display: block;
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--user-input-scale, 1));
   font-weight: 650;
   letter-spacing: 0.01em;
   color: var(--app-text);
+  line-height: var(--user-line-height, 1.5);
 }
 
 .auth-card input:not([type="checkbox"]):not([type="radio"]),
@@ -2105,8 +2166,8 @@ body.auth-route {
   background: var(--field-bg);
   color: var(--app-text);
   box-shadow: var(--field-shadow);
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: calc(10px * var(--user-input-scale, 1)) calc(12px * var(--user-input-scale, 1));
+  font-size: calc(14px * var(--user-input-scale, 1));
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
 }
 

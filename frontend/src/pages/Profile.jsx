@@ -1,13 +1,70 @@
 // frontend/src/pages/Profile.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes";
+import {
+  applyAccessibilityPrefs,
+  getDefaultAccessibilityPrefs,
+  loadAccessibilityPrefs,
+  saveAccessibilityPrefs,
+} from "../utils/accessibilityPrefs";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
+
+function DismissibleSection({ sectionKey, title, open, onClose, onOpen, children, className = "" }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleOutsideClick = (event) => {
+      if (!panelRef.current) return;
+      if (!panelRef.current.contains(event.target)) {
+        onClose(sectionKey);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [open, onClose, sectionKey]);
+
+  if (!open) {
+    return (
+      <div className="profile-collapsed-tile">
+        <button
+          type="button"
+          className="secondary profile-toggle-btn"
+          onClick={() => onOpen(sectionKey)}
+        >
+          Open {title}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={panelRef} className={`card profile-card dismissible-section ${className}`.trim()}>
+      <div className="dismissible-head">
+        <h3>{title}</h3>
+        <button
+          type="button"
+          className="secondary dismissible-close-btn"
+          onClick={() => onClose(sectionKey)}
+          aria-label={`Close ${title}`}
+        >
+          Close
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function Profile() {
   const {
@@ -142,6 +199,27 @@ export default function Profile() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwMessage, setPwMessage] = useState("");
   const [pwError, setPwError] = useState("");
+  const [a11yPrefs, setA11yPrefs] = useState(getDefaultAccessibilityPrefs());
+  const [openSections, setOpenSections] = useState({
+    roleSwitcher: true,
+    verificationStatus: true,
+    phoneNationalId: true,
+    basicInfo: true,
+    employmentInfo: true,
+    credentialsInfo: true,
+    financialInfo: true,
+    insuranceProfile: true,
+    systemData: true,
+    roleChecklist: true,
+    twoFactor: true,
+    password: true,
+    accessibility: true,
+  });
+
+  const closeSection = (sectionKey) =>
+    setOpenSections((prev) => ({ ...prev, [sectionKey]: false }));
+  const openSection = (sectionKey) =>
+    setOpenSections((prev) => ({ ...prev, [sectionKey]: true }));
 
   useEffect(() => {
     restoreCooldown();
@@ -151,6 +229,13 @@ export default function Profile() {
   useEffect(() => {
     setViewRole(roleOverride || user?.actualRole || user?.role || "");
   }, [roleOverride, user?.actualRole, user?.role]);
+
+  useEffect(() => {
+    if (!user) return;
+    const prefs = loadAccessibilityPrefs(user);
+    setA11yPrefs(prefs);
+    applyAccessibilityPrefs(prefs);
+  }, [user]);
 
   /* -------------------------
      Restore resend cooldown
@@ -341,6 +426,20 @@ export default function Profile() {
     } finally {
       setExtendedSaving(false);
     }
+  };
+
+  const updateA11yPref = (field, value) => {
+    const next = { ...a11yPrefs, [field]: value };
+    setA11yPrefs(next);
+    saveAccessibilityPrefs(user, next);
+    applyAccessibilityPrefs(next);
+  };
+
+  const resetA11yPrefs = () => {
+    const defaults = getDefaultAccessibilityPrefs();
+    setA11yPrefs(defaults);
+    saveAccessibilityPrefs(user, defaults);
+    applyAccessibilityPrefs(defaults);
   };
 
   /* -------------------------
@@ -694,8 +793,14 @@ export default function Profile() {
   return (
     <div className="profile-container">
       {canRoleOverride && (
-        <div className="card profile-card profile-hero-card">
-          <h3>Role View Switcher</h3>
+        <DismissibleSection
+          sectionKey="roleSwitcher"
+          title="Role View Switcher"
+          open={openSections.roleSwitcher}
+          onClose={closeSection}
+          onOpen={openSection}
+          className="profile-hero-card"
+        >
           <p className="muted">
             Use this to switch and test account types.
             Your actual account stays <strong>{user?.actualRole || user?.role}</strong>.
@@ -747,7 +852,7 @@ export default function Profile() {
               Reset to My Role
             </button>
           </div>
-        </div>
+        </DismissibleSection>
       )}
 
       {/* ============================
@@ -759,8 +864,13 @@ export default function Profile() {
         {/* ============================
            VERIFICATION STATUS
         ============================ */}
-        <div className="card profile-card">
-          <h3>Verification Status</h3>
+        <DismissibleSection
+          sectionKey="verificationStatus"
+          title="Verification Status"
+          open={openSections.verificationStatus}
+          onClose={closeSection}
+          onOpen={openSection}
+        >
           <div className="profile-status-grid">
             <div className={`profile-status-pill ${emailVerified ? "ok" : "warn"}`}>
               <strong>Email:</strong> {emailVerified ? "Verified" : "Not verified"}
@@ -769,13 +879,18 @@ export default function Profile() {
               <strong>Phone:</strong> {phoneVerified ? "Verified" : "Not verified"}
             </div>
           </div>
-        </div>
+        </DismissibleSection>
 
         {/* ============================
            PHONE + NATIONAL ID
         ============================ */}
-        <div className="card profile-card">
-          <h3>Phone & National ID</h3>
+        <DismissibleSection
+          sectionKey="phoneNationalId"
+          title="Phone & National ID"
+          open={openSections.phoneNationalId}
+          onClose={closeSection}
+          onOpen={openSection}
+        >
           <p className="muted">
             {phoneVerified
               ? "Your phone number is verified."
@@ -864,10 +979,64 @@ export default function Profile() {
             {licenseSaving ? "Saving..." : "Save License"}
           </button>
           {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
-        </div>
+        </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Basic Information</h3>
+      <DismissibleSection
+        sectionKey="accessibility"
+        title="Display & Accessibility"
+        open={openSections.accessibility}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
+        <p className="muted">
+          Adjust text and input size for better readability. Changes apply immediately across your account.
+        </p>
+
+        <label>Text size</label>
+        <select
+          value={a11yPrefs.textSize}
+          onChange={(e) => updateA11yPref("textSize", e.target.value)}
+        >
+          <option value="small">Small</option>
+          <option value="normal">Normal</option>
+          <option value="large">Large</option>
+          <option value="extra-large">Extra Large</option>
+        </select>
+
+        <label>Text spacing</label>
+        <select
+          value={a11yPrefs.textSpacing}
+          onChange={(e) => updateA11yPref("textSpacing", e.target.value)}
+        >
+          <option value="compact">Compact</option>
+          <option value="normal">Normal</option>
+          <option value="relaxed">Relaxed</option>
+        </select>
+
+        <label>Input size</label>
+        <select
+          value={a11yPrefs.inputSize}
+          onChange={(e) => updateA11yPref("inputSize", e.target.value)}
+        >
+          <option value="compact">Compact</option>
+          <option value="normal">Normal</option>
+          <option value="large">Large</option>
+        </select>
+
+        <div className="profile-row profile-actions-row">
+          <button type="button" className="secondary" onClick={resetA11yPrefs}>
+            Reset Display Defaults
+          </button>
+        </div>
+      </DismissibleSection>
+
+      <DismissibleSection
+        sectionKey="basicInfo"
+        title="Basic Information"
+        open={openSections.basicInfo}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <label>Gender</label>
         <select
           value={basic.gender}
@@ -919,10 +1088,16 @@ export default function Profile() {
           value={basic.emergencyPhone}
           onChange={(e) => setBasic({ ...basic, emergencyPhone: e.target.value })}
         />
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Employment Information</h3>
+      <DismissibleSection
+        sectionKey="employmentInfo"
+        title="Employment Information"
+        open={openSections.employmentInfo}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
+        
         <label>Employee ID</label>
         <input
           value={employment.employeeId}
@@ -984,10 +1159,15 @@ export default function Profile() {
           value={employment.branch}
           onChange={(e) => setEmployment({ ...employment, branch: e.target.value })}
         />
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Credentials & Professional Data</h3>
+      <DismissibleSection
+        sectionKey="credentialsInfo"
+        title="Credentials & Professional Data"
+        open={openSections.credentialsInfo}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <label>Specialization</label>
         <input
           value={credentials.specialization}
@@ -1037,10 +1217,15 @@ export default function Profile() {
             setCredentials({ ...credentials, testAuthorizationLevel: e.target.value })
           }
         />
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Financial Information</h3>
+      <DismissibleSection
+        sectionKey="financialInfo"
+        title="Financial Information"
+        open={openSections.financialInfo}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <label>Bank Name</label>
         <input
           value={financial.bankName}
@@ -1094,10 +1279,15 @@ export default function Profile() {
           value={financial.deductions}
           onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
         />
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Insurance Profile</h3>
+      <DismissibleSection
+        sectionKey="insuranceProfile"
+        title="Insurance Profile"
+        open={openSections.insuranceProfile}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <label>Provider Code</label>
         <input
           value={insurance.providerCode}
@@ -1134,10 +1324,15 @@ export default function Profile() {
           <option value="ACTIVE">Active</option>
           <option value="INACTIVE">Inactive</option>
         </select>
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>System Data</h3>
+      <DismissibleSection
+        sectionKey="systemData"
+        title="System Data"
+        open={openSections.systemData}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <label>Status</label>
         <select
           value={systemProfile.status}
@@ -1166,23 +1361,33 @@ export default function Profile() {
           {extendedSaving ? "Saving..." : "Save Full Profile"}
         </button>
         {extendedMsg && <p style={{ marginTop: 8 }}>{extendedMsg}</p>}
-      </div>
+      </DismissibleSection>
 
-      <div className="card profile-card">
-        <h3>Role-Specific Profile Checklist ({user?.role})</h3>
+      <DismissibleSection
+        sectionKey="roleChecklist"
+        title={`Role-Specific Profile Checklist (${user?.role})`}
+        open={openSections.roleChecklist}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <ul>
           {(roleProfileHints[user?.role] || roleProfileHints.GUEST).map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
-      </div>
+      </DismissibleSection>
       </div>
 
       {/* ============================
          2FA SECTION
       ============================ */}
-      <div className="card profile-card">
-        <h3>Two-Factor Authentication (2FA)</h3>
+      <DismissibleSection
+        sectionKey="twoFactor"
+        title="Two-Factor Authentication (2FA)"
+        open={openSections.twoFactor}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
         <p>
           {twoFAEnabled
             ? "2FA is enabled. You’ll be asked for a code at login."
@@ -1241,13 +1446,18 @@ export default function Profile() {
           </div>
         )}
         {twoFAMsg ? <p className="muted" style={{ marginTop: 8 }}>{twoFAMsg}</p> : null}
-      </div>
+      </DismissibleSection>
 
       {/* ============================
          CHANGE PASSWORD SECTION
       ============================ */}
-      <div className="card profile-card" style={{ marginTop: 24 }}>
-        <h3>Change Password</h3>
+      <DismissibleSection
+        sectionKey="password"
+        title="Change Password"
+        open={openSections.password}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
 
         {pwError && <div className="auth-error">{pwError}</div>}
         {pwMessage && <div className="auth-success">{pwMessage}</div>}
@@ -1281,7 +1491,7 @@ export default function Profile() {
             {pwLoading ? "Updating..." : "Change password"}
           </button>
         </form>
-      </div>
+      </DismissibleSection>
 
       {error && <p style={{ color: "red", marginTop: 16 }}>{error}</p>}
     </div>

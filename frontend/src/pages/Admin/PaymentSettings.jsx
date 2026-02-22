@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../services/api";
+import DismissibleCardSection from "../../components/DismissibleCardSection";
 
 export default function PaymentSettings() {
   const [meta, setMeta] = useState({});
@@ -201,8 +202,7 @@ export default function PaymentSettings() {
       {msg && <div className="card">{msg}</div>}
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <div className="card form">
-          <h3>Global Mode & Admin Security</h3>
+        <DismissibleCardSection className="card form" title="Global Mode & Admin Security">
           <label>Mode</label>
           <select value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
             <option value="test">Test</option>
@@ -234,10 +234,9 @@ export default function PaymentSettings() {
               <button className="btn-primary" onClick={verifyOtp} disabled={busy}>Verify & Reveal</button>
             </>
           )}
-        </div>
+        </DismissibleCardSection>
 
-        <div className="card form">
-          <h3>Bank Payout Details</h3>
+        <DismissibleCardSection className="card form" title="Bank Payout Details">
           <label>Bank Name</label>
           <input value={form.bankName} onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))} />
           <label>Bank Branch</label>
@@ -249,10 +248,9 @@ export default function PaymentSettings() {
           <label>SWIFT/BIC</label>
           <input value={form.bankSwiftCode} onChange={(e) => setForm((f) => ({ ...f, bankSwiftCode: e.target.value }))} />
           <p className="muted">Stored metadata: {meta?.bank?.bankName || "-"} • {meta?.bank?.accountName || "-"} • account encrypted: {meta?.bank?.hasAccountNumber ? "Yes" : "No"}</p>
-        </div>
+        </DismissibleCardSection>
 
-        <div className="card form">
-          <h3>Card Payout / Settlement</h3>
+        <DismissibleCardSection className="card form" title="Card Payout / Settlement">
           <label>Card Holder Name</label>
           <input value={form.cardHolderName} onChange={(e) => setForm((f) => ({ ...f, cardHolderName: e.target.value }))} />
           <label>Card Brand</label>
@@ -272,10 +270,9 @@ export default function PaymentSettings() {
           <label>Vault/Token Reference (encrypted)</label>
           <input value={form.cardVaultRef} onChange={(e) => setForm((f) => ({ ...f, cardVaultRef: e.target.value }))} placeholder="Use gateway token/reference, not CVV/full PAN" />
           <p className="muted">Stored metadata: {meta?.card?.brand || "-"} • ****{meta?.card?.last4 || "----"} • vault encrypted: {meta?.card?.hasVaultRef ? "Yes" : "No"}</p>
-        </div>
+        </DismissibleCardSection>
 
-        <div className="card form">
-          <h3>M-Pesa Details</h3>
+        <DismissibleCardSection className="card form" title="M-Pesa Details">
           <label>Consumer Key</label>
           <input value={form.mpesaConsumerKey} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerKey: e.target.value }))} />
           <label>Consumer Secret (encrypted)</label>
@@ -290,10 +287,9 @@ export default function PaymentSettings() {
           <input value={form.mpesaAccountReference} onChange={(e) => setForm((f) => ({ ...f, mpesaAccountReference: e.target.value }))} />
           <label>Business Name</label>
           <input value={form.mpesaBusinessName} onChange={(e) => setForm((f) => ({ ...f, mpesaBusinessName: e.target.value }))} />
-        </div>
+        </DismissibleCardSection>
 
-        <div className="card form">
-          <h3>Gateway Keys</h3>
+        <DismissibleCardSection className="card form" title="Gateway Keys">
           <label>Stripe Publishable Key</label>
           <input value={form.stripePublishable} onChange={(e) => setForm((f) => ({ ...f, stripePublishable: e.target.value }))} />
           <label>Stripe Secret Key (encrypted)</label>
@@ -303,16 +299,14 @@ export default function PaymentSettings() {
           <p className="muted">
             Stripe secret saved: {meta?.stripe?.hasSecret ? "Yes" : "No"} • M-Pesa secret saved: {meta?.mpesa?.hasSecret ? "Yes" : "No"} • Flutterwave secret saved: {meta?.flutterwave?.hasSecret ? "Yes" : "No"}
           </p>
-        </div>
+        </DismissibleCardSection>
 
         {revealed && (
-          <div className="card">
-            <h3>Revealed Secrets (Session)</h3>
+          <DismissibleCardSection className="card" title="Revealed Secrets (Session)">
             <pre>{JSON.stringify(revealed, null, 2)}</pre>
-          </div>
+          </DismissibleCardSection>
         )}
       </div>
     </div>
   );
 }
-

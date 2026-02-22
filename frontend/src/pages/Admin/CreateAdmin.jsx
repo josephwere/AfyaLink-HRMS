@@ -6,6 +6,7 @@ import {
   listHospitals,
 } from "../../services/superAdminApi";
 import { useAuth } from "../../utils/auth";
+import DismissibleCardSection from "../../components/DismissibleCardSection";
 
 export default function CreateAdmin() {
   const { user } = useAuth();
@@ -101,48 +102,50 @@ export default function CreateAdmin() {
       <h2>👤 Create Admin</h2>
 
       <form onSubmit={submit} className="form">
-        <input
-          placeholder="Full name"
-          value={form.name}
-          required
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-        />
+        <DismissibleCardSection title="Admin Identity">
+          <input
+            placeholder="Full name"
+            value={form.name}
+            required
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+          />
 
-        <input
-          placeholder="Email address"
-          type="email"
-          value={form.email}
-          required
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
-        />
+          <input
+            placeholder="Email address"
+            type="email"
+            value={form.email}
+            required
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
+          />
 
-        <input
-          placeholder="Temporary password"
-          type="password"
-          value={form.password}
-          required
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
-        />
+          <input
+            placeholder="Temporary password"
+            type="password"
+            value={form.password}
+            required
+            onChange={(e) =>
+              setForm({ ...form, password: e.target.value })
+            }
+          />
 
-        <select
-          value={form.role}
-          onChange={(e) =>
-            setForm({ ...form, role: e.target.value })
-          }
-        >
-          <option value="HOSPITAL_ADMIN">Hospital Admin</option>
-          <option value="SYSTEM_ADMIN">System Admin</option>
-          <option value="DEVELOPER">Developer</option>
-        </select>
+          <select
+            value={form.role}
+            onChange={(e) =>
+              setForm({ ...form, role: e.target.value })
+            }
+          >
+            <option value="HOSPITAL_ADMIN">Hospital Admin</option>
+            <option value="SYSTEM_ADMIN">System Admin</option>
+            <option value="DEVELOPER">Developer</option>
+          </select>
+        </DismissibleCardSection>
 
         {form.role === "HOSPITAL_ADMIN" && (
-          <>
+          <DismissibleCardSection title="Hospital Assignment">
             <input
               list="hospital-options"
               placeholder="Type hospital name"
@@ -190,7 +193,7 @@ export default function CreateAdmin() {
               value={form.branch}
               onChange={(e) => setForm({ ...form, branch: e.target.value })}
             />
-          </>
+          </DismissibleCardSection>
         )}
 
         <button disabled={loading}>

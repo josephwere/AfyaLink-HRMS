@@ -7,6 +7,7 @@ import apiFetch from "./utils/apiFetch";
 import SocketProvider from "./utils/socket";
 import { redirectByRole } from "./utils/redirectByRole";
 import { useSystemSettings } from "./utils/systemSettings.jsx";
+import { applyAccessibilityPrefs, loadAccessibilityPrefs } from "./utils/accessibilityPrefs";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -181,6 +182,11 @@ function AppLayout() {
       return [];
     }
   });
+
+  useEffect(() => {
+    if (!user) return;
+    applyAccessibilityPrefs(loadAccessibilityPrefs(user));
+  }, [user]);
 
   const roleDashboardEndpoint = (role) => {
     switch (role) {
