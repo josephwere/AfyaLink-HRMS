@@ -42,6 +42,7 @@
     "phase5:launch:verify": "node scripts/phase5-launch-verify.mjs",
     "exec:readiness:report": "node scripts/executive-readiness-report.mjs",
     "postlaunch:review:init": "node scripts/postlaunch-review-init.mjs",
+    "readiness:legal-only": "node scripts/legal-only-readiness-gate.mjs",
     "neuroedge:sync-indexes": "node scripts/neuroedge-gateway-sync-indexes.mjs",
     "test:gateway:ci": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "test:gateway:ci:strict": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
