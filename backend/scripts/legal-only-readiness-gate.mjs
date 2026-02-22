@@ -1,8 +1,43 @@
 import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function resolveRepoRoot() {
+  const cwd = process.cwd();
+  const cwdHasRootLayout =
+    fs.existsSync(path.join(cwd, "backend", "package.json")) &&
+    fs.existsSync(path.join(cwd, "frontend", "package.json"));
+  if (cwdHasRootLayout) return cwd;
+
+  const backendParent = path.resolve(cwd, "..");
+  const backendDirLayout =
+    fs.existsSync(path.join(cwd, "package.json")) &&
+    fs.existsSync(path.join(backendParent, "frontend", "package.json"));
+  if (backendDirLayout) return backendParent;
+
+  const scriptDerived = path.resolve(__dirname, "..", "..");
+  const scriptHasRootLayout =
+    fs.existsSync(path.join(scriptDerived, "backend", "package.json")) &&
+    fs.existsSync(path.join(scriptDerived, "frontend", "package.json"));
+  if (scriptHasRootLayout) return scriptDerived;
+
+  throw new Error("Could not resolve AfyaLink repo root for readiness gate.");
+}
+
+const repoRoot = resolveRepoRoot();
+const backendEnvPath = path.join(repoRoot, "backend", ".env");
+if (fs.existsSync(backendEnvPath)) {
+  dotenv.config({ path: backendEnvPath });
+}
 
 function run(label, cmd) {
   try {
-    execSync(cmd, { stdio: "inherit" });
+    execSync(cmd, { stdio: "inherit", cwd: repoRoot });
     return { label, ok: true };
   } catch (err) {
     return { label, ok: false, error: err?.message || String(err) };
