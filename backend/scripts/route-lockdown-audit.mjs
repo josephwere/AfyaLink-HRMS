@@ -11,6 +11,7 @@ const CONTROLLERS_DIR = path.join(ROOT, "controllers");
 const authTokens = [
   "protect",
   "requireAuth",
+  "machineAuth",
   "externalAccessGuard",
   "authorize(",
   "permit(",
