@@ -1,0 +1,24 @@
+{
+  "default": {
+    "successRateTarget": 99.5,
+    "p95LatencyMs": 1500,
+    "maxRetryAttempts": 5,
+    "backoffStrategy": "exponential",
+    "dlqThreshold": 100,
+    "escalateAfterMinutes": 15
+  },
+  "profiles": {
+    "FHIR": {
+      "successRateTarget": 99.5,
+      "p95LatencyMs": 1800
+    },
+    "HL7": {
+      "successRateTarget": 99.0,
+      "p95LatencyMs": 2200
+    },
+    "WEBHOOK": {
+      "successRateTarget": 99.5,
+      "p95LatencyMs": 1200
+    }
+  }
+}

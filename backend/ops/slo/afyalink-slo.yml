@@ -1,0 +1,32 @@
+service: afyalink-backend
+window: 30d
+slo:
+  - name: api-availability
+    objective: 99.9
+    sli: http_success_ratio
+    notes: All authenticated API endpoints except explicit 4xx policy denials.
+
+  - name: auth-login-latency-p95
+    objective: 95
+    target: 600ms
+    sli: endpoint_latency
+    endpoint: /api/auth/login
+
+  - name: dashboard-latency-p95
+    objective: 95
+    target: 1200ms
+    sli: endpoint_latency
+    endpoint_group:
+      - /api/dashboard/super-admin
+      - /api/dashboard/system-admin
+      - /api/dashboard/hospital-admin
+
+  - name: appointments-create-latency-p95
+    objective: 95
+    target: 900ms
+    sli: endpoint_latency
+    endpoint: /api/appointments
+
+  - name: connector-ingestion-success
+    objective: 99.5
+    sli: connector_success_ratio

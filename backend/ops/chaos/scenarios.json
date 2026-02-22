@@ -1,0 +1,30 @@
+[
+  {
+    "id": "region-a-api-loss",
+    "description": "Simulate API node loss in primary region and validate traffic failover.",
+    "expected": [
+      "Traffic shifts to secondary region",
+      "readyz remains healthy",
+      "No data loss",
+      "RTO within target"
+    ]
+  },
+  {
+    "id": "mongo-primary-failover",
+    "description": "Simulate Mongo primary outage and validate replica promotion.",
+    "expected": [
+      "Writes recover after promotion",
+      "RPO within target",
+      "No corruption detected"
+    ]
+  },
+  {
+    "id": "connector-upstream-timeout",
+    "description": "Simulate FHIR/HL7 upstream timeout and validate retries + DLQ.",
+    "expected": [
+      "Retries executed",
+      "DLQ populated for permanent failures",
+      "Replay succeeds after upstream recovery"
+    ]
+  }
+]
