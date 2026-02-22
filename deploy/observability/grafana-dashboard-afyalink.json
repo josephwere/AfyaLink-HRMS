@@ -1,0 +1,38 @@
+{
+  "title": "AfyaLink Backend SRE Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Uptime Seconds",
+      "targets": [
+        { "expr": "afyalink_uptime_seconds" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests by Status",
+      "targets": [
+        { "expr": "sum by (status) (rate(afyalink_http_requests_total[5m]))" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Latency Avg (ms)",
+      "targets": [
+        {
+          "expr": "sum(rate(afyalink_http_request_duration_ms_sum[5m])) / sum(rate(afyalink_http_request_duration_ms_count[5m]))"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Latency Max (ms)",
+      "targets": [
+        { "expr": "max(afyalink_http_request_duration_ms_max)" }
+      ]
+    }
+  ]
+}

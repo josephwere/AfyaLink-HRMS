@@ -2,6 +2,7 @@ import Connector from '../models/Connector.js';
 import axios from 'axios';
 import { decrypt } from '../services/cryptoService.js';
 import fhirAdapter from '../services/fhirAdapter.js';
+import { recordConnectorSlaProbe } from "../services/connectorSlaService.js";
 
 export async function createConnector(req,res){
   const body = req.body;
@@ -16,6 +17,7 @@ export async function listConnectors(req,res){
 }
 
 export async function testRestConnection(req,res){
+  const startedAt = Date.now();
   try{
     const { connectorId } = req.params;
     const conn = await Connector.findById(connectorId);
@@ -30,21 +32,70 @@ export async function testRestConnection(req,res){
     }
     // call health endpoint
     const r = await axios.get(conn.url + '/health', { headers, timeout: 8000 });
+    await recordConnectorSlaProbe({
+      connector: conn,
+      operation: "REST_HEALTH",
+      ok: true,
+      statusCode: r.status,
+      latencyMs: Date.now() - startedAt,
+      actor: req.user,
+    });
     res.json({ ok: true, status: r.status, data: r.data });
   }catch(err){
+    try {
+      const { connectorId } = req.params;
+      const conn = await Connector.findById(connectorId);
+      if (conn) {
+        await recordConnectorSlaProbe({
+          connector: conn,
+          operation: "REST_HEALTH",
+          ok: false,
+          statusCode: err?.response?.status || 0,
+          latencyMs: Date.now() - startedAt,
+          errorMessage: err.message,
+          actor: req.user,
+        });
+      }
+    } catch (_) {}
     res.status(400).json({ ok:false, error: err.message, detail: err.response?.data || null });
   }
 }
 
 export async function testFHIR(req,res){
+  const startedAt = Date.now();
   try{
     const { connectorId } = req.params;
     const conn = await Connector.findById(connectorId);
     if(!conn) return res.status(404).json({ error: 'connector not found' });
     const base = conn.url;
     const out = await fhirAdapter.testFHIRServer(base);
+    await recordConnectorSlaProbe({
+      connector: conn,
+      operation: "FHIR_CAPABILITY",
+      ok: true,
+      statusCode: 200,
+      latencyMs: Date.now() - startedAt,
+      actor: req.user,
+    });
     res.json({ ok:true, capability: out });
-  }catch(err){ res.status(400).json({ ok:false, error: err.message }); }
+  }catch(err){
+    try {
+      const { connectorId } = req.params;
+      const conn = await Connector.findById(connectorId);
+      if (conn) {
+        await recordConnectorSlaProbe({
+          connector: conn,
+          operation: "FHIR_CAPABILITY",
+          ok: false,
+          statusCode: err?.response?.status || 0,
+          latencyMs: Date.now() - startedAt,
+          errorMessage: err.message,
+          actor: req.user,
+        });
+      }
+    } catch (_) {}
+    res.status(400).json({ ok:false, error: err.message });
+  }
 }
 
 export async function connectorAnalytics(req,res){

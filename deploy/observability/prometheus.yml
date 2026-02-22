@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - ./alerts/afyalink-alert-rules.yml
+
+scrape_configs:
+  - job_name: afyalink_backend
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - afyalink-backend:5000
+    authorization:
+      type: Bearer
+      credentials: ${METRICS_TOKEN}

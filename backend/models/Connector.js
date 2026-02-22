@@ -19,6 +19,28 @@ const ConnectorSchema = new mongoose.Schema(
       default: {},
     },
 
+    hospitalId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hospital",
+      index: true,
+    },
+
+    url: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    authType: {
+      type: String,
+      enum: ["none", "apikey", "basic"],
+      default: "none",
+    },
+
+    apiKey: String,
+    username: String,
+    password: String,
+
     isActive: {
       type: Boolean,
       default: true,
@@ -31,5 +53,7 @@ const ConnectorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+ConnectorSchema.index({ hospitalId: 1, type: 1, isActive: 1 });
 
 export default mongoose.model("Connector", ConnectorSchema);
