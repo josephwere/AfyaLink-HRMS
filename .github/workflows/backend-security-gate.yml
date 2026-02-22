@@ -48,6 +48,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify readiness assets
+        run: npm run readiness:program
+
+      - name: Verify audit retention policy script
+        run: npm run audit:retention:dry
+
       - name: Run NeuroEdge gateway CI gate
         run: npm run test:gateway:ci:strict
 

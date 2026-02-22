@@ -9,6 +9,8 @@ import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler.js";
 import { trace } from "./middleware/traceMiddleware.js";
 import { denyAudit } from "./middleware/denyAudit.js";
+import { metricsMiddleware } from "./middleware/metricsMiddleware.js";
+import { renderPrometheusMetrics } from "./utils/metrics.js";
 
 /* ======================================================
    🌱 ENV
@@ -172,6 +174,7 @@ app.use(express.json({ limit: "15mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
+app.use(metricsMiddleware);
 
 /* ======================================================
    🚨 EMERGENCY
@@ -352,6 +355,20 @@ app.get("/readyz", async (_req, res) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+app.get("/metrics", (req, res) => {
+  const configuredToken = process.env.METRICS_TOKEN || "";
+  if (configuredToken) {
+    const header = req.get("authorization") || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+    if (!token || token !== configuredToken) {
+      return res.status(401).json({ message: "Unauthorized metrics access" });
+    }
+  }
+
+  res.setHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8");
+  return res.status(200).send(renderPrometheusMetrics());
 });
 
 /* ======================================================

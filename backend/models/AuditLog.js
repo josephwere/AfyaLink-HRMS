@@ -78,6 +78,13 @@ const auditLogSchema = new Schema(
 ====================================================== */
 async function isoCheck(next, doc, query) {
   try {
+    const globalImmutable =
+      process.env.AUDIT_LOG_IMMUTABLE === "1" ||
+      String(process.env.NODE_ENV || "").toLowerCase() === "production";
+    if (globalImmutable) {
+      throw new Error("Audit logs are immutable in this environment");
+    }
+
     const hospitalId = doc?.hospital || query?._update?.hospital || query?.hospital;
     if (!hospitalId) return next();
 

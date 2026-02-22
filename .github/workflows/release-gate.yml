@@ -34,6 +34,7 @@ jobs:
       MONGO_URI: mongodb://127.0.0.1:27017/afyalink_ci
       BASE_URL: http://127.0.0.1:5000
       ABAC_FAIL_ON_EMPTY: "1"
+      FRONTEND_URL: http://127.0.0.1:5173
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,6 +48,12 @@ jobs:
 
       - name: Install backend dependencies
         run: npm ci
+
+      - name: Verify readiness assets
+        run: npm run readiness:program
+
+      - name: Verify audit retention policy script
+        run: npm run audit:retention:dry
 
       - name: Run NeuroEdge gateway CI gate
         run: npm run test:gateway:ci:strict
@@ -70,6 +77,9 @@ jobs:
 
       - name: Run backend security gate
         run: npm run security:gate
+
+      - name: Run release phase gate (phase 1)
+        run: npm run phase1:gate
 
       - name: Print backend log on failure
         if: failure()
