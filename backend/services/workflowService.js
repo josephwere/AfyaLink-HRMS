@@ -13,15 +13,17 @@ class WorkflowService {
 
     const workflowId = uuid();
 
-    const appointment = await Appointment.create({
+    const appointment = new Appointment({
       ...context,
       workflowId,
-      status: "CONSULTATION",
+      status: "Scheduled",
     });
+    appointment.$locals = { ...(appointment.$locals || {}), viaWorkflow: true };
+    await appointment.save();
 
     return {
       id: workflowId,
-      state: "CONSULTATION",
+      state: "Scheduled",
       context: { appointment },
     };
   }
@@ -38,7 +40,7 @@ class WorkflowService {
     if (!appointment) throw new Error("Workflow not found");
 
     if (cancel) {
-      appointment.status = "CANCELLED";
+      appointment.status = "Cancelled";
     } else {
       Object.assign(appointment, updates);
     }

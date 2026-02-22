@@ -40,6 +40,11 @@ const appointmentSchema = new Schema(
       index: true,
     },
 
+    workflowId: {
+      type: String,
+      index: true,
+    },
+
     /* ==============================
        SCHEDULING
     ============================== */

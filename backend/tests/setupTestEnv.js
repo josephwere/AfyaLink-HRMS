@@ -5,7 +5,10 @@ let mongoServer;
 let usingExternalMongo = false;
 
 export default async function setup() {
-  let uri = process.env.MONGO_URI;
+  let uri =
+    process.env.TEST_MONGO_URI ||
+    process.env.MONGO_URI ||
+    "mongodb://127.0.0.1:27017/afyalink_test";
   const port = Number(process.env.TEST_MONGO_PORT || 37017);
   try {
     mongoServer = await MongoMemoryServer.create({
