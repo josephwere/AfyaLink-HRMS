@@ -43,6 +43,9 @@ const publicAllowlist = new Set([
   "aiRoutes.js:POST:/risk",
   "triageRoutes.js:POST:/classify",
   "triageRoutes.js:POST:/transcribe",
+
+  // public branding for auth pages
+  "systemSettingsRoutes.js:GET:/public",
 ]);
 
 function readFile(filePath) {
