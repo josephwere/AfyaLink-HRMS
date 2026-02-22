@@ -95,6 +95,7 @@ import PaymentSettings from "./pages/Admin/PaymentSettings";
 import AccessControl from "./pages/Admin/AccessControl";
 import PrintCenter from "./pages/Admin/PrintCenter";
 import OfflineOps from "./pages/Admin/OfflineOps";
+import LaunchReadiness from "./pages/Admin/LaunchReadiness";
 
 /* =======================
    DASHBOARDS
@@ -1299,6 +1300,21 @@ export default function App() {
                   ]}
                 >
                   <TrainingPlaybook />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="launch-readiness"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                  ]}
+                >
+                  <LaunchReadiness />
                 </RequireRole>
               }
             />

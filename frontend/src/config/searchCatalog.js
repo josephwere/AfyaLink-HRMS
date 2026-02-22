@@ -31,6 +31,7 @@ const ROLE_ITEMS = {
     { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
+    { label: "Launch Readiness", path: "/admin/launch-readiness" },
   ],
   SYSTEM_ADMIN: [
     { label: "System Admin Dashboard", path: "/system-admin" },
@@ -49,6 +50,7 @@ const ROLE_ITEMS = {
     { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
+    { label: "Launch Readiness", path: "/admin/launch-readiness" },
   ],
   HOSPITAL_ADMIN: [
     { label: "Hospital Admin", path: "/hospital-admin" },
@@ -69,6 +71,7 @@ const ROLE_ITEMS = {
     { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
+    { label: "Launch Readiness", path: "/admin/launch-readiness" },
   ],
   DOCTOR: [
     { label: "Doctor Dashboard", path: "/doctor" },
@@ -165,6 +168,7 @@ const ROLE_ITEMS = {
     { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
+    { label: "Launch Readiness", path: "/admin/launch-readiness" },
   ],
   SECURITY_ADMIN: [
     { label: "Security Admin", path: "/security-admin" },
