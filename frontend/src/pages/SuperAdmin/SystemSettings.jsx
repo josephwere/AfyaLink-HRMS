@@ -12,6 +12,42 @@ function fileToDataUrl(file) {
   });
 }
 
+function loadImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+async function optimizeImageDataUrl(file, { maxDimension = 1600, targetBytes = 900 * 1024 } = {}) {
+  if (!file?.type?.startsWith("image/")) return fileToDataUrl(file);
+  if (file.type === "image/svg+xml") return fileToDataUrl(file);
+
+  const rawDataUrl = await fileToDataUrl(file);
+  if (file.size <= targetBytes) return rawDataUrl;
+
+  const img = await loadImageFromDataUrl(rawDataUrl);
+  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  let quality = 0.86;
+  let compressed = canvas.toDataURL("image/webp", quality);
+
+  while (compressed.length > targetBytes * 1.37 && quality > 0.45) {
+    quality -= 0.08;
+    compressed = canvas.toDataURL("image/webp", quality);
+  }
+
+  return compressed;
+}
+
 export default function SystemSettings() {
   const { user } = useAuth();
   const { settings, setSettings } = useSystemSettings();
@@ -51,6 +87,7 @@ export default function SystemSettings() {
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [initialForm, setInitialForm] = useState(null);
 
   if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(user?.role)) {
     return <p>🚫 Access denied</p>;
@@ -72,17 +109,58 @@ export default function SystemSettings() {
           },
         };
         setForm(next);
+        setInitialForm(next);
       })
       .catch(() => {});
   }, []);
+
+  const isObject = (value) =>
+    value && typeof value === "object" && !Array.isArray(value);
+
+  const deepEqual = (a, b) => {
+    if (a === b) return true;
+    if (typeof a !== typeof b) return false;
+    if (!isObject(a) || !isObject(b)) return false;
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    for (const key of aKeys) {
+      if (!deepEqual(a[key], b[key])) return false;
+    }
+    return true;
+  };
+
+  const buildPatch = (current, original) => {
+    if (!original) return current;
+    const patch = {};
+    for (const key of Object.keys(current || {})) {
+      const currVal = current[key];
+      const origVal = original?.[key];
+      if (isObject(currVal) && isObject(origVal)) {
+        const childPatch = buildPatch(currVal, origVal);
+        if (Object.keys(childPatch).length) patch[key] = childPatch;
+        continue;
+      }
+      if (!deepEqual(currVal, origVal)) patch[key] = currVal;
+    }
+    return patch;
+  };
 
   const save = async () => {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await updateSystemSettings(form);
+      const patch = buildPatch(form, initialForm);
+      if (!Object.keys(patch).length) {
+        setMsg("No changes to save.");
+        return;
+      }
+      const res = await updateSystemSettings(patch);
       setMsg("✅ Settings saved");
-      if (res.settings) setSettings(res.settings);
+      if (res.settings) {
+        setSettings(res.settings);
+        setInitialForm(res.settings);
+      }
     } catch (err) {
       setMsg(err?.message || "Failed to save settings");
     } finally {
@@ -92,7 +170,7 @@ export default function SystemSettings() {
 
   const handleFile = async (key, file) => {
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
+    const dataUrl = await optimizeImageDataUrl(file);
     setForm((f) => ({
       ...f,
       branding: { ...f.branding, [key]: dataUrl },
@@ -101,7 +179,10 @@ export default function SystemSettings() {
 
   const handleSidebarIcon = async (key, file) => {
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
+    const dataUrl = await optimizeImageDataUrl(file, {
+      maxDimension: 512,
+      targetBytes: 250 * 1024,
+    });
     setForm((f) => ({
       ...f,
       branding: {
