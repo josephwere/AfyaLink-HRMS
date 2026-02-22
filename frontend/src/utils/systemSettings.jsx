@@ -17,6 +17,7 @@ export function SystemSettingsProvider({ children }) {
   const [baseSettings, setBaseSettings] = useState(null);
   const [hospitalCustomization, setHospitalCustomization] = useState(null);
   const base = import.meta.env.VITE_API_URL || "";
+  const BRANDING_CACHE_KEY = "afyalink_public_branding";
 
   const mergeSettings = (globalSettings, customization) => {
     if (!customization?.enabled) return globalSettings || {};
@@ -35,22 +36,61 @@ export function SystemSettingsProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      setBaseSettings({});
+    const fetchWithAuth = () =>
+      fetch(`${base}/api/system-settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (r) => {
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then((data) => {
+          if (data?.branding) {
+            localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(data.branding));
+          }
+          setBaseSettings(data || {});
+        });
+
+    const fetchPublic = () =>
+      fetch(`${base}/api/system-settings/public`)
+        .then(async (r) => {
+          if (!r.ok) throw new Error("public branding unavailable");
+          return r.json();
+        })
+        .then((data) => {
+          const branding = data?.branding || {};
+          localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(branding));
+          setBaseSettings({ branding });
+        });
+
+    if (token) {
+      fetchWithAuth().catch(() => {
+        const cached = localStorage.getItem(BRANDING_CACHE_KEY);
+        if (cached) {
+          try {
+            setBaseSettings({ branding: JSON.parse(cached) });
+            return;
+          } catch {
+            // ignore corrupted cache
+          }
+        }
+        setBaseSettings({});
+      });
       return;
     }
 
-    fetch(`${base}/api/system-settings`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (r) => {
-        if (!r.ok) return {};
-        return r.json();
-      })
-      .then((data) => {
-        setBaseSettings(data || {});
-      })
-      .catch(() => setBaseSettings({}));
+    fetchPublic().catch(() => {
+      const cached = localStorage.getItem(BRANDING_CACHE_KEY);
+      if (cached) {
+        try {
+          setBaseSettings({ branding: JSON.parse(cached) });
+          return;
+        } catch {
+          // ignore corrupted cache
+        }
+      }
+      setBaseSettings({});
+    });
   }, [base]);
 
   useEffect(() => {

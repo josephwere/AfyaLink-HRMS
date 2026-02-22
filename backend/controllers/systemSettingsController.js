@@ -8,6 +8,17 @@ export const getSystemSettings = async (_req, res) => {
   res.json(doc);
 };
 
+export const getPublicBranding = async (_req, res) => {
+  let doc = await SystemSettings.findOne().lean();
+  if (!doc) {
+    doc = await SystemSettings.create({});
+  }
+
+  return res.json({
+    branding: doc?.branding || {},
+  });
+};
+
 export const updateSystemSettings = async (req, res) => {
   const { branding, ai, monetization } = req.body || {};
   let doc = await SystemSettings.findOne();
