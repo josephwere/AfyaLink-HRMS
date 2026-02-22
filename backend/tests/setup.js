@@ -2,12 +2,23 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let mongo;
+let usingExternalMongo = false;
 export default async function setup(){
+  let uri = process.env.MONGO_URI;
   const port = Number(process.env.TEST_MONGO_PORT || 37017);
-  mongo = await MongoMemoryServer.create({
-    instance: { ip: "127.0.0.1", port },
-  });
-  const uri = mongo.getUri();
+  try {
+    mongo = await MongoMemoryServer.create({
+      instance: { ip: "127.0.0.1", port },
+    });
+    uri = mongo.getUri();
+  } catch (err) {
+    if (!uri) throw err;
+    usingExternalMongo = true;
+  }
+
   await mongoose.connect(uri);
-  return async ()=>{ await mongoose.disconnect(); await mongo.stop(); }
+  return async ()=>{
+    await mongoose.disconnect();
+    if (!usingExternalMongo && mongo) await mongo.stop();
+  }
 }

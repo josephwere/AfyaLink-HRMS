@@ -1,6 +1,9 @@
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../app.js';
 import setup from './setupTestEnv.js';
+import User from '../models/User.js';
+import Hospital from '../models/Hospital.js';
 
 let teardown;
 let token;
@@ -8,9 +11,19 @@ let patientId;
 
 beforeAll(async ()=>{
   teardown = await setup();
-  await request(app).post('/api/auth/register').send({ name:'Admin', email:'admin@afya.test', password:'Admin123!', role:'HospitalAdmin' });
-  const res = await request(app).post('/api/auth/login').send({ email:'admin@afya.test', password:'Admin123!' });
-  token = res.body.token;
+  const hospital = await Hospital.create({ name: "Test Hospital Financials", active: true });
+  const user = await User.create({
+    name: "Admin",
+    email: "admin@afya.test",
+    password: "Admin123!",
+    role: "HOSPITAL_ADMIN",
+    hospital: hospital._id,
+    active: true,
+  });
+  token = jwt.sign(
+    { id: String(user._id), twoFactorVerified: true },
+    process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+  );
   const p = await request(app).post('/api/patients').set('Authorization', `Bearer ${token}`).send({ firstName:'Bill', lastName:'Payer' });
   patientId = p.body._id;
 });
