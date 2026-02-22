@@ -21,9 +21,16 @@ import "./utils/logger.js";
 /* ======================================================
    🔥 BACKGROUND JOBS
 ====================================================== */
-import "./jobs/emergencyCleanup.js";
-import "./workers/notificationWorker.js";
-import "./workers/workflowSlaWorker.js";
+const shouldLoadBackgroundJobs =
+  process.env.NODE_ENV !== "test" &&
+  process.env.DISABLE_BACKGROUND_JOBS !== "1" &&
+  !process.env.JEST_WORKER_ID;
+
+if (shouldLoadBackgroundJobs) {
+  await import("./jobs/emergencyCleanup.js");
+  await import("./workers/notificationWorker.js");
+  await import("./workers/workflowSlaWorker.js");
+}
 
 /* ======================================================
    🧠 ROUTES

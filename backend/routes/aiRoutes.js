@@ -5,6 +5,7 @@ import multer from "multer";
 import { suggestSlot, patientRisk, extractDocument } from "../controllers/aiController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
+import aiGatewayRoutes from "./aiGatewayRoutes.js";
 
 const router = express.Router();
 const upload = multer({
@@ -26,5 +27,6 @@ router.use(
 router.get("/slot", suggestSlot);
 router.post("/risk", patientRisk);
 router.post("/extract", upload.single("file"), extractDocument);
+router.use("/gateway", aiGatewayRoutes);
 
 export default router;

@@ -87,3 +87,33 @@ Use this for hospitals moving from an existing HIS/EMR/LIS/PACS into AfyaLink wi
   - sustained critical workflow failure
   - unacceptable patient-safety risk
 - Execute rollback using last stable source snapshot + documented replay plan.
+
+## 9. NeuroEdge Gateway Rollout
+
+### 9.1 Pre-Enable
+- Set NeuroEdge env vars (see `backend/docs/NEUROEDGE_ENV_TEMPLATE.md`).
+- Run `npm run neuroedge:sync-indexes` once per environment rollout.
+- Verify `/api/ai/gateway/health` returns `ok: true` for admin users.
+- Confirm ABAC policies exist for `domain=AI`, `resource=neuroedge_gateway`.
+
+### 9.2 Safe Rollout Order
+1. Enable for `SUPER_ADMIN`, `SYSTEM_ADMIN`, `DEVELOPER` only.
+2. Validate extraction, transform, risk, and simulation paths.
+3. Review audit logs + AI gateway metrics (latency, failure, guardrail denies).
+4. Expand to hospital roles gradually.
+
+### 9.3 Rollback
+- Remove/empty `NEUROEDGE_API_BASE` and recycle app processes.
+- Existing non-gateway AI endpoints remain available according to current providers/config.
+- Keep investigation evidence from `AuditLog` and `AIGatewayJob`.
+
+### 9.4 Degradation Incident Playbook
+- Symptoms:
+  - repeated `NEUROEDGE_TIMEOUT`
+  - `NEUROEDGE_CIRCUIT_OPEN`
+  - elevated gateway 5xx
+- Actions:
+  1. Freeze high-risk AI actions (transforms/simulation) for non-platform roles.
+  2. Route critical workflows to manual mode + human review.
+  3. Capture evidence: correlation id, endpoint, actor, hospital, request hash.
+  4. Restore service and run controlled replay for failed async jobs.
