@@ -79,6 +79,7 @@ import transferRoutes from "./routes/transferRoutes.js";
 
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import reportsRoutes from "./routes/reportsRoutes.js";
+import medicalLegalRoutes from "./routes/medicalLegalRoutes.js";
 
 import aiRoutes from "./routes/aiRoutes.js";
 import aiAdminRoutes from "./routes/ai_adminRoutes.js";
@@ -273,6 +274,7 @@ app.use("/api/transfers", transferRoutes);
 ====================================================== */
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/medical-legal", medicalLegalRoutes);
 
 /* ======================================================
    🤖 AI / ML
