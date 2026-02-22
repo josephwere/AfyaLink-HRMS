@@ -14,6 +14,8 @@
     "audit:route-lockdown": "node scripts/route-lockdown-audit.mjs",
     "audit:abac-tests": "node scripts/abac-regression-audit.mjs",
     "security:gate": "npm run audit:route-lockdown && npm run authz:regression && npm run audit:abac-tests",
+    "preprod:preflight": "NODE_ENV=production node scripts/production-preflight.mjs",
+    "preprod:gate": "npm run preprod:preflight && npm run security:gate && npm run test",
     "neuroedge:sync-indexes": "node scripts/neuroedge-gateway-sync-indexes.mjs",
     "test:gateway:ci": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "test:gateway:ci:strict": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",

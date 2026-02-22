@@ -13,6 +13,19 @@
 
 Use LB health checks on `/readyz` with failure threshold and automatic instance drain.
 
+## 2.1 Pre-Production Gate (Must Pass)
+Run this exact sequence before every production rollout:
+
+1. `npm run preprod:preflight`
+2. Start backend: `npm run dev` (or `npm run start:prod` in a production-like shell)
+3. In a second shell: `npm run security:gate`
+4. `npm run test`
+
+Notes:
+- `preprod:preflight` enforces required production env and DB reachability.
+- `security:gate` requires backend to be reachable at `http://localhost:5000`.
+- Twilio/Flutterwave warnings are non-blocking unless those channels are part of go-live scope.
+
 ## 3. Process Management
 - Recommended: PM2/systemd/container orchestration.
 - Included PM2 config: `backend/ecosystem.config.cjs`

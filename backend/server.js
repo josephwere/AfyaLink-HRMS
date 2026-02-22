@@ -6,6 +6,7 @@ import { Server as IOServer } from "socket.io";
 import mongoose from "mongoose";
 
 import connectDB from "./config/db.js";
+import { validateRuntimeEnv } from "./config/validateEnv.js";
 import app from "./app.js";
 import { initSocket } from "./utils/socket.js";
 
@@ -47,6 +48,16 @@ const isAllowedOrigin = (origin) => {
 ====================================================== */
 const start = async () => {
   try {
+    const envCheck = validateRuntimeEnv();
+    if (!envCheck.ok) {
+      console.error("❌ Production env validation failed:");
+      for (const err of envCheck.errors) console.error(` - ${err}`);
+      process.exit(1);
+    }
+    for (const warn of envCheck.warnings) {
+      console.warn(`⚠️ ${warn}`);
+    }
+
     await connectDB();
     await seedSuperAdmin();
 
