@@ -27,14 +27,14 @@ export default function PharmacyTable({ items = [], loading, onEdit, onDelete, o
               <td className="p-3">{it.minStock}</td>
               <td className="p-3">
                 <div className="flex gap-2">
-                  <button className="btn btn-sm" onClick={()=>onEdit(it)}>Edit</button>
-                  <button className="btn btn-sm btn-danger" onClick={()=>onDelete(it._id)}>Delete</button>
-                  <button className="btn btn-sm" onClick={()=> {
+                  <button type="button" className="btn btn-sm" onClick={()=>onEdit(it)}>Edit</button>
+                  <button type="button" className="btn btn-sm btn-danger" onClick={()=>onDelete(it._id)}>Delete</button>
+                  <button type="button" className="btn btn-sm" onClick={()=> {
                     const q = prompt('Add stock (json): {"batchNumber":"B1","expiryDate":"2026-12-01","quantity":10}');
                     if (!q) return;
                     try { const payload = JSON.parse(q); onAddStock(it._id, payload); } catch (e){ alert('invalid json'); }
                   }}>Add Stock</button>
-                  <button className="btn btn-sm" onClick={()=> {
+                  <button type="button" className="btn btn-sm" onClick={()=> {
                     const qty = prompt('Quantity to dispense');
                     if (!qty) return;
                     onDispense(it._id, { quantity: Number(qty) });

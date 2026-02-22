@@ -54,12 +54,62 @@ export default function CommunityHealthWorkerDashboard() {
     notes: "",
     nextActionDate: "",
   });
-  const [maternalForm, setMaternalForm] = useState({ motherName: "", trimester: 1, ancVisits: 0, highRiskPregnancy: false });
-  const [childForm, setChildForm] = useState({ childName: "", ageMonths: 0, weightKg: 0, heightCm: 0, muacCm: 0, nutritionRisk: "LOW" });
-  const [vaccForm, setVaccForm] = useState({ memberName: "", vaccine: "", dose: "", batchNumber: "" });
-  const [chronicForm, setChronicForm] = useState({ patientName: "", condition: "", medicationCompliance: "GOOD", notes: "" });
-  const [diseaseForm, setDiseaseForm] = useState({ disease: "", suspectedCases: 1, severity: "MEDIUM", location: "", notes: "" });
-  const [referralForm, setReferralForm] = useState({ patientName: "", patientPhone: "", summary: "", urgency: "MEDIUM" });
+  const [maternalForm, setMaternalForm] = useState({
+    household: "",
+    motherName: "",
+    trimester: 1,
+    ancVisits: 0,
+    expectedDeliveryDate: "",
+    postnatalVisits: 0,
+    highRiskPregnancy: false,
+    notes: "",
+  });
+  const [childForm, setChildForm] = useState({
+    household: "",
+    childName: "",
+    ageMonths: 0,
+    weightKg: 0,
+    heightCm: 0,
+    muacCm: 0,
+    nutritionRisk: "LOW",
+    notes: "",
+  });
+  const [vaccForm, setVaccForm] = useState({
+    household: "",
+    memberName: "",
+    vaccine: "",
+    dose: "",
+    batchNumber: "",
+    expiryDate: "",
+    adverseEvent: "",
+    coldChainStatus: "OK",
+  });
+  const [chronicForm, setChronicForm] = useState({
+    household: "",
+    patientName: "",
+    condition: "",
+    medicationCompliance: "GOOD",
+    followUpDate: "",
+    escalationRequired: false,
+    notes: "",
+  });
+  const [diseaseForm, setDiseaseForm] = useState({
+    disease: "",
+    suspectedCases: 1,
+    severity: "MEDIUM",
+    location: "",
+    ward: "",
+    symptoms: "",
+    notes: "",
+    reportedToPublicHealth: false,
+  });
+  const [referralForm, setReferralForm] = useState({
+    patientName: "",
+    patientPhone: "",
+    summary: "",
+    urgency: "MEDIUM",
+    receivingHospital: "",
+  });
 
   const kpis = useMemo(() => [
     { label: "Households Assigned", value: dash?.householdsAssigned ?? "—" },
@@ -157,6 +207,138 @@ export default function CommunityHealthWorkerDashboard() {
     reset();
   };
 
+  const submitMaternal = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...maternalForm,
+      trimester: Number(maternalForm.trimester || 1),
+      ancVisits: Number(maternalForm.ancVisits || 0),
+      postnatalVisits: Number(maternalForm.postnatalVisits || 0),
+      household: maternalForm.household || undefined,
+      expectedDeliveryDate: maternalForm.expectedDeliveryDate || undefined,
+    };
+    await submitMini("maternal", payload, createChwMaternal, () =>
+      setMaternalForm({
+        household: "",
+        motherName: "",
+        trimester: 1,
+        ancVisits: 0,
+        expectedDeliveryDate: "",
+        postnatalVisits: 0,
+        highRiskPregnancy: false,
+        notes: "",
+      })
+    );
+  };
+
+  const submitChildGrowth = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...childForm,
+      household: childForm.household || undefined,
+      ageMonths: Number(childForm.ageMonths || 0),
+      weightKg: Number(childForm.weightKg || 0),
+      heightCm: Number(childForm.heightCm || 0),
+      muacCm: Number(childForm.muacCm || 0),
+    };
+    await submitMini("child-growth", payload, createChwChildGrowth, () =>
+      setChildForm({
+        household: "",
+        childName: "",
+        ageMonths: 0,
+        weightKg: 0,
+        heightCm: 0,
+        muacCm: 0,
+        nutritionRisk: "LOW",
+        notes: "",
+      })
+    );
+  };
+
+  const submitVaccination = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...vaccForm,
+      household: vaccForm.household || undefined,
+      expiryDate: vaccForm.expiryDate || undefined,
+    };
+    await submitMini("vaccinations", payload, createChwVaccination, () =>
+      setVaccForm({
+        household: "",
+        memberName: "",
+        vaccine: "",
+        dose: "",
+        batchNumber: "",
+        expiryDate: "",
+        adverseEvent: "",
+        coldChainStatus: "OK",
+      })
+    );
+  };
+
+  const submitChronic = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...chronicForm,
+      household: chronicForm.household || undefined,
+      followUpDate: chronicForm.followUpDate || undefined,
+    };
+    await submitMini("chronic", payload, createChwChronic, () =>
+      setChronicForm({
+        household: "",
+        patientName: "",
+        condition: "",
+        medicationCompliance: "GOOD",
+        followUpDate: "",
+        escalationRequired: false,
+        notes: "",
+      })
+    );
+  };
+
+  const submitDisease = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...diseaseForm,
+      suspectedCases: Number(diseaseForm.suspectedCases || 1),
+      symptoms: diseaseForm.symptoms
+        ? diseaseForm.symptoms
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [],
+    };
+    await submitMini("disease-reports", payload, createChwDiseaseReport, () =>
+      setDiseaseForm({
+        disease: "",
+        suspectedCases: 1,
+        severity: "MEDIUM",
+        location: "",
+        ward: "",
+        symptoms: "",
+        notes: "",
+        reportedToPublicHealth: false,
+      })
+    );
+  };
+
+  const submitReferral = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...referralForm,
+      receivingHospital: referralForm.receivingHospital || undefined,
+    };
+    await submitMini("referrals", payload, createChwReferral, () =>
+      setReferralForm({
+        patientName: "",
+        patientPhone: "",
+        summary: "",
+        urgency: "MEDIUM",
+        receivingHospital: "",
+      })
+    );
+  };
+
   const captureGeo = async () => {
     if (!navigator.geolocation) {
       setMsg("Geolocation is not available on this device.");
@@ -193,8 +375,8 @@ export default function CommunityHealthWorkerDashboard() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={() => navigate("/communication")}>Communication</button>
-          <button className="btn-secondary" onClick={captureGeo} disabled={busy}>Capture GPS</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/communication")}>Communication</button>
+          <button type="button" className="btn-secondary" onClick={captureGeo} disabled={busy}>Capture GPS</button>
         </div>
       </div>
 
@@ -254,7 +436,7 @@ export default function CommunityHealthWorkerDashboard() {
 
         <div className="card doctor-alerts-card">
           <h3>Add Household</h3>
-          <form className="grid info-grid" onSubmit={submitHousehold}>
+          <form className="form" onSubmit={submitHousehold}>
             <input required placeholder="Household ID" value={householdForm.householdId} onChange={(e) => setHouseholdForm({ ...householdForm, householdId: e.target.value })} />
             <input required placeholder="Head of household" value={householdForm.headOfHousehold} onChange={(e) => setHouseholdForm({ ...householdForm, headOfHousehold: e.target.value })} />
             <input placeholder="Phone" value={householdForm.phone} onChange={(e) => setHouseholdForm({ ...householdForm, phone: e.target.value })} />
@@ -267,7 +449,7 @@ export default function CommunityHealthWorkerDashboard() {
               <option value="HIGH">HIGH</option>
             </select>
             <input type="date" value={householdForm.nextVisitDate} onChange={(e) => setHouseholdForm({ ...householdForm, nextVisitDate: e.target.value })} />
-            <button className="btn-primary" disabled={busy}>Save Household</button>
+            <button type="submit" className="btn-primary" disabled={busy}>Save Household</button>
           </form>
         </div>
       </section>
@@ -275,7 +457,7 @@ export default function CommunityHealthWorkerDashboard() {
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
           <h3>Record Field Visit</h3>
-          <form className="grid info-grid" onSubmit={submitVisit}>
+          <form className="form" onSubmit={submitVisit}>
             <select value={visitForm.householdId} onChange={(e) => setVisitForm({ ...visitForm, householdId: e.target.value })} required>
               <option value="">Select household</option>
               {households.map((h) => <option key={h._id} value={h._id}>{h.householdId} - {h.headOfHousehold}</option>)}
@@ -290,7 +472,11 @@ export default function CommunityHealthWorkerDashboard() {
             </select>
             <input type="date" value={visitForm.nextActionDate} onChange={(e) => setVisitForm({ ...visitForm, nextActionDate: e.target.value })} />
             <textarea placeholder="Visit notes" value={visitForm.notes} onChange={(e) => setVisitForm({ ...visitForm, notes: e.target.value })} />
-            <button className="btn-primary" disabled={busy}>Save Visit</button>
+            <div>
+              <button type="submit" className="btn-primary" disabled={busy} style={{ width: "auto", minWidth: 120 }}>
+                Save Visit
+              </button>
+            </div>
           </form>
         </div>
         <div className="card doctor-alerts-card">
@@ -308,13 +494,114 @@ export default function CommunityHealthWorkerDashboard() {
 
       <section className="section">
         <h3>Maternal, Child, Vaccination, Chronic, Surveillance, Referrals</h3>
-        <div className="grid info-grid">
-          <button className="btn-secondary" onClick={() => submitMini("maternal", maternalForm, createChwMaternal, () => setMaternalForm({ motherName: "", trimester: 1, ancVisits: 0, highRiskPregnancy: false }))}>Save Maternal Record</button>
-          <button className="btn-secondary" onClick={() => submitMini("child-growth", childForm, createChwChildGrowth, () => setChildForm({ childName: "", ageMonths: 0, weightKg: 0, heightCm: 0, muacCm: 0, nutritionRisk: "LOW" }))}>Save Child Growth</button>
-          <button className="btn-secondary" onClick={() => submitMini("vaccinations", vaccForm, createChwVaccination, () => setVaccForm({ memberName: "", vaccine: "", dose: "", batchNumber: "" }))}>Save Vaccination</button>
-          <button className="btn-secondary" onClick={() => submitMini("chronic", chronicForm, createChwChronic, () => setChronicForm({ patientName: "", condition: "", medicationCompliance: "GOOD", notes: "" }))}>Save Chronic Follow-up</button>
-          <button className="btn-secondary" onClick={() => submitMini("disease-reports", diseaseForm, createChwDiseaseReport, () => setDiseaseForm({ disease: "", suspectedCases: 1, severity: "MEDIUM", location: "", notes: "" }))}>Submit Disease Report</button>
-          <button className="btn-secondary" onClick={() => submitMini("referrals", referralForm, createChwReferral, () => setReferralForm({ patientName: "", patientPhone: "", summary: "", urgency: "MEDIUM" }))}>Create Referral</button>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+          <form className="card form" onSubmit={submitMaternal}>
+            <h3>Maternal</h3>
+            <select value={maternalForm.household} onChange={(e) => setMaternalForm({ ...maternalForm, household: e.target.value })}>
+              <option value="">Select household (optional)</option>
+              {households.map((h) => <option key={h._id} value={h._id}>{h.householdId} - {h.headOfHousehold}</option>)}
+            </select>
+            <input required placeholder="Mother name" value={maternalForm.motherName} onChange={(e) => setMaternalForm({ ...maternalForm, motherName: e.target.value })} />
+            <input type="number" min="1" max="3" placeholder="Trimester (1-3)" value={maternalForm.trimester} onChange={(e) => setMaternalForm({ ...maternalForm, trimester: e.target.value })} />
+            <input type="number" min="0" placeholder="ANC visits" value={maternalForm.ancVisits} onChange={(e) => setMaternalForm({ ...maternalForm, ancVisits: e.target.value })} />
+            <input type="date" value={maternalForm.expectedDeliveryDate} onChange={(e) => setMaternalForm({ ...maternalForm, expectedDeliveryDate: e.target.value })} />
+            <input type="number" min="0" placeholder="Postnatal visits" value={maternalForm.postnatalVisits} onChange={(e) => setMaternalForm({ ...maternalForm, postnatalVisits: e.target.value })} />
+            <label><input type="checkbox" checked={maternalForm.highRiskPregnancy} onChange={(e) => setMaternalForm({ ...maternalForm, highRiskPregnancy: e.target.checked })} /> High-risk pregnancy</label>
+            <textarea placeholder="Notes" value={maternalForm.notes} onChange={(e) => setMaternalForm({ ...maternalForm, notes: e.target.value })} />
+            <button className="btn-primary" type="submit" disabled={busy}>Save Maternal Record</button>
+          </form>
+
+          <form className="card form" onSubmit={submitChildGrowth}>
+            <h3>Child Growth</h3>
+            <select value={childForm.household} onChange={(e) => setChildForm({ ...childForm, household: e.target.value })}>
+              <option value="">Select household (optional)</option>
+              {households.map((h) => <option key={h._id} value={h._id}>{h.householdId} - {h.headOfHousehold}</option>)}
+            </select>
+            <input required placeholder="Child name" value={childForm.childName} onChange={(e) => setChildForm({ ...childForm, childName: e.target.value })} />
+            <input type="number" min="0" placeholder="Age (months)" value={childForm.ageMonths} onChange={(e) => setChildForm({ ...childForm, ageMonths: e.target.value })} />
+            <input type="number" step="0.01" min="0" placeholder="Weight (kg)" value={childForm.weightKg} onChange={(e) => setChildForm({ ...childForm, weightKg: e.target.value })} />
+            <input type="number" step="0.1" min="0" placeholder="Height (cm)" value={childForm.heightCm} onChange={(e) => setChildForm({ ...childForm, heightCm: e.target.value })} />
+            <input type="number" step="0.1" min="0" placeholder="MUAC (cm)" value={childForm.muacCm} onChange={(e) => setChildForm({ ...childForm, muacCm: e.target.value })} />
+            <select value={childForm.nutritionRisk} onChange={(e) => setChildForm({ ...childForm, nutritionRisk: e.target.value })}>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+            </select>
+            <textarea placeholder="Notes" value={childForm.notes} onChange={(e) => setChildForm({ ...childForm, notes: e.target.value })} />
+            <button className="btn-primary" type="submit" disabled={busy}>Save Child Growth</button>
+          </form>
+
+          <form className="card form" onSubmit={submitVaccination}>
+            <h3>Vaccination</h3>
+            <select value={vaccForm.household} onChange={(e) => setVaccForm({ ...vaccForm, household: e.target.value })}>
+              <option value="">Select household (optional)</option>
+              {households.map((h) => <option key={h._id} value={h._id}>{h.householdId} - {h.headOfHousehold}</option>)}
+            </select>
+            <input required placeholder="Member name" value={vaccForm.memberName} onChange={(e) => setVaccForm({ ...vaccForm, memberName: e.target.value })} />
+            <input required placeholder="Vaccine" value={vaccForm.vaccine} onChange={(e) => setVaccForm({ ...vaccForm, vaccine: e.target.value })} />
+            <input required placeholder="Dose" value={vaccForm.dose} onChange={(e) => setVaccForm({ ...vaccForm, dose: e.target.value })} />
+            <input placeholder="Batch number" value={vaccForm.batchNumber} onChange={(e) => setVaccForm({ ...vaccForm, batchNumber: e.target.value })} />
+            <input type="date" value={vaccForm.expiryDate} onChange={(e) => setVaccForm({ ...vaccForm, expiryDate: e.target.value })} />
+            <input placeholder="Adverse event (optional)" value={vaccForm.adverseEvent} onChange={(e) => setVaccForm({ ...vaccForm, adverseEvent: e.target.value })} />
+            <select value={vaccForm.coldChainStatus} onChange={(e) => setVaccForm({ ...vaccForm, coldChainStatus: e.target.value })}>
+              <option value="OK">OK</option>
+              <option value="WARNING">WARNING</option>
+              <option value="BREACH">BREACH</option>
+            </select>
+            <button className="btn-primary" type="submit" disabled={busy}>Save Vaccination</button>
+          </form>
+
+          <form className="card form" onSubmit={submitChronic}>
+            <h3>Chronic Follow-up</h3>
+            <select value={chronicForm.household} onChange={(e) => setChronicForm({ ...chronicForm, household: e.target.value })}>
+              <option value="">Select household (optional)</option>
+              {households.map((h) => <option key={h._id} value={h._id}>{h.householdId} - {h.headOfHousehold}</option>)}
+            </select>
+            <input required placeholder="Patient name" value={chronicForm.patientName} onChange={(e) => setChronicForm({ ...chronicForm, patientName: e.target.value })} />
+            <input required placeholder="Condition" value={chronicForm.condition} onChange={(e) => setChronicForm({ ...chronicForm, condition: e.target.value })} />
+            <select value={chronicForm.medicationCompliance} onChange={(e) => setChronicForm({ ...chronicForm, medicationCompliance: e.target.value })}>
+              <option value="GOOD">GOOD</option>
+              <option value="FAIR">FAIR</option>
+              <option value="POOR">POOR</option>
+            </select>
+            <input type="date" value={chronicForm.followUpDate} onChange={(e) => setChronicForm({ ...chronicForm, followUpDate: e.target.value })} />
+            <label><input type="checkbox" checked={chronicForm.escalationRequired} onChange={(e) => setChronicForm({ ...chronicForm, escalationRequired: e.target.checked })} /> Escalation required</label>
+            <textarea placeholder="Follow-up notes" value={chronicForm.notes} onChange={(e) => setChronicForm({ ...chronicForm, notes: e.target.value })} />
+            <button className="btn-primary" type="submit" disabled={busy}>Save Chronic Follow-up</button>
+          </form>
+
+          <form className="card form" onSubmit={submitDisease}>
+            <h3>Surveillance</h3>
+            <input required placeholder="Disease" value={diseaseForm.disease} onChange={(e) => setDiseaseForm({ ...diseaseForm, disease: e.target.value })} />
+            <input type="number" min="1" placeholder="Suspected cases" value={diseaseForm.suspectedCases} onChange={(e) => setDiseaseForm({ ...diseaseForm, suspectedCases: e.target.value })} />
+            <select value={diseaseForm.severity} onChange={(e) => setDiseaseForm({ ...diseaseForm, severity: e.target.value })}>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <input placeholder="Location" value={diseaseForm.location} onChange={(e) => setDiseaseForm({ ...diseaseForm, location: e.target.value })} />
+            <input placeholder="Ward/Sub-county" value={diseaseForm.ward} onChange={(e) => setDiseaseForm({ ...diseaseForm, ward: e.target.value })} />
+            <input placeholder="Symptoms (comma separated)" value={diseaseForm.symptoms} onChange={(e) => setDiseaseForm({ ...diseaseForm, symptoms: e.target.value })} />
+            <label><input type="checkbox" checked={diseaseForm.reportedToPublicHealth} onChange={(e) => setDiseaseForm({ ...diseaseForm, reportedToPublicHealth: e.target.checked })} /> Reported to public health</label>
+            <textarea placeholder="Disease report notes" value={diseaseForm.notes} onChange={(e) => setDiseaseForm({ ...diseaseForm, notes: e.target.value })} />
+            <button className="btn-primary" type="submit" disabled={busy}>Submit Disease Report</button>
+          </form>
+
+          <form className="card form" onSubmit={submitReferral}>
+            <h3>Referrals</h3>
+            <input required placeholder="Patient name" value={referralForm.patientName} onChange={(e) => setReferralForm({ ...referralForm, patientName: e.target.value })} />
+            <input placeholder="Patient phone" value={referralForm.patientPhone} onChange={(e) => setReferralForm({ ...referralForm, patientPhone: e.target.value })} />
+            <select value={referralForm.urgency} onChange={(e) => setReferralForm({ ...referralForm, urgency: e.target.value })}>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <input placeholder="Receiving hospital ID (optional)" value={referralForm.receivingHospital} onChange={(e) => setReferralForm({ ...referralForm, receivingHospital: e.target.value })} />
+            <textarea required placeholder="Referral summary" value={referralForm.summary} onChange={(e) => setReferralForm({ ...referralForm, summary: e.target.value })} />
+            <button className="btn-primary" type="submit" disabled={busy}>Create Referral</button>
+          </form>
         </div>
       </section>
 

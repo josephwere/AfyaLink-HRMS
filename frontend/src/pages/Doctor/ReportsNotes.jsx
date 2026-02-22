@@ -8,7 +8,7 @@ export default function ReportsNotes() {
       subtitle="Case archive, research notes, exports and publication tracking."
       actions={[
         { label: "Open Reports", variant: "primary", path: "/reports" },
-        { label: "New Note" },
+        { label: "New Note", path: "/doctor/reports-notes#new" },
       ]}
       panels={[
         { title: "Case Notes", body: "Structured archive of clinical notes." },

@@ -29,7 +29,7 @@ export default function NlpAnalytics() {
           <p className="muted">Ask analytics questions in natural language and get actionable metrics.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={run} disabled={loading}>
+          <button type="button" className="btn-primary" onClick={run} disabled={loading}>
             {loading ? "Running..." : "Run Query"}
           </button>
         </div>
@@ -46,14 +46,14 @@ export default function NlpAnalytics() {
               placeholder="e.g. show revenue for last 30 days"
             />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-secondary" onClick={() => setQuery("Show revenue this month")}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-secondary" onClick={() => setQuery("Show revenue this month")}>
               Revenue
             </button>
-            <button className="btn-secondary" onClick={() => setQuery("Show active staff")}>
+            <button type="button" className="btn-secondary" onClick={() => setQuery("Show active staff")}>
               Staff
             </button>
-            <button className="btn-secondary" onClick={() => setQuery("Show pending approvals")}>
+            <button type="button" className="btn-secondary" onClick={() => setQuery("Show pending approvals")}>
               Approvals
             </button>
           </div>

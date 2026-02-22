@@ -79,6 +79,7 @@ export default function LabDashboard() {
 
                   <td>
                     <button
+                      type="button"
                       className="button gradient-green"
                       disabled={!canCompleteLab}
                       onClick={() => completeLab(e._id)}

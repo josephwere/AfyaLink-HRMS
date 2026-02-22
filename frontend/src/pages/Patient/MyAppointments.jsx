@@ -197,7 +197,7 @@ export default function MyAppointments() {
           <p className="muted" style={{ marginTop: 6 }}>
             Showing {filteredDoctors.length} of {doctors.length} doctors
           </p>
-          <button className="btn-primary" disabled={saving}>
+          <button type="submit" className="btn-primary" disabled={saving}>
             {saving ? "Submitting..." : "Submit Appointment"}
           </button>
         </form>

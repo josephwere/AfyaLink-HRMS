@@ -1,4 +1,4 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const listAiAdminLogs = async (params = {}) => {
   const query = new URLSearchParams();
@@ -6,9 +6,7 @@ export const listAiAdminLogs = async (params = {}) => {
   if (params.limit) query.set("limit", String(params.limit));
   if (params.hospital) query.set("hospital", String(params.hospital));
   const qs = query.toString();
-  const res = await api.get(`/api/ai_admin/list${qs ? `?${qs}` : ""}`);
-  return res.data;
+  return apiFetch(`/api/ai_admin/list${qs ? `?${qs}` : ""}`);
 };
 
 export default { listAiAdminLogs };
-

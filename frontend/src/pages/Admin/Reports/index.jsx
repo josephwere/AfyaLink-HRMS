@@ -50,10 +50,10 @@ export default function Reports(){
       </div>
 
       <div className="card">
-        <div className="welcome-actions" style={{ marginBottom: 12 }}>
+        <div className="welcome-actions mb-12">
           <label>From <input type="date" value={from} onChange={e=>setFrom(e.target.value)} /></label>
           <label>To <input type="date" value={to} onChange={e=>setTo(e.target.value)} /></label>
-          <button className="btn-secondary" onClick={downloadCSV}>Download CSV ({filtered.length})</button>
+          <button type="button" className="btn-secondary" onClick={downloadCSV}>Download CSV ({filtered.length})</button>
         </div>
 
         <div className="table-wrap">

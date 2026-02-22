@@ -33,8 +33,8 @@ export default function PharmacyForm({ item, onSave, onCancel }) {
           <textarea value={form.description} onChange={e=>change('description', e.target.value)} placeholder="Description" className="col-span-2 border p-2 rounded" />
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button className="btn" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={()=>onSave(form)}>Save</button>
+          <button type="button" className="btn" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn btn-primary" onClick={()=>onSave(form)}>Save</button>
         </div>
       </div>
     </div>

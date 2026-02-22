@@ -1,4 +1,4 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const listTransfers = async (params = {}) => {
   const query = new URLSearchParams();
@@ -7,17 +7,17 @@ export const listTransfers = async (params = {}) => {
   if (params.page) query.set("page", String(params.page));
   if (params.cursor) query.set("cursor", params.cursor);
   const qs = query.toString();
-  const res = await api.get(`/api/transfers${qs ? `?${qs}` : ""}`);
-  return res.data;
+  return apiFetch(`/api/transfers${qs ? `?${qs}` : ""}`);
 };
 
 export const verifyTransferProvenance = async ({ transferId, payload, signature }) => {
-  const res = await api.post(`/api/transfers/${transferId}/provenance/verify`, {
-    payload,
-    signature,
+  return apiFetch(`/api/transfers/${transferId}/provenance/verify`, {
+    method: "POST",
+    body: {
+      payload,
+      signature,
+    },
   });
-  return res.data;
 };
 
 export default { listTransfers, verifyTransferProvenance };
-

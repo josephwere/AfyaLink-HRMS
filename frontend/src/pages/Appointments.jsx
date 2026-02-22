@@ -92,14 +92,15 @@ export default function Appointments() {
   }
 
   return (
-    <div className="card premium-card">
+    <div className="dashboard">
       <h2>Appointments</h2>
 
       {error && <div style={{ color: "red" }}>{error}</div>}
 
-      <form onSubmit={createAppointment} className="card appointment-form">
+      <form onSubmit={createAppointment} className="card form">
         <h3>Schedule Appointment</h3>
 
+        <label>Patient</label>
         <select
           value={form.patient}
           onChange={(e) => setForm({ ...form, patient: e.target.value })}
@@ -123,6 +124,7 @@ export default function Appointments() {
           </button>
         )}
 
+        <label>Doctor</label>
         <select
           value={form.doctor}
           onChange={(e) => setForm({ ...form, doctor: e.target.value })}
@@ -136,6 +138,7 @@ export default function Appointments() {
           ))}
         </select>
 
+        <label>Date and time</label>
         <input
           type="datetime-local"
           value={form.scheduledAt}
@@ -145,6 +148,7 @@ export default function Appointments() {
           required
         />
 
+        <label>Reason</label>
         <input
           placeholder="Reason"
           value={form.reason}
@@ -152,44 +156,51 @@ export default function Appointments() {
           required
         />
 
-        <button className="button gradient-blue">Schedule</button>
+        <div>
+          <button className="btn-primary" type="submit">Schedule</button>
+        </div>
       </form>
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <table className="table premium-table">
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Doctor</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.map((a) => (
-              <tr key={a._id}>
-                <td>{a.patient?.name}</td>
-                <td>{a.doctor?.name}</td>
-                <td>{new Date(a.scheduledAt).toLocaleString()}</td>
-                <td>{a.status}</td>
-                <td>
-                  {a.status === "Scheduled" && (
-                    <button
-                      className="button cancel-btn"
-                      onClick={() => cancelAppointment(a._id)}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="card premium-card">
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table premium-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Doctor</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map((a) => (
+                  <tr key={a._id}>
+                    <td>{a.patient?.name}</td>
+                    <td>{a.doctor?.name}</td>
+                    <td>{new Date(a.scheduledAt).toLocaleString()}</td>
+                    <td>{a.status}</td>
+                    <td>
+                      {a.status === "Scheduled" && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => cancelAppointment(a._id)}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -8,8 +8,19 @@ export default function AuditLogs() {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetchAuditLogs(filters);
-    setLogs(res.data);
+    try {
+      const res = await fetchAuditLogs(filters);
+      const items = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      setLogs(items);
+    } catch {
+      setLogs([]);
+    }
     setLoading(false);
   };
 
@@ -66,9 +77,9 @@ export default function AuditLogs() {
             setFilters({ ...filters, resource: e.target.value })
           }
         />
-        <button onClick={load}>Filter</button>
-        <button onClick={exportCSV}>Export CSV</button>
-        <button onClick={exportEvidenceBundle}>Export Evidence Bundle</button>
+        <button type="button" onClick={load}>Filter</button>
+        <button type="button" onClick={exportCSV}>Export CSV</button>
+        <button type="button" onClick={exportEvidenceBundle}>Export Evidence Bundle</button>
       </div>
 
       {loading ? (

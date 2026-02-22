@@ -7,8 +7,8 @@ export default function CMECertifications() {
       title="CME & Certifications"
       subtitle="License expiry, CME tracking, certificate vault and compliance reminders."
       actions={[
-        { label: "Upload Certificate", variant: "primary" },
-        { label: "View Training Calendar" },
+        { label: "Upload Certificate", variant: "primary", path: "/profile#credentials" },
+        { label: "View Training Calendar", path: "/doctor/cme#calendar" },
       ]}
       panels={[
         { title: "License Status", body: "License number and expiry countdown." },

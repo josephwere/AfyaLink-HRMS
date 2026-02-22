@@ -1,9 +1,11 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const triggerAction = async (action, meta = {}) => {
-  const res = await api.post("/api/actions/trigger", {
-    action,
-    meta,
+  return apiFetch("/api/actions/trigger", {
+    method: "POST",
+    body: {
+      action,
+      meta,
+    },
   });
-  return res.data;
 };

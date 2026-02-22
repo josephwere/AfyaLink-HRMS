@@ -6,7 +6,10 @@ export default function ExpiryAlerts() {
     <ModuleWorkspace
       title="Expiry Alerts"
       subtitle="Medication expiry surveillance and near-expiry action workflow."
-      actions={[{ label: "Review Alerts", variant: "primary" }, { label: "Quarantine Batch" }]}
+      actions={[
+        { label: "Review Alerts", variant: "primary", path: "/pharmacy/expiry#review" },
+        { label: "Quarantine Batch", path: "/pharmacy/expiry#quarantine" },
+      ]}
       panels={[
         { title: "Near Expiry", body: "Batches approaching expiry." },
         { title: "Expired", body: "Expired items requiring disposal records." },

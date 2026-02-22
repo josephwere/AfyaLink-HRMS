@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
-import DismissibleCardSection from "../components/DismissibleCardSection";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
@@ -111,68 +110,62 @@ export default function Register() {
         {info && <div className="auth-info">{info}</div>}
         {googleError && <div className="auth-error">{googleError}</div>}
 
-        <DismissibleCardSection title="Account Details">
-          <label>Full Name</label>
-          <input name="name" value={form.name} onChange={handleChange} required />
+        <label>Full Name</label>
+        <input name="name" value={form.name} onChange={handleChange} required />
 
-          <label>Email address (optional)</label>
-          <input type="email" name="email" value={form.email} onChange={handleChange} />
+        <label>Email address (optional)</label>
+        <input type="email" name="email" value={form.email} onChange={handleChange} />
 
-          <CountryPhoneInput
-            countryLabel="Phone Country (optional)"
-            phoneLabel="Phone number (optional)"
-            countryCode={form.phoneCountry}
-            localNumber={form.phoneLocal}
-            onCountryCodeChange={(v) => setForm((prev) => ({ ...prev, phoneCountry: v }))}
-            onLocalNumberChange={(v) => setForm((prev) => ({ ...prev, phoneLocal: v }))}
-          />
-        </DismissibleCardSection>
+        <CountryPhoneInput
+          countryLabel="Phone Country (optional)"
+          phoneLabel="Phone number (optional)"
+          countryCode={form.phoneCountry}
+          localNumber={form.phoneLocal}
+          onCountryCodeChange={(v) => setForm((prev) => ({ ...prev, phoneCountry: v }))}
+          onLocalNumberChange={(v) => setForm((prev) => ({ ...prev, phoneLocal: v }))}
+        />
 
-        <DismissibleCardSection title="Identity Details">
-          <label>National ID Number</label>
-          <input
-            name="nationalIdNumber"
-            value={form.nationalIdNumber}
-            onChange={handleChange}
-          />
+        <label>National ID Number</label>
+        <input
+          name="nationalIdNumber"
+          value={form.nationalIdNumber}
+          onChange={handleChange}
+        />
 
-          <label>National ID Country</label>
-          <select
-            name="nationalIdCountry"
-            value={form.nationalIdCountry}
-            onChange={handleChange}
-          >
-            <option value="">Select country</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name} ({country.code})
-              </option>
-            ))}
-          </select>
-        </DismissibleCardSection>
+        <label>National ID Country</label>
+        <select
+          name="nationalIdCountry"
+          value={form.nationalIdCountry}
+          onChange={handleChange}
+        >
+          <option value="">Select country</option>
+          {countries.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.name} ({country.code})
+            </option>
+          ))}
+        </select>
 
-        <DismissibleCardSection title="Security">
-          <PasswordInput
-            label="Password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            showStrength
-            required
-          />
+        <PasswordInput
+          label="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          showStrength
+          required
+        />
 
-          <PasswordInput
-            label="Confirm password"
-            value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-            required
-          />
-        </DismissibleCardSection>
+        <PasswordInput
+          label="Confirm password"
+          value={form.confirmPassword}
+          onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+          required
+        />
 
         <div className="muted" style={{ marginBottom: 10 }}>
           Unverified accounts may be deleted after the verification deadline.
         </div>
 
-        <button disabled={submitting}>
+        <button type="submit" disabled={submitting}>
           {submitting ? "Creating account..." : "Create account"}
         </button>
 

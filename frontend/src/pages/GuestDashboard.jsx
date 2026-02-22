@@ -12,8 +12,8 @@ export default function GuestDashboard() {
           <p className="muted">Public access for appointments, doctor directory, services and pre-registration.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/register")}>Book Appointment</button>
-          <button className="btn-secondary" onClick={() => navigate("/login")}>Sign In</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/register")}>Book Appointment</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/login")}>Sign In</button>
         </div>
       </div>
 

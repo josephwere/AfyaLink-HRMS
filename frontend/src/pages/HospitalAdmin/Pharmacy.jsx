@@ -41,11 +41,15 @@ export default function Pharmacy() {
 
   useEffect(() => {
     fetchItems();
-    // attempt sync loop when back online
-    window.addEventListener('online', () => {
-      idbPharmacy.syncPending().then(fetchItems).catch(console.error);
-    });
   }, [page, q]);
+
+  useEffect(() => {
+    const onOnline = () => {
+      idbPharmacy.syncPending().then(fetchItems).catch(console.error);
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   const onCreate = async (payload) => {
     try {
@@ -85,7 +89,7 @@ export default function Pharmacy() {
             onChange={(e)=>setQ(e.target.value)}
             className="border px-3 py-2 rounded"
           />
-          <button className="btn btn-primary" onClick={()=>{setOpenForm(true); setEditing(null);}}>
+          <button type="button" className="btn btn-primary" onClick={()=>{setOpenForm(true); setEditing(null);}}>
             Add Item
           </button>
         </div>

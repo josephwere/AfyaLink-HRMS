@@ -146,7 +146,7 @@ export default function RecruitmentAds() {
           <input value={form.applyUrl} onChange={(e) => setForm((p) => ({ ...p, applyUrl: e.target.value }))} />
           <label>Expiry Date</label>
           <input type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))} />
-          <button className="btn-primary" disabled={saving}>{saving ? "Posting..." : "Post Vacancy"}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Posting..." : "Post Vacancy"}</button>
         </form>
       </section>
 
@@ -174,9 +174,9 @@ export default function RecruitmentAds() {
                       <td>{ad.expiresAt ? new Date(ad.expiresAt).toLocaleDateString() : "—"}</td>
                       <td>
                         <div className="row-actions">
-                          <button className="btn-secondary" onClick={() => setStatus(ad._id, "ACTIVE")}>Activate</button>
-                          <button className="btn-secondary" onClick={() => setStatus(ad._id, "PAUSED")}>Pause</button>
-                          <button className="btn-secondary" onClick={() => setStatus(ad._id, "CLOSED")}>Close</button>
+                          <button type="button" className="btn-secondary" onClick={() => setStatus(ad._id, "ACTIVE")}>Activate</button>
+                          <button type="button" className="btn-secondary" onClick={() => setStatus(ad._id, "PAUSED")}>Pause</button>
+                          <button type="button" className="btn-secondary" onClick={() => setStatus(ad._id, "CLOSED")}>Close</button>
                         </div>
                       </td>
                     </tr>
@@ -241,10 +241,10 @@ export default function RecruitmentAds() {
                     <td>{a.status}</td>
                     <td>
                       <div className="row-actions">
-                        <button className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "UNDER_REVIEW")}>Review</button>
-                        <button className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "SHORTLISTED")}>Shortlist</button>
-                        <button className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "REJECTED")}>Reject</button>
-                        <button className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "HIRED")}>Hire</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "UNDER_REVIEW")}>Review</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "SHORTLISTED")}>Shortlist</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "REJECTED")}>Reject</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateApplicationStatus(a._id, "HIRED")}>Hire</button>
                       </div>
                     </td>
                   </tr>

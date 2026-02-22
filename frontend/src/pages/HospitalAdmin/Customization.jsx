@@ -267,11 +267,10 @@ export default function HospitalCustomization() {
       </section>
 
       <section className="section">
-        <button className="btn-primary" onClick={save} disabled={saving}>
+        <button type="button" className="btn-primary" onClick={save} disabled={saving}>
           {saving ? "Saving..." : "Save Customization"}
         </button>
       </section>
     </div>
   );
 }
-

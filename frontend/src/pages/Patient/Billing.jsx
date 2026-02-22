@@ -6,7 +6,10 @@ export default function PatientBilling() {
     <ModuleWorkspace
       title="Billing"
       subtitle="Invoices, outstanding balances, receipts and payment history."
-      actions={[{ label: "Open Payments", variant: "primary", path: "/payments" }, { label: "Download Receipt" }]}
+      actions={[
+        { label: "Open Payments", variant: "primary", path: "/payments" },
+        { label: "Download Receipt", onClick: () => window.print() },
+      ]}
       panels={[
         { title: "Outstanding", body: "Pending invoices and due dates." },
         { title: "Paid", body: "Paid invoices and transaction history." },

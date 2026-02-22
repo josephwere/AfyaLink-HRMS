@@ -1,22 +1,26 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const listBranches = async (hospitalId) => {
   const query = hospitalId ? `?hospitalId=${encodeURIComponent(hospitalId)}` : "";
-  const res = await api.get(`/api/branches/list${query}`);
-  return res.data;
+  return apiFetch(`/api/branches/list${query}`);
 };
 
 export const createBranch = async (data) => {
-  const res = await api.post("/api/branches", data);
-  return res.data;
+  return apiFetch("/api/branches", {
+    method: "POST",
+    body: data,
+  });
 };
 
 export const updateBranch = async (id, data) => {
-  const res = await api.put(`/api/branches/${id}`, data);
-  return res.data;
+  return apiFetch(`/api/branches/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 };
 
 export const removeBranch = async (id) => {
-  const res = await api.delete(`/api/branches/${id}`);
-  return res.data;
+  return apiFetch(`/api/branches/${id}`, {
+    method: "DELETE",
+  });
 };

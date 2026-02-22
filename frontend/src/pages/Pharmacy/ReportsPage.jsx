@@ -6,7 +6,10 @@ export default function PharmacyReportsPage() {
     <ModuleWorkspace
       title="Pharmacy Reports"
       subtitle="Dispense volumes, controlled logs and inventory audit reports."
-      actions={[{ label: "Open Reports", variant: "primary", path: "/reports" }, { label: "Export CSV" }]}
+      actions={[
+        { label: "Open Reports", variant: "primary", path: "/reports" },
+        { label: "Export CSV", onClick: () => window.print() },
+      ]}
       panels={[
         { title: "Dispense Trends", body: "Daily and monthly dispensing analysis." },
         { title: "Controlled Audit", body: "Controlled drug variance and audit trail." },

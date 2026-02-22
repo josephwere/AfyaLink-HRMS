@@ -59,7 +59,7 @@ export default function TwoFactor() {
 
       {error && <p className="error">{error}</p>}
 
-      <form onSubmit={submitOtp}>
+      <form className="form" onSubmit={submitOtp}>
         <input
           type="text"
           inputMode="text"
@@ -70,7 +70,7 @@ export default function TwoFactor() {
           required
         />
 
-        <button disabled={loading || otp.trim().length < 6}>
+        <button className="btn-primary" type="submit" disabled={loading || otp.trim().length < 6}>
           {loading ? "Verifying..." : "Verify"}
         </button>
       </form>

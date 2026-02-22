@@ -4,6 +4,7 @@ import { StatCard } from "../../components/Cards";
 import { getSystemAdminMetrics, getRiskPolicy, updateRiskPolicy } from "../../services/systemAdminApi";
 import { getDeveloperOverview, getTrustStatus, runWorkflowSlaScan } from "../../services/developerApi";
 import { runStaffingForecast, runDigitalTwin } from "../../services/mlApi";
+import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 
 export default function SystemAdminDashboard() {
   const navigate = useNavigate();
@@ -15,11 +16,21 @@ export default function SystemAdminDashboard() {
   const [riskPolicy, setRiskPolicy] = useState(null);
   const [savingRisk, setSavingRisk] = useState(false);
   const [ai, setAi] = useState(null);
+  const [training, setTraining] = useState({
+    total: 0,
+    notStarted: 0,
+    inProgress: 0,
+    completed: 0,
+    overdueNotStarted: 0,
+    overdueInProgress: 0,
+    completionRate: 0,
+  });
   const [aiTrend, setAiTrend] = useState({
     doctorGap: [],
     nurseGap: [],
     underCapacity: [],
     pendingShifts: [],
+    trainingCompletion: [],
   });
 
   const appendTrend = (key, value) => {
@@ -95,6 +106,49 @@ export default function SystemAdminDashboard() {
     getRiskPolicy()
       .then((p) => setRiskPolicy(p || null))
       .catch(() => setRiskPolicy(null));
+    listTrainingTrackers({ limit: 300 })
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        const now = Date.now();
+        const notStarted = rows.filter((r) => r.status === "NOT_STARTED").length;
+        const inProgress = rows.filter((r) => r.status === "IN_PROGRESS").length;
+        const completed = rows.filter((r) => r.status === "COMPLETED").length;
+        const overdueNotStarted = rows.filter(
+          (r) =>
+            r.status === "NOT_STARTED" &&
+            r.createdAt &&
+            now - new Date(r.createdAt).getTime() >= 3 * 24 * 60 * 60 * 1000
+        ).length;
+        const overdueInProgress = rows.filter(
+          (r) =>
+            r.status === "IN_PROGRESS" &&
+            r.updatedAt &&
+            now - new Date(r.updatedAt).getTime() >= 7 * 24 * 60 * 60 * 1000
+        ).length;
+        const total = rows.length;
+        const completionRate = total ? Math.round((completed / total) * 100) : 0;
+        setTraining({
+          total,
+          notStarted,
+          inProgress,
+          completed,
+          overdueNotStarted,
+          overdueInProgress,
+          completionRate,
+        });
+        appendTrend("trainingCompletion", completionRate);
+      })
+      .catch(() =>
+        setTraining({
+          total: 0,
+          notStarted: 0,
+          inProgress: 0,
+          completed: 0,
+          overdueNotStarted: 0,
+          overdueInProgress: 0,
+          completionRate: 0,
+        })
+      );
     loadAi();
     const timer = setInterval(loadAi, 45000);
     return () => clearInterval(timer);
@@ -117,7 +171,7 @@ export default function SystemAdminDashboard() {
       setDevOverview(d || null);
       setTrust(t?.trust || null);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to run SLA scan");
+      setMsg(err?.message || "Failed to run SLA scan");
     } finally {
       setRunningSla(false);
     }
@@ -146,12 +200,13 @@ export default function SystemAdminDashboard() {
           <p className="muted">Operational reliability, queue health, integration stability and deployment visibility.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={runSla} disabled={runningSla}>
+          <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
             {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
           </button>
-          <button className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
-          <button className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
-          <button className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
         </div>
       </div>
 
@@ -172,24 +227,44 @@ export default function SystemAdminDashboard() {
           <StatCard title="Database Health" value={devOverview?.queues?.dlq?.failed ?? "—"} />
           <StatCard title="Workforce Breached" value={devOverview?.queues?.workforce?.breached ?? "—"} />
           <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} />
+          <StatCard
+            title="Training Completion %"
+            value={training.completionRate}
+            trend={aiTrend.trainingCompletion}
+            subtitle={`${training.completed}/${training.total} completed`}
+            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
+          />
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Training Tracker</h3>
+        <div className="grid info-grid">
+          <StatCard title="Total Trainees" value={training.total} onClick={() => navigate("/admin/training-tracker")} />
+          <StatCard title="Not Started" value={training.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
+          <StatCard title="In Progress" value={training.inProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
+          <StatCard title="Completed" value={training.completed} onClick={() => navigate("/admin/training-tracker?status=COMPLETED")} />
+          <StatCard title="Overdue Not Started" value={training.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
+          <StatCard title="Overdue In Progress" value={training.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
         </div>
       </section>
 
       <section className="section">
         <h3>Technical Operations</h3>
         <div className="panel-grid">
-          <button className="action-link" onClick={() => navigate("/developer")}>Error Logs</button>
-          <button className="action-link" onClick={() => navigate("/developer")}>API Logs</button>
-          <button className="action-link" onClick={() => navigate("/developer/queue-replay")}>Queue Monitor</button>
-          <button className="action-link" onClick={() => navigate("/developer/webhook-retry")}>Webhook Retry</button>
-          <button className="action-link" onClick={() => navigate("/system-admin/abac")}>ABAC Policies</button>
-          <button className="action-link" onClick={() => navigate("/system-admin/mapping-studio")}>Mapping Studio</button>
-          <button className="action-link" onClick={() => navigate("/system-admin/nlp-analytics")}>NLP Analytics</button>
-          <button className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>Clinical Intelligence</button>
-          <button className="action-link" onClick={() => navigate("/system-admin/regulatory-reports")}>Regulatory Reports</button>
-          <button className="action-link" onClick={() => navigate("/developer/ai-extraction-history")}>AI Extraction History</button>
-          <button className="action-link" onClick={() => navigate("/super-admin/settings")}>Feature Flags</button>
-          <button className="action-link" onClick={() => navigate("/admin/realtime")}>Integration Hub</button>
+          <button type="button" className="action-link" onClick={() => navigate("/developer")}>Error Logs</button>
+          <button type="button" className="action-link" onClick={() => navigate("/developer")}>API Logs</button>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/queue-replay")}>Queue Monitor</button>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/webhook-retry")}>Webhook Retry</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/abac")}>ABAC Policies</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/mapping-studio")}>Mapping Studio</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/nlp-analytics")}>NLP Analytics</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>Clinical Intelligence</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/regulatory-reports")}>Regulatory Reports</button>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/ai-extraction-history")}>AI Extraction History</button>
+          <button type="button" className="action-link" onClick={() => navigate("/super-admin/settings")}>Feature Flags</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>Integration Hub</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=COMMUNITY_HEALTH_WORKER&status=IN_PROGRESS")}>Training Tracker Board</button>
         </div>
       </section>
 
@@ -315,11 +390,11 @@ export default function SystemAdminDashboard() {
                   />
                 </label>
               </div>
-              <div className="welcome-actions" style={{ marginTop: 12 }}>
-                <button className="btn-primary" onClick={saveRiskPolicy} disabled={savingRisk}>
+              <div className="welcome-actions mt-12">
+                <button type="button" className="btn-primary" onClick={saveRiskPolicy} disabled={savingRisk}>
                   {savingRisk ? "Saving..." : "Save Risk Policy"}
                 </button>
-                <button className="btn-secondary" onClick={() => navigate("/step-up")}>
+                <button type="button" className="btn-secondary" onClick={() => navigate("/step-up")}>
                   Step-up Console
                 </button>
               </div>
@@ -331,10 +406,10 @@ export default function SystemAdminDashboard() {
       <section className="section">
         <h3>Admin Controls</h3>
         <div className="action-list">
-          <button className="action-link" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
-          <button className="action-link" onClick={() => navigate("/admin/create-admin")}>Role Overrides</button>
-          <button className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
-          <button className="action-link" onClick={() => navigate("/admin/notifications")}>Alerts</button>
+          <button type="button" className="action-link" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/create-admin")}>Role Overrides</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
+          <button type="button" className="action-link" onClick={() => navigate("/notifications")}>Alerts</button>
         </div>
       </section>
     </div>

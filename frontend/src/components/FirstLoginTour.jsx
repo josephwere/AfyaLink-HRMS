@@ -212,7 +212,7 @@ export default function FirstLoginTour() {
   return (
     <div className="tour-backdrop" role="dialog" aria-modal="true">
       <div className="tour-modal">
-        <button className="tour-close" onClick={close} aria-label="Close">
+        <button type="button" className="tour-close" onClick={close} aria-label="Close">
           ×
         </button>
         <div className="muted" style={{ marginBottom: 8 }}>
@@ -226,16 +226,17 @@ export default function FirstLoginTour() {
           ))}
         </ul>
         <div className="tour-actions">
-          <button className="btn-secondary" onClick={close}>
+          <button type="button" className="btn-secondary" onClick={close}>
             Skip Tour
           </button>
           {canGoBack && (
-            <button className="btn-secondary" onClick={() => setIndex((v) => Math.max(0, v - 1))}>
+            <button type="button" className="btn-secondary" onClick={() => setIndex((v) => Math.max(0, v - 1))}>
               Back
             </button>
           )}
           {ctaPath && (
             <button
+              type="button"
               className="btn-secondary"
               onClick={() => navigate(ctaPath)}
             >
@@ -243,11 +244,11 @@ export default function FirstLoginTour() {
             </button>
           )}
           {!isLast ? (
-            <button className="btn-primary" onClick={() => setIndex((v) => v + 1)}>
+            <button type="button" className="btn-primary" onClick={() => setIndex((v) => v + 1)}>
               Next
             </button>
           ) : (
-            <button className="btn-primary" onClick={close}>
+            <button type="button" className="btn-primary" onClick={close}>
               Finish
             </button>
           )}

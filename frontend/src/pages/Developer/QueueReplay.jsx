@@ -58,7 +58,7 @@ export default function QueueReplay() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -87,6 +87,7 @@ export default function QueueReplay() {
                   <td>{i.timestamp ? new Date(i.timestamp).toLocaleString() : "-"}</td>
                   <td>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={async () => {
                         await retryDlqItem(i.id);
@@ -96,6 +97,7 @@ export default function QueueReplay() {
                       Replay
                     </button>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={() => openEditor(i)}
                     >
@@ -125,13 +127,13 @@ export default function QueueReplay() {
               onChange={(e) => setPayload(e.target.value)}
             />
             <div className="action-list" style={{ marginTop: 12 }}>
-              <button className="btn-secondary" onClick={() => savePayload(false)}>
+              <button type="button" className="btn-secondary" onClick={() => savePayload(false)}>
                 Save
               </button>
-              <button className="btn-primary" onClick={() => savePayload(true)}>
+              <button type="button" className="btn-primary" onClick={() => savePayload(true)}>
                 Save & Replay
               </button>
-              <button className="btn-secondary" onClick={() => setSelected(null)}>
+              <button type="button" className="btn-secondary" onClick={() => setSelected(null)}>
                 Cancel
               </button>
             </div>

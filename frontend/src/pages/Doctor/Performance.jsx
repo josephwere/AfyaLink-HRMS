@@ -7,8 +7,8 @@ export default function Performance() {
       title="Performance"
       subtitle="Operational and quality indicators aligned with HR performance evaluation."
       actions={[
-        { label: "View Monthly KPIs", variant: "primary" },
-        { label: "Export Metrics" },
+        { label: "View Monthly KPIs", variant: "primary", path: "/doctor/performance#monthly" },
+        { label: "Export Metrics", onClick: () => window.print() },
       ]}
       kpis={[
         { title: "Patient Load", value: "Live" },

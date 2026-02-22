@@ -67,51 +67,70 @@ export default function Lab(){
   });
 
   return (
-    <div style={{padding:20}}>
+    <div className="dashboard">
       <h2>Laboratory — Tests</h2>
 
-      <div style={{display:"flex",gap:10,marginBottom:16}}>
-        <button onClick={openNew}>➕ New Test</button>
-        <input placeholder="Search by patient or test type" value={query} onChange={e=>setQuery(e.target.value)} style={{flex:1}} />
+      <div className="welcome-actions mb-16">
+        <button type="button" className="btn-primary" onClick={openNew}>New Test</button>
+        <input
+          placeholder="Search by patient or test type"
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+          className="full-width"
+        />
       </div>
 
       <div id="lab-form-scroll" style={{marginBottom:20}}>
-        <form onSubmit={save} style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+        <form onSubmit={save} className="card form">
           <input placeholder="Patient name" value={form.patientName} onChange={e=>setForm({...form, patientName:e.target.value})} />
           <input placeholder="Test type" value={form.testType} onChange={e=>setForm({...form, testType:e.target.value})} />
           <input placeholder="Result" value={form.result} onChange={e=>setForm({...form, result:e.target.value})} />
           <input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
-          <button type="submit">{editing ? "Save changes" : "Create test"}</button>
-          {editing && <button type="button" onClick={()=>{setEditing(null); setForm({patientName:"", testType:"", result:"", date:""})}}>Cancel</button>}
+          <div>
+            <button className="btn-primary" type="submit">{editing ? "Save changes" : "Create test"}</button>
+            {editing && (
+              <button
+                className="btn-secondary"
+                type="button"
+                onClick={()=>{setEditing(null); setForm({patientName:"", testType:"", result:"", date:""})}}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
-      <table border="1" cellPadding="6" style={{width:"100%",borderCollapse:"collapse"}}>
-        <thead>
-          <tr>
-            <th>Patient</th>
-            <th>Test</th>
-            <th>Result</th>
-            <th>Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length===0 && <tr><td colSpan="5" style={{textAlign:"center"}}>No tests yet.</td></tr>}
-          {filtered.map(t=>(
-            <tr key={t.id}>
-              <td>{t.patientName}</td>
-              <td>{t.testType}</td>
-              <td>{t.result}</td>
-              <td>{t.date}</td>
-              <td>
-                <button onClick={()=>openEdit(t)}>Edit</button>{" "}
-                <button onClick={()=>removeTest(t.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="card">
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Test</th>
+                <th>Result</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length===0 && <tr><td colSpan="5" style={{textAlign:"center"}}>No tests yet.</td></tr>}
+              {filtered.map(t=>(
+                <tr key={t.id}>
+                  <td>{t.patientName}</td>
+                  <td>{t.testType}</td>
+                  <td>{t.result}</td>
+                  <td>{t.date}</td>
+                  <td>
+                    <button type="button" className="btn-secondary" onClick={()=>openEdit(t)}>Edit</button>{" "}
+                    <button type="button" className="btn-secondary" onClick={()=>removeTest(t.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

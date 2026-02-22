@@ -40,7 +40,7 @@ export default function NeuroEdgeExtract() {
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={run} disabled={!file || loading}>
+            <button type="button" className="btn-primary" onClick={run} disabled={!file || loading}>
               {loading ? "Extracting..." : "Extract"}
             </button>
           </div>
@@ -63,4 +63,3 @@ export default function NeuroEdgeExtract() {
     </div>
   );
 }
-

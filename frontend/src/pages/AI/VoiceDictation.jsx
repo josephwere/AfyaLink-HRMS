@@ -42,7 +42,7 @@ export default function VoiceDictation() {
             placeholder="Base64 audio payload"
           />
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={run} disabled={loading}>
+            <button type="button" className="btn-primary" onClick={run} disabled={loading}>
               {loading ? "Transcribing..." : "Transcribe"}
             </button>
           </div>

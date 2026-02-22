@@ -24,7 +24,7 @@ export default function AdminVerifyUser() {
         value={userId}
         onChange={(e) => setUserId(e.target.value)}
       />
-      <button onClick={handleVerify}>Verify User</button>
+      <button type="button" onClick={handleVerify}>Verify User</button>
       {msg && <p>{msg}</p>}
     </div>
   );

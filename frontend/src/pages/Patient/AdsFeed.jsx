@@ -134,7 +134,7 @@ export default function PatientAdsFeed() {
                               <span className="muted">Already applied</span>
                             ) : (
                               <div className="row-actions">
-                                <button className="btn-secondary" onClick={() => startApply(ad._id)}>
+                                <button type="button" className="btn-secondary" onClick={() => startApply(ad._id)}>
                                   Apply in AfyaLink
                                 </button>
                                 {ad.applyUrl ? (
@@ -165,10 +165,10 @@ export default function PatientAdsFeed() {
                                 <label>Cover Letter</label>
                                 <textarea value={form.coverLetter} onChange={(e) => setForm((p) => ({ ...p, coverLetter: e.target.value }))} />
                                 <div className="row-actions">
-                                  <button className="btn-primary" disabled={submitting} onClick={() => submitApplication(ad._id)}>
+                                  <button type="button" className="btn-primary" disabled={submitting} onClick={() => submitApplication(ad._id)}>
                                     {submitting ? "Submitting..." : "Submit Application"}
                                   </button>
-                                  <button className="btn-secondary" disabled={submitting} onClick={cancelApply}>
+                                  <button type="button" className="btn-secondary" disabled={submitting} onClick={cancelApply}>
                                     Cancel
                                   </button>
                                 </div>

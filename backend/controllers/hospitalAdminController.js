@@ -18,8 +18,26 @@ function resolveHospitalId(req) {
 ====================================================== */
 export const getHospitalConfig = async (req, res) => {
   try {
+    const role = String(req.user?.role || "").toUpperCase();
+    const privileged = role === "SUPER_ADMIN" || role === "SYSTEM_ADMIN" || role === "DEVELOPER";
     const hospitalId = resolveHospitalId(req);
     if (!hospitalId) {
+      if (privileged) {
+        return res.json({
+          name: null,
+          plan: "FREE",
+          features: {},
+          limits: {},
+          active: true,
+          subscription: null,
+          insuranceProviders: [],
+          patientPaymentMethods: [],
+          customization: {},
+          needsHospitalSelection: true,
+          breakGlassActive: req.breakGlass || false,
+          breakGlassExpiresAt: req.breakGlassExpiresAt || null,
+        });
+      }
       return res.status(400).json({ message: "hospitalId is required for this role" });
     }
 

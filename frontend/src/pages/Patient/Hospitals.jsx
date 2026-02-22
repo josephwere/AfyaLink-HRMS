@@ -51,6 +51,7 @@ export default function PatientHospitals() {
         </div>
         <div className="welcome-actions">
           <button
+            type="button"
             className="btn-primary"
             disabled={!selectedHospitalId}
             onClick={() => navigate(`/patient/appointments?hospitalId=${selectedHospitalId}`)}
@@ -58,6 +59,7 @@ export default function PatientHospitals() {
             Book Appointment
           </button>
           <button
+            type="button"
             className="btn-secondary"
             disabled={!selectedHospitalId}
             onClick={() => navigate(`/payments?hospitalId=${selectedHospitalId}`)}
@@ -115,18 +117,21 @@ export default function PatientHospitals() {
                       <td>
                         <div className="row-actions">
                           <button
+                            type="button"
                             className="btn-secondary"
                             onClick={() => selectHospital(h._id)}
                           >
                             {String(selectedHospitalId) === String(h._id) ? "Selected" : "Select"}
                           </button>
                           <button
+                            type="button"
                             className="btn-secondary"
                             onClick={() => navigate(`/patient/appointments?hospitalId=${h._id}`)}
                           >
                             Book
                           </button>
                           <button
+                            type="button"
                             className="btn-secondary"
                             onClick={() => navigate(`/payments?hospitalId=${h._id}`)}
                           >

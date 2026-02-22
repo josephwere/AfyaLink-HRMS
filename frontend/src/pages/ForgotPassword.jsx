@@ -48,7 +48,7 @@ export default function ForgotPassword() {
           placeholder="you@example.com"
         />
 
-        <button disabled={loading}>
+        <button type="submit" disabled={loading}>
           {loading ? "Sending..." : "Send reset link"}
         </button>
       </form>

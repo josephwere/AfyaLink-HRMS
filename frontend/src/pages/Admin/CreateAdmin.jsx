@@ -24,9 +24,12 @@ export default function CreateAdmin() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+  const actorRole = String(user?.role || "").toUpperCase();
+  const canCreateAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
+  const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
 
   // 🔒 Hard stop — UI level
-  if (user?.role !== "SUPER_ADMIN") {
+  if (!canCreateAdmins) {
     return <p>🚫 Access denied</p>;
   }
 
@@ -58,6 +61,10 @@ export default function CreateAdmin() {
 
     try {
       if (form.role === "SYSTEM_ADMIN") {
+        if (!canCreateSystemLevel) {
+          setMsg("Only Super Admin can create System Admin accounts.");
+          return;
+        }
         await registerSystemAdmin({
           name: form.name,
           email: form.email,
@@ -65,6 +72,10 @@ export default function CreateAdmin() {
         });
         setMsg("✅ System admin created");
       } else if (form.role === "DEVELOPER") {
+        if (!canCreateSystemLevel) {
+          setMsg("Only Super Admin can create Developer accounts.");
+          return;
+        }
         await registerDeveloper({
           name: form.name,
           email: form.email,
@@ -91,7 +102,7 @@ export default function CreateAdmin() {
       });
       setHospitalQuery("");
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to create admin");
+      setMsg(err?.message || "Failed to create admin");
     } finally {
       setLoading(false);
     }
@@ -139,8 +150,8 @@ export default function CreateAdmin() {
             }
           >
             <option value="HOSPITAL_ADMIN">Hospital Admin</option>
-            <option value="SYSTEM_ADMIN">System Admin</option>
-            <option value="DEVELOPER">Developer</option>
+            {canCreateSystemLevel && <option value="SYSTEM_ADMIN">System Admin</option>}
+            {canCreateSystemLevel && <option value="DEVELOPER">Developer</option>}
           </select>
         </DismissibleCardSection>
 
@@ -196,7 +207,7 @@ export default function CreateAdmin() {
           </DismissibleCardSection>
         )}
 
-        <button disabled={loading}>
+        <button type="submit" disabled={loading}>
           {loading ? "Creating..." : "Create Admin"}
         </button>
       </form>

@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { useAuth } from "../../utils/auth";
 import { getHRDashboard } from "../../services/dashboardApi";
 import { runBurnoutScore, runCausalImpact } from "../../services/mlApi";
+import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 
 export default function HRManagerDashboard() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [burnout, setBurnout] = useState(null);
   const [causal, setCausal] = useState(null);
+  const [training, setTraining] = useState({
+    total: 0,
+    notStarted: 0,
+    inProgress: 0,
+    completed: 0,
+    overdueNotStarted: 0,
+    overdueInProgress: 0,
+    completionRate: 0,
+  });
   const [trend, setTrend] = useState({
     burnoutScore: [],
     projectedKpi: [],
     projectedChange: [],
+    trainingCompletion: [],
   });
 
   const push = (key, value) => {
@@ -72,6 +81,49 @@ export default function HRManagerDashboard() {
   useEffect(() => {
     getHRDashboard().then(setData).catch(() => setData(null));
     loadAi();
+    listTrainingTrackers({ limit: 200 })
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        const now = Date.now();
+        const notStarted = rows.filter((r) => r.status === "NOT_STARTED").length;
+        const inProgress = rows.filter((r) => r.status === "IN_PROGRESS").length;
+        const completed = rows.filter((r) => r.status === "COMPLETED").length;
+        const overdueNotStarted = rows.filter(
+          (r) =>
+            r.status === "NOT_STARTED" &&
+            r.createdAt &&
+            now - new Date(r.createdAt).getTime() >= 3 * 24 * 60 * 60 * 1000
+        ).length;
+        const overdueInProgress = rows.filter(
+          (r) =>
+            r.status === "IN_PROGRESS" &&
+            r.updatedAt &&
+            now - new Date(r.updatedAt).getTime() >= 7 * 24 * 60 * 60 * 1000
+        ).length;
+        const total = rows.length;
+        const completionRate = total ? Math.round((completed / total) * 100) : 0;
+        setTraining({
+          total,
+          notStarted,
+          inProgress,
+          completed,
+          overdueNotStarted,
+          overdueInProgress,
+          completionRate,
+        });
+        push("trainingCompletion", completionRate);
+      })
+      .catch(() =>
+        setTraining({
+          total: 0,
+          notStarted: 0,
+          inProgress: 0,
+          completed: 0,
+          overdueNotStarted: 0,
+          overdueInProgress: 0,
+          completionRate: 0,
+        })
+      );
     const timer = setInterval(loadAi, 45000);
     return () => clearInterval(timer);
   }, []);
@@ -84,9 +136,10 @@ export default function HRManagerDashboard() {
           <p className="muted">Recruitment, onboarding, contracts, performance and workforce analytics.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Pipeline</button>
-          <button className="btn-secondary" onClick={() => navigate("/hospital-admin/staff")}>Employee Profiles</button>
-          <button className="btn-secondary" onClick={() => navigate("/workforce/requests")}>Leave Management</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Pipeline</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/staff")}>Employee Profiles</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests")}>Leave Management</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
         </div>
       </div>
 
@@ -97,6 +150,49 @@ export default function HRManagerDashboard() {
           <StatCard title="Leave Pending" value={data?.pendingRequests?.leave ?? "—"} />
           <StatCard title="Turnover %" value={data?.inactiveStaff ?? "—"} />
           <StatCard title="Compliance Alerts" value={data?.missingLicenses ?? "—"} />
+          <StatCard
+            title="Training Completion %"
+            value={training.completionRate}
+            trend={trend.trainingCompletion}
+            subtitle={`${training.completed}/${training.total} completed`}
+            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
+          />
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Training Tracker</h3>
+        <div className="grid info-grid">
+          <StatCard
+            title="Total Trainees"
+            value={training.total}
+            onClick={() => navigate("/admin/training-tracker")}
+          />
+          <StatCard
+            title="Not Started"
+            value={training.notStarted}
+            onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}
+          />
+          <StatCard
+            title="In Progress"
+            value={training.inProgress}
+            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
+          />
+          <StatCard
+            title="Completed"
+            value={training.completed}
+            onClick={() => navigate("/admin/training-tracker?status=COMPLETED")}
+          />
+          <StatCard
+            title="Overdue Not Started"
+            value={training.overdueNotStarted}
+            onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}
+          />
+          <StatCard
+            title="Overdue In Progress"
+            value={training.overdueInProgress}
+            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
+          />
         </div>
       </section>
 
@@ -104,11 +200,12 @@ export default function HRManagerDashboard() {
         <div className="card doctor-schedule-card">
           <h3>Center Workspace</h3>
           <div className="panel-grid">
-            <button className="action-link" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Kanban</button>
-            <button className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Contracts</button>
-            <button className="action-link" onClick={() => navigate("/hr-manager")}>Performance Reviews</button>
-            <button className="action-link" onClick={() => navigate("/hr-manager")}>Training & Certifications</button>
-            <button className="action-link" onClick={() => navigate("/hr-manager")}>Succession Planning</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Kanban</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Contracts</button>
+            <button type="button" className="action-link" onClick={() => navigate("/reports")}>Performance Reviews</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff?q=license")}>Training & Certifications</button>
+            <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}>Training Tracker Board</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/register-staff?view=planning")}>Succession Planning</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">

@@ -21,9 +21,9 @@ export default function NurseDashboard() {
           <p className="muted">Shift execution, patient assignment, medication administration and incident logging.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/nurse")}>My Shift</button>
-          <button className="btn-secondary" onClick={() => navigate("/nurse")}>Assigned Patients</button>
-          <button className="btn-secondary" onClick={() => navigate("/workforce/requests#leave")}>Leave Requests</button>
+          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>My Shift</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/patients")}>Assigned Patients</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/leave")}>Leave Requests</button>
         </div>
       </div>
 
@@ -41,10 +41,10 @@ export default function NurseDashboard() {
         <div className="card doctor-schedule-card">
           <h3>Center Workspace</h3>
           <div className="panel-grid">
-            <button className="action-link" onClick={() => navigate("/nurse")}>Patient Task List</button>
-            <button className="action-link" onClick={() => navigate("/nurse")}>Medication Administration</button>
-            <button className="action-link" onClick={() => navigate("/nurse")}>Vitals Entry</button>
-            <button className="action-link" onClick={() => navigate("/nurse")}>Incident Reports</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/patients")}>Patient Task List</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/medication")}>Medication Administration</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/vitals")}>Vitals Entry</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/incidents")}>Incident Reports</button>
           </div>
         </div>
 
@@ -53,7 +53,7 @@ export default function NurseDashboard() {
           <div className="alert-stack">
             <div className="action-pill">Critical Alerts: {data?.appointmentsToday ?? "—"}</div>
             <div className="action-pill">Leave Pending: {data?.pendingRequests?.leave ?? "—"}</div>
-            <button className="btn-secondary" onClick={() => navigate("/workforce/requests")}>Open My Requests</button>
+            <button className="btn-secondary" type="button" onClick={() => navigate("/workforce/requests")}>Open My Requests</button>
           </div>
         </div>
       </section>

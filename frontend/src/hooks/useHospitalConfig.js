@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "../utils/api"; // your axios instance
+import api from "../utils/api";
 
 export const useHospitalConfig = () => {
   const [hospital, setHospital] = useState(null);
@@ -9,11 +9,36 @@ export const useHospitalConfig = () => {
     let mounted = true;
 
     const loadConfig = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (mounted) {
+          setHospital(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      let role = "";
       try {
-        const res = await axios.get("/hospital-admin/config");
+        role = JSON.parse(localStorage.getItem("user") || "{}")?.role || "";
+      } catch {
+        role = "";
+      }
+
+      // Avoid noisy 400s for non hospital-admin roles.
+      if (role !== "HOSPITAL_ADMIN") {
+        if (mounted) {
+          setHospital(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const res = await api.get("/api/hospital-admin/config");
         if (mounted) setHospital(res.data);
-      } catch (err) {
-        console.error("Failed to load hospital config");
+      } catch {
+        if (mounted) setHospital(null);
       } finally {
         if (mounted) setLoading(false);
       }

@@ -96,13 +96,13 @@ export default function MyRequests() {
       ]);
 
       const leavePayload = shouldFetchLeave
-        ? normalizeCursorResponse(l.data)
+        ? normalizeCursorResponse(l)
         : { items: [], nextCursor: null, hasMore: false };
       const overtimePayload = shouldFetchOvertime
-        ? normalizeCursorResponse(o.data)
+        ? normalizeCursorResponse(o)
         : { items: [], nextCursor: null, hasMore: false };
       const shiftPayload = shouldFetchShift
-        ? normalizeCursorResponse(s.data)
+        ? normalizeCursorResponse(s)
         : { items: [], nextCursor: null, hasMore: false };
 
       if (append) {
@@ -140,7 +140,7 @@ export default function MyRequests() {
         setCacheBadge("Live • now");
       }
     } catch (err) {
-      setMsg(err.response?.data?.message || "Failed to load requests");
+      setMsg(err?.message || "Failed to load requests");
     } finally {
       setLoading(false);
     }
@@ -278,7 +278,7 @@ export default function MyRequests() {
       await loadAll(statusFilter, { append: false });
       setMsg("✅ Leave request submitted");
     } catch (err) {
-      setMsg(err.response?.data?.message || "Failed to submit leave request");
+      setMsg(err?.message || "Failed to submit leave request");
     } finally {
       setLoading(false);
     }
@@ -298,7 +298,7 @@ export default function MyRequests() {
       await loadAll(statusFilter, { append: false });
       setMsg("✅ Overtime request submitted");
     } catch (err) {
-      setMsg(err.response?.data?.message || "Failed to submit overtime request");
+      setMsg(err?.message || "Failed to submit overtime request");
     } finally {
       setLoading(false);
     }
@@ -318,7 +318,7 @@ export default function MyRequests() {
       await loadAll(statusFilter, { append: false });
       setMsg("✅ Shift request submitted");
     } catch (err) {
-      setMsg(err.response?.data?.message || "Failed to submit shift request");
+      setMsg(err?.message || "Failed to submit shift request");
     } finally {
       setLoading(false);
     }
@@ -391,19 +391,19 @@ export default function MyRequests() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button
+          <button type="button"
             className="btn-secondary"
             onClick={() => loadAll(statusFilter, { append: false })}
             disabled={loading}
           >
             Refresh
           </button>
-          <button className="btn-secondary" onClick={resetView} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={resetView} disabled={loading}>
             Reset View
           </button>
           <span className="muted">{cacheBadge}</span>
           {(user?.role === "HOSPITAL_ADMIN" || user?.role === "SUPER_ADMIN") && (
-            <button
+            <button type="button"
               className="btn-primary"
               onClick={() => navigate("/hospital-admin/approvals")}
             >
@@ -454,7 +454,7 @@ export default function MyRequests() {
               setLeaveForm({ ...leaveForm, reason: e.target.value })
             }
           />
-          <button disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Submitting..." : "Submit Leave"}
           </button>
         </form>
@@ -488,7 +488,7 @@ export default function MyRequests() {
               setOvertimeForm({ ...overtimeForm, reason: e.target.value })
             }
           />
-          <button disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Submitting..." : "Submit Overtime"}
           </button>
         </form>
@@ -523,7 +523,7 @@ export default function MyRequests() {
               setShiftForm({ ...shiftForm, reason: e.target.value })
             }
           />
-          <button disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Submitting..." : "Submit Shift"}
           </button>
         </form>
@@ -542,7 +542,7 @@ export default function MyRequests() {
               <option value="APPROVED">Approved</option>
               <option value="REJECTED">Rejected</option>
             </select>
-            <button className="btn-secondary" onClick={exportCsv}>
+            <button type="button" className="btn-secondary" onClick={exportCsv}>
               Export CSV
             </button>
           </div>
@@ -579,7 +579,7 @@ export default function MyRequests() {
           </table>
           {(hasMoreLeave || hasMoreOvertime || hasMoreShift) && (
             <div style={{ marginTop: 12 }}>
-              <button
+              <button type="button"
                 className="btn-secondary"
                 disabled={loading}
                 onClick={() => loadAll(statusFilter, { append: true })}

@@ -21,10 +21,10 @@ export default function Dashboard() {
           <p className="muted">Appointments, records, lab results, billing and insurance in one place.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
-          <button className="btn-secondary" onClick={() => navigate("/payments")}>Billing</button>
-          <button className="btn-secondary" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
-          <button className="btn-secondary" onClick={() => navigate("/profile")}>Profile</button>
+          <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>Billing</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>Profile</button>
         </div>
       </div>
 
@@ -42,18 +42,18 @@ export default function Dashboard() {
         <div className="card doctor-schedule-card">
           <h3>Health Timeline</h3>
           <div className="panel-grid">
-            <button className="action-link" onClick={() => navigate("/patient")}>Medical Records</button>
-            <button className="action-link" onClick={() => navigate("/patient")}>Prescriptions</button>
-            <button className="action-link" onClick={() => navigate("/patient")}>Lab Results</button>
-            <button className="action-link" onClick={() => navigate("/patient")}>Insurance</button>
-            <button className="action-link" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/medical-records")}>Medical Records</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>Prescriptions</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>Lab Results</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>Insurance</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
           <h3>Notifications</h3>
           <div className="alert-stack">
-            <button className="btn-secondary" onClick={() => navigate("/admin/notifications")}>Messages</button>
-            <button className="btn-secondary" onClick={() => navigate("/patient")}>Feedback</button>
+            <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>Messages</button>
+            <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>Feedback</button>
           </div>
         </div>
       </section>

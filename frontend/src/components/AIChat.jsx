@@ -42,6 +42,6 @@ export default function AIChat(){
       {messages.map((m,i)=>(<div key={i} style={{textAlign:m.role==='user'?'right':'left'}}><b>{m.role}:</b> <span>{m.text}</span></div>))}
     </div>
     <textarea value={input} onChange={e=>setInput(e.target.value)} rows={3} style={{width:'100%'}}/>
-    <button onClick={send}>Send</button>
+    <button type="button" onClick={send}>Send</button>
   </div>);
 }

@@ -136,6 +136,8 @@ export default function Navbar({ onToggleSidebar }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
+  const [machineAlertCount, setMachineAlertCount] = useState(0);
+  const [trainingAlertCount, setTrainingAlertCount] = useState(0);
   const [notifCategory, setNotifCategory] = useState("ALL");
   const [notifRead, setNotifRead] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -156,6 +158,20 @@ export default function Navbar({ onToggleSidebar }) {
 
   const isGuest = user?.role === "GUEST";
   const isDoctorRole = user?.role === "DOCTOR";
+  const currentRole = String(user?.role || "").toUpperCase();
+  const canMachineOps = ["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(
+    currentRole
+  );
+  const canTrainingOps = [
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "DEVELOPER",
+    "HOSPITAL_ADMIN",
+    "HR_MANAGER",
+  ].includes(currentRole);
+  const canApprovalsOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(
+    currentRole
+  );
   const homePath = user ? redirectByRole(user) : "/";
 
   const catalog = useMemo(() => getSearchCatalog(user), [user]);
@@ -220,12 +236,82 @@ export default function Navbar({ onToggleSidebar }) {
     () => notifItems.filter((n) => !n.read).length,
     [notifItems]
   );
+  const machineUnreadFromCurrent = useMemo(
+    () =>
+      notifItems.filter((n) => {
+        if (n.read) return false;
+        const title = String(n?.title || "").toLowerCase();
+        const body = String(n?.body || "").toLowerCase();
+        const reason = String(n?.meta?.reason || "").toLowerCase();
+        const action = String(n?.meta?.action || "").toLowerCase();
+        return (
+          title.includes("machine") ||
+          body.includes("machine") ||
+          reason.includes("heartbeat_timeout") ||
+          action.startsWith("machine.")
+        );
+      }).length,
+    [notifItems]
+  );
+  const trainingUnreadFromCurrent = useMemo(
+    () =>
+      notifItems.filter((n) => {
+        if (n.read) return false;
+        if (String(n?.category || "").toUpperCase() === "TRAINING") return true;
+        const title = String(n?.title || "").toLowerCase();
+        return title.includes("training");
+      }).length,
+    [notifItems]
+  );
   const isRoleOverrideActive =
     Boolean(roleOverride) &&
     Boolean(user?.actualRole) &&
     user.actualRole !== user.role;
   const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(
     user?.role
+  );
+
+  const canOpenNotificationPath = useCallback(
+    (path) => {
+      const p = String(path || "").trim();
+      if (!p) return false;
+
+      if (p.startsWith("/admin/training-tracker")) return canTrainingOps;
+      if (p.startsWith("/hospital-admin/machine-alerts")) return canMachineOps;
+      if (p.startsWith("/hospital-admin/machine-connectivity")) return canMachineOps;
+      if (p.startsWith("/hospital-admin/approvals")) return canApprovalsOps;
+
+      if (p.startsWith("/super-admin/hospitals")) {
+        return ["SUPER_ADMIN", "SYSTEM_ADMIN"].includes(currentRole);
+      }
+      if (p.startsWith("/super-admin/settings")) {
+        return ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(currentRole);
+      }
+      if (p === "/super-admin" || p.startsWith("/super-admin/")) {
+        return currentRole === "SUPER_ADMIN";
+      }
+
+      if (p.startsWith("/system-admin/")) {
+        return ["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(currentRole);
+      }
+
+      if (p.startsWith("/developer/") || p === "/developer") {
+        return ["DEVELOPER", "SUPER_ADMIN", "SYSTEM_ADMIN"].includes(currentRole);
+      }
+
+      if (p.startsWith("/hospital-admin/")) {
+        return ["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(
+          currentRole
+        );
+      }
+
+      if (p.startsWith("/admin/")) {
+        return ["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "DEVELOPER"].includes(currentRole);
+      }
+
+      return true;
+    },
+    [canApprovalsOps, canMachineOps, canTrainingOps, currentRole]
   );
 
   const loadSlaStatus = useCallback(async () => {
@@ -262,6 +348,44 @@ export default function Navbar({ onToggleSidebar }) {
       .catch(() => setNotifItems([]));
   }, [notifCategory, notifRead]);
 
+  const fetchMachineAlerts = useCallback(() => {
+    listNotifications({ query: "category=INTEGRATION&read=false&limit=120" })
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        const count = rows.filter((n) => {
+          const title = String(n?.title || "").toLowerCase();
+          const body = String(n?.body || "").toLowerCase();
+          const reason = String(n?.meta?.reason || "").toLowerCase();
+          const action = String(n?.meta?.action || "").toLowerCase();
+          return (
+            title.includes("machine") ||
+            body.includes("machine") ||
+            reason.includes("heartbeat_timeout") ||
+            action.startsWith("machine.")
+          );
+        }).length;
+        setMachineAlertCount(count);
+      })
+      .catch(() => setMachineAlertCount(0));
+  }, []);
+
+  const fetchTrainingAlerts = useCallback(() => {
+    listNotifications({ query: "category=TRAINING&read=false&limit=120" })
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        setTrainingAlertCount(rows.length);
+      })
+      .catch(() => setTrainingAlertCount(0));
+  }, []);
+
+  const safeTrigger = useCallback(async (action) => {
+    try {
+      await triggerAction(action);
+    } catch {
+      // Ignore telemetry/action hook errors in navbar interactions.
+    }
+  }, []);
+
   useEffect(() => {
     if (!notifOpen) return;
     fetchNotifications();
@@ -272,6 +396,19 @@ export default function Navbar({ onToggleSidebar }) {
     const id = setInterval(fetchNotifications, refreshIntervalMs);
     return () => clearInterval(id);
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    fetchMachineAlerts();
+    const id = setInterval(fetchMachineAlerts, refreshIntervalMs);
+    return () => clearInterval(id);
+  }, [fetchMachineAlerts]);
+
+  useEffect(() => {
+    if (!canTrainingOps) return undefined;
+    fetchTrainingAlerts();
+    const id = setInterval(fetchTrainingAlerts, refreshIntervalMs);
+    return () => clearInterval(id);
+  }, [canTrainingOps, fetchTrainingAlerts]);
 
   useEffect(() => {
     loadSlaStatus();
@@ -320,7 +457,7 @@ export default function Navbar({ onToggleSidebar }) {
   return (
     <header className="navbar">
       <div className="navbar-left">
-        <button
+        <button type="button"
           className="icon-btn"
           onClick={onToggleSidebar}
           aria-label="Open navigator"
@@ -329,7 +466,7 @@ export default function Navbar({ onToggleSidebar }) {
           <Icon name="menu" />
         </button>
 
-        <button
+        <button type="button"
           className="brand-btn"
           onClick={() => navigate(isGuest ? "/guest" : homePath)}
         >
@@ -340,7 +477,7 @@ export default function Navbar({ onToggleSidebar }) {
           )}
         </button>
 
-        <button
+        <button type="button"
           className="icon-btn ghost"
           onClick={() => navigate(homePath)}
           aria-label="Home"
@@ -359,7 +496,7 @@ export default function Navbar({ onToggleSidebar }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button
+          <button type="button"
             className="search-btn"
             onClick={() => setSearch("")}
             aria-label="Clear search"
@@ -376,7 +513,7 @@ export default function Navbar({ onToggleSidebar }) {
                 </div>
               )}
               {results.map((item) => (
-                <button
+                <button type="button"
                   key={`${item.path}-${item.label}`}
                   className="search-result"
                   onClick={() => {
@@ -429,7 +566,7 @@ export default function Navbar({ onToggleSidebar }) {
             >
               SLA {slaStatus?.breached ? `Breached ${slaStatus.breached}` : "Healthy"}
             </span>
-            <button
+            <button type="button"
               className="icon-btn ghost"
               disabled={runningSla}
               onClick={handleRunSlaScan}
@@ -443,12 +580,48 @@ export default function Navbar({ onToggleSidebar }) {
             </button>
           </div>
         )}
-        <div className="profile-wrap">
+        <button
+          type="button"
+          className={`sla-status-chip ${machineAlertCount > 0 ? "risk" : "ok"}`}
+          title={
+            machineAlertCount > 0
+              ? `${machineAlertCount} unread machine/integration alerts`
+              : "No unread machine alerts"
+          }
+          onClick={() => {
+            setNotifOpen(false);
+            navigate(
+              canMachineOps
+                ? "/hospital-admin/machine-alerts"
+                : "/notifications?category=INTEGRATION&read=UNREAD&q=machine"
+            );
+          }}
+        >
+          Machines {machineAlertCount || machineUnreadFromCurrent || 0}
+        </button>
+        {canTrainingOps && (
           <button
+            type="button"
+            className={`sla-status-chip ${trainingAlertCount > 0 ? "risk" : "ok"}`}
+            title={
+              trainingAlertCount > 0
+                ? `${trainingAlertCount} unread overdue training alerts`
+                : "No unread training alerts"
+            }
+            onClick={() => {
+              setNotifOpen(false);
+              navigate("/admin/training-tracker?overdue=1");
+            }}
+          >
+            Training {trainingAlertCount || trainingUnreadFromCurrent || 0}
+          </button>
+        )}
+        <div className="profile-wrap">
+          <button type="button"
             className="icon-btn ghost"
             title="Notifications"
             onClick={async () => {
-              await triggerAction("OPEN_NOTIFICATIONS");
+              await safeTrigger("OPEN_NOTIFICATIONS");
               setNotifOpen((v) => !v);
             }}
           >
@@ -464,7 +637,7 @@ export default function Navbar({ onToggleSidebar }) {
             <div className="notif-menu">
               <div className="notif-head">
                 <span>Notifications</span>
-                <button
+                <button type="button"
                   className="notif-close"
                   onClick={() => setNotifOpen(false)}
                   aria-label="Close notifications"
@@ -489,7 +662,7 @@ export default function Navbar({ onToggleSidebar }) {
                       : "Never"}
                   </div>
                   <div className="sla-mini-actions">
-                    <button
+                    <button type="button"
                       className="btn-secondary"
                       onClick={() => {
                         setNotifOpen(false);
@@ -498,7 +671,7 @@ export default function Navbar({ onToggleSidebar }) {
                     >
                       Open Breaches
                     </button>
-                    <button
+                    <button type="button"
                       className="btn-secondary"
                       onClick={() => {
                         setNotifOpen(false);
@@ -507,7 +680,7 @@ export default function Navbar({ onToggleSidebar }) {
                     >
                       SLA Policies
                     </button>
-                    <button
+                    <button type="button"
                       className="btn-secondary"
                       disabled={runningSla}
                       onClick={handleRunSlaScan}
@@ -529,6 +702,7 @@ export default function Navbar({ onToggleSidebar }) {
                   <option value="SYSTEM">System</option>
                   <option value="INTEGRATION">Integration</option>
                   <option value="AI">AI</option>
+                  <option value="TRAINING">Training</option>
                 </select>
                 <select
                   value={notifRead}
@@ -538,14 +712,32 @@ export default function Navbar({ onToggleSidebar }) {
                   <option value="UNREAD">Unread</option>
                   <option value="READ">Read</option>
                 </select>
-                <button
+                <button type="button"
                   className="btn-secondary"
                   onClick={async () => {
-                    await markAllNotificationsRead();
-                    setNotifItems((prev) => prev.map((n) => ({ ...n, read: true })));
+                    try {
+                      await markAllNotificationsRead();
+                      setNotifItems((prev) => prev.map((n) => ({ ...n, read: true })));
+                    } catch {
+                      // Keep current list if API mark-all fails.
+                    }
                   }}
                 >
                   Mark all read
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setNotifOpen(false);
+                    navigate(
+                      canMachineOps
+                        ? "/hospital-admin/machine-alerts"
+                        : "/notifications?category=INTEGRATION&read=UNREAD&q=machine"
+                    );
+                  }}
+                >
+                  Machine Alerts
                 </button>
               </div>
               <div className="notif-list">
@@ -557,23 +749,39 @@ export default function Navbar({ onToggleSidebar }) {
                     </div>
                     <div className="notif-body">{n.body || "-"}</div>
                     <div className="notif-actions">
-                      <button
+                      {n?.meta?.path && canOpenNotificationPath(n.meta.path) ? (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            setNotifOpen(false);
+                            navigate(String(n.meta.path));
+                          }}
+                        >
+                          Open
+                        </button>
+                      ) : null}
+                      <button type="button"
                         className="btn-secondary"
                         onClick={async () => {
-                          if (n.read) {
-                            await markNotificationUnread(n._id);
-                            setNotifItems((prev) =>
-                              prev.map((item) =>
-                                item._id === n._id ? { ...item, read: false } : item
-                              )
-                            );
-                          } else {
-                            await markNotificationRead(n._id);
-                            setNotifItems((prev) =>
-                              prev.map((item) =>
-                                item._id === n._id ? { ...item, read: true } : item
-                              )
-                            );
+                          try {
+                            if (n.read) {
+                              await markNotificationUnread(n._id);
+                              setNotifItems((prev) =>
+                                prev.map((item) =>
+                                  item._id === n._id ? { ...item, read: false } : item
+                                )
+                              );
+                            } else {
+                              await markNotificationRead(n._id);
+                              setNotifItems((prev) =>
+                                prev.map((item) =>
+                                  item._id === n._id ? { ...item, read: true } : item
+                                )
+                              );
+                            }
+                          } catch {
+                            // Keep existing state if mark call fails.
                           }
                         }}
                       >
@@ -586,11 +794,11 @@ export default function Navbar({ onToggleSidebar }) {
                   <div className="muted">No notifications</div>
                 )}
               </div>
-              <button
+              <button type="button"
                 className="notif-link"
                 onClick={() => {
                   setNotifOpen(false);
-                  navigate("/admin/notifications");
+                  navigate("/notifications");
                 }}
               >
                 View All Notifications
@@ -599,7 +807,7 @@ export default function Navbar({ onToggleSidebar }) {
           )}
         </div>
         {isDoctorRole && (
-          <button
+          <button type="button"
             className="icon-btn ghost"
             title="Quick Calendar"
             onClick={() => navigate("/doctor/schedule")}
@@ -609,7 +817,7 @@ export default function Navbar({ onToggleSidebar }) {
           </button>
         )}
         {isDoctorRole && (
-          <button
+          <button type="button"
             className="icon-btn danger-soft"
             title="Emergency Alert"
             onClick={async () => {
@@ -621,22 +829,22 @@ export default function Navbar({ onToggleSidebar }) {
             Emergency
           </button>
         )}
-        <button
+        <button type="button"
           className="icon-btn ghost"
           title="Messages"
           onClick={async () => {
-            await triggerAction("OPEN_MESSAGES");
+            await safeTrigger("OPEN_MESSAGES");
             navigate("/ai/chatbot");
           }}
         >
           <Icon name="chat" />
           Messages
         </button>
-        <button
+        <button type="button"
           className="icon-btn ghost"
           title="Theme"
           onClick={async () => {
-            await triggerAction("TOGGLE_THEME");
+            await safeTrigger("TOGGLE_THEME");
             cycleTheme();
           }}
         >
@@ -644,7 +852,7 @@ export default function Navbar({ onToggleSidebar }) {
           {theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light"}
         </button>
         <div className="profile-wrap" ref={profileRef}>
-          <button
+          <button type="button"
             className="profile-btn"
             onClick={() => setProfileOpen((v) => !v)}
           >
@@ -659,7 +867,7 @@ export default function Navbar({ onToggleSidebar }) {
             <div className="profile-menu">
               <div className="profile-menu-head">
                 <span>Profile</span>
-                <button
+                <button type="button"
                   className="notif-close"
                   onClick={() => setProfileOpen(false)}
                   aria-label="Close profile menu"
@@ -667,21 +875,21 @@ export default function Navbar({ onToggleSidebar }) {
                   ×
                 </button>
               </div>
-              <button onClick={() => navigate("/profile")}>
+              <button type="button" onClick={() => navigate("/profile")}>
                 My Profile
               </button>
-              <button onClick={() => navigate("/profile")}>
+              <button type="button" onClick={() => navigate("/profile")}>
                 Preferences
               </button>
-              <button onClick={() => navigate("/reports")}>
+              <button type="button" onClick={() => navigate("/reports")}>
                 About AfyaLink
               </button>
               {!isGuest ? (
-                <button className="danger" onClick={logout}>
+                <button type="button" className="danger" onClick={logout}>
                   Sign Out
                 </button>
               ) : (
-                <button onClick={() => navigate("/register")}>
+                <button type="button" onClick={() => navigate("/register")}>
                   Upgrade
                 </button>
               )}

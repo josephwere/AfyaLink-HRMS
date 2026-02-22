@@ -37,6 +37,8 @@ import {
 const router = express.Router();
 const WORKFORCE_ADMIN_ROLES = [
   "HOSPITAL_ADMIN",
+  "HR_MANAGER",
+  "PAYROLL_OFFICER",
   "SUPER_ADMIN",
   "SYSTEM_ADMIN",
   "DEVELOPER",

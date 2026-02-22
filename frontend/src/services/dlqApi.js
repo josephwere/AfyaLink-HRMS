@@ -1,16 +1,18 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const listDlqItems = async () => {
-  const res = await api.get("/api/integrations/dlq-inspect");
-  return res.data;
+  return apiFetch("/api/integrations/dlq-inspect");
 };
 
 export const retryDlqItem = async (id) => {
-  const res = await api.post(`/api/integrations/dlq/${id}/retry`);
-  return res.data;
+  return apiFetch(`/api/integrations/dlq/${id}/retry`, {
+    method: "POST",
+  });
 };
 
 export const updateDlqItem = async (id, data) => {
-  const res = await api.put(`/api/integrations/dlq-inspect/${id}`, { data });
-  return res.data;
+  return apiFetch(`/api/integrations/dlq-inspect/${id}`, {
+    method: "PUT",
+    body: { data },
+  });
 };

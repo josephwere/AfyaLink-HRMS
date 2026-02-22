@@ -6,7 +6,10 @@ export default function ControlledDrugs() {
     <ModuleWorkspace
       title="Controlled Drugs"
       subtitle="Controlled medication ledger, issue/return logs and compliance checks."
-      actions={[{ label: "Open Controlled Log", variant: "primary" }, { label: "Audit Export" }]}
+      actions={[
+        { label: "Open Controlled Log", variant: "primary", path: "/pharmacy/controlled#log" },
+        { label: "Audit Export", onClick: () => window.print() },
+      ]}
       panels={[
         { title: "Dispense Log", body: "Controlled drug issue records." },
         { title: "Stock Checks", body: "Count reconciliation and discrepancy flags." },

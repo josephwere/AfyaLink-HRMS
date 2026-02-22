@@ -94,4 +94,4 @@ export default function Notifications({ notifications = [] }) {
       `}</style>
     </div>
   );
-            }
+}

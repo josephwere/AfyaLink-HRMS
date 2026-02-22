@@ -17,6 +17,14 @@ import {
   updateHospitalAdmin as updateHospitalAdminApi,
 } from "../../services/superAdminApi";
 
+const coerceList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.hospitals)) return value.hospitals;
+  return [];
+};
+
 export default function SuperAdminHospitals() {
   const { user } = useAuth();
   const location = useLocation();
@@ -96,13 +104,7 @@ export default function SuperAdminHospitals() {
         page: 1,
         limit: 1000,
       });
-      const items = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.hospitals)
-        ? data.hospitals
-        : Array.isArray(data?.items)
-        ? data.items
-        : [];
+      const items = coerceList(data);
       setHospitals(items);
     } catch {
       setHospitals([]);
@@ -132,7 +134,7 @@ export default function SuperAdminHospitals() {
     }
     try {
       const data = await listBranches(hospitalId);
-      setBranches(Array.isArray(data?.data) ? data.data : []);
+      setBranches(coerceList(data));
     } catch {
       setBranches([]);
     }
@@ -150,7 +152,7 @@ export default function SuperAdminHospitals() {
     }
     listBranches(hospitalId)
       .then((data) => {
-        setAdminBranches(Array.isArray(data?.data) ? data.data : []);
+        setAdminBranches(coerceList(data));
       })
       .catch(() => setAdminBranches([]));
   }, [adminForm.hospitalId]);
@@ -165,7 +167,7 @@ export default function SuperAdminHospitals() {
           page: adminListPage,
           limit: adminListLimit,
         });
-        setAdminList(Array.isArray(data?.items) ? data.items : []);
+        setAdminList(coerceList(data));
         setAdminListTotal(Number(data?.total || 0));
       } catch {
         setAdminList([]);
@@ -188,7 +190,7 @@ export default function SuperAdminHospitals() {
     }
     listBranches(adminListHospitalId)
       .then((data) => {
-        const rows = Array.isArray(data?.data) ? data.data : [];
+        const rows = coerceList(data);
         setAdminFilterBranches(rows.filter((b) => b?.active !== false));
       })
       .catch(() => setAdminFilterBranches([]));
@@ -216,7 +218,7 @@ export default function SuperAdminHospitals() {
       });
       await loadHospitals();
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to create hospital");
+      setMsg(err?.message || "Failed to create hospital");
     } finally {
       setLoading(false);
     }
@@ -238,7 +240,7 @@ export default function SuperAdminHospitals() {
       });
       await loadHospitals();
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to create hospital admin");
+      setMsg(err?.message || "Failed to create hospital admin");
     } finally {
       setLoading(false);
     }
@@ -257,7 +259,7 @@ export default function SuperAdminHospitals() {
         password: "",
       });
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to create system admin");
+      setMsg(err?.message || "Failed to create system admin");
     } finally {
       setLoading(false);
     }
@@ -276,7 +278,7 @@ export default function SuperAdminHospitals() {
         password: "",
       });
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to create developer");
+      setMsg(err?.message || "Failed to create developer");
     } finally {
       setLoading(false);
     }
@@ -335,7 +337,7 @@ export default function SuperAdminHospitals() {
       cancelEditHospital();
       await loadHospitals();
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to update hospital");
+      setMsg(err?.message || "Failed to update hospital");
     } finally {
       setSavingHospitalId("");
     }
@@ -359,7 +361,7 @@ export default function SuperAdminHospitals() {
       setBranchForm({ name: "", location: "" });
       await loadBranchesForHospital(branchHospitalId);
     } catch (err) {
-      setMsg(err?.data?.error || err?.message || "Failed to create branch");
+      setMsg(err?.message || "Failed to create branch");
     } finally {
       setBranchBusy(false);
     }
@@ -388,7 +390,7 @@ export default function SuperAdminHospitals() {
       cancelEditBranch();
       await loadBranchesForHospital(branchHospitalId);
     } catch (err) {
-      setMsg(err?.data?.error || err?.message || "Failed to update branch");
+      setMsg(err?.message || "Failed to update branch");
     } finally {
       setBranchBusy(false);
     }
@@ -402,7 +404,7 @@ export default function SuperAdminHospitals() {
       setMsg("✅ Branch deactivated");
       await loadBranchesForHospital(branchHospitalId);
     } catch (err) {
-      setMsg(err?.data?.error || err?.message || "Failed to deactivate branch");
+      setMsg(err?.message || "Failed to deactivate branch");
     } finally {
       setBranchBusy(false);
     }
@@ -479,14 +481,22 @@ export default function SuperAdminHospitals() {
         page: adminListPage,
         limit: adminListLimit,
       });
-      setAdminList(Array.isArray(data?.items) ? data.items : []);
+      setAdminList(coerceList(data));
       setAdminListTotal(Number(data?.total || 0));
     } catch (err) {
-      setMsg(err?.data?.msg || err?.message || "Failed to update hospital admin");
+      setMsg(err?.message || "Failed to update hospital admin");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  useEffect(() => {
+    setAdminListPage(1);
+  }, [adminListHospitalId, adminListBranch, adminListQuery]);
 
   return (
     <div className="dashboard">
@@ -534,7 +544,7 @@ export default function SuperAdminHospitals() {
               setHospitalForm({ ...hospitalForm, code: e.target.value })
             }
           />
-          <button disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Hospital"}
           </button>
         </form>
@@ -596,7 +606,7 @@ export default function SuperAdminHospitals() {
               </option>
             ))}
           </select>
-          <button disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Hospital Admin"}
           </button>
         </form>
@@ -635,7 +645,7 @@ export default function SuperAdminHospitals() {
               }
               required
             />
-            <button disabled={branchBusy || !branchHospitalId}>
+            <button type="submit" disabled={branchBusy || !branchHospitalId}>
               {branchBusy ? "Saving..." : "Add Branch"}
             </button>
           </form>
@@ -704,14 +714,14 @@ export default function SuperAdminHospitals() {
                     <td>
                       {!isEditing ? (
                         <div className="action-list">
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={() => startEditBranch(b)}
                             disabled={branchBusy}
                           >
                             Edit
                           </button>
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={() => deactivateBranch(b._id)}
                             disabled={branchBusy}
@@ -721,14 +731,14 @@ export default function SuperAdminHospitals() {
                         </div>
                       ) : (
                         <div className="action-list">
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={() => saveEditBranch(b._id)}
                             disabled={branchBusy}
                           >
                             Save
                           </button>
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={cancelEditBranch}
                             disabled={branchBusy}
@@ -790,7 +800,7 @@ export default function SuperAdminHospitals() {
               }
               required
             />
-            <button disabled={loading}>
+            <button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create System Admin"}
             </button>
           </form>
@@ -836,7 +846,7 @@ export default function SuperAdminHospitals() {
               }
               required
             />
-            <button disabled={loading}>
+            <button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create Developer"}
             </button>
           </form>
@@ -1021,7 +1031,7 @@ export default function SuperAdminHospitals() {
                     </td>
                     <td>
                       {!isEditing ? (
-                        <button
+                        <button type="button"
                           className="btn-secondary"
                           onClick={() => startEditHospital(h)}
                         >
@@ -1029,14 +1039,14 @@ export default function SuperAdminHospitals() {
                         </button>
                       ) : (
                         <div className="action-list">
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={() => saveHospitalEdit(h._id)}
                             disabled={savingHospitalId === h._id}
                           >
                             {savingHospitalId === h._id ? "Saving..." : "Save"}
                           </button>
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={cancelEditHospital}
                             disabled={savingHospitalId === h._id}
@@ -1057,7 +1067,7 @@ export default function SuperAdminHospitals() {
             </tbody>
           </table>
           <div className="action-list" style={{ marginTop: 12 }}>
-            <button
+            <button type="button"
               className="btn-secondary"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
@@ -1067,7 +1077,7 @@ export default function SuperAdminHospitals() {
             <span className="muted">
               Page {currentPage} of {totalPages}
             </span>
-            <button
+            <button type="button"
               className="btn-secondary"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
@@ -1205,7 +1215,7 @@ export default function SuperAdminHospitals() {
                     </td>
                     <td>
                       {!editing ? (
-                        <button
+                        <button type="button"
                           className="btn-secondary"
                           onClick={() => startEditAdmin(row)}
                           disabled={loading}
@@ -1214,14 +1224,14 @@ export default function SuperAdminHospitals() {
                         </button>
                       ) : (
                         <div className="action-list">
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={() => saveEditAdmin(row._id)}
                             disabled={loading}
                           >
                             Save
                           </button>
-                          <button
+                          <button type="button"
                             className="btn-secondary"
                             onClick={cancelEditAdmin}
                             disabled={loading}
@@ -1243,7 +1253,7 @@ export default function SuperAdminHospitals() {
           </table>
 
           <div className="action-list" style={{ marginTop: 12 }}>
-            <button
+            <button type="button"
               className="btn-secondary"
               onClick={() => setAdminListPage((p) => Math.max(1, p - 1))}
               disabled={adminListPage === 1}
@@ -1253,7 +1263,7 @@ export default function SuperAdminHospitals() {
             <span className="muted">
               Page {adminListPage} of {adminListTotalPages}
             </span>
-            <button
+            <button type="button"
               className="btn-secondary"
               onClick={() =>
                 setAdminListPage((p) => Math.min(adminListTotalPages, p + 1))

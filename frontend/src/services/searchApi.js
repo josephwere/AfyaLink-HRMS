@@ -1,4 +1,4 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export async function globalSearch(params = {}) {
   const qs = new URLSearchParams();
@@ -6,7 +6,5 @@ export async function globalSearch(params = {}) {
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.hospital) qs.set("hospital", params.hospital);
   const query = qs.toString() ? `?${qs.toString()}` : "";
-  const res = await api.get(`/api/search${query}`);
-  return res.data;
+  return apiFetch(`/api/search${query}`);
 }
-

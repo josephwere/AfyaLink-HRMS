@@ -37,7 +37,7 @@ export default function WebhookRetry() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -66,6 +66,7 @@ export default function WebhookRetry() {
                   <td>{i.attemptsMade || 0}</td>
                   <td>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={async () => {
                         await retryDlqItem(i.id);

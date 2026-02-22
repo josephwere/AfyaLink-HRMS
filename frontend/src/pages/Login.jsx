@@ -142,7 +142,7 @@ export default function Login() {
           </Link>
         </div>
 
-        <button disabled={submitting}>
+        <button type="submit" disabled={submitting}>
           {submitting ? "Signing in..." : "Sign in"}
         </button>
 

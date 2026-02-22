@@ -29,7 +29,7 @@ export default function DecisionCockpit() {
           <p className="muted">Operational anomalies, trust signals and next best actions.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load}>Refresh</button>
+          <button type="button" className="btn-secondary" onClick={load}>Refresh</button>
         </div>
       </div>
       {msg && <div className="card">{msg}</div>}
@@ -72,4 +72,3 @@ export default function DecisionCockpit() {
     </div>
   );
 }
-

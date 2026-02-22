@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import { apiFetch } from '../../services/api';
+import apiFetch from '../../utils/apiFetch';
 import { LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from 'recharts';
 
 export default function TransactionsDashboard(){
@@ -21,16 +21,13 @@ export default function TransactionsDashboard(){
       a.href = urlb; a.download = 'transactions.csv'; document.body.appendChild(a); a.click(); a.remove();
       return;
     }
-    const r = await apiFetch('/transactions?' + qs.toString());
-    const js = await r.json();
-    setRows(js.data || []);
-    const s = await apiFetch('/transactions/summary');
-    const sj = await s.json();
-    setSummary(sj.data || []);
+    const js = await apiFetch('/api/transactions?' + qs.toString());
+    setRows(Array.isArray(js?.data) ? js.data : Array.isArray(js) ? js : []);
+    const sj = await apiFetch('/api/transactions/summary');
+    setSummary(Array.isArray(sj?.data) ? sj.data : Array.isArray(sj) ? sj : []);
     // prepare chart data: revenue per day
-    const resp = await apiFetch('/analytics/revenue/daily');
-    const rp = await resp.json();
-    setChartData(rp);
+    const rp = await apiFetch('/api/analytics/revenue/daily');
+    setChartData(Array.isArray(rp) ? rp : Array.isArray(rp?.items) ? rp.items : []);
   }
 
   const COLORS = ['#0088FE','#00C49F','#FFBB28','#FF8042'];
@@ -49,8 +46,8 @@ export default function TransactionsDashboard(){
         <select value={filters.status} onChange={e=>setFilters(f=>({...f,status:e.target.value}))}><option value=''>All</option><option value='pending'>pending</option><option value='success'>success</option><option value='failed'>failed</option></select>
         <input type='date' value={filters.start} onChange={e=>setFilters(f=>({...f,start:e.target.value}))} />
         <input type='date' value={filters.end} onChange={e=>setFilters(f=>({...f,end:e.target.value}))} />
-        <button className="btn-secondary" onClick={()=>fetchData(false)}>Apply</button>
-        <button className="btn-secondary" onClick={()=>fetchData(true)}>Export CSV</button>
+        <button type="button" className="btn-secondary" onClick={()=>fetchData(false)}>Apply</button>
+        <button type="button" className="btn-secondary" onClick={()=>fetchData(true)}>Export CSV</button>
       </div>
     </div>
 
@@ -62,7 +59,7 @@ export default function TransactionsDashboard(){
       <ResponsiveContainer><LineChart data={chartData}><XAxis dataKey='_id'/><YAxis/><Tooltip/><Line type='monotone' dataKey='total' stroke='#8884d8' /></LineChart></ResponsiveContainer>
     </div>
 
-    <div className="grid" style={{gridTemplateColumns:"minmax(260px, 320px) minmax(0, 1fr)"}}>
+    <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 280px), 1fr))"}}>
       <div className="card" style={{height:300}}>
         <h4>Provider Distribution</h4>
         <ResponsiveContainer><PieChart><Pie data={summary} dataKey='total' nameKey='_id' cx='50%' cy='50%' outerRadius={80}>{summary.map((entry, index)=>(<Cell key={index} fill={COLORS[index%COLORS.length]} />))}</Pie></PieChart></ResponsiveContainer>

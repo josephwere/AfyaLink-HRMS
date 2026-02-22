@@ -1,7 +1,7 @@
 const DEFAULT_PREFS = {
-  textSize: "normal", // small | normal | large | extra-large
+  textSize: "small", // small | normal | large | extra-large
   textSpacing: "normal", // compact | normal | relaxed
-  inputSize: "normal", // compact | normal | large
+  inputSize: "compact", // compact | normal | large
 };
 
 const TEXT_SIZE_TO_ZOOM = {

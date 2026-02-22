@@ -6,7 +6,10 @@ export default function PatientPrescriptions() {
     <ModuleWorkspace
       title="Prescriptions"
       subtitle="Active and historical prescriptions with refill and dosage guidance."
-      actions={[{ label: "Active Prescriptions", variant: "primary" }, { label: "Refill Request" }]}
+      actions={[
+        { label: "Active Prescriptions", variant: "primary", path: "/patient/prescriptions#active" },
+        { label: "Refill Request", path: "/patient/prescriptions#refill" },
+      ]}
       panels={[
         { title: "Current Meds", body: "Currently active medications and dosage." },
         { title: "History", body: "Historical prescription records." },

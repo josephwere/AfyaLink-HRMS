@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import API_BASE from "../../config/api";
+import apiFetch from "../../utils/apiFetch";
 
 
 export default function RealTimeIntegrations() {
@@ -9,16 +9,15 @@ export default function RealTimeIntegrations() {
   const [res, setRes] = useState(null);
 
   async function sendHL7() {
-    const r = await fetch(`${API_BASE}/webhooks/${source}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ hl7 }),
-    });
-
-    const j = await r.json();
-    setRes(j);
+    try {
+      const j = await apiFetch(`/api/webhooks/${source}`, {
+        method: "POST",
+        body: { hl7 },
+      });
+      setRes(j);
+    } catch (e) {
+      setRes({ error: e?.message || "Failed to send HL7 payload" });
+    }
   }
 
   async function sendFHIR() {
@@ -30,24 +29,23 @@ export default function RealTimeIntegrations() {
       return;
     }
 
-    const r = await fetch(`${API_BASE}/webhooks/${source}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ resource: obj }),
-    });
-
-    const j = await r.json();
-    setRes(j);
+    try {
+      const j = await apiFetch(`/api/webhooks/${source}`, {
+        method: "POST",
+        body: { resource: obj },
+      });
+      setRes(j);
+    } catch (e) {
+      setRes({ error: e?.message || "Failed to send FHIR payload" });
+    }
   }
 
   return (
-    <div>
+    <div className="dashboard">
       <h2>Real-Time Integrations (Webhooks)</h2>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ flex: 1 }}>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+        <div className="card form">
           <h4>Send HL7 Message</h4>
           <input
             value={source}
@@ -60,10 +58,12 @@ export default function RealTimeIntegrations() {
             style={{ width: "100%" }}
             placeholder="Paste raw HL7 message here (\r delimited)"
           />
-          <button onClick={sendHL7}>Send HL7</button>
+          <div>
+            <button type="button" className="btn-primary" onClick={sendHL7}>Send HL7</button>
+          </div>
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div className="card form">
           <h4>Send FHIR Patient Resource</h4>
           <textarea
             value={fhir}
@@ -72,11 +72,13 @@ export default function RealTimeIntegrations() {
             style={{ width: "100%" }}
             placeholder="Paste FHIR Patient JSON here"
           />
-          <button onClick={sendFHIR}>Send FHIR</button>
+          <div>
+            <button type="button" className="btn-primary" onClick={sendFHIR}>Send FHIR</button>
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div className="card" style={{ marginTop: 12 }}>
         <h4>Response</h4>
         <pre>{JSON.stringify(res, null, 2)}</pre>
       </div>

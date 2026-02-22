@@ -51,7 +51,7 @@ export default function DeveloperDashboard() {
       );
       await load();
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to run workflow SLA scan");
+      setMsg(err?.message || "Failed to run workflow SLA scan");
     } finally {
       setRunningSla(false);
     }
@@ -67,16 +67,16 @@ export default function DeveloperDashboard() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={runSla} disabled={runningSla}>
+          <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
             {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
           </button>
-          <button className="btn-secondary" onClick={load}>
+          <button type="button" className="btn-secondary" onClick={load}>
             Refresh Metrics
           </button>
-          <button className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>
             Queue Replay
           </button>
-          <button className="btn-secondary" onClick={() => navigate("/developer/decision-cockpit")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/developer/decision-cockpit")}>
             Decision Cockpit
           </button>
         </div>
@@ -110,34 +110,34 @@ export default function DeveloperDashboard() {
       <section className="section">
         <h3>Engineering Tools</h3>
         <div className="panel-grid">
-          <button className="action-link" onClick={() => navigate("/developer/webhook-retry")}>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/webhook-retry")}>
             Webhook Retry
           </button>
-          <button className="action-link" onClick={() => navigate("/developer/queue-replay")}>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/queue-replay")}>
             Job Queue Replay
           </button>
-          <button className="action-link" onClick={() => navigate("/developer/decision-cockpit")}>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/decision-cockpit")}>
             Decision Cockpit
           </button>
-          <button className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>
             Clinical Intelligence
           </button>
-          <button className="action-link" onClick={() => navigate("/developer/provenance-verify")}>
+          <button type="button" className="action-link" onClick={() => navigate("/developer/provenance-verify")}>
             Provenance Verify
           </button>
-          <button className="action-link" onClick={() => navigate("/ai/extract")}>
+          <button type="button" className="action-link" onClick={() => navigate("/ai/extract")}>
             NeuroEdge Extract
           </button>
-          <button className="action-link" onClick={() => navigate("/admin/realtime")}>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>
             Integration Monitor
           </button>
-          <button className="action-link" onClick={() => navigate("/admin/audit-logs")}>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>
             Audit Logs
           </button>
-          <button className="action-link" onClick={() => navigate("/super-admin/settings")}>
+          <button type="button" className="action-link" onClick={() => navigate("/super-admin/settings")}>
             Feature Flags
           </button>
-          <button className="action-link" onClick={() => navigate("/hospital-admin/approvals")}>
+          <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/approvals")}>
             Workforce Approvals
           </button>
         </div>

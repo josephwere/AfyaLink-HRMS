@@ -35,7 +35,7 @@ export default function VoiceRecorder(){
   };
 
   return (<div style={{padding:8,border:'1px solid #ddd',borderRadius:8}}>
-    <div><button onClick={start} disabled={recording}>Start</button> <button onClick={stop} disabled={!recording}>Stop</button></div>
+    <div><button type="button" onClick={start} disabled={recording}>Start</button> <button type="button" onClick={stop} disabled={!recording}>Stop</button></div>
     <div style={{marginTop:8}}><b>Transcript:</b><div>{transcript}</div></div>
   </div>);
 }

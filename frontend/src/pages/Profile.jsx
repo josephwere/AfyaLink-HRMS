@@ -1,5 +1,5 @@
 // frontend/src/pages/Profile.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
@@ -16,50 +16,10 @@ import {
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
 function DismissibleSection({ sectionKey, title, open, onClose, onOpen, children, className = "" }) {
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const handleOutsideClick = (event) => {
-      if (!panelRef.current) return;
-      if (!panelRef.current.contains(event.target)) {
-        onClose(sectionKey);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("touchstart", handleOutsideClick, { passive: true });
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("touchstart", handleOutsideClick);
-    };
-  }, [open, onClose, sectionKey]);
-
-  if (!open) {
-    return (
-      <div className="profile-collapsed-tile">
-        <button
-          type="button"
-          className="secondary profile-toggle-btn"
-          onClick={() => onOpen(sectionKey)}
-        >
-          Open {title}
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div ref={panelRef} className={`card profile-card dismissible-section ${className}`.trim()}>
+    <div className={`card profile-card dismissible-section ${className}`.trim()}>
       <div className="dismissible-head">
         <h3>{title}</h3>
-        <button
-          type="button"
-          className="secondary dismissible-close-btn"
-          onClick={() => onClose(sectionKey)}
-          aria-label={`Close ${title}`}
-        >
-          Close
-        </button>
       </div>
       {children}
     </div>
@@ -201,20 +161,24 @@ export default function Profile() {
   const [pwError, setPwError] = useState("");
   const [a11yPrefs, setA11yPrefs] = useState(getDefaultAccessibilityPrefs());
   const [openSections, setOpenSections] = useState({
-    roleSwitcher: true,
-    verificationStatus: true,
-    phoneNationalId: true,
-    basicInfo: true,
-    employmentInfo: true,
-    credentialsInfo: true,
-    financialInfo: true,
-    insuranceProfile: true,
-    systemData: true,
-    roleChecklist: true,
-    twoFactor: true,
-    password: true,
-    accessibility: true,
+    roleSwitcher: false,
+    verificationStatus: false,
+    phoneNationalId: false,
+    basicInfo: false,
+    employmentInfo: false,
+    credentialsInfo: false,
+    financialInfo: false,
+    insuranceProfile: false,
+    systemData: false,
+    roleChecklist: false,
+    trainingGuide: false,
+    twoFactor: false,
+    password: false,
+    accessibility: false,
   });
+  const [trainingRole, setTrainingRole] = useState("");
+  const [trainingMsg, setTrainingMsg] = useState("");
+  const [trainingView, setTrainingView] = useState("FULL");
 
   const closeSection = (sectionKey) =>
     setOpenSections((prev) => ({ ...prev, [sectionKey]: false }));
@@ -229,6 +193,10 @@ export default function Profile() {
   useEffect(() => {
     setViewRole(roleOverride || user?.actualRole || user?.role || "");
   }, [roleOverride, user?.actualRole, user?.role]);
+
+  useEffect(() => {
+    if (!trainingRole && user?.role) setTrainingRole(user.role);
+  }, [trainingRole, user?.role]);
 
   useEffect(() => {
     if (!user) return;
@@ -563,6 +531,7 @@ export default function Profile() {
 
         {verificationWarning.type !== "EXPIRED" && user?.email && (
           <button
+            type="button"
             className="primary"
             disabled={sending || cooldown > 0}
             onClick={resendVerification}
@@ -788,6 +757,623 @@ export default function Profile() {
     ],
   };
 
+  const roleTrainingGuides = {
+    SUPER_ADMIN: {
+      goal: "Own platform governance, uptime, compliance, and cross-hospital strategy.",
+      firstHour: [
+        "Open Super Admin Dashboard and verify hospitals, staff, and patient totals.",
+        "Review system health, security incidents, and audit stream.",
+        "Check subscription/trial state and premium feature access by hospital.",
+      ],
+      daily: [
+        "Review critical alerts and unresolved escalations first.",
+        "Approve high-risk access changes and policy overrides.",
+        "Validate backup status and integration error budget.",
+      ],
+      safety: [
+        "Never share founder/super-admin credentials.",
+        "Use audit logs before and after sensitive changes.",
+      ],
+      kpi: ["System uptime", "Critical incident MTTR", "Compliance pass rate"],
+    },
+    SYSTEM_ADMIN: {
+      goal: "Run technical operations and platform reliability safely.",
+      firstHour: [
+        "Check API errors, queue health, and failed jobs.",
+        "Validate environment config and integration connectors.",
+        "Confirm role overrides and feature flags are correct.",
+      ],
+      daily: [
+        "Clear DLQ backlog with controlled replay.",
+        "Review connector retries and mapping failures.",
+        "Monitor infrastructure alarms and service latency.",
+      ],
+      safety: [
+        "Change one feature flag at a time with rollback path.",
+        "Document all production changes in runbook.",
+      ],
+      kpi: ["Error rate", "Queue backlog", "Mean recovery time"],
+    },
+    HOSPITAL_ADMIN: {
+      goal: "Run one hospital branch end-to-end across workforce and operations.",
+      firstHour: [
+        "Review staff coverage, pending approvals, and incident alerts.",
+        "Check machine connectivity and offline sync status.",
+        "Confirm finance, insurance, and patient operations readiness.",
+      ],
+      daily: [
+        "Approve/reject workforce requests with SLA discipline.",
+        "Track recruitment ads and applicant pipeline.",
+        "Resolve branch bottlenecks (labs, pharmacy, beds, queue).",
+      ],
+      safety: [
+        "Assign least privilege to staff roles.",
+        "Require reason on high-severity actions.",
+      ],
+      kpi: ["Approval SLA", "Staff coverage", "Patient flow delay"],
+    },
+    DEVELOPER: {
+      goal: "Ship safe changes, debug production issues, and improve reliability.",
+      firstHour: [
+        "Open Developer Dashboard: logs, queue replay, webhook retry.",
+        "Check release flags and current incidents.",
+        "Validate migration and API compatibility status.",
+      ],
+      daily: [
+        "Fix high-impact bugs first (auth, permissions, data integrity).",
+        "Use action matrix to verify button->API->handler wiring.",
+        "Publish change notes and regression evidence.",
+      ],
+      safety: [
+        "Do not bypass audit or auth controls in production.",
+        "Use staged rollout for risky changes.",
+      ],
+      kpi: ["Regression rate", "Bug fix lead time", "Deployment success rate"],
+    },
+    DOCTOR: {
+      goal: "Deliver safe clinical care with complete documentation.",
+      firstHour: [
+        "Open schedule and prioritize urgent/critical patients.",
+        "Review lab alerts and pending prescriptions.",
+        "Complete consultation notes and referrals.",
+      ],
+      daily: [
+        "Update diagnoses, treatment plans, and follow-up dates.",
+        "Close pending chart tasks before shift end.",
+        "Review performance and compliance reminders.",
+      ],
+      safety: [
+        "Sign orders only after verification.",
+        "Use handover notes for continuity.",
+      ],
+      kpi: ["Consultation completion", "Turnaround time", "Clinical documentation quality"],
+    },
+    NURSE: {
+      goal: "Execute bedside workflow, vitals, meds, and incident escalation.",
+      firstHour: [
+        "Check shift board and assigned patients.",
+        "Review medication due list and critical alerts.",
+        "Start vitals and nursing notes updates.",
+      ],
+      daily: [
+        "Record medication administration on time.",
+        "Escalate abnormal findings immediately.",
+        "Submit incident reports before handover.",
+      ],
+      safety: [
+        "Use patient ID verification before meds.",
+        "Document every exception.",
+      ],
+      kpi: ["Medication timeliness", "Vitals completion", "Incident response time"],
+    },
+    LAB_TECH: {
+      goal: "Process tests accurately with quality and safety compliance.",
+      firstHour: [
+        "Open test queue and prioritize urgent samples.",
+        "Check sample tracking and equipment status.",
+        "Run quality and safety checks.",
+      ],
+      daily: [
+        "Upload results and flag abnormal findings.",
+        "Track delays and report blockers.",
+        "Archive completed reports correctly.",
+      ],
+      safety: [
+        "Follow biohazard and QC protocol strictly.",
+        "Do not release unsigned/invalid results.",
+      ],
+      kpi: ["Test turnaround time", "QC pass rate", "Abnormal result escalation speed"],
+    },
+    PHARMACIST: {
+      goal: "Dispense safely, maintain stock, and prevent interaction risks.",
+      firstHour: [
+        "Open prescription queue and prioritize urgent medications.",
+        "Check low stock and expiry alerts.",
+        "Verify controlled-drug logs.",
+      ],
+      daily: [
+        "Dispense and record every issued medication.",
+        "Resolve interaction warnings with prescriber.",
+        "Update supplier orders for low stock.",
+      ],
+      safety: [
+        "Require prescription verification before dispense.",
+        "Track controlled drugs with full audit trail.",
+      ],
+      kpi: ["Dispense turnaround", "Stockout frequency", "Expiry loss rate"],
+    },
+    RADIOLOGIST: {
+      goal: "Deliver accurate imaging interpretation and report turnaround.",
+      firstHour: [
+        "Open imaging queue and sort by urgency.",
+        "Review pending reports and critical findings backlog.",
+        "Confirm equipment readiness and PACS access.",
+      ],
+      daily: [
+        "Publish signed reports with clear findings.",
+        "Escalate critical results to clinician immediately.",
+        "Maintain report quality consistency.",
+      ],
+      safety: [
+        "Use verified patient identity on every study.",
+        "Avoid unsigned draft release.",
+      ],
+      kpi: ["Report turnaround", "Critical result acknowledgment", "Report quality score"],
+    },
+    THERAPIST: {
+      goal: "Run therapy sessions with measurable progress and continuity.",
+      firstHour: [
+        "Review daily sessions and high-risk follow-ups.",
+        "Check treatment plans due for update.",
+        "Prepare session goals and notes template.",
+      ],
+      daily: [
+        "Document session outcomes and progress scores.",
+        "Adjust treatment plans with care team alignment.",
+        "Track missed sessions and rebooking.",
+      ],
+      safety: [
+        "Document risks and escalation triggers.",
+        "Maintain confidentiality in notes.",
+      ],
+      kpi: ["Session completion", "Progress adherence", "Follow-up retention"],
+    },
+    RECEPTIONIST: {
+      goal: "Ensure fast front-desk flow: check-in, scheduling, and queue control.",
+      firstHour: [
+        "Open appointment board and pending check-ins.",
+        "Validate walk-ins and registration queue.",
+        "Coordinate with billing/security for access flow.",
+      ],
+      daily: [
+        "Maintain accurate queue updates.",
+        "Route patients to correct service points.",
+        "Capture complete intake details.",
+      ],
+      safety: [
+        "Verify identity before creating records.",
+        "Escalate suspicious access cases.",
+      ],
+      kpi: ["Check-in time", "Queue accuracy", "No-show recovery rate"],
+    },
+    SECURITY_OFFICER: {
+      goal: "Control physical access and respond to incidents quickly.",
+      firstHour: [
+        "Check assigned shift and zone.",
+        "Open visitor check-in and gate scanner.",
+        "Review active alerts and blacklist records.",
+      ],
+      daily: [
+        "Log all visitor and access events.",
+        "Submit incident reports with exact facts.",
+        "Coordinate with receptionist/security admin.",
+      ],
+      safety: [
+        "Never bypass verification workflow.",
+        "Record timestamps and identities for evidence.",
+      ],
+      kpi: ["Access violation response time", "Incident closure rate", "Gate compliance"],
+    },
+    SECURITY_ADMIN: {
+      goal: "Govern security policy, incidents, and investigation readiness.",
+      firstHour: [
+        "Review access logs and suspicious activities.",
+        "Check open incidents and escalation status.",
+        "Validate emergency protocol readiness.",
+      ],
+      daily: [
+        "Approve/deny clearance requests.",
+        "Audit device authorization and visitor controls.",
+        "Prepare evidence trails for investigations.",
+      ],
+      safety: [
+        "Preserve audit integrity and chain-of-custody.",
+        "Apply least privilege in security controls.",
+      ],
+      kpi: ["Incident MTTR", "Unauthorized access attempts", "Audit completeness"],
+    },
+    HR_MANAGER: {
+      goal: "Drive staffing lifecycle: recruit, onboard, performance, retention.",
+      firstHour: [
+        "Review open positions and pending leave requests.",
+        "Check training/certification expiry alerts.",
+        "Open workforce approvals and SLA queue.",
+      ],
+      daily: [
+        "Advance recruitment pipeline and status changes.",
+        "Complete onboarding/offboarding controls.",
+        "Run performance and disciplinary review tasks.",
+      ],
+      safety: [
+        "Use policy-based approvals with reason codes.",
+        "Avoid out-of-policy role assignment.",
+      ],
+      kpi: ["Time-to-hire", "Approval SLA", "Turnover trend"],
+    },
+    PAYROLL_OFFICER: {
+      goal: "Process accurate payroll with traceable deductions and taxes.",
+      firstHour: [
+        "Review pending overtime/shift adjustments.",
+        "Validate deduction and allowance configuration.",
+        "Check payroll exceptions and prior failures.",
+      ],
+      daily: [
+        "Run payroll batches and verify totals.",
+        "Generate payslips and reconcile anomalies.",
+        "Close payroll with audit-ready trail.",
+      ],
+      safety: [
+        "Never process payroll without reconciliation checks.",
+        "Require dual-check for abnormal payouts.",
+      ],
+      kpi: ["Payroll accuracy", "Exception rate", "Cycle completion time"],
+    },
+    COMMUNITY_HEALTH_WORKER: {
+      goal: "Connect hospital care to households with offline-first field workflows.",
+      firstHour: [
+        "Review daily visit plan and high-risk households.",
+        "Check vaccination, maternal and chronic follow-up tasks.",
+        "Confirm device sync/offline queue status.",
+      ],
+      daily: [
+        "Record field visits and referrals on time.",
+        "Report disease signals and urgent escalations.",
+        "Sync offline records once online.",
+      ],
+      safety: [
+        "Capture geo/time evidence for sensitive field actions.",
+        "Escalate emergencies immediately to hospital team.",
+      ],
+      kpi: ["Visit completion", "Referral closure", "Sync success rate"],
+    },
+    PATIENT: {
+      goal: "Use AfyaLink for appointments, records, labs, billing, and feedback.",
+      firstHour: [
+        "Select hospital, book appointment, and confirm doctor.",
+        "Review medical records, prescriptions, and lab results.",
+        "Check insurance/billing and payment options.",
+      ],
+      daily: [
+        "Track appointment status and reminders.",
+        "Review updates from care team.",
+        "Submit feedback after service.",
+      ],
+      safety: [
+        "Keep phone/email verified for account recovery.",
+        "Use 2FA for account protection.",
+      ],
+      kpi: ["Appointment completion", "Profile completeness", "Feedback response rate"],
+    },
+    GUEST: {
+      goal: "Access public services safely before full registration.",
+      firstHour: [
+        "Browse hospitals/services and pre-register correctly.",
+        "Book appointment with valid contact details.",
+        "Complete identity details when prompted.",
+      ],
+      daily: [
+        "Track booking updates and conversion to patient profile.",
+        "Keep contact details current for notifications.",
+      ],
+      safety: [
+        "Use only verified channels for payments/booking.",
+        "Upgrade to full account for protected services.",
+      ],
+      kpi: ["Booking success", "Conversion to patient", "Contact verification rate"],
+    },
+  };
+
+  const resolvedTrainingRole = canRoleOverride
+    ? trainingRole || viewRole || user?.role || "GUEST"
+    : user?.role || "GUEST";
+  const trainingGuide =
+    roleTrainingGuides[resolvedTrainingRole] || roleTrainingGuides.GUEST;
+
+  const weeklyTrainingPlan = [
+    {
+      day: "Day 1",
+      title: "Orientation & Access",
+      focus: [
+        `Understand role goal: ${trainingGuide.goal}`,
+        trainingGuide.firstHour?.[0] || "Review role dashboard and navigation.",
+        "Confirm login, profile verification, and security setup.",
+      ],
+    },
+    {
+      day: "Day 2",
+      title: "Core Workflow",
+      focus: [
+        trainingGuide.firstHour?.[1] || "Execute core workflow tasks.",
+        trainingGuide.daily?.[0] || "Practice daily routine tasks.",
+        "Complete 5 supervised tasks in live/staging flow.",
+      ],
+    },
+    {
+      day: "Day 3",
+      title: "Safety & Compliance",
+      focus: [
+        trainingGuide.safety?.[0] || "Follow role safety controls.",
+        "Review audit/accountability expectations.",
+        "Run one incident/escalation simulation.",
+      ],
+    },
+    {
+      day: "Day 4",
+      title: "Advanced Tasks",
+      focus: [
+        trainingGuide.firstHour?.[2] || "Handle advanced role scenarios.",
+        trainingGuide.daily?.[1] || "Practice secondary daily tasks.",
+        "Use analytics/alerts to prioritize work.",
+      ],
+    },
+    {
+      day: "Day 5",
+      title: "Cross-Team Collaboration",
+      focus: [
+        trainingGuide.daily?.[2] || "Practice third-line routines.",
+        "Use Communication Center for role-to-role handoffs.",
+        "Close one end-to-end scenario with another department.",
+      ],
+    },
+    {
+      day: "Day 6",
+      title: "Performance & KPIs",
+      focus: [
+        `Review role KPIs: ${(trainingGuide.kpi || []).join(", ")}`,
+        "Identify top 2 bottlenecks and remediation actions.",
+        "Run supervised quality review with trainer.",
+      ],
+    },
+    {
+      day: "Day 7",
+      title: "Assessment & Sign-off",
+      focus: [
+        "Complete practical assessment checklist.",
+        "Document SOP notes and escalation contacts.",
+        "Trainer approval for independent operation.",
+      ],
+    },
+  ];
+
+  const buildTrainingLines = () => [
+    `AfyaLink Training Notes - ${resolvedTrainingRole}`,
+    `Goal: ${trainingGuide.goal}`,
+    "",
+    "First Hour",
+    ...(trainingGuide.firstHour || []).map((x) => `- ${x}`),
+    "",
+    "Daily Routine",
+    ...(trainingGuide.daily || []).map((x) => `- ${x}`),
+    "",
+    "Safety Rules",
+    ...(trainingGuide.safety || []).map((x) => `- ${x}`),
+    "",
+    "Key Metrics",
+    ...(trainingGuide.kpi || []).map((x) => `- ${x}`),
+    "",
+    "7-Day Onboarding Plan",
+    ...weeklyTrainingPlan.flatMap((w) => [
+      `${w.day}: ${w.title}`,
+      ...w.focus.map((x) => `- ${x}`),
+      "",
+    ]),
+  ];
+
+  const buildMasterTrainingLines = () => {
+    const lines = [
+      "AfyaLink Role Training Playbook (All Roles)",
+      "",
+      "7-Day Onboarding Template",
+      "- Day 1: Orientation, role scope, login/profile/security setup, dashboard navigation.",
+      "- Day 2: Core workflow execution with supervision.",
+      "- Day 3: Safety, compliance, incident/escalation simulation.",
+      "- Day 4: Advanced tasks and edge-case handling.",
+      "- Day 5: Cross-team communication and handoff scenarios.",
+      "- Day 6: KPI review, quality checks, remediation planning.",
+      "- Day 7: Practical assessment, SOP sign-off, go-live readiness.",
+      "",
+    ];
+
+    viewableRoles.forEach((role) => {
+      const guide = roleTrainingGuides[role] || roleTrainingGuides.GUEST;
+      lines.push(`=== ${role} ===`);
+      lines.push(`Goal: ${guide.goal || "N/A"}`);
+      lines.push("First Hour:");
+      (guide.firstHour || []).forEach((item) => lines.push(`- ${item}`));
+      lines.push("Daily Routine:");
+      (guide.daily || []).forEach((item) => lines.push(`- ${item}`));
+      lines.push("Safety Rules:");
+      (guide.safety || []).forEach((item) => lines.push(`- ${item}`));
+      lines.push("Key Metrics:");
+      (guide.kpi || []).forEach((item) => lines.push(`- ${item}`));
+      lines.push("");
+    });
+
+    return lines;
+  };
+
+  const copyTrainingNotes = async () => {
+    const lines = buildTrainingLines();
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setTrainingMsg("Training notes copied.");
+    } catch {
+      setTrainingMsg("Failed to copy notes. Please copy manually.");
+    }
+  };
+
+  const downloadTrainingNotes = () => {
+    try {
+      const blob = new Blob([buildTrainingLines().join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `afyalink-training-${String(resolvedTrainingRole || "role").toLowerCase()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setTrainingMsg("Training notes downloaded.");
+    } catch {
+      setTrainingMsg("Failed to download notes.");
+    }
+  };
+
+  const copyMasterTrainingNotes = async () => {
+    try {
+      await navigator.clipboard.writeText(buildMasterTrainingLines().join("\n"));
+      setTrainingMsg("Full role playbook copied.");
+    } catch {
+      setTrainingMsg("Failed to copy full playbook.");
+    }
+  };
+
+  const downloadMasterTrainingNotes = () => {
+    try {
+      const blob = new Blob([buildMasterTrainingLines().join("\n")], {
+        type: "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "afyalink-role-training-playbook.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setTrainingMsg("Full role playbook downloaded.");
+    } catch {
+      setTrainingMsg("Failed to download full playbook.");
+    }
+  };
+
+  const printTrainingNotes = () => {
+    try {
+      const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AfyaLink Training - ${resolvedTrainingRole}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 20px; color: #111; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    h2 { font-size: 16px; margin: 14px 0 6px; }
+    ul { margin: 0 0 10px 18px; }
+  </style>
+</head>
+<body>
+  <h1>AfyaLink Training Notes - ${resolvedTrainingRole}</h1>
+  <p><strong>Goal:</strong> ${trainingGuide.goal}</p>
+  <h2>First Hour</h2>
+  <ul>${(trainingGuide.firstHour || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+  <h2>Daily Routine</h2>
+  <ul>${(trainingGuide.daily || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+  <h2>Safety Rules</h2>
+  <ul>${(trainingGuide.safety || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+  <h2>Key Metrics</h2>
+  <ul>${(trainingGuide.kpi || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+  <h2>7-Day Onboarding Plan</h2>
+  ${weeklyTrainingPlan
+    .map(
+      (w) => `
+  <h3>${w.day}: ${w.title}</h3>
+  <ul>${w.focus.map((x) => `<li>${x}</li>`).join("")}</ul>`
+    )
+    .join("")}
+</body>
+</html>`;
+      const w = window.open("", "_blank");
+      if (!w) {
+        setTrainingMsg("Pop-up blocked. Allow pop-ups to print.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+      setTrainingMsg("Print window opened.");
+    } catch {
+      setTrainingMsg("Failed to open print view.");
+    }
+  };
+
+  const printMasterTrainingNotes = () => {
+    try {
+      const htmlSections = viewableRoles
+        .map((role) => {
+          const guide = roleTrainingGuides[role] || roleTrainingGuides.GUEST;
+          return `
+            <h2>${role}</h2>
+            <p><strong>Goal:</strong> ${guide.goal || ""}</p>
+            <h3>First Hour</h3>
+            <ul>${(guide.firstHour || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+            <h3>Daily Routine</h3>
+            <ul>${(guide.daily || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+            <h3>Safety Rules</h3>
+            <ul>${(guide.safety || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+            <h3>Key Metrics</h3>
+            <ul>${(guide.kpi || []).map((x) => `<li>${x}</li>`).join("")}</ul>
+          `;
+        })
+        .join("");
+
+      const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AfyaLink Role Training Playbook</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; padding: 20px; color: #111; }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    h2 { font-size: 18px; margin: 18px 0 6px; border-top: 1px solid #ddd; padding-top: 12px; }
+    h3 { font-size: 14px; margin: 10px 0 4px; }
+    ul { margin: 0 0 10px 18px; }
+  </style>
+</head>
+<body>
+  <h1>AfyaLink Role Training Playbook</h1>
+  ${htmlSections}
+</body>
+</html>`;
+      const w = window.open("", "_blank");
+      if (!w) {
+        setTrainingMsg("Pop-up blocked. Allow pop-ups to print.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+      setTrainingMsg("Full role playbook print opened.");
+    } catch {
+      setTrainingMsg("Failed to open full playbook print view.");
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
@@ -831,7 +1417,7 @@ export default function Profile() {
                 </option>
               ))}
             </select>
-            <button
+            <button type="button"
               className="primary"
               onClick={() => {
                 setRoleOverride(viewRole);
@@ -840,7 +1426,7 @@ export default function Profile() {
             >
               Switch Role View
             </button>
-            <button
+            <button type="button"
               className="secondary"
               onClick={() => {
                 const actual = user?.actualRole || user?.role;
@@ -906,7 +1492,7 @@ export default function Profile() {
             onLocalNumberChange={setPhoneLocal}
           />
           <div className="profile-row profile-actions-row">
-            <button
+            <button type="button"
               className="primary"
               onClick={requestPhoneOtp}
               disabled={phoneBusy || !(phoneLocal || "").trim()}
@@ -920,7 +1506,7 @@ export default function Profile() {
               placeholder="Enter OTP"
               style={{ maxWidth: 220 }}
             />
-            <button
+            <button type="button"
               className="success"
               onClick={verifyPhoneOtp}
               disabled={phoneBusy || !phoneOtp.trim()}
@@ -944,7 +1530,7 @@ export default function Profile() {
               </option>
             ))}
           </select>
-          <button
+          <button type="button"
             className="primary"
             onClick={saveNationalId}
             disabled={idSaving}
@@ -970,7 +1556,7 @@ export default function Profile() {
             onChange={(e) => setLicenseExpiry(e.target.value)}
           />
 
-          <button
+          <button type="button"
             className="primary"
             onClick={saveLicense}
             disabled={licenseSaving}
@@ -1352,7 +1938,7 @@ export default function Profile() {
             setSystemProfile({ ...systemProfile, accessExpiresAt: e.target.value })
           }
         />
-        <button
+        <button type="button"
           className="primary"
           onClick={saveExtendedProfile}
           disabled={extendedSaving}
@@ -1376,6 +1962,113 @@ export default function Profile() {
           ))}
         </ul>
       </DismissibleSection>
+
+      <DismissibleSection
+        sectionKey="trainingGuide"
+        title="AfyaLink Training Notes"
+        open={openSections.trainingGuide}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
+        <p className="muted">
+          Use these notes to train this role quickly and consistently.
+        </p>
+        <label>Training Role</label>
+        <select
+          value={resolvedTrainingRole}
+          onChange={(e) => setTrainingRole(e.target.value)}
+          disabled={!canRoleOverride}
+        >
+          {viewableRoles.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+        {!canRoleOverride && (
+          <p className="muted" style={{ marginTop: 6 }}>
+            Training notes are locked to your account role.
+          </p>
+        )}
+        <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
+          <select value={trainingView} onChange={(e) => setTrainingView(e.target.value)}>
+            <option value="FULL">Show Full Guide</option>
+            <option value="WEEK">Show 7-Day Plan</option>
+          </select>
+          <button type="button" className="secondary" onClick={copyTrainingNotes}>
+            Copy Training Notes
+          </button>
+          <button type="button" className="secondary" onClick={downloadTrainingNotes}>
+            Download Notes
+          </button>
+          <button type="button" className="secondary" onClick={printTrainingNotes}>
+            Print Notes
+          </button>
+        </div>
+        <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
+          <button type="button" className="secondary" onClick={copyMasterTrainingNotes}>
+            Copy Full Playbook
+          </button>
+          <button type="button" className="secondary" onClick={downloadMasterTrainingNotes}>
+            Download Full Playbook
+          </button>
+          <button type="button" className="secondary" onClick={printMasterTrainingNotes}>
+            Print Full Playbook
+          </button>
+        </div>
+        {trainingMsg && <p className="muted">{trainingMsg}</p>}
+        <div className="subtle-banner" style={{ marginTop: 10 }}>
+          <strong>Goal:</strong> {trainingGuide.goal}
+        </div>
+
+        {trainingView === "FULL" && (
+          <>
+            <h4>First Hour</h4>
+            <ul>
+              {(trainingGuide.firstHour || []).map((item) => (
+                <li key={`fh-${item}`}>{item}</li>
+              ))}
+            </ul>
+
+            <h4>Daily Routine</h4>
+            <ul>
+              {(trainingGuide.daily || []).map((item) => (
+                <li key={`dy-${item}`}>{item}</li>
+              ))}
+            </ul>
+
+            <h4>Safety Rules</h4>
+            <ul>
+              {(trainingGuide.safety || []).map((item) => (
+                <li key={`sf-${item}`}>{item}</li>
+              ))}
+            </ul>
+
+            <h4>Key Metrics</h4>
+            <ul>
+              {(trainingGuide.kpi || []).map((item) => (
+                <li key={`kp-${item}`}>{item}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {trainingView === "WEEK" && (
+          <>
+            <h4>7-Day Onboarding Plan</h4>
+            {weeklyTrainingPlan.map((w) => (
+              <div key={w.day} className="card" style={{ marginTop: 8 }}>
+                <strong>{w.day}: {w.title}</strong>
+                <ul style={{ marginTop: 6 }}>
+                  {w.focus.map((item) => (
+                    <li key={`${w.day}-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </>
+        )}
+      </DismissibleSection>
       </div>
 
       {/* ============================
@@ -1394,14 +2087,14 @@ export default function Profile() {
             : "2FA is disabled. Your account uses password only."}
         </p>
         <p className="muted">Current method: {twoFAMethod}</p>
-        <button
+        <button type="button"
           className={twoFAEnabled ? "danger" : "success"}
           onClick={toggle2FA}
         >
           {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
         </button>
         <div style={{ marginTop: 12 }}>
-          <button className="btn-secondary" onClick={setupTotp} disabled={twoFABusy}>
+          <button type="button" className="btn-secondary" onClick={setupTotp} disabled={twoFABusy}>
             Setup Google Authenticator
           </button>
         </div>
@@ -1425,12 +2118,12 @@ export default function Profile() {
               onChange={(e) => setTotpCode(e.target.value)}
               placeholder="6-digit code"
             />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button className="btn-primary" onClick={verifyTotp} disabled={twoFABusy}>
+            <div className="actions-row mt-8">
+              <button type="button" className="btn-primary" onClick={verifyTotp} disabled={twoFABusy}>
                 Verify Authenticator
               </button>
               {twoFAMethod === "TOTP" && (
-                <button className="btn-secondary" onClick={disableTotp} disabled={twoFABusy}>
+                <button type="button" className="btn-secondary" onClick={disableTotp} disabled={twoFABusy}>
                   Disable Authenticator
                 </button>
               )}
@@ -1462,7 +2155,7 @@ export default function Profile() {
         {pwError && <div className="auth-error">{pwError}</div>}
         {pwMessage && <div className="auth-success">{pwMessage}</div>}
 
-        <form onSubmit={handlePasswordChange}>
+        <form className="form" onSubmit={handlePasswordChange}>
           <label>Current password</label>
           <input
             type="password"
@@ -1487,7 +2180,7 @@ export default function Profile() {
             required
           />
 
-          <button disabled={pwLoading} style={{ marginTop: 8 }}>
+          <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>
             {pwLoading ? "Updating..." : "Change password"}
           </button>
         </form>

@@ -78,10 +78,10 @@ export default function StepUp() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={loadRisk}>
+          <button type="button" className="btn-secondary" onClick={loadRisk}>
             Refresh Risk
           </button>
-          <button className="btn-primary" onClick={requestCode} disabled={requesting}>
+          <button type="button" className="btn-primary" onClick={requestCode} disabled={requesting}>
             {requesting ? "Sending..." : "Send Step-up Code"}
           </button>
         </div>
@@ -117,7 +117,7 @@ export default function StepUp() {
             maxLength={8}
             required
           />
-          <div className="welcome-actions" style={{ marginTop: 12 }}>
+          <div className="welcome-actions mt-12">
             <button className="btn-primary" type="submit" disabled={loading}>
               {loading ? "Verifying..." : "Verify & Unlock"}
             </button>

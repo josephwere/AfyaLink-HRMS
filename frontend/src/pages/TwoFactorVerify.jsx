@@ -56,7 +56,7 @@ export default function TwoFactorVerify() {
           required
         />
 
-        <button disabled={loading}>
+        <button type="submit" disabled={loading}>
           {loading ? "Verifying..." : "Verify"}
         </button>
       </form>

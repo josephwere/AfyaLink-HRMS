@@ -54,7 +54,7 @@ export default function Chatbot() {
             placeholder="Describe symptoms, context, or question"
           />
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={submit} disabled={loading}>
+            <button type="button" className="btn-primary" onClick={submit} disabled={loading}>
               {loading ? "Thinking..." : "Send"}
             </button>
           </div>

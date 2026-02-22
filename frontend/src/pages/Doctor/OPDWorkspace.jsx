@@ -7,9 +7,9 @@ export default function OPDWorkspace() {
       title="OPD Clinic Workspace"
       subtitle="Consultation screen for diagnosis, notes, coding, treatment and follow-up."
       actions={[
-        { label: "Open Consultation", variant: "primary" },
-        { label: "Print Summary" },
-        { label: "Send to Pharmacy" },
+        { label: "Open Consultation", variant: "primary", path: "/doctor/opd#consult" },
+        { label: "Print Summary", onClick: () => window.print() },
+        { label: "Send to Pharmacy", path: "/pharmacy/queue" },
       ]}
       panels={[
         { title: "Patient Summary", body: "Vitals, allergies and insurance context." },

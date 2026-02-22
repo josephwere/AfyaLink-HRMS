@@ -7,8 +7,8 @@ export default function InpatientWard() {
       title="Inpatient Ward"
       subtitle="Bed assignments, daily progress, medication chart visibility and discharge workflow."
       actions={[
-        { label: "Open Ward List", variant: "primary" },
-        { label: "Generate Discharge" },
+        { label: "Open Ward List", variant: "primary", path: "/doctor/ward#list" },
+        { label: "Generate Discharge", path: "/doctor/ward#discharge" },
       ]}
       panels={[
         { title: "Assigned Beds", body: "Current inpatient allocation by ward and risk level." },

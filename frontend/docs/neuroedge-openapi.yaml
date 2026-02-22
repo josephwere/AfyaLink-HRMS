@@ -1,0 +1,541 @@
+openapi: 3.1.0
+info:
+  title: NeuroEdge Mother AI API
+  version: 1.0.0
+  description: |
+    Canonical AI API for AfyaLink integration. This API is designed for async-safe,
+    auditable, policy-guarded healthcare operations.
+servers:
+  - url: https://neuroedge.internal
+security:
+  - bearerAuth: []
+tags:
+  - name: Ingestion
+  - name: Retrieval
+  - name: Interop
+  - name: Risk
+  - name: Simulation
+  - name: Guardrails
+  - name: Jobs
+paths:
+  /v1/extract:
+    post:
+      tags: [Ingestion]
+      summary: Extract structured data from files (PDF/image/doc)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+  /v1/ingest/document:
+    post:
+      tags: [Ingestion]
+      summary: Ingest and index document with redaction/provenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentIngestRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+  /v1/search:
+    post:
+      tags: [Retrieval]
+      summary: Retrieval query over indexed corpora
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+  /v1/interop/fhir/transform:
+    post:
+      tags: [Interop]
+      summary: Transform payload into target FHIR resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FhirTransformRequest'
+      responses:
+        '200':
+          description: Transform output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FhirTransformResponse'
+  /v1/interop/hl7/transform:
+    post:
+      tags: [Interop]
+      summary: Transform payload into HL7 message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hl7TransformRequest'
+      responses:
+        '200':
+          description: Transform output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hl7TransformResponse'
+  /v1/guardrails/authorize:
+    post:
+      tags: [Guardrails]
+      summary: ABAC/consent decision for AI action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizeRequest'
+      responses:
+        '200':
+          description: Decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizeResponse'
+  /v1/risk/staffing-forecast:
+    post:
+      tags: [Risk]
+      summary: Forecast staffing shortages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffingForecastRequest'
+      responses:
+        '200':
+          description: Forecast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffingForecastResponse'
+  /v1/risk/burnout-score:
+    post:
+      tags: [Risk]
+      summary: Burnout risk scoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BurnoutRiskRequest'
+      responses:
+        '200':
+          description: Score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BurnoutRiskResponse'
+  /v1/risk/causal-impact:
+    post:
+      tags: [Risk]
+      summary: Estimate policy impact with causal method
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CausalImpactRequest'
+      responses:
+        '200':
+          description: Impact estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CausalImpactResponse'
+  /v1/simulation/digital-twin:
+    post:
+      tags: [Simulation]
+      summary: Run hospital digital twin scenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DigitalTwinRequest'
+      responses:
+        '200':
+          description: Simulation output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DigitalTwinResponse'
+  /v1/jobs/{jobId}:
+    get:
+      tags: [Jobs]
+      summary: Get async job status/result
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    JobAccepted:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId: { type: string }
+        status: { type: string, enum: [QUEUED] }
+    JobStatus:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId: { type: string }
+        status: { type: string, enum: [QUEUED, RUNNING, SUCCEEDED, FAILED] }
+        progress: { type: number, minimum: 0, maximum: 100 }
+        result:
+          type: object
+          additionalProperties: true
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+        provenance:
+          $ref: '#/components/schemas/Provenance'
+    ExtractRequest:
+      type: object
+      required: [tenantId, hospitalId, actor, source]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        source:
+          type: object
+          required: [uri, mimeType]
+          properties:
+            uri: { type: string }
+            mimeType: { type: string }
+            checksumSha256: { type: string }
+        extractionProfile:
+          type: string
+          enum: [CLINICAL_NOTE, LAB_REPORT, PRESCRIPTION, INVOICE, HR_DOCUMENT, GENERIC]
+        outputSchema:
+          type: string
+          description: JSON schema id in NeuroEdge registry
+        consent:
+          $ref: '#/components/schemas/ConsentContext'
+        idempotencyKey: { type: string }
+    DocumentIngestRequest:
+      type: object
+      required: [tenantId, hospitalId, actor, document]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        document:
+          type: object
+          required: [uri, type]
+          properties:
+            uri: { type: string }
+            type: { type: string, enum: [CLINICAL, ADMIN, LEGAL, FINANCE, POLICY] }
+            externalRef: { type: string }
+        redactPHI: { type: boolean, default: true }
+        indexTargets:
+          type: array
+          items: { type: string, enum: [GLOBAL, HOSPITAL, DEPARTMENT, USER] }
+        consent:
+          $ref: '#/components/schemas/ConsentContext'
+        idempotencyKey: { type: string }
+    SearchRequest:
+      type: object
+      required: [tenantId, actor, query]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        query: { type: string }
+        filters:
+          type: object
+          additionalProperties: true
+        topK: { type: integer, default: 5 }
+        includeCitations: { type: boolean, default: true }
+        consent:
+          $ref: '#/components/schemas/ConsentContext'
+    SearchResponse:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              confidence: { type: number }
+              citations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sourceId: { type: string }
+                    snippet: { type: string }
+                    score: { type: number }
+        provenance:
+          $ref: '#/components/schemas/Provenance'
+    FhirTransformRequest:
+      type: object
+      required: [tenantId, actor, resourceType, payload]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        resourceType: { type: string }
+        payload:
+          type: object
+          additionalProperties: true
+        mappingProfile: { type: string }
+        consent: { $ref: '#/components/schemas/ConsentContext' }
+    FhirTransformResponse:
+      type: object
+      properties:
+        resourceType: { type: string }
+        resource:
+          type: object
+          additionalProperties: true
+        validation:
+          type: object
+          properties:
+            valid: { type: boolean }
+            errors:
+              type: array
+              items: { type: string }
+        signature:
+          $ref: '#/components/schemas/SignedProvenance'
+    Hl7TransformRequest:
+      type: object
+      required: [tenantId, actor, messageType, payload]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        messageType: { type: string }
+        payload:
+          type: object
+          additionalProperties: true
+        mappingProfile: { type: string }
+        consent: { $ref: '#/components/schemas/ConsentContext' }
+    Hl7TransformResponse:
+      type: object
+      properties:
+        messageType: { type: string }
+        hl7: { type: string }
+        validation:
+          type: object
+          properties:
+            valid: { type: boolean }
+            errors:
+              type: array
+              items: { type: string }
+        signature:
+          $ref: '#/components/schemas/SignedProvenance'
+    AuthorizeRequest:
+      type: object
+      required: [tenantId, actor, action, resource]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        actor: { $ref: '#/components/schemas/ActorContext' }
+        action: { type: string }
+        resource:
+          type: object
+          required: [domain, type]
+          properties:
+            domain: { type: string }
+            type: { type: string }
+            id: { type: string }
+            attributes:
+              type: object
+              additionalProperties: true
+        consent: { $ref: '#/components/schemas/ConsentContext' }
+        context:
+          type: object
+          additionalProperties: true
+    AuthorizeResponse:
+      type: object
+      required: [allow]
+      properties:
+        allow: { type: boolean }
+        reason: { type: string }
+        obligations:
+          type: array
+          items: { type: string }
+        maskedFields:
+          type: array
+          items: { type: string }
+    StaffingForecastRequest:
+      type: object
+      required: [tenantId, hospitalId, horizonDays]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        departmentId: { type: string }
+        horizonDays: { type: integer, minimum: 1, maximum: 365 }
+        historicalWindowDays: { type: integer, minimum: 14, maximum: 1095 }
+    StaffingForecastResponse:
+      type: object
+      properties:
+        shortages:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              shift: { type: string }
+              role: { type: string }
+              required: { type: integer }
+              available: { type: integer }
+              deficit: { type: integer }
+        confidence: { type: number }
+        provenance: { $ref: '#/components/schemas/Provenance' }
+    BurnoutRiskRequest:
+      type: object
+      required: [tenantId, hospitalId]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        departmentId: { type: string }
+        userIds:
+          type: array
+          items: { type: string }
+    BurnoutRiskResponse:
+      type: object
+      properties:
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              userId: { type: string }
+              risk: { type: string, enum: [LOW, MEDIUM, HIGH] }
+              score: { type: number }
+              drivers:
+                type: array
+                items: { type: string }
+        provenance: { $ref: '#/components/schemas/Provenance' }
+    CausalImpactRequest:
+      type: object
+      required: [tenantId, hospitalId, policyChange]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        policyChange:
+          type: object
+          additionalProperties: true
+        outcomes:
+          type: array
+          items: { type: string }
+    CausalImpactResponse:
+      type: object
+      properties:
+        estimatedEffects:
+          type: array
+          items:
+            type: object
+            properties:
+              outcome: { type: string }
+              effect: { type: number }
+              ciLower: { type: number }
+              ciUpper: { type: number }
+        assumptions:
+          type: array
+          items: { type: string }
+        provenance: { $ref: '#/components/schemas/Provenance' }
+    DigitalTwinRequest:
+      type: object
+      required: [tenantId, hospitalId, scenario]
+      properties:
+        tenantId: { type: string }
+        hospitalId: { type: string }
+        scenario:
+          type: object
+          additionalProperties: true
+        horizonHours: { type: integer, minimum: 1, maximum: 720 }
+    DigitalTwinResponse:
+      type: object
+      properties:
+        projections:
+          type: object
+          additionalProperties: true
+        recommendations:
+          type: array
+          items: { type: string }
+        confidence: { type: number }
+        provenance: { $ref: '#/components/schemas/Provenance' }
+    ActorContext:
+      type: object
+      required: [userId, role]
+      properties:
+        userId: { type: string }
+        role: { type: string }
+        departmentId: { type: string }
+        sourceIp: { type: string }
+        deviceId: { type: string }
+    ConsentContext:
+      type: object
+      properties:
+        patientId: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        legalBasis: { type: string }
+        expiresAt: { type: string, format: date-time }
+    Provenance:
+      type: object
+      properties:
+        model: { type: string }
+        modelVersion: { type: string }
+        promptHash: { type: string }
+        evidenceIds:
+          type: array
+          items: { type: string }
+        generatedAt: { type: string, format: date-time }
+    SignedProvenance:
+      type: object
+      properties:
+        digest: { type: string }
+        algorithm: { type: string, example: Ed25519 }
+        signature: { type: string }
+        keyId: { type: string }

@@ -1,0 +1,134 @@
+page,button_text,handler,target_route_or_api,status,button_type
+frontend/src/pages/Doctor/Appointments.jsx,Complete,()=>update(it._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Appointments.jsx,Create,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Doctor/Appointments.jsx,Delete,()=>remove(it._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,(dynamic/no-text),"() => navigate(""/notifications"")",/notifications,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Leave Requests,"() => navigate(""/doctor/leave"")",/doctor/leave,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Open Clinical Intelligence,"() => navigate(""/system-admin/clinical-intelligence"")",/system-admin/clinical-intelligence,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Open Record,"() => navigate(""/doctor/medical-records"")",/doctor/medical-records,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Open Schedule,"() => navigate(""/doctor/schedule"")",/doctor/schedule,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Start Consultation,"() => navigate(""/doctor/opd"")",/doctor/opd,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Start Consultation,"() => navigate(""/doctor/opd"")",/doctor/opd,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/Dashboard.jsx,Today’s Patients,"() => navigate(""/doctor/patients"")",/doctor/patients,VERIFIED_ROUTE,button
+frontend/src/pages/Doctor/MyPatients.jsx,Add Note,() => navigate(`/doctor/reports-notes?patientId=${p._id}`),/doctor/reports-notes?patientId=${p._id},MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/Doctor/MyPatients.jsx,Open Record,() => navigate(`/doctor/medical-records?patientId=${p._id}`),/doctor/medical-records?patientId=${p._id},MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/Doctor/MyPatients.jsx,Prescribe,() => navigate(`/doctor/prescriptions?patientId=${p._id}`),/doctor/prescriptions?patientId=${p._id},MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/Doctor/MyPatients.jsx,Refer,() => navigate(`/doctor/referrals?patientId=${p._id}`),/doctor/referrals?patientId=${p._id},MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),"() => setViewMode((v) => (v === ""BREACHED"" ? ""ALL"" : ""BREACHED""))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),runPreview,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),() => setShowInactivePresets((v) => !v),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),"() => applyAutomationPreset(row.requestType, preset.key)",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),"() => loadMoreByKind(""LEAVE"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),"() => loadMoreByKind(""OVERTIME"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),"() => loadMoreByKind(""SHIFT"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,(dynamic/no-text),() => loadAll({ append: true }),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,All,"() => setQueueKindFilter(""ALL"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Apply to all,() => applyPresetAll(preset.key),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Approve,"() => doApprove(item.kind, item._id, isOverdue(item))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Auto-Advance:,() => setAutoAdvance((v) => !v),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Clone to Form,() => clonePresetToForm(preset),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Deactivate,() => deactivateCustomPreset(preset.key),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Jump to Next Breached,jumpToNextBreached,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Leave,"() => setQueueKindFilter(""LEAVE"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Overtime,"() => setQueueKindFilter(""OVERTIME"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Reactivate,() => reactivateCustomPreset(preset.key),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Refresh,() => loadAll({ append: false }),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Reject,"() => doReject(item.kind, item._id, isOverdue(item))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Reset Form,"() => setCustomPreset({ key: """", name: """", description: """", config: { active: true, autoApprove: false, requireSecondApprover: true, fallbackRole: ""AUTO"", escalationAfterMinutes: 120, conditions: { priorityAgeMultiplier: 1, priorityWeightCap: 5, }, }, })",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Reset View,resetView,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Run Escalation Sweep,runSweep,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Save,() => savePolicy(row.requestType),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Save,() => saveAutomation(row.requestType),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Save Custom Preset,saveCustomPreset,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Shift,"() => setQueueKindFilter(""SHIFT"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Simulate,() => simulatePolicy(row.requestType),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,(dynamic/no-text),save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,Add Insurance Provider,"() => setInsuranceProviders((prev) => [...prev, emptyInsurance()])",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,Add Payment Method,"() => setPaymentMethods((prev) => [...prev, emptyPayment()])",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,Open Branding & Customization,"() => navigate(""/hospital-admin/customization"")",/hospital-admin/customization,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,Remove,"() => setInsuranceProviders((prev) => prev.filter((_,i) => i !== idx))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,Remove,"() => setPaymentMethods((prev) => prev.filter((_,i) => i !== idx))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Announcements,"() => navigate(""/notifications"")",/notifications,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Attendance Heatmap,"() => navigate(""/reports"")",/reports,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Branding & Customization,"() => navigate(""/hospital-admin/customization"")",/hospital-admin/customization,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Budget Overview,"() => navigate(""/reports"")",/reports,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Incident Reports,"() => navigate(""/hospital-admin/approvals"")",/hospital-admin/approvals,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Insurance & Payments,"() => navigate(""/hospital-admin/commerce-config"")",/hospital-admin/commerce-config,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Leave Approvals,"() => navigate(""/hospital-admin/approvals"")",/hospital-admin/approvals,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Machine Connectivity,"() => navigate(""/hospital-admin/machine-connectivity"")",/hospital-admin/machine-connectivity,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Open Machine Connectivity Console,"() => navigate(""/hospital-admin/machine-connectivity"")",/hospital-admin/machine-connectivity,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Recruitment Ads,"() => navigate(""/hospital-admin/recruitment-ads"")",/hospital-admin/recruitment-ads,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Recruitment Requests,"() => navigate(""/hospital-admin/register-staff"")",/hospital-admin/register-staff,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Shift Calendar,"() => navigate(""/workforce/requests#shift"")",/workforce/requests#shift,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Staff Directory,"() => navigate(""/hospital-admin/staff"")",/hospital-admin/staff,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,Staff Directory,"() => navigate(""/hospital-admin/staff"")",/hospital-admin/staff,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,View Machine Alerts,"() => navigate(""/hospital-admin/machine-alerts"")",/hospital-admin/machine-alerts,VERIFIED_ROUTE,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Activate,"() => setStatus(ad._id, ""ACTIVE"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Close,"() => setStatus(ad._id, ""CLOSED"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Hire,"() => updateApplicationStatus(a._id, ""HIRED"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Pause,"() => setStatus(ad._id, ""PAUSED"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Reject,"() => updateApplicationStatus(a._id, ""REJECTED"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Review,"() => updateApplicationStatus(a._id, ""UNDER_REVIEW"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,Shortlist,"() => updateApplicationStatus(a._id, ""SHORTLISTED"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RegisterStaff.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,Deactivate,() => deactivate(s._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,Next,() => setPage((p) => p + 1),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,Prev,"() => setPage((p) => Math.max(1, p - 1))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,Equipment Logs,"() => navigate(""/lab-tech/equipment"")",/lab-tech/equipment,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Quality Control,"() => navigate(""/lab-tech/qc"")",/lab-tech/qc,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Reports Archive,"() => navigate(""/lab-tech/archive"")",/lab-tech/archive,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Safety Checklist,"() => navigate(""/lab-tech/safety"")",/lab-tech/safety,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Sample Tracking,"() => navigate(""/lab-tech/samples"")",/lab-tech/samples,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Test Processing Table,"() => navigate(""/lab-tech/test-queue"")",/lab-tech/test-queue,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/Dashboard.jsx,Test Queue,"() => navigate(""/lab-tech/test-queue"")",/lab-tech/test-queue,VERIFIED_ROUTE,button
+frontend/src/pages/LabTech/LabTests.jsx,Delete,()=>remove(it._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/LabTests.jsx,Order,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/LabTests.jsx,Upload Result,()=>upload(it._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/AssignedPatients.jsx,Open,() => navigate(`/nurse/vitals?patientId=${p._id}`),/nurse/vitals?patientId=${p._id},MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Assigned Patients,"() => navigate(""/nurse/patients"")",/nurse/patients,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Incident Reports,"() => navigate(""/nurse/incidents"")",/nurse/incidents,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Leave Requests,"() => navigate(""/nurse/leave"")",/nurse/leave,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Medication Administration,"() => navigate(""/nurse/medication"")",/nurse/medication,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,My Shift,"() => navigate(""/nurse/shift"")",/nurse/shift,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Open My Requests,"() => navigate(""/workforce/requests"")",/workforce/requests,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Patient Task List,"() => navigate(""/nurse/patients"")",/nurse/patients,VERIFIED_ROUTE,button
+frontend/src/pages/Nurse/Dashboard.jsx,Vitals Entry,"() => navigate(""/nurse/vitals"")",/nurse/vitals,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Audit Logs,"() => navigate(""/admin/audit-logs"")",/admin/audit-logs,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Audit Trails,"() => navigate(""/admin/audit-logs"")",/admin/audit-logs,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Compliance Alerts,"() => navigate(""/reports"")",/reports,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Global Payroll,"() => navigate(""/payments/full"")",/payments/full,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Hospitals,"() => navigate(""/super-admin/hospitals"")",/super-admin/hospitals,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Integration Hub,"() => navigate(""/admin/realtime"")",/admin/realtime,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Offline Sync,"() => navigate(""/admin/crdt-patients"")",/admin/crdt-patients,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Open Alerts,"() => navigate(""/notifications"")",/notifications,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Regulatory Reports,"() => navigate(""/reports"")",/reports,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Revenue Graph,"async () => { try { await triggerAction(""REVENUE_OVERVIEW""); setMsg(""""); } catch (e) { setMsg(e?.message || ""Unable to load revenue action right now.""); } finally { navigate(""/payments/full""); } }",/payments/full,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Role Management,"() => navigate(""/admin/create-admin"")",/admin/create-admin,MANUAL_REVIEW_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Security Incidents,"() => navigate(""/security-admin"")",/security-admin,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,System Settings,"() => navigate(""/super-admin/settings"")",/super-admin/settings,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,System Status Monitor,"() => navigate(""/system-admin"")",/system-admin,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,Workforce Distribution,"() => navigate(""/analytics"")",/analytics,VERIFIED_ROUTE,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,(dynamic/no-text),() => saveHospitalEdit(h._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditBranch,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditHospital,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditAdmin,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Deactivate,() => deactivateBranch(b._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Edit,() => startEditBranch(b),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Edit,() => startEditHospital(h),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Edit,() => startEditAdmin(row),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Next,"() => setPage((p) => Math.min(totalPages, p + 1))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Next,"() => setAdminListPage((p) => Math.min(adminListTotalPages, p + 1))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Prev,"() => setPage((p) => Math.max(1, p - 1))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Prev,"() => setAdminListPage((p) => Math.max(1, p - 1))",(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Save,() => saveEditBranch(b._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Save,() => saveEditAdmin(row._id),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,(dynamic/no-text),save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,Set All Free,"() => setAllFeatureAccess(""FREE"")",(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,Set All Premium,"() => setAllFeatureAccess(""PREMIUM"")",(manual),MANUAL_REVIEW,button

@@ -194,27 +194,27 @@ export default function Approvals() {
               cursor: append ? shiftCursor : undefined,
             })
           : Promise.resolve(null),
-        append ? Promise.resolve({ data: queue }) : getWorkforceQueueInsights(),
-        append ? Promise.resolve({ data: { items: policies } }) : getWorkforceSlaPolicies(),
+        append ? Promise.resolve(queue) : getWorkforceQueueInsights(),
+        append ? Promise.resolve({ items: policies }) : getWorkforceSlaPolicies(),
         append
-          ? Promise.resolve({ data: { items: automationPolicies } })
+          ? Promise.resolve({ items: automationPolicies })
           : getWorkforceAutomationPolicies(),
         append
-          ? Promise.resolve({ data: { items: automationPresets } })
+          ? Promise.resolve({ items: automationPresets })
           : getWorkforceAutomationPresets({ includeInactive: showInactivePresets }),
         append
-          ? Promise.resolve({ data: { items: presetHistory } })
+          ? Promise.resolve({ items: presetHistory })
           : getWorkforceAutomationPresetHistory({ limit: 50 }),
       ]);
 
       const leavePayload = shouldFetchLeave
-        ? normalizeCursorResponse(l.data)
+        ? normalizeCursorResponse(l)
         : { items: [], nextCursor: null, hasMore: false };
       const overtimePayload = shouldFetchOvertime
-        ? normalizeCursorResponse(o.data)
+        ? normalizeCursorResponse(o)
         : { items: [], nextCursor: null, hasMore: false };
       const shiftPayload = shouldFetchShift
-        ? normalizeCursorResponse(s.data)
+        ? normalizeCursorResponse(s)
         : { items: [], nextCursor: null, hasMore: false };
 
       if (append) {
@@ -250,8 +250,8 @@ export default function Approvals() {
         setHasMoreOvertime(overtimePayload.hasMore);
         setHasMoreShift(shiftPayload.hasMore);
       }
-      setQueue(q.data || null);
-      const list = Array.isArray(p.data?.items) ? p.data.items : [];
+      setQueue(q || null);
+      const list = Array.isArray(p?.items) ? p.items : [];
       if (!append) {
         setCacheBadge("Live • now");
         setPolicies(list);
@@ -266,12 +266,12 @@ export default function Approvals() {
           }, {})
         );
       }
-      const aList = Array.isArray(ap.data?.items) ? ap.data.items : [];
-      const presetList = Array.isArray(presetsResp.data?.items)
-        ? presetsResp.data.items
+      const aList = Array.isArray(ap?.items) ? ap.items : [];
+      const presetList = Array.isArray(presetsResp?.items)
+        ? presetsResp.items
         : [];
-      const historyList = Array.isArray(presetHistoryResp.data?.items)
-        ? presetHistoryResp.data.items
+      const historyList = Array.isArray(presetHistoryResp?.items)
+        ? presetHistoryResp.items
         : [];
       if (!append) {
         setAutomationPolicies(aList);
@@ -303,7 +303,7 @@ export default function Approvals() {
         );
       }
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to load approvals");
+      setMsg(err?.message || "Failed to load approvals");
     } finally {
       if (append) {
         setLoadingMore(false);
@@ -526,12 +526,12 @@ export default function Approvals() {
       setLoadingMoreKind(kind);
       if (kind === "LEAVE") {
         if (!hasMoreLeave || !leaveCursor) return;
-      const res = await listPendingQueue("LEAVE", "PENDING", {
+        const res = await listPendingQueue("LEAVE", "PENDING", {
         cursorMode: true,
         limit: 25,
         cursor: leaveCursor,
         });
-        const payload = normalizeCursorResponse(res.data);
+        const payload = normalizeCursorResponse(res);
         setLeave((prev) => [...prev, ...payload.items]);
         setLeaveCursor(payload.nextCursor);
         setHasMoreLeave(payload.hasMore);
@@ -543,7 +543,7 @@ export default function Approvals() {
           limit: 25,
           cursor: overtimeCursor,
         });
-        const payload = normalizeCursorResponse(res.data);
+        const payload = normalizeCursorResponse(res);
         setOvertime((prev) => [...prev, ...payload.items]);
         setOvertimeCursor(payload.nextCursor);
         setHasMoreOvertime(payload.hasMore);
@@ -555,13 +555,13 @@ export default function Approvals() {
           limit: 25,
           cursor: shiftCursor,
         });
-        const payload = normalizeCursorResponse(res.data);
+        const payload = normalizeCursorResponse(res);
         setShifts((prev) => [...prev, ...payload.items]);
         setShiftCursor(payload.nextCursor);
         setHasMoreShift(payload.hasMore);
       }
     } catch (err) {
-      setMsg(err?.response?.data?.message || `Failed to load more ${kind} requests`);
+      setMsg(err?.message || `Failed to load more ${kind} requests`);
     } finally {
       setLoadingMoreKind("");
     }
@@ -648,7 +648,7 @@ export default function Approvals() {
       }
       setMsg(`${kind} request approved`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || `Failed to approve ${kind} request`);
+      setMsg(err?.message || `Failed to approve ${kind} request`);
     }
   };
 
@@ -664,7 +664,7 @@ export default function Approvals() {
       }
       setMsg(`${kind} request rejected`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || `Failed to reject ${kind} request`);
+      setMsg(err?.message || `Failed to reject ${kind} request`);
     }
   };
 
@@ -681,7 +681,7 @@ export default function Approvals() {
       await loadAll({ append: false });
       setMsg(`${requestType} SLA policy updated`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || `Failed to update ${requestType} policy`);
+      setMsg(err?.message || `Failed to update ${requestType} policy`);
     } finally {
       setSavingPolicy(false);
     }
@@ -716,7 +716,7 @@ export default function Approvals() {
       await loadAll();
       setMsg(`${requestType} automation policy updated`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || `Failed to update ${requestType} automation`);
+      setMsg(err?.message || `Failed to update ${requestType} automation`);
     } finally {
       setSavingAutomation(false);
     }
@@ -725,11 +725,11 @@ export default function Approvals() {
   const runSweep = async () => {
     try {
       const res = await runWorkforceAutomationSweep();
-      const t = res?.data?.escalated?.total ?? 0;
+      const t = res?.escalated?.total ?? 0;
       setMsg(`Automation sweep completed. Escalated: ${t}`);
       await loadAll();
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Automation sweep failed");
+      setMsg(err?.message || "Automation sweep failed");
     }
   };
 
@@ -741,7 +741,7 @@ export default function Approvals() {
       await loadAll({ append: false });
       setMsg(`Applied ${presetKey} preset to all request types`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to apply preset to all");
+      setMsg(err?.message || "Failed to apply preset to all");
     } finally {
       setSavingAutomation(false);
     }
@@ -754,7 +754,7 @@ export default function Approvals() {
       await loadAll({ append: false });
       setMsg(`Custom preset ${customPreset.key || customPreset.name} saved`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to save custom preset");
+      setMsg(err?.message || "Failed to save custom preset");
     } finally {
       setSavingAutomation(false);
     }
@@ -789,7 +789,7 @@ export default function Approvals() {
       await loadAll({ append: false });
       setMsg(`Custom preset ${key} deactivated`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to deactivate custom preset");
+      setMsg(err?.message || "Failed to deactivate custom preset");
     } finally {
       setSavingAutomation(false);
     }
@@ -803,7 +803,7 @@ export default function Approvals() {
       await loadAll({ append: false });
       setMsg(`Custom preset ${key} reactivated`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to reactivate custom preset");
+      setMsg(err?.message || "Failed to reactivate custom preset");
     } finally {
       setSavingAutomation(false);
     }
@@ -813,10 +813,10 @@ export default function Approvals() {
     setPreviewLoading(true);
     try {
       const res = await previewWorkforceEscalation({ limit: 100 });
-      setPreviewResult(res?.data || null);
+      setPreviewResult(res || null);
       setMsg("Escalation preview generated");
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Escalation preview failed");
+      setMsg(err?.message || "Escalation preview failed");
     } finally {
       setPreviewLoading(false);
     }
@@ -833,10 +833,10 @@ export default function Approvals() {
         : { shiftType: String(edit.conditions?.allowedShiftTypes || "DAY").split(",")[0]?.trim() || "DAY" };
     try {
       const res = await simulateWorkforceAutomation({ requestType, sample });
-      setSimResult({ requestType, ...res.data });
+      setSimResult({ requestType, ...(res || {}) });
       setMsg(`${requestType} simulation ran`);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Simulation failed");
+      setMsg(err?.message || "Simulation failed");
     }
   };
 
@@ -908,6 +908,7 @@ export default function Approvals() {
             onChange={(e) => setFilter(e.target.value)}
           />
           <button
+            type="button"
             className={`btn-secondary ${autoAdvance ? "active" : ""}`}
             onClick={() => setAutoAdvance((v) => !v)}
             title="When enabled, approving/rejecting a breached item moves focus to the next breached item."
@@ -915,6 +916,7 @@ export default function Approvals() {
             Auto-Advance: {autoAdvance ? "On" : "Off"}
           </button>
           <button
+            type="button"
             className="btn-secondary"
             onClick={jumpToNextBreached}
             disabled={!breachedRows.length}
@@ -923,6 +925,7 @@ export default function Approvals() {
             Jump to Next Breached {breachedRows.length ? `(${breachedRows.length})` : ""}
           </button>
           <button
+            type="button"
             className="btn-secondary"
             onClick={() => setViewMode((v) => (v === "BREACHED" ? "ALL" : "BREACHED"))}
           >
@@ -938,10 +941,10 @@ export default function Approvals() {
             <option value="OVERTIME">Overtime</option>
             <option value="SHIFT">Shift</option>
           </select>
-          <button className="btn-secondary" onClick={() => loadAll({ append: false })} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={() => loadAll({ append: false })} disabled={loading}>
             Refresh
           </button>
-          <button className="btn-secondary" onClick={resetView} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={resetView} disabled={loading}>
             Reset View
           </button>
           <span className="muted">{cacheBadge}</span>
@@ -1044,6 +1047,7 @@ export default function Approvals() {
                     </td>
                     <td>
                       <button
+                        type="button"
                         className="btn-secondary"
                         disabled={savingPolicy}
                         onClick={() => savePolicy(row.requestType)}
@@ -1067,15 +1071,16 @@ export default function Approvals() {
       <section className="section" id="automation">
         <h3>Automation Policies</h3>
         <div className="card">
-          <div className="welcome-actions" style={{ marginBottom: 10 }}>
-            <button className="btn-secondary" onClick={runSweep}>
+          <div className="welcome-actions mb-10">
+            <button type="button" className="btn-secondary" onClick={runSweep}>
               Run Escalation Sweep
             </button>
-            <button className="btn-secondary" onClick={runPreview} disabled={previewLoading}>
+            <button type="button" className="btn-secondary" onClick={runPreview} disabled={previewLoading}>
               {previewLoading ? "Previewing..." : "Preview Escalation Plan"}
             </button>
             {automationPresets.map((preset) => (
               <button
+                type="button"
                 key={`preset-all-${preset.key}`}
                 className="btn-secondary"
                 disabled={savingAutomation}
@@ -1086,6 +1091,7 @@ export default function Approvals() {
               </button>
             ))}
             <button
+              type="button"
               className="btn-secondary"
               onClick={() => setShowInactivePresets((v) => !v)}
             >
@@ -1116,6 +1122,7 @@ export default function Approvals() {
                         <td>{preset.version || 1}</td>
                         <td>
                           <button
+                            type="button"
                             className="btn-secondary"
                             onClick={() => clonePresetToForm(preset)}
                           >
@@ -1123,6 +1130,7 @@ export default function Approvals() {
                           </button>
                           {isCustom && preset.active !== false && canManagePresetLifecycle && (
                             <button
+                              type="button"
                               className="btn-danger"
                               disabled={savingAutomation}
                               onClick={() => deactivateCustomPreset(preset.key)}
@@ -1132,6 +1140,7 @@ export default function Approvals() {
                           )}
                           {isCustom && preset.active === false && canManagePresetLifecycle && (
                             <button
+                              type="button"
                               className="btn-secondary"
                               disabled={savingAutomation}
                               onClick={() => reactivateCustomPreset(preset.key)}
@@ -1308,8 +1317,9 @@ export default function Approvals() {
                 Require 2nd Approver
               </label>
             </div>
-            <div className="welcome-actions" style={{ marginTop: 10 }}>
+            <div className="welcome-actions mt-10">
               <button
+                type="button"
                 className="btn-secondary"
                 disabled={savingAutomation}
                 onClick={saveCustomPreset}
@@ -1317,6 +1327,7 @@ export default function Approvals() {
                 Save Custom Preset
               </button>
               <button
+                type="button"
                 className="btn-secondary"
                 onClick={() =>
                   setCustomPreset({
@@ -1650,6 +1661,7 @@ export default function Approvals() {
                       <div className="action-list" style={{ marginBottom: 8 }}>
                         {automationPresets.map((preset) => (
                           <button
+                            type="button"
                             key={`preset-row-${row.requestType}-${preset.key}`}
                             className="btn-secondary"
                             title={`${preset.description || ""}${preset.version ? ` | v${preset.version}` : ""}`}
@@ -1660,6 +1672,7 @@ export default function Approvals() {
                         ))}
                       </div>
                       <button
+                        type="button"
                         className="btn-secondary"
                         disabled={savingAutomation}
                         onClick={() => saveAutomation(row.requestType)}
@@ -1667,6 +1680,7 @@ export default function Approvals() {
                         Save
                       </button>
                       <button
+                        type="button"
                         className="btn-secondary"
                         onClick={() => simulatePolicy(row.requestType)}
                       >
@@ -1699,24 +1713,28 @@ export default function Approvals() {
         <div className="card">
           <div className="action-list" style={{ marginBottom: 12 }}>
             <button
+              type="button"
               className={`action-pill ${queueKindFilter === "ALL" ? "active" : ""}`}
               onClick={() => setQueueKindFilter("ALL")}
             >
               All
             </button>
             <button
+              type="button"
               className={`action-pill ${queueKindFilter === "LEAVE" ? "active" : ""}`}
               onClick={() => setQueueKindFilter("LEAVE")}
             >
               Leave
             </button>
             <button
+              type="button"
               className={`action-pill ${queueKindFilter === "OVERTIME" ? "active" : ""}`}
               onClick={() => setQueueKindFilter("OVERTIME")}
             >
               Overtime
             </button>
             <button
+              type="button"
               className={`action-pill ${queueKindFilter === "SHIFT" ? "active" : ""}`}
               onClick={() => setQueueKindFilter("SHIFT")}
             >
@@ -1731,6 +1749,7 @@ export default function Approvals() {
                 : ""}
             </span>
             <button
+              type="button"
               className="btn-secondary"
               disabled={!hasMoreLeave || loadingMoreKind === "LEAVE"}
               onClick={() => loadMoreByKind("LEAVE")}
@@ -1744,6 +1763,7 @@ export default function Approvals() {
                 : ""}
             </span>
             <button
+              type="button"
               className="btn-secondary"
               disabled={!hasMoreOvertime || loadingMoreKind === "OVERTIME"}
               onClick={() => loadMoreByKind("OVERTIME")}
@@ -1757,6 +1777,7 @@ export default function Approvals() {
                 : ""}
             </span>
             <button
+              type="button"
               className="btn-secondary"
               disabled={!hasMoreShift || loadingMoreKind === "SHIFT"}
               onClick={() => loadMoreByKind("SHIFT")}
@@ -1764,6 +1785,7 @@ export default function Approvals() {
               {loadingMoreKind === "SHIFT" ? "Loading..." : "Load more Shift"}
             </button>
             <button
+              type="button"
               className="btn-secondary"
               disabled={loadingMore}
               onClick={() => loadAll({ append: true })}
@@ -1812,12 +1834,14 @@ export default function Approvals() {
                   <td>{item.reason || "-"}</td>
                   <td>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={() => doApprove(item.kind, item._id, isOverdue(item))}
                     >
                       Approve
                     </button>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={() => doReject(item.kind, item._id, isOverdue(item))}
                     >

@@ -154,7 +154,7 @@ export default function CommunicationCenter() {
           <p className="muted">Offline queued messages: {pendingOffline}</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={bootstrapDefaultChannels}>
+          <button type="button" className="btn-secondary" onClick={bootstrapDefaultChannels}>
             Bootstrap Default Channels
           </button>
         </div>
@@ -167,6 +167,7 @@ export default function CommunicationCenter() {
             <div className="list">
               {channels.map((ch) => (
                 <button
+                  type="button"
                   key={ch._id}
                   className={`nav-btn ${String(activeChannel) === String(ch._id) ? "active" : ""}`}
                   onClick={() => setActiveChannel(ch._id)}
@@ -199,7 +200,7 @@ export default function CommunicationCenter() {
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <div className="actions-row mt-10">
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -208,13 +209,13 @@ export default function CommunicationCenter() {
                   if (e.key === "Enter") send();
                 }}
               />
-              <button className="btn-primary" onClick={send} disabled={!activeChannel}>
+              <button type="button" className="btn-primary" onClick={send} disabled={!activeChannel}>
                 Send
               </button>
             </div>
             {nextCursor && (
               <div style={{ marginTop: 8 }}>
-                <button
+                <button type="button"
                   className="btn-secondary"
                   onClick={() => loadMessages(activeChannel, nextCursor, true)}
                 >

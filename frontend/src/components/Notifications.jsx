@@ -58,10 +58,15 @@ export default function Notifications(){
             <option value="READ">Read</option>
           </select>
           <button
+            type="button"
             className="btn-secondary"
             onClick={async () => {
-              await markAllNotificationsRead();
-              setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+              try {
+                await markAllNotificationsRead();
+                setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+              } catch {
+                // Keep existing state on failure.
+              }
             }}
           >
             Mark all read
@@ -72,17 +77,22 @@ export default function Notifications(){
         {items.map((n,idx)=> (
           <li key={idx}>
             <button
+              type="button"
               className="action-link"
               style={{ background: n.read ? "#6b7280" : "#111827" }}
               onClick={async () => {
-                if (n._id && !n.read) {
-                  await markNotificationRead(n._id);
+                try {
+                  if (n._id && !n.read) {
+                    await markNotificationRead(n._id);
+                  }
+                  setItems((prev) =>
+                    prev.map((item) =>
+                      item._id === n._id ? { ...item, read: true } : item
+                    )
+                  );
+                } catch {
+                  // No-op when mark read fails.
                 }
-                setItems((prev) =>
-                  prev.map((item) =>
-                    item._id === n._id ? { ...item, read: true } : item
-                  )
-                );
               }}
             >
               <strong>{n.title}</strong> - {n.body || (n.meta && n.meta.test)}

@@ -57,7 +57,12 @@ async function apiFetch(path, options = {}, _retry = false) {
     }
   }
 
-  if (requestOptions.body && typeof requestOptions.body === "object") {
+  if (
+    requestOptions.body &&
+    typeof requestOptions.body === "object" &&
+    !(requestOptions.body instanceof FormData) &&
+    !(requestOptions.body instanceof Blob)
+  ) {
     requestOptions.body = JSON.stringify(requestOptions.body);
     headers["Content-Type"] = "application/json";
   }

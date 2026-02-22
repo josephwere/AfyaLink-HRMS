@@ -48,6 +48,7 @@ export default function AdminWorkflowOverride({ workflowId }) {
       />
 
       <button
+        type="button"
         disabled={loading}
         onClick={() => submit("APPROVE")}
         style={{ marginRight: 8 }}
@@ -56,6 +57,7 @@ export default function AdminWorkflowOverride({ workflowId }) {
       </button>
 
       <button
+        type="button"
         disabled={loading}
         onClick={() => submit("REJECT")}
         style={{ background: "#dc2626", color: "white" }}

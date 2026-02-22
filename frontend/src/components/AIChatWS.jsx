@@ -83,14 +83,14 @@ export default function AIChatWS() {
         ))}
       </div>
 
-      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+      <div className="actions-row mt-8">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           style={{ flex: 1 }}
           placeholder="Describe symptoms..."
         />
-        <button onClick={send}>Ask AI</button>
+        <button type="button" className="btn-primary" onClick={send}>Ask AI</button>
       </div>
     </div>
   );

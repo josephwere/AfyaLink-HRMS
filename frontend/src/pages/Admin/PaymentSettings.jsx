@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { apiFetch } from "../../services/api";
+import apiFetch from "../../utils/apiFetch";
 import DismissibleCardSection from "../../components/DismissibleCardSection";
 
 export default function PaymentSettings() {
@@ -41,8 +41,7 @@ export default function PaymentSettings() {
   });
 
   const load = async () => {
-    const r = await apiFetch("/api/payment-settings/get");
-    const js = await r.json();
+    const js = await apiFetch("/api/payment-settings/get");
     setMeta(js || {});
     setForm((prev) => ({
       ...prev,
@@ -114,14 +113,10 @@ export default function PaymentSettings() {
         },
       };
 
-      const r = await apiFetch("/api/payment-settings/save", {
+      await apiFetch("/api/payment-settings/save", {
         method: "POST",
         body: payload,
       });
-      const js = await r.json();
-      if (!r.ok || js?.error) {
-        throw new Error(js?.error || "Failed to save payment settings");
-      }
       setMsg("Payment settings saved and encrypted.");
       await load();
     } catch (e) {
@@ -135,9 +130,8 @@ export default function PaymentSettings() {
     setBusy(true);
     setMsg("");
     try {
-      const r = await apiFetch("/api/payment-settings/reveal/request", { method: "POST" });
-      const js = await r.json();
-      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to request OTP");
+      const js = await apiFetch("/api/payment-settings/reveal/request", { method: "POST" });
+      if (js?.error) throw new Error(js?.error || "Failed to request OTP");
       setStep("otp_requested");
       setMsg(js.message || "OTP sent.");
     } catch (e) {
@@ -151,12 +145,11 @@ export default function PaymentSettings() {
     setBusy(true);
     setMsg("");
     try {
-      const r = await apiFetch("/api/payment-settings/reveal/verify", {
+      const js = await apiFetch("/api/payment-settings/reveal/verify", {
         method: "POST",
         body: { code: form.otp, adminPassword: form.adminPassword },
       });
-      const js = await r.json();
-      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to verify OTP");
+      if (js?.error) throw new Error(js?.error || "Failed to verify OTP");
       setRevealed(js?.secrets || {});
       setStep("edit");
       setMsg("Secrets revealed for this session.");
@@ -174,12 +167,11 @@ export default function PaymentSettings() {
     setBusy(true);
     setMsg("");
     try {
-      const r = await apiFetch("/api/payment-settings/rotate-password", {
+      const js = await apiFetch("/api/payment-settings/rotate-password", {
         method: "POST",
         body: { oldPassword, newPassword },
       });
-      const js = await r.json();
-      if (!r.ok || js?.error) throw new Error(js?.error || "Failed to rotate password");
+      if (js?.error) throw new Error(js?.error || "Failed to rotate password");
       setMsg("Encryption password rotated successfully.");
     } catch (e) {
       setMsg(e.message || "Failed to rotate password");
@@ -201,7 +193,7 @@ export default function PaymentSettings() {
 
       {msg && <div className="card">{msg}</div>}
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
         <DismissibleCardSection className="card form" title="Global Mode & Admin Security">
           <label>Mode</label>
           <select value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
@@ -218,9 +210,9 @@ export default function PaymentSettings() {
           />
 
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={save} disabled={busy}>Save Encrypted Settings</button>
-            <button className="btn-secondary" onClick={requestOtp} disabled={busy}>Request OTP</button>
-            <button className="btn-secondary" onClick={rotatePassword} disabled={busy}>Rotate Password</button>
+            <button type="button" className="btn-primary" onClick={save} disabled={busy}>Save Encrypted Settings</button>
+            <button type="button" className="btn-secondary" onClick={requestOtp} disabled={busy}>Request OTP</button>
+            <button type="button" className="btn-secondary" onClick={rotatePassword} disabled={busy}>Rotate Password</button>
           </div>
 
           {step === "otp_requested" && (
@@ -231,7 +223,7 @@ export default function PaymentSettings() {
                 onChange={(e) => setForm((f) => ({ ...f, otp: e.target.value }))}
                 placeholder="Enter OTP sent to your phone/email"
               />
-              <button className="btn-primary" onClick={verifyOtp} disabled={busy}>Verify & Reveal</button>
+              <button type="button" className="btn-primary" onClick={verifyOtp} disabled={busy}>Verify & Reveal</button>
             </>
           )}
         </DismissibleCardSection>

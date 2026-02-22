@@ -7,8 +7,8 @@ export default function SurgeryProcedures() {
       title="Surgery & Procedures"
       subtitle="Pre-op to post-op documentation, checklists, outcomes and complications."
       actions={[
-        { label: "Open Surgery Calendar", variant: "primary" },
-        { label: "Log Procedure" },
+        { label: "Open Surgery Calendar", variant: "primary", path: "/doctor/surgery#calendar" },
+        { label: "Log Procedure", path: "/doctor/surgery#new" },
       ]}
       panels={[
         { title: "Surgery Calendar", body: "Procedure schedule by theater and team." },

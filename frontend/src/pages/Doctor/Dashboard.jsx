@@ -80,10 +80,10 @@ export default function Dashboard() {
           <p className="muted">Welcome, Dr. {user?.name || "Clinician"}. Zero-click access to today’s patients and critical alerts.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/doctor/patients")}>Today’s Patients</button>
-          <button className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
-          <button className="btn-secondary" onClick={() => navigate("/doctor/schedule")}>Open Schedule</button>
-          <button className="btn-secondary" onClick={() => navigate("/doctor/leave")}>Leave Requests</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Today’s Patients</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/schedule")}>Open Schedule</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/leave")}>Leave Requests</button>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export default function Dashboard() {
           <StatCard title="Recommendations" value={Array.isArray(burnout?.recommendations) ? burnout.recommendations.length : "—"} />
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={() => navigate("/system-admin/clinical-intelligence")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/clinical-intelligence")}>
             Open Clinical Intelligence
           </button>
         </div>
@@ -142,8 +142,8 @@ export default function Dashboard() {
                     <td>{a.status || "Scheduled"}</td>
                     <td>
                       <div className="doctor-actions-row">
-                        <button className="btn-secondary" onClick={() => navigate("/doctor/medical-records")}>Open Record</button>
-                        <button className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
+                        <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/medical-records")}>Open Record</button>
+                        <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
                       </div>
                     </td>
                   </tr>
@@ -162,7 +162,7 @@ export default function Dashboard() {
           <h3>Alerts Panel</h3>
           <div className="alert-stack">
             {alerts.map((n) => (
-              <button key={n._id} className="verify-banner" onClick={() => navigate("/admin/notifications")}>
+              <button type="button" key={n._id} className="verify-banner" onClick={() => navigate("/notifications")}>
                 <span>{n.title || "Clinical Alert"}</span>
               </button>
             ))}

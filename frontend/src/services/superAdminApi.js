@@ -1,4 +1,4 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const listHospitals = async (params = {}) => {
   const qs = new URLSearchParams();
@@ -8,23 +8,28 @@ export const listHospitals = async (params = {}) => {
     }
   });
   const query = qs.toString() ? `?${qs.toString()}` : "";
-  const res = await api.get(`/api/super-admin/hospitals${query}`);
-  return res.data;
+  return apiFetch(`/api/super-admin/hospitals${query}`);
 };
 
 export const registerHospitalAdmin = async (data) => {
-  const res = await api.post("/api/super-admin/register-hospital-admin", data);
-  return res.data;
+  return apiFetch("/api/super-admin/register-hospital-admin", {
+    method: "POST",
+    body: data,
+  });
 };
 
 export const registerSystemAdmin = async (data) => {
-  const res = await api.post("/api/super-admin/register-system-admin", data);
-  return res.data;
+  return apiFetch("/api/super-admin/register-system-admin", {
+    method: "POST",
+    body: data,
+  });
 };
 
 export const registerDeveloper = async (data) => {
-  const res = await api.post("/api/super-admin/register-developer", data);
-  return res.data;
+  return apiFetch("/api/super-admin/register-developer", {
+    method: "POST",
+    body: data,
+  });
 };
 
 export const listHospitalAdmins = async (params = {}) => {
@@ -35,11 +40,12 @@ export const listHospitalAdmins = async (params = {}) => {
     }
   });
   const query = qs.toString() ? `?${qs.toString()}` : "";
-  const res = await api.get(`/api/super-admin/hospital-admins${query}`);
-  return res.data;
+  return apiFetch(`/api/super-admin/hospital-admins${query}`);
 };
 
 export const updateHospitalAdmin = async (id, data) => {
-  const res = await api.patch(`/api/super-admin/hospital-admins/${id}`, data);
-  return res.data;
+  return apiFetch(`/api/super-admin/hospital-admins/${id}`, {
+    method: "PATCH",
+    body: data,
+  });
 };

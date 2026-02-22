@@ -44,7 +44,7 @@ router.post(
 router.get(
   "/",
   protect,
-  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HR_MANAGER", "DEVELOPER"),
   listUsers
 );
 
@@ -57,7 +57,7 @@ router.get(
 router.patch(
   "/:id",
   protect,
-  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HR_MANAGER", "DEVELOPER"),
   updateUser
 );
 

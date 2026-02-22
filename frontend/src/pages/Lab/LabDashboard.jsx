@@ -78,6 +78,7 @@ export default function LabDashboard() {
 
               {/* ================= ACTION ================= */}
               <button
+                type="button"
                 disabled={!canComplete}
                 onClick={() => completeLab(e._id)}
               >

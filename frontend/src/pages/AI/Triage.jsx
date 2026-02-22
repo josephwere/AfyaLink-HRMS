@@ -42,7 +42,7 @@ export default function Triage() {
             placeholder="e.g. chest pain for 2 hours, shortness of breath..."
           />
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={run} disabled={loading}>
+            <button type="button" className="btn-primary" onClick={run} disabled={loading}>
               {loading ? "Analyzing..." : "Run Triage"}
             </button>
           </div>

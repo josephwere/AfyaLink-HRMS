@@ -1,4 +1,4 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 const buildQuery = (status, options = {}) => {
   const params = new URLSearchParams();
@@ -13,29 +13,35 @@ const buildQuery = (status, options = {}) => {
 };
 
 export const listLeave = (status, options) =>
-  api.get(`/api/workforce/leave${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/leave${buildQuery(status, options)}`);
 export const listMyLeave = (status, options) =>
-  api.get(`/api/workforce/leave/my${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/leave/my${buildQuery(status, options)}`);
 export const createLeave = (payload) =>
-  api.post("/api/workforce/leave", payload);
+  apiFetch("/api/workforce/leave", { method: "POST", body: payload });
 export const approveLeave = (id) =>
-  api.post(`/api/workforce/leave/${id}/approve`);
+  apiFetch(`/api/workforce/leave/${id}/approve`, { method: "POST" });
 export const rejectLeave = (id, reason) =>
-  api.post(`/api/workforce/leave/${id}/reject`, { reason });
+  apiFetch(`/api/workforce/leave/${id}/reject`, {
+    method: "POST",
+    body: { reason },
+  });
 
 export const listOvertime = (status, options) =>
-  api.get(`/api/workforce/overtime${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/overtime${buildQuery(status, options)}`);
 export const listMyOvertime = (status, options) =>
-  api.get(`/api/workforce/overtime/my${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/overtime/my${buildQuery(status, options)}`);
 export const createOvertime = (payload) =>
-  api.post("/api/workforce/overtime", payload);
+  apiFetch("/api/workforce/overtime", { method: "POST", body: payload });
 export const approveOvertime = (id) =>
-  api.post(`/api/workforce/overtime/${id}/approve`);
+  apiFetch(`/api/workforce/overtime/${id}/approve`, { method: "POST" });
 export const rejectOvertime = (id, reason) =>
-  api.post(`/api/workforce/overtime/${id}/reject`, { reason });
+  apiFetch(`/api/workforce/overtime/${id}/reject`, {
+    method: "POST",
+    body: { reason },
+  });
 
 export const listShifts = (status, options) =>
-  api.get(`/api/workforce/shifts${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/shifts${buildQuery(status, options)}`);
 export const listPendingQueue = (kind, status, options = {}) => {
   const params = new URLSearchParams();
   params.set("kind", String(kind || "").toUpperCase());
@@ -46,68 +52,90 @@ export const listPendingQueue = (kind, status, options = {}) => {
   }
   if (options.cursorMode) params.set("cursorMode", "1");
   const q = params.toString();
-  return api.get(`/api/workforce/pending${q ? `?${q}` : ""}`);
+  return apiFetch(`/api/workforce/pending${q ? `?${q}` : ""}`);
 };
 export const listMyShifts = (status, options) =>
-  api.get(`/api/workforce/shifts/my${buildQuery(status, options)}`);
+  apiFetch(`/api/workforce/shifts/my${buildQuery(status, options)}`);
 export const createShift = (payload) =>
-  api.post("/api/workforce/shifts", payload);
+  apiFetch("/api/workforce/shifts", { method: "POST", body: payload });
 export const approveShift = (id) =>
-  api.post(`/api/workforce/shifts/${id}/approve`);
+  apiFetch(`/api/workforce/shifts/${id}/approve`, { method: "POST" });
 export const rejectShift = (id, reason) =>
-  api.post(`/api/workforce/shifts/${id}/reject`, { reason });
+  apiFetch(`/api/workforce/shifts/${id}/reject`, {
+    method: "POST",
+    body: { reason },
+  });
 
 export const getWorkforceSlaPolicies = () =>
-  api.get("/api/workforce/sla/policies");
+  apiFetch("/api/workforce/sla/policies");
 
 export const updateWorkforceSlaPolicy = (requestType, payload) =>
-  api.put(`/api/workforce/sla/policies/${requestType}`, payload);
+  apiFetch(`/api/workforce/sla/policies/${requestType}`, {
+    method: "PUT",
+    body: payload,
+  });
 
 export const getWorkforceQueueInsights = () =>
-  api.get("/api/workforce/queue-insights");
+  apiFetch("/api/workforce/queue-insights");
 
 export const getWorkforceAutomationPolicies = () =>
-  api.get("/api/workforce/automation/policies");
+  apiFetch("/api/workforce/automation/policies");
 
 export const getWorkforceAutomationPresets = (params = {}) => {
   const q = new URLSearchParams();
   if (params.includeInactive) q.set("includeInactive", "1");
   const qs = q.toString();
-  return api.get(`/api/workforce/automation/presets${qs ? `?${qs}` : ""}`);
+  return apiFetch(`/api/workforce/automation/presets${qs ? `?${qs}` : ""}`);
 };
 
 export const applyWorkforceAutomationPresetAll = (presetKey) =>
-  api.post("/api/workforce/automation/presets/apply-all", { presetKey });
+  apiFetch("/api/workforce/automation/presets/apply-all", {
+    method: "POST",
+    body: { presetKey },
+  });
 
 export const upsertWorkforceAutomationPreset = (payload) =>
-  api.post("/api/workforce/automation/presets", payload);
+  apiFetch("/api/workforce/automation/presets", {
+    method: "POST",
+    body: payload,
+  });
 
 export const deactivateWorkforceAutomationPreset = (key) =>
-  api.delete(`/api/workforce/automation/presets/${encodeURIComponent(String(key || "").toUpperCase())}`);
+  apiFetch(`/api/workforce/automation/presets/${encodeURIComponent(String(key || "").toUpperCase())}`, {
+    method: "DELETE",
+  });
 
 export const reactivateWorkforceAutomationPreset = (key) =>
-  api.post(`/api/workforce/automation/presets/${encodeURIComponent(String(key || "").toUpperCase())}/reactivate`);
+  apiFetch(`/api/workforce/automation/presets/${encodeURIComponent(String(key || "").toUpperCase())}/reactivate`, {
+    method: "POST",
+  });
 
 export const getWorkforceAutomationPresetHistory = (params = {}) => {
   const q = new URLSearchParams();
   if (params.limit) q.set("limit", String(params.limit));
   const qs = q.toString();
-  return api.get(`/api/workforce/automation/presets/history${qs ? `?${qs}` : ""}`);
+  return apiFetch(`/api/workforce/automation/presets/history${qs ? `?${qs}` : ""}`);
 };
 
 export const updateWorkforceAutomationPolicy = (requestType, payload) =>
-  api.put(`/api/workforce/automation/policies/${requestType}`, payload);
+  apiFetch(`/api/workforce/automation/policies/${requestType}`, {
+    method: "PUT",
+    body: payload,
+  });
 
 export const simulateWorkforceAutomation = (payload) =>
-  api.post("/api/workforce/automation/simulate", payload);
+  apiFetch("/api/workforce/automation/simulate", {
+    method: "POST",
+    body: payload,
+  });
 
 export const previewWorkforceEscalation = (params = {}) => {
   const query = new URLSearchParams();
   if (params.requestType) query.set("requestType", String(params.requestType).toUpperCase());
   if (params.limit) query.set("limit", String(params.limit));
   const q = query.toString();
-  return api.get(`/api/workforce/automation/preview${q ? `?${q}` : ""}`);
+  return apiFetch(`/api/workforce/automation/preview${q ? `?${q}` : ""}`);
 };
 
 export const runWorkforceAutomationSweep = () =>
-  api.post("/api/workforce/automation/sweep");
+  apiFetch("/api/workforce/automation/sweep", { method: "POST" });

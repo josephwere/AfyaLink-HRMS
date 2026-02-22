@@ -1,6 +1,5 @@
-import api from "./api"; // your axios instance
+import apiFetch from "../utils/apiFetch";
 
 export const fetchMenu = async () => {
-  const res = await api.get("/api/menu");
-  return res.data;
+  return apiFetch("/api/menu");
 };

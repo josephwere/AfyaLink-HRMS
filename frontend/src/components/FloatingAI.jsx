@@ -9,6 +9,7 @@ export default function FloatingAI() {
 
   return (
     <button
+      type="button"
       className="ai-float"
       onClick={() => window.open(ai.url, "_blank")}
       title={ai.name || "NeuroEdge"}

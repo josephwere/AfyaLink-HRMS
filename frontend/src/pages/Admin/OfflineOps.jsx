@@ -55,7 +55,7 @@ export default function OfflineOps() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
@@ -90,7 +90,7 @@ export default function OfflineOps() {
               <span className="muted">Search User/Hospital</span>
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Hospital or user name/email" />
             </label>
-            <button className="btn-primary" onClick={load} disabled={loading}>Apply</button>
+            <button type="button" className="btn-primary" onClick={load} disabled={loading}>Apply</button>
           </div>
         </div>
 

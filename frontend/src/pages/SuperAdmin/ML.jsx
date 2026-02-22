@@ -1,8 +1,35 @@
 import React, {useState} from 'react';
-import API from '../../utils/api';
+import { apiFetch } from '../../utils/apiFetch';
 export default function ML(){
   const [model, setModel] = useState(null);
-  const train = async ()=>{ const r = await API.post('/ml/train', [{example:1}]); setModel(r.data); };
-  const predict = async ()=>{ if(!model) return alert('train first'); const r = await API.post('/ml/'+model.modelId+'/predict', { input: {} }); alert(JSON.stringify(r.data)); };
-  return (<div><h3>ML Admin</h3><button onClick={train}>Train placeholder model</button><button onClick={predict}>Predict</button>{model && <pre>{JSON.stringify(model,null,2)}</pre>}</div>);
+  const [msg, setMsg] = useState("");
+  const train = async ()=>{
+    try {
+      const data = await apiFetch('/api/ml/train', { method: 'POST', body: [{example:1}] });
+      setModel(data);
+      setMsg("Model trained");
+    } catch (e) {
+      setMsg(e?.message || "Training failed");
+    }
+  };
+  const predict = async ()=>{
+    if(!model) return setMsg('Train first');
+    try {
+      const data = await apiFetch('/api/ml/'+model.modelId+'/predict', { method: 'POST', body: { input: {} } });
+      setMsg(JSON.stringify(data));
+    } catch (e) {
+      setMsg(e?.message || "Prediction failed");
+    }
+  };
+  return (
+    <div className="dashboard">
+      <h3>ML Admin</h3>
+      <div className="welcome-actions">
+        <button type="button" className="btn-secondary" onClick={train}>Train placeholder model</button>
+        <button type="button" className="btn-primary" onClick={predict}>Predict</button>
+      </div>
+      {msg ? <p className="muted">{msg}</p> : null}
+      {model && <div className="card"><pre>{JSON.stringify(model,null,2)}</pre></div>}
+    </div>
+  );
 }

@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NeuroEdge Contracts",
+  "type": "object",
+  "definitions": {
+    "ClinicalExtraction": {
+      "type": "object",
+      "required": ["patient", "encounter", "observations"],
+      "properties": {
+        "patient": {
+          "type": "object",
+          "properties": {
+            "externalId": { "type": "string" },
+            "name": { "type": "string" },
+            "dob": { "type": "string", "format": "date" },
+            "sex": { "type": "string" }
+          }
+        },
+        "encounter": {
+          "type": "object",
+          "properties": {
+            "externalId": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "department": { "type": "string" }
+          }
+        },
+        "diagnoses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "system": { "type": "string", "enum": ["ICD10", "SNOMED", "LOCAL"] },
+              "display": { "type": "string" }
+            }
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": {},
+              "unit": { "type": "string" },
+              "flag": { "type": "string", "enum": ["NORMAL", "ABNORMAL", "CRITICAL"] }
+            }
+          }
+        },
+        "medications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "drug": { "type": "string" },
+              "dose": { "type": "string" },
+              "frequency": { "type": "string" },
+              "duration": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "HrDocumentExtraction": {
+      "type": "object",
+      "properties": {
+        "employee": {
+          "type": "object",
+          "properties": {
+            "employeeId": { "type": "string" },
+            "name": { "type": "string" },
+            "role": { "type": "string" },
+            "department": { "type": "string" }
+          }
+        },
+        "contract": {
+          "type": "object",
+          "properties": {
+            "startDate": { "type": "string", "format": "date" },
+            "endDate": { "type": "string", "format": "date" },
+            "employmentType": { "type": "string" },
+            "salary": { "type": "number" }
+          }
+        },
+        "licenses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": { "type": "string" },
+              "issuer": { "type": "string" },
+              "expiryDate": { "type": "string", "format": "date" }
+            }
+          }
+        }
+      }
+    },
+    "AiResultEnvelope": {
+      "type": "object",
+      "required": ["status", "data", "provenance"],
+      "properties": {
+        "status": { "type": "string", "enum": ["OK", "REVIEW_REQUIRED", "REJECTED"] },
+        "data": { "type": "object" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reasons": { "type": "array", "items": { "type": "string" } },
+        "provenance": {
+          "type": "object",
+          "required": ["model", "modelVersion", "generatedAt"],
+          "properties": {
+            "model": { "type": "string" },
+            "modelVersion": { "type": "string" },
+            "promptHash": { "type": "string" },
+            "evidenceIds": { "type": "array", "items": { "type": "string" } },
+            "generatedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
+}

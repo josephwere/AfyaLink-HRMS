@@ -1,8 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = [], panels = [], children }) {
   const navigate = useNavigate();
+  const [actionMessage, setActionMessage] = useState("");
+
+  const runAction = (action) => {
+    try {
+      if (typeof action?.onClick === "function") {
+        action.onClick(navigate);
+        setActionMessage("");
+        return;
+      }
+      if (action?.path) {
+        navigate(action.path);
+        setActionMessage("");
+        return;
+      }
+      setActionMessage(`"${action?.label || "Action"}" is not configured yet for this module.`);
+    } catch {
+      setActionMessage(`"${action?.label || "Action"}" failed to run. Please try again.`);
+    }
+  };
 
   return (
     <div className="dashboard doctor-workspace">
@@ -14,15 +33,18 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
         <div className="welcome-actions">
           {actions.map((a) => (
             <button
+              type="button"
               key={a.label}
               className={a.variant === "primary" ? "btn-primary" : "btn-secondary"}
-              onClick={() => (a.onClick ? a.onClick(navigate) : a.path ? navigate(a.path) : null)}
+              onClick={() => runAction(a)}
             >
               {a.label}
             </button>
           ))}
         </div>
       </div>
+
+      {actionMessage && <div className="card">{actionMessage}</div>}
 
       {kpis.length > 0 && (
         <section className="section">

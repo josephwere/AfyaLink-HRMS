@@ -8,7 +8,7 @@ export default function DoctorSettings() {
       subtitle="Profile, availability, notifications, signature and account security controls."
       actions={[
         { label: "Open Profile", variant: "primary", path: "/profile" },
-        { label: "Notification Preferences" },
+        { label: "Notification Preferences", path: "/profile#notifications" },
       ]}
       panels={[
         { title: "Availability", body: "Clinic windows and scheduling preferences." },

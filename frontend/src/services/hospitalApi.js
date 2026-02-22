@@ -1,11 +1,15 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const createHospital = async (data) => {
-  const res = await api.post("/api/hospitals", data);
-  return res.data;
+  return apiFetch("/api/hospitals", {
+    method: "POST",
+    body: data,
+  });
 };
 
 export const updateHospital = async (id, data) => {
-  const res = await api.put(`/api/hospitals/${id}`, data);
-  return res.data;
+  return apiFetch(`/api/hospitals/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 };

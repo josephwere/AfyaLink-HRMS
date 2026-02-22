@@ -1,0 +1,526 @@
+page,button_text,handler,target_route_or_api,status,button_type
+frontend/src/App.jsx,{r.text}  { e.stopPropagation(); dismissReminder(r.id); }} > ×,r.action,(manual),MANUAL_REVIEW,button
+frontend/src/App.jsx,"setSidebarOpen(false)} /> )}  {user &&  setSidebarOpen(false)} />}  {securityNotice && (  navigate(""/step-up"")}> {securityNotice.message}  { e.stopPropagation(); setSecurityNotice(null); }} > ×",(none),(manual),MANUAL_REVIEW,(default)
+frontend/src/components/admin/AdminWorkflowOverride.jsx,"submit(""APPROVE"")} style={{ marginRight: 8 }} > Force Approve",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/admin/AdminWorkflowOverride.jsx,"submit(""REJECT"")} style={{ background: ""#dc2626"", color: ""white"" }} > Force Reject",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/AIChat.jsx,Send,send,(manual),MANUAL_REVIEW,button
+frontend/src/components/AIChatWS.jsx,Ask AI,send,(manual),MANUAL_REVIEW,button
+frontend/src/components/AppErrorBoundary.jsx,window.location.reload()}> Reload,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/billing/BillingActions.jsx,"{alreadyApproved ? ""Insurance Approved"" : loading ? ""Submitting..."" : ""Request SHA Pre-Authorization""}",requestShaPreauth,(manual),MANUAL_REVIEW,button
+frontend/src/components/Cards.jsx,{badge},onBadgeClick,(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,×,close,(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,Finish,close,(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,"navigate(ctaPath)} > {current.ctaLabel || ""Open""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,"setIndex((v) => Math.max(0, v - 1))}> Back",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,setIndex((v) => v + 1)}> Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/FirstLoginTour.jsx,Skip Tour,close,(manual),MANUAL_REVIEW,button
+frontend/src/components/FloatingAI.jsx,"window.open(ai.url, ""_blank"")} title={ai.name || ""NeuroEdge""} > {ai.name || ""NeuroEdge""} {ai.greeting || ""Ask AI""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/ModuleWorkspace.jsx,runAction(a)} > {a.label},(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/MpesaPayButton.jsx,"{loading ? ""Processing…"" : `Pay KES ${amount}`}",startPayment,(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,?,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,(icon/no-text),onToggleSidebar,(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ await safeTrigger(""OPEN_MESSAGES""); navigate(""/ai/chatbot""); }} >  Messages",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ await safeTrigger(""OPEN_NOTIFICATIONS""); setNotifOpen((v) => !v); }} >  Alerts {unreadCount > 0 && (  {unreadCount > 99 ? ""99+"" : unreadCount}  )}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ await safeTrigger(""TOGGLE_THEME""); cycleTheme(); }} >  {theme === ""system"" ? ""System"" : theme === ""dark"" ? ""Dark"" : ""Light""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ await triggerAction(""EMERGENCY_ALERT""); navigate(""/doctor/ward""); }} >  Emergency",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ navigate(item.path); setSearch(""""); }} > {item.label} {item.path}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ setNotifOpen(false); navigate( canMachineOps ? ""/hospital-admin/machine-alerts"" : ""/notifications?category=INTEGRATION&read=UNREAD&q=machine"" ); }} > Machine Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ setNotifOpen(false); navigate(""/hospital-admin/approvals?view=breached#pending""); }} > Open Breaches",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ setNotifOpen(false); navigate(""/hospital-admin/approvals#sla""); }} > SLA Policies",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ setNotifOpen(false); navigate(""/notifications""); }} > View All Notifications",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ try { await markAllNotificationsRead(); setNotifItems((prev) => prev.map((n) => ({ ...n, read: true }))); } catch { // Keep current list if API mark-all fails. } }} > Mark all read",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{ try { if (n.read) { await markNotificationUnread(n._id); setNotifItems((prev) => prev.map((item) => item._id === n._id ? { ...item, read: false } : item ) ); } else { await markNotificationRead(n._id); setNotifItems((prev) => prev.map((item) => item._id === n._id ? { ...item, read: true } : item ) ); } } catch { // Keep existing state if mark call fails. } }} > {n.read ? ""Mark unread"" : ""Mark read""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{runningSla ? ""Scanning..."" : ""Scan Now""}",handleRunSlaScan,(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"{runningSla ? ""Scanning..."" : ""Scan SLA""}",handleRunSlaScan,(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"0 ? ""risk"" : ""ok""}`} title={ machineAlertCount > 0 ? `${machineAlertCount} unread machine/integration alerts` : ""No unread machine alerts"" } onClick={() => { setNotifOpen(false); navigate( canMachineOps ? ""/hospital-admin/machine-alerts"" : ""/notifications?category=INTEGRATION&read=UNREAD&q=machine"" ); }} > Machines {machineAlertCount || machineUnreadFromCurrent || 0}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(""/doctor/schedule"")} >  Calendar",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(""/profile"")}> My Profile",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(""/profile"")}> Preferences",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(""/register"")}> Upgrade",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(""/reports"")}> About AfyaLink",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(homePath)} aria-label=""Home"" title=""Home"" >  Home",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"navigate(isGuest ? ""/guest"" : homePath)} > {logo ? (  ) : ( ""AfyaLink HCM"" )}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"setNotifOpen(false)} aria-label=""Close notifications"" > ×",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"setProfileOpen((v) => !v)} > {user?.name?.[0] || ""U""}  {user?.name || ""User""} {user?.role || ""User""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"setProfileOpen(false)} aria-label=""Close profile menu"" > ×",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,"setSearch("""")} aria-label=""Clear search"" title=""Clear"" > Clear",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Navbar.jsx,Sign Out,logout,(manual),MANUAL_REVIEW,button
+frontend/src/components/Notifications.jsx,"{ try { await markAllNotificationsRead(); setItems((prev) => prev.map((n) => ({ ...n, read: true }))); } catch { // Keep existing state on failure. } }} > Mark all read",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Notifications.jsx,"{ try { if (n._id && !n.read) { await markNotificationRead(n._id); } setItems((prev) => prev.map((item) => item._id === n._id ? { ...item, read: true } : item ) ); } catch { // No-op when mark read fails. } }} > {n.title} - {n.body || (n.meta && n.meta.test)}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyForm.jsx,Cancel,onCancel,(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyForm.jsx,onSave(form)}>Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyTable.jsx,"{ const q = prompt('Add stock (json): {""batchNumber"":""B1"",""expiryDate"":""2026-12-01"",""quantity"":10}'); if (!q) return; try { const payload = JSON.parse(q); onAddStock(it._id, payload); } catch (e){ alert('invalid json'); } }}>Add Stock",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyTable.jsx,"{ const qty = prompt('Quantity to dispense'); if (!qty) return; onDispense(it._id, { quantity: Number(qty) }); }}>Dispense",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyTable.jsx,onDelete(it._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/pharmacy/PharmacyTable.jsx,onEdit(it)}>Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,{ logout(); onClose?.(); }}>  Sign Out,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,{ logout(); onClose?.(); }}>  Sign Out,(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"{ navigate(""/guest""); onClose?.(); }} >  Demo Home",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"{ navigate(""/profile""); onClose?.(); }}>  Settings",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"{ navigate(""/profile""); onClose?.(); }}>  Settings",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"{ navigate(""/reports""); onClose?.(); }}>  Help",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"{ navigate(""/reports""); onClose?.(); }}>  Help",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,{ navigate(to); onSelect?.(); }} >  {children},(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"setTheme(""dark"")} >  Dark",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"setTheme(""light"")} >  Light",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/Sidebar.jsx,"setTheme(""system"")} >  System",(none),(manual),MANUAL_REVIEW,button
+frontend/src/components/VoiceRecorder.jsx,Start,start,(manual),MANUAL_REVIEW,button
+frontend/src/components/VoiceRecorder.jsx,Stop,stop,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AccessControl.jsx,Refresh,loadScope,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AccessControl.jsx,Save Access Rules,onSave,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AdminInsuranceActions.jsx,Approve Insurance,approve,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AdminInsuranceActions.jsx,Reject Insurance,reject,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AuditLogs.jsx,Export CSV,exportCSV,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AuditLogs.jsx,Export Evidence Bundle,exportEvidenceBundle,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/AuditLogs.jsx,Filter,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/Beds.jsx,toggle(b)}> {b.occupied? 'Free' : 'Assign'},(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/ConnectorRetryPolicy.jsx,Save Policy,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/CRDTPatientEditor.jsx,Add Patient,addPatient,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/CRDTPatientEditor.jsx,Sync Now,sync,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/CreateAdmin.jsx,"{loading ? ""Creating..."" : ""Create Admin""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Admin/DLQEditor.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQEditor.jsx,saveAndRetry(selected.id)}>Save & Retry,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQEditor.jsx,view(it.id)}>View/Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspectEdit.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspectEdit.jsx,Retry,retry,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspectEdit.jsx,Save,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspectEdit.jsx,view(it.id)}>View,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspector.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/DLQInspector.jsx,retry(it.id)}>Retry,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/Integrations.jsx,Save Connector,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/Integrations.jsx,test(l._id)}>Test REST,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/Integrations.jsx,testFhir(l._id)}>Test FHIR,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/MappingEditor.jsx,edit(m._id)}>Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/MappingEditor.jsx,Save Mapping,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/NotificationsPage.jsx,"{ try { await markAllNotificationsRead(); setItems((prev) => prev.map((n) => ({ ...n, read: true }))); setMsg(""All notifications marked as read.""); } catch (e) { setMsg(e?.message || ""Failed to mark notifications as read""); } }} > Mark all read",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/NotificationsPage.jsx,"{ try { if (n.read) { await markNotificationUnread(n._id); setItems((prev) => prev.map((item) => item._id === n._id ? { ...item, read: false } : item ) ); } else { await markNotificationRead(n._id); setItems((prev) => prev.map((item) => item._id === n._id ? { ...item, read: true } : item ) ); } } catch (e) { setMsg(e?.message || ""Failed to update notification""); } }} > {n.read ? ""Mark unread"" : ""Mark read""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/OfflineOps.jsx,"{loading ? ""Refreshing..."" : ""Refresh""}",load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/OfflineOps.jsx,Apply,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/OfflineSync.jsx,Add Sample Local Item,addSample,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/OfflineSync.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/OfflineSync.jsx,Sync Now,syncAll,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PaymentSettings.jsx,Request OTP,requestOtp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PaymentSettings.jsx,Rotate Password,rotatePassword,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PaymentSettings.jsx,Save Encrypted Settings,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PaymentSettings.jsx,Verify & Reveal,verifyOtp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,Queue + Print,queueTestPrint,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,Save Profile,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Admin/PrintCenter.jsx,"togglePrinter(p, { enabled: !p.enabled })}> {p.enabled ? ""Disable"" : ""Enable""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,"togglePrinter(p, { isDefault: true })}> Set Default",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,"updateJob(j._id, ""FAILED"")}>Mark Failed",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,"updateJob(j._id, ""PRINTED"")}>Mark Printed",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/PrintCenter.jsx,window.print()}>Print Current Page,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/RealTimeIntegrations.jsx,Send FHIR,sendFHIR,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/RealTimeIntegrations.jsx,Send HL7,sendHL7,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/Reports/index.jsx,Download CSV ({filtered.length}),downloadCSV,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/TransactionsDashboard.jsx,fetchData(false)}>Apply,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Admin/TransactionsDashboard.jsx,fetchData(true)}>Export CSV,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/AI/Chatbot.jsx,"{loading ? ""Thinking..."" : ""Send""}",submit,(manual),MANUAL_REVIEW,button
+frontend/src/pages/AI/NeuroEdgeExtract.jsx,"{loading ? ""Extracting..."" : ""Extract""}",run,(manual),MANUAL_REVIEW,button
+frontend/src/pages/AI/Triage.jsx,"{loading ? ""Analyzing..."" : ""Run Triage""}",run,(manual),MANUAL_REVIEW,button
+frontend/src/pages/AI/VoiceDictation.jsx,"{loading ? ""Transcribing..."" : ""Transcribe""}",run,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Appointments.jsx,"{patientsLoadingMore ? ""Loading..."" : ""Load more patients""}",loadMorePatients,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Appointments.jsx,cancelAppointment(a._id)} > Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Appointments.jsx,Schedule,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Communication/Center.jsx,Bootstrap Default Channels,bootstrapDefaultChannels,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Communication/Center.jsx,"loadMessages(activeChannel, nextCursor, true)} > Load older",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Communication/Center.jsx,Send,send,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Communication/Center.jsx,setActiveChannel(ch._id)} > {ch.name},(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Capture GPS,captureGeo,(manual),MANUAL_REVIEW,button
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Create Referral,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,"navigate(""/communication"")}>Communication",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Child Growth,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Chronic Follow-up,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Household,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Maternal Record,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Vaccination,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Save Visit,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/CommunityHealthWorker/Dashboard.jsx,Submit Disease Report,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Developer/AIExtractionHistory.jsx,"{ const reset = { action: ""AI_DOCUMENT_EXTRACTED"", hospital: """", limit: 100 }; setFilters(reset); setSearch(""""); load(reset); }} disabled={loading} > Reset",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/AIExtractionHistory.jsx,load(filters)} disabled={loading}> Apply Filters,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/AIExtractionHistory.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"{runningSla ? ""Running SLA Scan..."" : ""Run Workflow SLA Scan""}",runSla,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/admin/audit-logs"")}> Audit Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/admin/realtime"")}> Integration Monitor",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/ai/extract"")}> NeuroEdge Extract",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/decision-cockpit"")}> Decision Cockpit",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/decision-cockpit"")}> Decision Cockpit",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/provenance-verify"")}> Provenance Verify",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/queue-replay"")}> Job Queue Replay",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/queue-replay"")}> Queue Replay",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/developer/webhook-retry"")}> Webhook Retry",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/hospital-admin/approvals"")}> Workforce Approvals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/super-admin/settings"")}> Feature Flags",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,"navigate(""/system-admin/clinical-intelligence"")}> Clinical Intelligence",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/Dashboard.jsx,Refresh Metrics,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/DecisionCockpit.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/ProvenanceVerify.jsx,"{loading ? ""Verifying..."" : ""Verify Signature""}",verify,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/ProvenanceVerify.jsx,Refresh Transfers,loadTransfers,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,{ await retryDlqItem(i.id); load(); }} > Replay,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,openEditor(i)} > Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,savePayload(false)}> Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,savePayload(true)}> Save & Replay,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/QueueReplay.jsx,setSelected(null)}> Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/WebhookRetry.jsx,{ await retryDlqItem(i.id); load(); }} > Retry Webhook,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Developer/WebhookRetry.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Appointments.jsx,Create,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Doctor/Appointments.jsx,remove(it._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Appointments.jsx,update(it._id)}>Complete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/leave"")}>Leave Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/medical-records"")}>Open Record",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/opd"")}>Start Consultation",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/opd"")}>Start Consultation",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/patients"")}>Today’s Patients",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/doctor/schedule"")}>Open Schedule",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/notifications"")}> {n.title || ""Clinical Alert""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Dashboard.jsx,"navigate(""/system-admin/clinical-intelligence"")}> Open Clinical Intelligence",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/DoctorModuleLayout.jsx,runAction(a)} > {a.label},(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/LabResults.jsx,"navigate(`/doctor/medical-records?encounterId=${encodeURIComponent(r.encounter || """")}`)} > Open",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/MyPatients.jsx,navigate(`/doctor/medical-records?patientId=${p._id}`)}>Open Record,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/MyPatients.jsx,navigate(`/doctor/prescriptions?patientId=${p._id}`)}>Prescribe,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/MyPatients.jsx,navigate(`/doctor/referrals?patientId=${p._id}`)}>Refer,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/MyPatients.jsx,navigate(`/doctor/reports-notes?patientId=${p._id}`)}>Add Note,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/ForgotPassword.jsx,"{loading ? ""Sending..."" : ""Send reset link""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/GuestDashboard.jsx,"navigate(""/login"")}>Sign In",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/GuestDashboard.jsx,"navigate(""/register"")}>Book Appointment",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"{previewLoading ? ""Previewing..."" : ""Preview Escalation Plan""}",runPreview,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"applyAutomationPreset(row.requestType, preset.key)} > {preset.name || preset.key}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,applyPresetAll(preset.key)} > Apply {preset.name || preset.key} to all,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,clonePresetToForm(preset)} > Clone to Form,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,deactivateCustomPreset(preset.key)} > Deactivate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"doApprove(item.kind, item._id, isOverdue(item))} > Approve",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"doReject(item.kind, item._id, isOverdue(item))} > Reject",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"Jump to Next Breached {breachedRows.length ? `(${breachedRows.length})` : """"}",jumpToNextBreached,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,loadAll({ append: false })} disabled={loading}> Refresh,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"loadAll({ append: true })} > {loadingMore ? ""Loading..."" : ""Load more All""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"loadMoreByKind(""LEAVE"")} > {loadingMoreKind === ""LEAVE"" ? ""Loading..."" : ""Load more Leave""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"loadMoreByKind(""OVERTIME"")} > {loadingMoreKind === ""OVERTIME"" ? ""Loading..."" : ""Load more Overtime""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"loadMoreByKind(""SHIFT"")} > {loadingMoreKind === ""SHIFT"" ? ""Loading..."" : ""Load more Shift""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,reactivateCustomPreset(preset.key)} > Reactivate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Reset View,resetView,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Run Escalation Sweep,runSweep,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,Save Custom Preset,saveCustomPreset,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,saveAutomation(row.requestType)} > Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,savePolicy(row.requestType)} > Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setAutoAdvance((v) => !v)} title=""When enabled, approving/rejecting a breached item moves focus to the next breached item."" > Auto-Advance: {autoAdvance ? ""On"" : ""Off""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setCustomPreset({ key: """", name: """", description: """", config: { active: true, autoApprove: false, requireSecondApprover: true, fallbackRole: ""AUTO"", escalationAfterMinutes: 120, conditions: { priorityAgeMultiplier: 1, priorityWeightCap: 5, }, }, }) } > Reset Form",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setQueueKindFilter(""ALL"")} > All",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setQueueKindFilter(""LEAVE"")} > Leave",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setQueueKindFilter(""OVERTIME"")} > Overtime",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setQueueKindFilter(""SHIFT"")} > Shift",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setShowInactivePresets((v) => !v)} > {showInactivePresets ? ""Hide Inactive Presets"" : ""Show Inactive Presets""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,"setViewMode((v) => (v === ""BREACHED"" ? ""ALL"" : ""BREACHED""))} > {viewMode === ""BREACHED"" ? ""Show All"" : ""Show Breached Only""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Approvals.jsx,simulatePolicy(row.requestType)} > Simulate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Branches.jsx,Create Branch,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"{saving ? ""Saving..."" : ""Save Settings""}",save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"navigate(""/hospital-admin/customization"")}> Open Branding & Customization",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"setInsuranceProviders((prev) => [...prev, emptyInsurance()])}>Add Insurance Provider",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"setInsuranceProviders((prev) => prev.filter((_,i) => i !== idx))}>Remove",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"setPaymentMethods((prev) => [...prev, emptyPayment()])}>Add Payment Method",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/CommerceConfig.jsx,"setPaymentMethods((prev) => prev.filter((_,i) => i !== idx))}>Remove",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Customization.jsx,"{saving ? ""Saving..."" : ""Save Customization""}",save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/approvals"")}>Incident Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/approvals"")}>Leave Approvals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/commerce-config"")}>Insurance & Payments",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/customization"")}>Branding & Customization",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/financials"")}>Budget & Financials",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/financials"")}>Financials",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-alerts"")} > View Machine Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-connectivity"")} > Open Machine Connectivity Console",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-connectivity"")}>Machine Connectivity",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/recruitment-ads"")}>Recruitment Ads",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/register-staff"")}>Recruitment Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Staff Directory",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Staff Directory",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/notifications"")}>Announcements",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/reports"")}>Attendance Heatmap",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/workforce/requests#shift"")}>Shift Calendar",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,claim(it._id)}>Claim,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,Create Invoice,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/Financials.jsx,pay(it._id)}>Pay,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,"setPage(p=>Math.max(1,p-1))}>Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,setPage(p=>p+1)}>Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,"{actionBusyId === ""bulk"" ? ""Applying..."" : ""Ack Visible""}",acknowledgeVisible,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,"{actionBusyId === ""policy"" ? ""Saving..."" : ""Save Policy""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,"{manifestVerifyLoading ? ""Verifying..."" : ""Verify Signature""}",verifyManifest,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,= totalPages} onClick={() => load(page + 1)} > Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,acknowledge(row._id)} > Ack,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,downloadEvidenceBundle(manifestData?.payload?.alertId)} disabled={!manifestData?.payload?.alertId} > Download Bundle,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,downloadTimelineCsv(timelineData?.alert?._id)} disabled={!timelineData?.alert?._id} > Export CSV,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,downloadTimelinePdf(timelineData?.alert?._id)} disabled={!timelineData?.alert?._id} > Export PDF,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,escalate(row._id)} > Escalate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,load(page - 1)}> Prev,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,"load(page)} disabled={loading}> {loading ? ""Refreshing..."" : ""Refresh""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,loadEvidenceManifest(row._id)} > Evidence,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,openTimeline(row._id)} > Timeline,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,setManifestData(null)}> Close,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineAlerts.jsx,setTimelineData(null)}> Close,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"{loading ? ""Refreshing..."" : ""Refresh Devices""}",loadDevices,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"{saving ? ""Registering..."" : ""Register Device""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"{testing ? ""Submitting..."" : ""Test Lab Result Ingestion""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"{testing ? ""Testing..."" : ""Test Heartbeat""}",testHeartbeat,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,loadAudit(1)}> Refresh Audit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,loadAudit(auditPage + 1)} disabled={auditPage * 20 >= auditTotal} > Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"loadAudit(Math.max(1, auditPage - 1))} disabled={auditPage  Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"navigate(""/hospital-admin/machine-alerts"")}> Open Machine Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,Parse HL7 Test,runHl7ParseTest,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,rotateKey(d._id)}> Rotate Key,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,Run DICOM Stub,runDicomStubTest,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,setSelectedDeviceId(d._id)}> Select,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"updateStatus(d._id, ""MAINTENANCE"")}> Maintenance",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/MachineConnectivity.jsx,"updateStatus(d._id, ""ONLINE"")}> Online",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Patients.jsx,"{loading ? ""Searching..."" : ""Search""}",fetchPatients,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Patients.jsx,"{loadingMore ? ""Loading..."" : ""Load more""}",loadMore,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Patients.jsx,Create,create,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Patients.jsx,Reset View,resetView,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Pharmacy.jsx,{setOpenForm(true); setEditing(null);}}> Add Item,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"{saving ? ""Posting..."" : ""Post Vacancy""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""ACTIVE"")}>Activate",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""CLOSED"")}>Close",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""PAUSED"")}>Pause",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""HIRED"")}>Hire",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""REJECTED"")}>Reject",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""SHORTLISTED"")}>Shortlist",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""UNDER_REVIEW"")}>Review",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RegisterStaff.jsx,"{loading ? ""Creating..."" : ""Register Staff""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,deactivate(s._id)} disabled={s.active === false} > Deactivate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,"setPage((p) => Math.max(1, p - 1))} disabled={page  Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/StaffManagement.jsx,setPage((p) => p + 1)} disabled={loading || page * limit >= total} > Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/register-staff?view=planning"")}>Succession Planning",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/register-staff"")}>Recruitment Kanban",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/register-staff"")}>Recruitment Pipeline",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/staff?q=license"")}>Training & Certifications",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Contracts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Employee Profiles",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/reports"")}>Performance Reviews",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HRManager/Dashboard.jsx,"navigate(""/workforce/requests"")}>Leave Management",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Inventory/Index.jsx,"= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} > Next",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Inventory/Index.jsx,"setPage((p) => Math.max(1, p - 1))} > Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Lab/Index.jsx,completeLab(e._id)} > Complete Lab,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Lab/LabDashboard.jsx,completeLab(e._id)} > Complete Lab,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/archive"")}>Reports Archive",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/equipment"")}>Equipment Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/qc"")}>Quality Control",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/safety"")}>Safety Checklist",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/samples"")}>Sample Tracking",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/test-queue"")}>Test Processing Table",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Dashboard.jsx,"navigate(""/lab-tech/test-queue"")}>Test Queue",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/EquipmentLogs.jsx,Save Log,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/EquipmentLogs.jsx,setShowForm(false)}>Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Lab/index.jsx,"{editing ? ""Save changes"" : ""Create test""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/Lab/index.jsx,"{setEditing(null); setForm({patientName:"""", testType:"""", result:"""", date:""""})}} > Cancel",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Lab/index.jsx,New Test,openNew,(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Lab/index.jsx,openEdit(t)}>Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/Lab/index.jsx,removeTest(t.id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/LabTests.jsx,Order,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/LabTests.jsx,remove(it._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/LabTests.jsx,upload(it._id)}>Upload Result,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/QualityControl.jsx,Save QC Run,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/QualityControl.jsx,setShowForm(false)}>Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/SafetyChecklist.jsx,Save Checklist,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/SafetyChecklist.jsx,setShowForm(false)}>Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/LabTech/SampleTracking.jsx,Save Tracking,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/LabTech/SampleTracking.jsx,setShowForm(false)}>Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Login.jsx,"{submitting ? ""Signing in..."" : ""Sign in""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Nurse/AssignedPatients.jsx,navigate(`/nurse/vitals?patientId=${p._id}`)} > Open,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/incidents"")}>Incident Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/leave"")}>Leave Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/medication"")}>Medication Administration",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/patients"")}>Assigned Patients",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/patients"")}>Patient Task List",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/shift"")}>My Shift",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/nurse/vitals"")}>Vitals Entry",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Nurse/Dashboard.jsx,"navigate(""/workforce/requests"")}>Open My Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,Cancel,cancelApply,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,startApply(ad._id)}> Apply in AfyaLink,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,"submitApplication(ad._id)}> {submitting ? ""Submitting..."" : ""Submit Application""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/notifications"")}>Messages",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/ads"")}>Vacancy Feed",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/ads"")}>Vacancy Feed",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/appointments"")}>My Appointments",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/feedback"")}>Feedback",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/insurance"")}>Insurance",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/lab-results"")}>Lab Results",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/medical-records"")}>Medical Records",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/patient/prescriptions"")}>Prescriptions",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/payments"")}>Billing",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Dashboard.jsx,"navigate(""/profile"")}>Profile",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Hospitals.jsx,navigate(`/patient/appointments?hospitalId=${h._id}`)} > Book,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Hospitals.jsx,navigate(`/patient/appointments?hospitalId=${selectedHospitalId}`)} > Book Appointment,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Hospitals.jsx,navigate(`/payments?hospitalId=${h._id}`)} > Pay,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Hospitals.jsx,navigate(`/payments?hospitalId=${selectedHospitalId}`)} > Pay Bills,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Hospitals.jsx,"selectHospital(h._id)} > {String(selectedHospitalId) === String(h._id) ? ""Selected"" : ""Select""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,"navigate(""/patient/appointments"")}> Book Appointment",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,"navigate(""/patient/hospitals"")}> Browse Hospitals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,"navigate(""/payments"")}> Pay Bills",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,"navigate(""/profile"")}> Update Insurance Profile",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,navigate(`/patient/appointments?hospitalId=${h._id}`)}> Book,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Insurance.jsx,navigate(`/payments?hospitalId=${h._id}`)}> Pay Bill,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/MyAppointments.jsx,"{saving ? ""Submitting..."" : ""Submit Appointment""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Patient/Patients.jsx,"{ setEditing(null); setPatientForm({ name: """", age: """", gender: """", condition: """", }); }} > Cancel",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Patients.jsx,"{editing ? ""Update"" : ""Add""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Patient/Patients.jsx,💾 Save Vitals,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Patient/Patients.jsx,setSelected(null)} > Close,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Patients.jsx,setShowVitals(false)} > Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Patients.jsx,setShowVitals(true)} > Add Vitals,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Patients.jsx,startEdit(p)} style={{ marginLeft: 6 }} > ✏️,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Patients.jsx,viewPatient(p)} > 🔍,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Payments.jsx,Pay with Card (Stripe),startStripe,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Payments.jsx,Pay with Flutterwave,startFw,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/Payments.jsx,Pay with M-Pesa,startMpesa,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/CheckoutStripe.jsx,Pay $10,start,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/PaymentsFull.jsx,Pay with M-Pesa (STK push),payMpesa,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/PaymentsFull.jsx,Pay with Stripe (create intent),payStripe,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/PaymentsPage.jsx,payMpesa(tx)} style={{ marginLeft: 8 }} > M-Pesa,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/PaymentsPage.jsx,payStripe(tx)} > Stripe,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/payments/full"")}>Allowances & Deductions",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/payments/full"")}>Generate Payslips",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/payments/full"")}>Overtime Management",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/payments/full"")}>Run Payroll",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/reports"")}>Audit Trail",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/reports"")}>Loan Management",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/reports"")}>Tax Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/PayrollOfficer/Dashboard.jsx,"navigate(""/workforce/requests#overtime"")}>Overtime",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Pharmacy/Index.jsx,"navigate(""/pharmacy/inventory"")}>Inventory",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Pharmacy/Index.jsx,"navigate(""/pharmacy/queue"")}>Prescription Queue",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Pharmacy/Index.jsx,"navigate(""/pharmacy/reports"")}>Open Safety Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Pharmacy/Index.jsx,"navigate(""/pharmacy/reports"")}>Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Pharmacy/PharmacyDashboard.jsx,"dispense(e._id, e.prescriptions?.[0]) } > Dispense",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{ const actual = user?.actualRole || user?.role; setRoleOverride(""""); setViewRole(actual); navigate(redirectByRole({ role: actual })); }} > Reset to My Role",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,{ setRoleOverride(viewRole); navigate(redirectByRole({ role: viewRole })); }} > Switch Role View,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{extendedSaving ? ""Saving..."" : ""Save Full Profile""}",saveExtendedProfile,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{idSaving ? ""Saving..."" : ""Save National ID""}",saveNationalId,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{licenseSaving ? ""Saving..."" : ""Save License""}",saveLicense,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{phoneBusy ? ""Sending..."" : ""Send OTP""}",requestPhoneOtp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{phoneBusy ? ""Verifying..."" : ""Verify""}",verifyPhoneOtp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"{pwLoading ? ""Updating..."" : ""Change password""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Profile.jsx,"{twoFAEnabled ? ""Disable 2FA"" : ""Enable 2FA""}",toggle2FA,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,"0} onClick={resendVerification} > {sending ? ""Sending..."" : cooldown > 0 ? `Resend in ${cooldown}s` : ""Verify Account""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,Disable Authenticator,disableTotp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,Reset Display Defaults,resetA11yPrefs,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,Setup Google Authenticator,setupTotp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Profile.jsx,Verify Authenticator,verifyTotp,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Register.jsx,"{submitting ? ""Creating account..."" : ""Create account""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Reports/Index.jsx,"{loadingMore ? ""Loading..."" : ""Load more""}",onLoadMore,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Reports/Index.jsx,Create Report,onCreate,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Reports/Index.jsx,onDelete(r._id)} > Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Reports/Index.jsx,"setTab(""all"")} > All Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Reports/Index.jsx,"setTab(""mine"")} > My Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/ResetPassword.jsx,"{loading ? ""Resetting..."" : ""Reset password""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Security/AdminDashboard.jsx,Grant Access,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Security/OfficerDashboard.jsx,Check In,onCheckIn,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Security/OfficerDashboard.jsx,Check Out,onCheckOut,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Security/OfficerDashboard.jsx,Save Access,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Security/OfficerDashboard.jsx,Verify,onVerify,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Staff/Dashboard.jsx,"navigate(""/workforce/requests"")}>My Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Staff/Dashboard.jsx,"navigate(""/workforce/requests"")}>Open Workspace",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/StepUp.jsx,"{loading ? ""Verifying..."" : ""Verify & Unlock""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/StepUp.jsx,"{requesting ? ""Sending..."" : ""Send Step-up Code""}",requestCode,(manual),MANUAL_REVIEW,button
+frontend/src/pages/StepUp.jsx,Refresh Risk,loadRisk,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/AdminVerifyUser.jsx,Verify User,handleVerify,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"{ try { await triggerAction(""REVENUE_OVERVIEW""); setMsg(""""); } catch (e) { setMsg(e?.message || ""Unable to load revenue action right now.""); } finally { navigate(""/payments/full""); } }} > Revenue Graph",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/admin/audit-logs"")}>Audit Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/admin/audit-logs"")}>Audit Trails",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/admin/crdt-patients"")}>Offline Sync",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/admin/create-admin"")}>Role Management",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/admin/realtime"")}>Integration Hub",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/analytics"")}>Workforce Distribution",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/notifications"")}>Open Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/payments/full"")}>Global Payroll",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/reports"")}>Compliance Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/reports"")}>Regulatory Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/security-admin"")}>Security Incidents",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/super-admin/hospitals"")}>Hospitals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/super-admin/settings"")}>System Settings",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Dashboard.jsx,"navigate(""/system-admin"")}>System Status Monitor",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/HospitalFeatures.jsx,Save Changes,save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"{branchBusy ? ""Saving..."" : ""Add Branch""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"{loading ? ""Creating..."" : ""Create Developer""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"{loading ? ""Creating..."" : ""Create Hospital Admin""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"{loading ? ""Creating..."" : ""Create Hospital""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"{loading ? ""Creating..."" : ""Create System Admin""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditBranch,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditHospital,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,Cancel,cancelEditAdmin,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,deactivateBranch(b._id)} disabled={branchBusy} > Deactivate,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,saveEditAdmin(row._id)} disabled={loading} > Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,saveEditBranch(b._id)} disabled={branchBusy} > Save,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"saveHospitalEdit(h._id)} disabled={savingHospitalId === h._id} > {savingHospitalId === h._id ? ""Saving..."" : ""Save""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"setAdminListPage((p) => Math.max(1, p - 1))} disabled={adminListPage === 1} > Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"setAdminListPage((p) => Math.min(adminListTotalPages, p + 1)) } disabled={adminListPage >= adminListTotalPages} > Next",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"setPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} > Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,"setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} > Next",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,startEditAdmin(row)} disabled={loading} > Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,startEditBranch(b)} disabled={branchBusy} > Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/Hospitals.jsx,startEditHospital(h)} > Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/ML.jsx,Predict,predict,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/ML.jsx,Train placeholder model,train,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/RBAC.jsx,changeRole(u._id)}>Change,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,"{loading ? ""Saving..."" : ""Save Settings""}",save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,"setAllFeatureAccess(""FREE"")}> Set All Free",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SuperAdmin/SystemSettings.jsx,"setAllFeatureAccess(""PREMIUM"")}> Set All Premium",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,{ setForm(EMPTY); setEditingId(null); }}>Reset,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,"{editingId ? ""Update Policy"" : ""Create Policy""}",save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,"{runningAllTests ? ""Running All..."" : ""Run All Active Tests""}",runAllTests,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,"{simulating ? ""Simulating..."" : ""Run Simulation""}",runSimulation,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,edit(row)}>Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,Export JSON,exportJson,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,remove(row._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,removeTest(tc._id)}> Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,runOneTest(tc._id)}> Run,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/AbacPolicies.jsx,Save as Test Case,saveSimulationAsTestCase,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/ClinicalIntelligence.jsx,"{loading === ""burnout"" ? ""Running..."" : ""Run Burnout Scoring""}",runBurnout,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/ClinicalIntelligence.jsx,"{loading === ""causal"" ? ""Running..."" : ""Run Causal Simulation""}",runCausal,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/ClinicalIntelligence.jsx,"{loading === ""forecast"" ? ""Running..."" : ""Run Staffing Forecast""}",runForecast,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/ClinicalIntelligence.jsx,"{loading === ""twin"" ? ""Running..."" : ""Run Digital Twin""}",runTwin,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"{runningSla ? ""Running SLA Scan..."" : ""Run Workflow SLA Scan""}",runSla,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"{savingRisk ? ""Saving..."" : ""Save Risk Policy""}",saveRiskPolicy,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/admin/audit-logs"")}>Audit Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/admin/create-admin"")}>Role Overrides",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/admin/realtime"")}>Integration Hub",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/admin/realtime"")}>Integration Monitor",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer"")}>API Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer"")}>Error Logs",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer"")}>Server Metrics",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer/ai-extraction-history"")}>AI Extraction History",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer/queue-replay"")}>Job Queue",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer/queue-replay"")}>Queue Monitor",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/developer/webhook-retry"")}>Webhook Retry",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/notifications"")}>Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/step-up"")}> Step-up Console",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/super-admin/hospitals"")}>Hospitals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/super-admin/settings"")}>Feature Flags",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/system-admin/abac"")}>ABAC Policies",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/system-admin/clinical-intelligence"")}>Clinical Intelligence",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/system-admin/mapping-studio"")}>Mapping Studio",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/system-admin/nlp-analytics"")}>NLP Analytics",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Dashboard.jsx,"navigate(""/system-admin/regulatory-reports"")}>Regulatory Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,{ setForm(DEFAULT_FORM); setEditingId(null); }}>Reset,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,"{editingId ? ""Update Mapping"" : ""Save Mapping""}",save,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,edit(m)}>Edit,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,Preview Transform,runPreview,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,Refresh,load,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,remove(m._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,Sign Payload,runSign,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/MappingStudio.jsx,Verify Signature,runVerify,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/Migrations.jsx,Create,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/SystemAdmin/Migrations.jsx,startDryRun(it._id)}> Start Dry Run,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/NlpAnalytics.jsx,"{loading ? ""Running..."" : ""Run Query""}",run,(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/NlpAnalytics.jsx,"setQuery(""Show active staff"")}> Staff",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/NlpAnalytics.jsx,"setQuery(""Show pending approvals"")}> Approvals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/NlpAnalytics.jsx,"setQuery(""Show revenue this month"")}> Revenue",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/SystemAdmin/RegulatoryReports.jsx,"{loading ? ""Generating..."" : ""Generate Report""}",run,(manual),MANUAL_REVIEW,button
+frontend/src/pages/TwoFactor.jsx,"{loading ? ""Verifying..."" : ""Verify""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/TwoFactorVerify.jsx,"{loading ? ""Verifying..."" : ""Verify""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/VerifyEmail.jsx,"0 || !email} className=""btn secondary"" > {cooldown > 0 ? `Resend in ${cooldown}s` : loading ? ""Sending…"" : ""Resend verification email""}",handleResend,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Workforce/MyRequests.jsx,"{loading ? ""Submitting..."" : ""Submit Leave""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Workforce/MyRequests.jsx,"{loading ? ""Submitting..."" : ""Submit Overtime""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Workforce/MyRequests.jsx,"{loading ? ""Submitting..."" : ""Submit Shift""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Workforce/MyRequests.jsx,Export CSV,exportCsv,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Workforce/MyRequests.jsx,"loadAll(statusFilter, { append: false })} disabled={loading} > Refresh",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Workforce/MyRequests.jsx,"loadAll(statusFilter, { append: true })} > {loading ? ""Loading..."" : ""Load more""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Workforce/MyRequests.jsx,"navigate(""/hospital-admin/approvals"")} > View Approvals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Workforce/MyRequests.jsx,Reset View,resetView,(manual),MANUAL_REVIEW,button

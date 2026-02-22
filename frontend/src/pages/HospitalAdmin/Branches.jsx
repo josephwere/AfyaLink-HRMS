@@ -11,9 +11,17 @@ export default function Branches() {
   async function fetchBranches() {
     try {
       const data = await apiFetch("/api/branches");
-      setBranches(data.data || []);
+      const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.data)
+        ? data.data
+        : [];
+      setBranches(rows);
     } catch (err) {
       console.error("Failed to load branches", err);
+      setBranches([]);
     } finally {
       setLoading(false);
     }

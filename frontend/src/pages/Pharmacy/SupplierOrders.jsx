@@ -6,7 +6,10 @@ export default function SupplierOrders() {
     <ModuleWorkspace
       title="Supplier Orders"
       subtitle="Purchase order workflow, supplier lead times and delivery tracking."
-      actions={[{ label: "Create PO", variant: "primary" }, { label: "Track Deliveries" }]}
+      actions={[
+        { label: "Create PO", variant: "primary", path: "/pharmacy/suppliers#new" },
+        { label: "Track Deliveries", path: "/pharmacy/suppliers#tracking" },
+      ]}
       panels={[
         { title: "Open Orders", body: "Purchase orders awaiting fulfillment." },
         { title: "Deliveries", body: "Incoming shipment and receiving logs." },

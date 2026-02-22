@@ -66,6 +66,11 @@ export const createAppointment = async (req, res, next) => {
       }
     }
 
+    // Ensure doctor-created appointments remain visible in doctor queues/lists.
+    if (role === "DOCTOR" && !doctor) {
+      doctor = req.user.id;
+    }
+
     if (!patient || !scheduledAt || !hospitalId) {
       return res
         .status(400)

@@ -10,8 +10,8 @@ export default function VerifySuccess() {
           You can now log in to your account.
         </p>
 
-        <Link to="/login">
-          <button>Go to login</button>
+        <Link to="/login" className="btn-primary" style={{ display: "inline-flex", textDecoration: "none" }}>
+          Go to login
         </Link>
       </div>
     </div>

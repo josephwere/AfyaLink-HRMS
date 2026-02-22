@@ -1,4 +1,7 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const createAdmin = (data) =>
-  api.post("/api/admin/create-admin", data);
+  apiFetch("/api/admin/create-admin", {
+    method: "POST",
+    body: data,
+  });

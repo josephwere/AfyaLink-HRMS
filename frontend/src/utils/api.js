@@ -14,6 +14,12 @@ const request = async (method, path, body) => {
   return { data };
 };
 
+// Legacy axios-like shortcuts used by older pages
+const get = (path) => request("GET", path);
+const post = (path, body) => request("POST", path, body);
+const put = (path, body) => request("PUT", path, body);
+const del = (path) => request("DELETE", path);
+
 // ===================== AUTH =====================
 export const login = (data) => request("POST", "/auth/login", data);
 export const register = (data) => request("POST", "/auth/register", data);
@@ -71,9 +77,17 @@ export const runAI = (data) => request("POST", "/ai", data);
 export const runML = (data) => request("POST", "/ml", data);
 
 export const patch = (path, data) => request("PATCH", path, data);
+export const getRequest = get;
+export const postRequest = post;
+export const putRequest = put;
+export const deleteRequest = del;
 
 // default export for backward compatibility
 export default {
+  get,
+  post,
+  put,
+  delete: del,
   login,
   register,
   logout,

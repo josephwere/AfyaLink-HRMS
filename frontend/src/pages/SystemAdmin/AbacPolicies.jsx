@@ -323,10 +323,10 @@ export default function AbacPolicies() {
           <p className="muted">Manage zero-trust attribute-based rules across domains.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
-          <button className="btn-secondary" onClick={exportJson} disabled={loading || importing}>
+          <button type="button" className="btn-secondary" onClick={exportJson} disabled={loading || importing}>
             Export JSON
           </button>
           <label className="btn-secondary" style={{ cursor: "pointer" }}>
@@ -363,9 +363,9 @@ export default function AbacPolicies() {
             <label><input type="checkbox" checked={form.requireActiveConsent} onChange={(e) => setForm((p) => ({ ...p, requireActiveConsent: e.target.checked }))} /> Require Active Consent</label>
             <label><input type="checkbox" checked={form.requireSameHospitalOrPrivileged} onChange={(e) => setForm((p) => ({ ...p, requireSameHospitalOrPrivileged: e.target.checked }))} /> Require Same Hospital Or Privileged</label>
           </div>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={save}>{editingId ? "Update Policy" : "Create Policy"}</button>
-            <button className="btn-secondary" onClick={() => { setForm(EMPTY); setEditingId(null); }}>Reset</button>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={save}>{editingId ? "Update Policy" : "Create Policy"}</button>
+            <button type="button" className="btn-secondary" onClick={() => { setForm(EMPTY); setEditingId(null); }}>Reset</button>
           </div>
         </div>
       </section>
@@ -395,8 +395,8 @@ export default function AbacPolicies() {
                   <td>{row.priority}</td>
                   <td>{row.active ? "Yes" : "No"}</td>
                   <td>
-                    <button className="btn-secondary" onClick={() => edit(row)}>Edit</button>
-                    <button className="btn-danger" onClick={() => remove(row._id)}>Delete</button>
+                    <button type="button" className="btn-secondary" onClick={() => edit(row)}>Edit</button>
+                    <button type="button" className="btn-danger" onClick={() => remove(row._id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -453,11 +453,12 @@ export default function AbacPolicies() {
             <label><input type="checkbox" checked={simForm.hasActiveConsent} onChange={(e) => setSimForm((p) => ({ ...p, hasActiveConsent: e.target.checked }))} /> Active consent</label>
             <label><input type="checkbox" checked={simForm.sourceHospitalBypass} onChange={(e) => setSimForm((p) => ({ ...p, sourceHospitalBypass: e.target.checked }))} /> Source hospital bypass</label>
           </div>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runSimulation} disabled={simulating}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runSimulation} disabled={simulating}>
               {simulating ? "Simulating..." : "Run Simulation"}
             </button>
             <button
+              type="button"
               className="btn-secondary"
               onClick={saveSimulationAsTestCase}
               disabled={!simForm.domain || !simForm.resource || !simForm.action || !simForm.role}
@@ -489,8 +490,8 @@ export default function AbacPolicies() {
       <section className="section">
         <h3>ABAC Regression Test Cases</h3>
         <div className="card">
-          <div className="welcome-actions" style={{ marginBottom: 10 }}>
-            <button className="btn-primary" onClick={runAllTests} disabled={runningAllTests}>
+          <div className="welcome-actions mb-10">
+            <button type="button" className="btn-primary" onClick={runAllTests} disabled={runningAllTests}>
               {runningAllTests ? "Running All..." : "Run All Active Tests"}
             </button>
             {runSummary && (
@@ -532,10 +533,10 @@ export default function AbacPolicies() {
                       : "Not run"}
                   </td>
                   <td>
-                    <button className="btn-secondary" onClick={() => runOneTest(tc._id)}>
+                    <button type="button" className="btn-secondary" onClick={() => runOneTest(tc._id)}>
                       Run
                     </button>
-                    <button className="btn-danger" onClick={() => removeTest(tc._id)}>
+                    <button type="button" className="btn-danger" onClick={() => removeTest(tc._id)}>
                       Delete
                     </button>
                   </td>

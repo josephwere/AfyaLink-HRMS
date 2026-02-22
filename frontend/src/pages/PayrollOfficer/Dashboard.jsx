@@ -21,9 +21,9 @@ export default function PayrollOfficerDashboard() {
           <p className="muted">Run payroll, manage deductions, taxes, loans and audit-ready payroll history.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/payments/full")}>Run Payroll</button>
-          <button className="btn-secondary" onClick={() => navigate("/reports")}>Tax Reports</button>
-          <button className="btn-secondary" onClick={() => navigate("/workforce/requests#overtime")}>Overtime</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/payments/full")}>Run Payroll</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>Tax Reports</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests#overtime")}>Overtime</button>
         </div>
       </div>
 
@@ -41,10 +41,10 @@ export default function PayrollOfficerDashboard() {
         <div className="card doctor-schedule-card">
           <h3>Payroll Table</h3>
           <div className="panel-grid">
-            <button className="action-link" onClick={() => navigate("/payments/full")}>Overtime Management</button>
-            <button className="action-link" onClick={() => navigate("/payments/full")}>Allowances & Deductions</button>
-            <button className="action-link" onClick={() => navigate("/reports")}>Loan Management</button>
-            <button className="action-link" onClick={() => navigate("/payments/full")}>Generate Payslips</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Overtime Management</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Allowances & Deductions</button>
+            <button type="button" className="action-link" onClick={() => navigate("/reports")}>Loan Management</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Generate Payslips</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
@@ -52,7 +52,7 @@ export default function PayrollOfficerDashboard() {
           <div className="alert-stack">
             <div className="action-pill">Pending Approvals: {data?.pendingApprovals ?? "—"}</div>
             <div className="action-pill">Overdue Payroll: {data?.overduePayroll ?? "—"}</div>
-            <button className="btn-secondary" onClick={() => navigate("/reports")}>Audit Trail</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>Audit Trail</button>
           </div>
         </div>
       </section>

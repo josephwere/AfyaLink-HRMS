@@ -6,7 +6,10 @@ export default function VitalsEntry() {
     <ModuleWorkspace
       title="Vitals Entry"
       subtitle="Record patient vitals and flag abnormal trends for review."
-      actions={[{ label: "New Vitals Record", variant: "primary" }, { label: "Trend View" }]}
+      actions={[
+        { label: "New Vitals Record", variant: "primary", path: "/nurse/vitals#new" },
+        { label: "Trend View", path: "/analytics" },
+      ]}
       panels={[
         { title: "Vitals Form", body: "BP, pulse, temperature, SpO2 and pain scale inputs." },
         { title: "Trend Graphs", body: "Historical progression for quick deterioration detection." },

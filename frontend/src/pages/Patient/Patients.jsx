@@ -212,13 +212,13 @@ export default function Patients() {
                   <td>{p.gender}</td>
                   <td>{p.condition}</td>
                   <td>
-                    <button
+                    <button type="button"
                       className="button gradient-purple"
                       onClick={() => viewPatient(p)}
                     >
                       🔍
                     </button>
-                    <button
+                    <button type="button"
                       className="button gradient-green"
                       onClick={() => startEdit(p)}
                       style={{ marginLeft: 6 }}
@@ -268,13 +268,13 @@ export default function Patients() {
           )}
 
           <div className="form-buttons">
-            <button
+            <button type="button"
               className="button gradient-blue"
               onClick={() => setShowVitals(true)}
             >
               Add Vitals
             </button>
-            <button
+            <button type="button"
               className="button cancel-btn"
               onClick={() => setSelected(null)}
             >

@@ -95,7 +95,7 @@ export default function Inventory() {
       </div>
 
       <div className="table-footer">
-        <button
+        <button type="button"
           className="btn-secondary"
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -105,7 +105,7 @@ export default function Inventory() {
         <span className="muted">
           Page {page} of {totalPages}
         </span>
-        <button
+        <button type="button"
           className="btn-secondary"
           disabled={page >= totalPages}
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

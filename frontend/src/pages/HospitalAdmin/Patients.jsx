@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../../utils/api";
+import { apiFetch } from "../../utils/apiFetch";
 import { listPatients } from "../../services/patientApi";
 import { useAuth } from "../../utils/auth";
 
@@ -125,11 +125,11 @@ export default function Patients() {
   const create = async () => {
     setMsg("");
     try {
-      await API.post("/patients", form);
+      await apiFetch("/api/patients", { method: "POST", body: form });
       await fetchPatients();
       setForm({ firstName: "", lastName: "", nationalId: "", dob: "" });
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to create patient");
+      setMsg(err?.message || "Failed to create patient");
     }
   };
 
@@ -153,25 +153,26 @@ export default function Patients() {
   };
 
   return (
-    <div>
+    <div className="dashboard">
       <h3>Patients</h3>
       {msg && <p className="muted">{msg}</p>}
-      <div style={{ marginBottom: 10, display: "flex", gap: 8 }}>
-        <input
-          placeholder="Search patient by name or national ID"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button onClick={fetchPatients} disabled={loading}>
-          {loading ? "Searching..." : "Search"}
-        </button>
-        <button onClick={resetView} disabled={loading}>
-          Reset View
-        </button>
-        <span className="muted">{cacheBadge}</span>
-      </div>
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ flex: 1 }}>
+      <div className="grid" style={{ gridTemplateColumns: "minmax(280px, 360px) 1fr", gap: 12 }}>
+        <div className="card form">
+          <input
+            placeholder="Search patient by name or national ID"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="welcome-actions">
+            <button type="button" className="btn-secondary" onClick={fetchPatients} disabled={loading}>
+              {loading ? "Searching..." : "Search"}
+            </button>
+            <button type="button" className="btn-secondary" onClick={resetView} disabled={loading}>
+              Reset View
+            </button>
+          </div>
+          <span className="muted">{cacheBadge}</span>
+
           <input
             placeholder="First"
             value={form.firstName}
@@ -193,29 +194,33 @@ export default function Patients() {
             value={form.dob}
             onChange={(e) => setForm({ ...form, dob: e.target.value })}
           />
-          <button onClick={create}>Create</button>
+          <div>
+            <button type="button" className="btn-primary" onClick={create}>Create</button>
+          </div>
         </div>
-        <div style={{ flex: 2 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patients.map((p) => (
-                <tr key={p._id}>
-                  <td>
-                    {p.firstName} {p.lastName}
-                  </td>
-                  <td>{p.nationalId}</td>
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>ID</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {patients.map((p) => (
+                  <tr key={p._id}>
+                    <td>
+                      {p.firstName} {p.lastName}
+                    </td>
+                    <td>{p.nationalId}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {hasMore && (
-            <button onClick={loadMore} disabled={loadingMore} style={{ marginTop: 8 }}>
+            <button type="button" className="btn-secondary" onClick={loadMore} disabled={loadingMore} style={{ marginTop: 8 }}>
               {loadingMore ? "Loading..." : "Load more"}
             </button>
           )}

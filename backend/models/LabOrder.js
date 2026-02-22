@@ -23,6 +23,7 @@ const LabOrderSchema = new mongoose.Schema(
 
     result: String,
     completedAt: Date,
+    metadata: { type: Object, default: {} },
   },
   { timestamps: true }
 );

@@ -21,9 +21,9 @@ export default function LabTechDashboard() {
           <p className="muted">Test queue, sample tracking, quality control and equipment readiness.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/labtech/labs")}>Test Queue</button>
-          <button className="btn-secondary" onClick={() => navigate("/lab-tech")}>Equipment Logs</button>
-          <button className="btn-secondary" onClick={() => navigate("/reports")}>Reports Archive</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/lab-tech/test-queue")}>Test Queue</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/lab-tech/equipment")}>Equipment Logs</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/lab-tech/archive")}>Reports Archive</button>
         </div>
       </div>
 
@@ -41,10 +41,10 @@ export default function LabTechDashboard() {
         <div className="card doctor-schedule-card">
           <h3>Center Workspace</h3>
           <div className="panel-grid">
-            <button className="action-link" onClick={() => navigate("/labtech/labs")}>Test Processing Table</button>
-            <button className="action-link" onClick={() => navigate("/lab-tech")}>Sample Tracking</button>
-            <button className="action-link" onClick={() => navigate("/lab-tech")}>Quality Control</button>
-            <button className="action-link" onClick={() => navigate("/lab-tech")}>Safety Checklist</button>
+            <button type="button" className="action-link" onClick={() => navigate("/lab-tech/test-queue")}>Test Processing Table</button>
+            <button type="button" className="action-link" onClick={() => navigate("/lab-tech/samples")}>Sample Tracking</button>
+            <button type="button" className="action-link" onClick={() => navigate("/lab-tech/qc")}>Quality Control</button>
+            <button type="button" className="action-link" onClick={() => navigate("/lab-tech/safety")}>Safety Checklist</button>
           </div>
         </div>
 

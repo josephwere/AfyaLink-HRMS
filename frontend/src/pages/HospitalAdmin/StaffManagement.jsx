@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../../services/api";
+import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
 
@@ -16,8 +16,10 @@ export default function StaffManagement() {
 
   if (
     user?.role !== "HOSPITAL_ADMIN" &&
+    user?.role !== "HR_MANAGER" &&
     user?.role !== "SUPER_ADMIN" &&
-    user?.role !== "SYSTEM_ADMIN"
+    user?.role !== "SYSTEM_ADMIN" &&
+    user?.role !== "DEVELOPER"
   ) {
     return <p>🚫 Access denied</p>;
   }
@@ -31,11 +33,11 @@ export default function StaffManagement() {
         limit: String(limit),
       });
       if (q.trim()) params.set("q", q.trim());
-      const res = await api.get(`/api/users?${params.toString()}`);
-      const items = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.items)
-        ? res.data.items
+      const res = await apiFetch(`/api/users?${params.toString()}`);
+      const items = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+        ? res.items
         : [];
       const staffOnly = items.filter((u) =>
         [
@@ -54,7 +56,7 @@ export default function StaffManagement() {
         ].includes(u.role)
       );
       setStaff(staffOnly);
-      setTotal(Number(res.data?.total || staffOnly.length));
+      setTotal(Number(res?.total || staffOnly.length));
     } catch {
       setMsg("Failed to load staff");
       setTotal(0);
@@ -82,13 +84,23 @@ export default function StaffManagement() {
   }, [location.search]);
 
   const deactivate = async (id) => {
-    await api.patch(`/api/users/${id}`, { active: false });
-    load();
+    try {
+      setMsg(null);
+      await apiFetch(`/api/users/${id}`, { method: "PATCH", body: { active: false } });
+      await load();
+    } catch (err) {
+      setMsg(err?.message || "Failed to deactivate staff account");
+    }
   };
 
   const updateRole = async (id, role) => {
-    await api.patch(`/api/users/${id}`, { role });
-    load();
+    try {
+      setMsg(null);
+      await apiFetch(`/api/users/${id}`, { method: "PATCH", body: { role } });
+      await load();
+    } catch (err) {
+      setMsg(err?.message || "Failed to update role");
+    }
   };
 
   return (
@@ -106,7 +118,7 @@ export default function StaffManagement() {
             onChange={(e) => setQ(e.target.value)}
             style={{ minWidth: 280 }}
           />
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -154,6 +166,7 @@ export default function StaffManagement() {
                   <td>{s.active === false ? "Inactive" : "Active"}</td>
                   <td>
                     <button
+                      type="button"
                       className="btn-secondary"
                       onClick={() => deactivate(s._id)}
                       disabled={s.active === false}
@@ -172,6 +185,7 @@ export default function StaffManagement() {
           </table>
           <div className="pagination-row">
             <button
+              type="button"
               className="btn-secondary"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || loading}
@@ -182,6 +196,7 @@ export default function StaffManagement() {
               Page {page} • {total} workers
             </span>
             <button
+              type="button"
               className="btn-secondary"
               onClick={() => setPage((p) => p + 1)}
               disabled={loading || page * limit >= total}

@@ -1,11 +1,12 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const getSystemSettings = async () => {
-  const res = await api.get("/api/system-settings");
-  return res.data;
+  return apiFetch("/api/system-settings");
 };
 
 export const updateSystemSettings = async (data) => {
-  const res = await api.put("/api/system-settings", data);
-  return res.data;
+  return apiFetch("/api/system-settings", {
+    method: "PUT",
+    body: data,
+  });
 };

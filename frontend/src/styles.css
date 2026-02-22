@@ -170,6 +170,26 @@ body.auth-route {
   display: block;
 }
 
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-inline-checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.profile-inline-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
 /* 🔒 DEFAULT INPUTS (TEXT, EMAIL, PASSWORD) */
 .auth-card input:not([type="checkbox"]) {
   width: 100%;
@@ -1250,6 +1270,53 @@ body.auth-route {
   max-width: 100%;
 }
 
+.welcome-actions.mt-8 {
+  margin-top: 8px;
+}
+
+.welcome-actions.mt-10 {
+  margin-top: 10px;
+}
+
+.welcome-actions.mt-12 {
+  margin-top: 12px;
+}
+
+.welcome-actions.mb-10 {
+  margin-bottom: 10px;
+}
+
+.welcome-actions.mb-12 {
+  margin-bottom: 12px;
+}
+
+.welcome-actions.mb-16 {
+  margin-bottom: 16px;
+}
+
+.actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.actions-row.gap-12 {
+  gap: 12px;
+}
+
+.actions-row.mt-8 {
+  margin-top: 8px;
+}
+
+.actions-row.mt-10 {
+  margin-top: 10px;
+}
+
+.full-width {
+  width: 100%;
+}
+
 .btn-primary {
   background: #0f766e;
   color: #ffffff;
@@ -1578,6 +1645,16 @@ body.auth-route {
 
 .dismissible-close-btn {
   flex: 0 0 auto;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .profile-collapsed-tile {
@@ -1677,6 +1754,11 @@ body.auth-route {
 }
 
 .card.form {
+  display: grid;
+  gap: 12px;
+}
+
+.form {
   display: grid;
   gap: 12px;
 }
@@ -2253,4 +2335,80 @@ body.auth-route {
 .country-dial-code {
   text-align: center;
   font-weight: 700;
+}
+
+/* =========================
+   STACKED FORM LAYOUT (NON-AUTH)
+========================= */
+.main form:not(.auth-card) {
+  display: grid;
+  gap: 10px;
+}
+
+.main form.grid.info-grid {
+  grid-template-columns: 1fr !important;
+}
+
+.main form:not(.auth-card) button[type="submit"],
+.main form:not(.auth-card) .btn-primary[type="submit"],
+.main form:not(.auth-card) .btn-secondary[type="submit"] {
+  width: auto;
+  min-width: 120px;
+  justify-self: start;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-submit-sm {
+  width: auto;
+  min-width: 120px;
+}
+
+.form-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.pill.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pill.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-tiny {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  min-height: 28px;
+}
+
+.btn-tiny.ok {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #166534;
 }

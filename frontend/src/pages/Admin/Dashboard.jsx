@@ -14,7 +14,7 @@ export default function Dashboard() {
         <StatCard title="System Access" value="RBAC" subtitle="Role governance" />
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
+      <div className="welcome-actions">
         <Link to="/admin/audit-logs">Open Audit Logs</Link>
         <Link to="/admin/create-admin">Create Admin</Link>
       </div>

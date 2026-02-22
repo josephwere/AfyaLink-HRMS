@@ -23,9 +23,9 @@ export default function PharmacyDashboard() {
           <p className="muted">Prescription queue, inventory, controlled drugs and expiry monitoring.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/pharmacy")}>Prescription Queue</button>
-          <button className="btn-secondary" onClick={() => navigate("/inventory")}>Inventory</button>
-          <button className="btn-secondary" onClick={() => navigate("/reports")}>Reports</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/pharmacy/queue")}>Prescription Queue</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/inventory")}>Inventory</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>Reports</button>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default function PharmacyDashboard() {
           <h3>Interaction Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Drug interaction checks active</div>
-            <button className="btn-secondary" onClick={() => navigate("/reports")}>Open Safety Reports</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>Open Safety Reports</button>
           </div>
         </div>
       </section>

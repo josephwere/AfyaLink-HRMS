@@ -170,7 +170,7 @@ export default function SystemMigrations() {
                         {it.progress?.recordsMigrated || 0}/{it.progress?.recordsScanned || 0}
                       </td>
                       <td>
-                        <button className="btn-secondary" onClick={() => startDryRun(it._id)}>
+                        <button type="button" className="btn-secondary" onClick={() => startDryRun(it._id)}>
                           Start Dry Run
                         </button>
                       </td>

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
 export default function AssignedPatients() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
@@ -24,7 +26,15 @@ export default function AssignedPatients() {
                   <td>{p.ward || "-"}</td>
                   <td>{p.status || "ACTIVE"}</td>
                   <td>{p.riskLevel || "MEDIUM"}</td>
-                  <td><button className="btn-secondary">Open</button></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => navigate(`/nurse/vitals?patientId=${p._id}`)}
+                    >
+                      Open
+                    </button>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan="5" className="muted">No assigned patients found.</td></tr>}

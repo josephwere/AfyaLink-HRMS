@@ -114,7 +114,7 @@ export default function Sidebar({ open = true, onClose }) {
           <nav>
             <ul>
               <li>
-                <button
+                <button type="button"
                   className="nav-btn"
                   onClick={() => {
                     navigate("/guest");
@@ -152,15 +152,15 @@ export default function Sidebar({ open = true, onClose }) {
 
         <div className="sidebar-footer sticky-footer">
           <div className="footer-actions">
-            <button className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
+            <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
               <NavIcon name="reports" />
               Help
             </button>
-            <button className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
+            <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
               <NavIcon name="settings" />
               Settings
             </button>
-            <button className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
+            <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
               <NavIcon name="security" />
               Sign Out
             </button>
@@ -383,6 +383,27 @@ export default function Sidebar({ open = true, onClose }) {
                 >
                   Staff Management
                 </Item>
+                <Item
+                  to="/hospital-admin/machine-connectivity"
+                  icon="settings"
+                  onSelect={onClose}
+                >
+                  Machine Connectivity
+                </Item>
+                <Item
+                  to="/hospital-admin/machine-alerts"
+                  icon="notifications"
+                  onSelect={onClose}
+                >
+                  Machine Alerts
+                </Item>
+                <Item
+                  to="/hospital-admin/financials"
+                  icon="payroll"
+                  onSelect={onClose}
+                >
+                  Financials
+                </Item>
                 {canSelfService && (
                   <Item
                     to="/workforce/requests"
@@ -414,10 +435,16 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/create-admin" icon="admin" onSelect={onClose}>
                   Admin Access
                 </Item>
+                <Item to="/admin/training-tracker" icon="analytics" onSelect={onClose}>
+                  Training Tracker
+                </Item>
+                <Item to="/admin/training-playbook" icon="reports" onSelect={onClose}>
+                  Training Playbook
+                </Item>
                 <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
                   Audit Logs
                 </Item>
-                <Item to="/admin/notifications" icon="notifications" onSelect={onClose}>
+                <Item to="/notifications" icon="notifications" onSelect={onClose}>
                   Notifications
                 </Item>
               </Section>
@@ -623,21 +650,21 @@ export default function Sidebar({ open = true, onClose }) {
                     Activity Log
                   </Item>
                   <li className="theme-row">
-                    <button
+                    <button type="button"
                       className={`nav-btn ${theme === "light" ? "active" : ""}`}
                       onClick={() => setTheme("light")}
                     >
                       <NavIcon name="settings" />
                       Light
                     </button>
-                    <button
+                    <button type="button"
                       className={`nav-btn ${theme === "dark" ? "active" : ""}`}
                       onClick={() => setTheme("dark")}
                     >
                       <NavIcon name="settings" />
                       Dark
                     </button>
-                    <button
+                    <button type="button"
                       className={`nav-btn ${theme === "system" ? "active" : ""}`}
                       onClick={() => setTheme("system")}
                     >
@@ -655,15 +682,15 @@ export default function Sidebar({ open = true, onClose }) {
 
       <div className="sidebar-footer sticky-footer">
         <div className="footer-actions">
-          <button className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
+          <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
             <NavIcon name="reports" />
             Help
           </button>
-          <button className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
+          <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
             <NavIcon name="settings" />
             Settings
           </button>
-          <button className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
+          <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
             <NavIcon name="security" />
             Sign Out
           </button>
@@ -687,7 +714,7 @@ function Item({ to, children, icon, onSelect }) {
   const navigate = useNavigate();
   return (
     <li>
-      <button
+      <button type="button"
         className="nav-btn"
         onClick={() => {
           navigate(to);
@@ -709,7 +736,7 @@ function getQuickActions(role) {
   ];
 
   const common = [
-    { label: "View Notifications", path: "/admin/notifications" },
+    { label: "View Notifications", path: "/notifications" },
     { label: "Open Reports", path: "/reports" },
   ];
 

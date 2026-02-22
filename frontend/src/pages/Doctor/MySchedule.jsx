@@ -7,9 +7,9 @@ export default function MySchedule() {
       title="My Schedule"
       subtitle="Daily, weekly and monthly clinical planning with shift overlays and surgery blocks."
       actions={[
-        { label: "Day View", variant: "primary" },
-        { label: "Week View" },
-        { label: "Month View" },
+        { label: "Day View", variant: "primary", path: "/doctor/schedule#day" },
+        { label: "Week View", path: "/doctor/schedule#week" },
+        { label: "Month View", path: "/doctor/schedule#month" },
       ]}
       kpis={[
         { title: "Today Blocks", value: "Live" },

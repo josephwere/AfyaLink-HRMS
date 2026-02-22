@@ -145,7 +145,7 @@ export default function PrintCenter() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={() => window.print()}>Print Current Page</button>
+          <button type="button" className="btn-secondary" onClick={() => window.print()}>Print Current Page</button>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export default function PrintCenter() {
             </select>
             <input value={testTitle} onChange={(e) => setTestTitle(e.target.value)} placeholder="Document title" />
             <textarea value={testBody} onChange={(e) => setTestBody(e.target.value)} placeholder="Document content" />
-            <button className="btn-primary" onClick={queueTestPrint} disabled={busy || !selectedPrinterId}>
+            <button type="button" className="btn-primary" onClick={queueTestPrint} disabled={busy || !selectedPrinterId}>
               Queue + Print
             </button>
           </div>
@@ -206,10 +206,10 @@ export default function PrintCenter() {
                     <td>{p.enabled ? "Enabled" : "Disabled"}</td>
                     <td>
                       <div className="inline-actions">
-                        <button className="btn-secondary" onClick={() => togglePrinter(p, { enabled: !p.enabled })}>
+                        <button type="button" className="btn-secondary" onClick={() => togglePrinter(p, { enabled: !p.enabled })}>
                           {p.enabled ? "Disable" : "Enable"}
                         </button>
-                        <button className="btn-secondary" onClick={() => togglePrinter(p, { isDefault: true })}>
+                        <button type="button" className="btn-secondary" onClick={() => togglePrinter(p, { isDefault: true })}>
                           Set Default
                         </button>
                       </div>
@@ -293,8 +293,8 @@ export default function PrintCenter() {
                     <td>{j.status}</td>
                     <td>
                       <div className="inline-actions">
-                        <button className="btn-secondary" onClick={() => updateJob(j._id, "PRINTED")}>Mark Printed</button>
-                        <button className="btn-secondary" onClick={() => updateJob(j._id, "FAILED")}>Mark Failed</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateJob(j._id, "PRINTED")}>Mark Printed</button>
+                        <button type="button" className="btn-secondary" onClick={() => updateJob(j._id, "FAILED")}>Mark Failed</button>
                       </div>
                     </td>
                   </tr>

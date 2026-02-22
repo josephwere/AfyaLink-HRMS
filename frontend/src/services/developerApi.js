@@ -1,21 +1,19 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const getDeveloperOverview = async () => {
-  const res = await api.get("/api/developer/overview");
-  return res.data;
+  return apiFetch("/api/developer/overview");
 };
 
 export const getTrustStatus = async () => {
-  const res = await api.get("/api/developer/trust-status");
-  return res.data;
+  return apiFetch("/api/developer/trust-status");
 };
 
 export const runWorkflowSlaScan = async () => {
-  const res = await api.post("/api/developer/workflow-sla/run");
-  return res.data;
+  return apiFetch("/api/developer/workflow-sla/run", {
+    method: "POST",
+  });
 };
 
 export const getDecisionCockpit = async () => {
-  const res = await api.get("/api/developer/decision-cockpit");
-  return res.data;
+  return apiFetch("/api/developer/decision-cockpit");
 };

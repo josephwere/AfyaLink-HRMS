@@ -15,6 +15,7 @@ import FloatingAI from "./components/FloatingAI";
 import FirstLoginTour from "./components/FirstLoginTour";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import { getOfflineMetricsSnapshot, startOfflineAutoSync } from "./utils/offlineQueue";
 import { pushOfflineClientMetrics } from "./services/offlineOpsApi";
 
@@ -111,8 +112,11 @@ import HospitalAdminRegisterStaff from "./pages/HospitalAdmin/RegisterStaff";
 import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
 import HospitalAdminStaffManagement from "./pages/HospitalAdmin/StaffManagement";
 import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
+import HospitalAdminFinancials from "./pages/HospitalAdmin/Financials";
 import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
 import HospitalCustomization from "./pages/HospitalAdmin/Customization";
+import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConnectivity";
+import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -141,6 +145,8 @@ import CommunityHealthWorkerDashboard from "./pages/CommunityHealthWorker/Dashbo
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AuditLogs from "./pages/Admin/AuditLogs";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
+import TrainingTracker from "./pages/Admin/TrainingTracker";
+import TrainingPlaybook from "./pages/Admin/TrainingPlaybook";
 
 function RootEntry() {
   const { user, loading } = useAuth();
@@ -394,7 +400,7 @@ function AppLayout() {
             list.push({
               id: "super-pending",
               text: `Global approvals pending: ${dash.pendingRequests}.`,
-              action: () => navigate("/admin/notifications"),
+              action: () => navigate("/notifications"),
             });
           }
 
@@ -470,7 +476,7 @@ function AppLayout() {
               action: () =>
                 navigate(
                   ["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"].includes(role)
-                    ? "/admin/notifications"
+                    ? "/notifications"
                     : "/profile"
                 ),
             });
@@ -558,7 +564,7 @@ function AppLayout() {
         {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
         <main className="main">
           {securityNotice && (
-            <button className="verify-banner" onClick={() => navigate("/step-up")}>
+            <button type="button" className="verify-banner" onClick={() => navigate("/step-up")}>
               {securityNotice.message}
               <span
                 className="banner-close"
@@ -577,6 +583,7 @@ function AppLayout() {
             .filter((r) => !dismissed.includes(r.id))
             .map((r) => (
             <button
+              type="button"
               key={r.id}
               className="verify-banner"
               onClick={r.action}
@@ -610,7 +617,8 @@ function AppLayout() {
 export default function App() {
   return (
     <SocketProvider>
-      <Routes>
+      <AppErrorBoundary>
+        <Routes>
         {/* ============ PUBLIC ROUTES ============ */}
         <Route path="/" element={<RootEntry />} />
         <Route
@@ -972,7 +980,7 @@ export default function App() {
           <Route
             path="/developer"
             element={
-              <RequireRole roles={["DEVELOPER"]}>
+              <RequireRole roles={["DEVELOPER", "SYSTEM_ADMIN", "SUPER_ADMIN"]}>
                 <DeveloperDashboard />
               </RequireRole>
             }
@@ -980,7 +988,7 @@ export default function App() {
           <Route
             path="/developer/queue-replay"
             element={
-              <RequireRole roles={["DEVELOPER", "SUPER_ADMIN"]}>
+              <RequireRole roles={["DEVELOPER", "SUPER_ADMIN", "SYSTEM_ADMIN"]}>
                 <QueueReplay />
               </RequireRole>
             }
@@ -988,7 +996,7 @@ export default function App() {
           <Route
             path="/developer/webhook-retry"
             element={
-              <RequireRole roles={["DEVELOPER", "SUPER_ADMIN"]}>
+              <RequireRole roles={["DEVELOPER", "SUPER_ADMIN", "SYSTEM_ADMIN"]}>
                 <WebhookRetry />
               </RequireRole>
             }
@@ -1114,7 +1122,7 @@ export default function App() {
           <Route
             path="/hospital-admin/register-staff"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminRegisterStaff />
               </RequireRole>
             }
@@ -1123,7 +1131,7 @@ export default function App() {
             path="/hospital-admin/approvals"
             element={
               <RequireRole
-                roles={["HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}
+                roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}
               >
                 <HospitalAdminApprovals />
               </RequireRole>
@@ -1132,7 +1140,7 @@ export default function App() {
           <Route
             path="/hospital-admin/staff"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "SUPER_ADMIN"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminStaffManagement />
               </RequireRole>
             }
@@ -1142,6 +1150,14 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminCommerceConfig />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/financials"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminFinancials />
               </RequireRole>
             }
           />
@@ -1158,6 +1174,22 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalCustomization />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/machine-connectivity"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminMachineConnectivity />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/machine-alerts"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminMachineAlerts />
               </RequireRole>
             }
           />
@@ -1211,7 +1243,7 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"]}>
+              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "DEVELOPER"]}>
                 <Outlet />
               </RequireRole>
             }
@@ -1233,8 +1265,40 @@ export default function App() {
             <Route
               path="create-admin"
               element={
-                <RequireRole roles={["SUPER_ADMIN"]}>
+                <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN"]}>
                   <CreateAdmin />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="training-tracker"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                    "HR_MANAGER",
+                  ]}
+                >
+                  <TrainingTracker />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="training-playbook"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                    "HR_MANAGER",
+                  ]}
+                >
+                  <TrainingPlaybook />
                 </RequireRole>
               }
             />
@@ -1242,6 +1306,7 @@ export default function App() {
 
           {/* SHARED PAGES */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route
             path="/communication"
             element={
@@ -1440,7 +1505,8 @@ export default function App() {
 
         {/* ============ 404 ============ */}
         <Route path="*" element={<div>404 — Page not found</div>} />
-      </Routes>
+        </Routes>
+      </AppErrorBoundary>
     </SocketProvider>
   );
 }

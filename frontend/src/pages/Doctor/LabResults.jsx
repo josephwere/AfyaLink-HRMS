@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
 export default function LabResults() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
-    apiFetch("/api/lab", { method: "GET" })
+    apiFetch("/api/labs", { method: "GET" })
       .then((d) => setRows(Array.isArray(d?.items) ? d.items : Array.isArray(d) ? d : []))
       .catch(() => setRows([]));
   }, []);
@@ -36,7 +38,15 @@ export default function LabResults() {
                   <td>{r.encounter || "-"}</td>
                   <td>{r.status || "-"}</td>
                   <td>{r.updatedAt ? new Date(r.updatedAt).toLocaleString() : "-"}</td>
-                  <td><button className="btn-secondary">Open</button></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => navigate(`/doctor/medical-records?encounterId=${encodeURIComponent(r.encounter || "")}`)}
+                    >
+                      Open
+                    </button>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (

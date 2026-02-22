@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import App from "./App";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import { AuthProvider } from "./utils/auth";
 import { ThemeProvider } from "./utils/theme.jsx";
 import { SystemSettingsProvider } from "./utils/systemSettings.jsx";
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <ThemeProvider>
           <SystemSettingsProvider>
             <AuthProvider>
-              <App />
+              <AppErrorBoundary>
+                <App />
+              </AppErrorBoundary>
             </AuthProvider>
           </SystemSettingsProvider>
         </ThemeProvider>

@@ -18,11 +18,17 @@ export default function HospitalFeatures({ hospitalId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch(`/api/hospitals/${hospitalId}/features`).then((data) => {
-      setHospital(data.name);
-      setFeatures(data.features || {});
-      setLoading(false);
-    });
+    apiFetch(`/api/hospitals/${hospitalId}/features`)
+      .then((data) => {
+        setHospital(data.name);
+        setFeatures(data.features || {});
+        setLoading(false);
+      })
+      .catch(() => {
+        setHospital(null);
+        setFeatures({});
+        setLoading(false);
+      });
   }, [hospitalId]);
 
   const toggleFeature = (key) => {
@@ -57,7 +63,7 @@ export default function HospitalFeatures({ hospitalId }) {
         </label>
       ))}
 
-      <button onClick={save} style={{ marginTop: 12 }}>
+      <button type="button" onClick={save} style={{ marginTop: 12 }}>
         Save Changes
       </button>
     </div>

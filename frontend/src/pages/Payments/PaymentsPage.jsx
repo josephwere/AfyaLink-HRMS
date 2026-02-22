@@ -194,6 +194,7 @@ export default function PaymentsPage() {
 
                   <td>
                     <button
+                      type="button"
                       disabled={loading || !canPay}
                       onClick={() => payStripe(tx)}
                     >
@@ -201,6 +202,7 @@ export default function PaymentsPage() {
                     </button>
 
                     <button
+                      type="button"
                       disabled={loading || !canPay}
                       onClick={() => payMpesa(tx)}
                       style={{ marginLeft: 8 }}

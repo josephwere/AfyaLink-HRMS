@@ -49,6 +49,7 @@ import workflowReplayRoutes from "./routes/workflowReplayRoutes.js";
 import adminWorkflowRoutes from "./routes/adminWorkflowRoutes.js";
 
 import patientRoutes from "./routes/patientRoutes.js";
+import encounterRoutes from "./routes/encounterRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import appointmentsAdminRoutes from "./routes/appointments_adminRoutes.js";
 
@@ -115,6 +116,8 @@ import communicationRoutes from "./routes/communicationRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
 import printingRoutes from "./routes/printingRoutes.js";
 import communityHealthWorkerRoutes from "./routes/communityHealthWorkerRoutes.js";
+import machineConnectivityRoutes from "./routes/machineConnectivityRoutes.js";
+import trainingTrackerRoutes from "./routes/trainingTrackerRoutes.js";
 
 
 
@@ -224,12 +227,15 @@ app.use("/api/communication", communicationRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/printing", printingRoutes);
 app.use("/api/chw", communityHealthWorkerRoutes);
+app.use("/api/machine-connectivity", machineConnectivityRoutes);
+app.use("/api/training", trainingTrackerRoutes);
 
 
 /* ======================================================
    🧑‍⚕️ CLINICAL
 ====================================================== */
 app.use("/api/patients", patientRoutes);
+app.use("/api/encounters", encounterRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/appointments_admin", appointmentsAdminRoutes);
 app.use("/api/labs", labRoutes);

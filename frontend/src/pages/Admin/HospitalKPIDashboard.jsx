@@ -28,7 +28,7 @@ export default function HospitalKPIDashboard() {
 
   async function loadKPIs() {
     try {
-      const data = await apiFetch("/api/kpis/hospital");
+      const data = await apiFetch("/api/admin/kpis");
       setKpis(data);
       setError("");
     } catch {
@@ -53,26 +53,26 @@ export default function HospitalKPIDashboard() {
           ENCOUNTERS
       ============================== */}
       <Section title="Encounters">
-        <Kpi label="Total" value={kpis.encounters.total} />
-        <Kpi label="Active" value={kpis.encounters.active} />
-        <Kpi label="Completed" value={kpis.encounters.completed} />
+        <Kpi label="Total" value={kpis?.encounters?.total ?? kpis?.totalEncounters ?? 0} />
+        <Kpi label="Active" value={kpis?.encounters?.active ?? "—"} />
+        <Kpi label="Completed" value={kpis?.encounters?.completed ?? "—"} />
       </Section>
 
       {/* =============================
           INSURANCE — SHA
       ============================== */}
-      <Section title={`Insurance (${kpis.insurance.provider})`}>
-        <Kpi label="Pending" value={kpis.insurance.pending} warn />
-        <Kpi label="Approved" value={kpis.insurance.approved} success />
-        <Kpi label="Rejected" value={kpis.insurance.rejected} danger />
+      <Section title={`Insurance (${kpis?.insurance?.provider || "SHA"})`}>
+        <Kpi label="Pending" value={kpis?.insurance?.pending ?? "—"} warn />
+        <Kpi label="Approved" value={kpis?.insurance?.approved ?? "—"} success />
+        <Kpi label="Rejected" value={kpis?.insurance?.rejected ?? "—"} danger />
       </Section>
 
       {/* =============================
           CLINICAL FLOW
       ============================== */}
       <Section title="Clinical Flow">
-        <Kpi label="Lab Pending" value={kpis.flow.labPending} warn />
-        <Kpi label="Pharmacy Pending" value={kpis.flow.pharmacyPending} />
+        <Kpi label="Lab Pending" value={kpis?.flow?.labPending ?? "—"} warn />
+        <Kpi label="Pharmacy Pending" value={kpis?.flow?.pharmacyPending ?? "—"} />
       </Section>
 
       {/* =============================
@@ -81,12 +81,12 @@ export default function HospitalKPIDashboard() {
       <Section title="Billing">
         <Kpi
           label="Total Revenue"
-          value={`KES ${kpis.billing.totalRevenue.toLocaleString()}`}
+          value={`KES ${Number(kpis?.billing?.totalRevenue || 0).toLocaleString()}`}
           success
         />
         <Kpi
           label="Pending Payments"
-          value={kpis.billing.pendingPayments}
+          value={kpis?.billing?.pendingPayments ?? "—"}
           warn
         />
       </Section>

@@ -84,7 +84,7 @@ export default function SystemSettings() {
       setMsg("✅ Settings saved");
       if (res.settings) setSettings(res.settings);
     } catch (err) {
-      setMsg(err.response?.data?.message || "Failed to save settings");
+      setMsg(err?.message || "Failed to save settings");
     } finally {
       setLoading(false);
     }
@@ -167,7 +167,7 @@ export default function SystemSettings() {
           <p className="muted">Branding, payments, and AI configuration.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={save} disabled={loading}>
+          <button type="button" className="btn-primary" onClick={save} disabled={loading}>
             {loading ? "Saving..." : "Save Settings"}
           </button>
         </div>

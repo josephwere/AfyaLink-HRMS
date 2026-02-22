@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../utils/auth";
 import {
   listNotificationsFiltered,
   markAllNotificationsRead,
@@ -7,10 +9,17 @@ import {
 } from "../../services/notificationsApi";
 
 export default function Page() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = String(user?.actualRole || user?.role || "").toUpperCase();
+  const canTrainingOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
+  const canMachineOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
+  const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState("ALL");
   const [read, setRead] = useState("ALL");
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -22,7 +31,10 @@ export default function Page() {
         else if (Array.isArray(data?.items)) setItems(data.items);
         else setItems([]);
       })
-      .catch(() => setItems([]))
+      .catch(() => {
+        setItems([]);
+        setMsg("Failed to load notifications");
+      })
       .finally(() => setLoading(false));
   }, [category, read]);
 
@@ -34,6 +46,33 @@ export default function Page() {
           <p className="muted">Recent workflow and system updates.</p>
         </div>
         <div className="welcome-actions">
+          {canTrainingOps && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/admin/training-tracker?overdue=1")}
+            >
+              Open Overdue Tracker
+            </button>
+          )}
+          {canMachineOps && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/hospital-admin/machine-alerts")}
+            >
+              Open Machine Alerts
+            </button>
+          )}
+          {canSlaOps && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/hospital-admin/approvals?view=breached#pending")}
+            >
+              Open SLA Breaches
+            </button>
+          )}
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="ALL">All Categories</option>
             <option value="WORKFORCE">Workforce</option>
@@ -42,6 +81,7 @@ export default function Page() {
             <option value="SYSTEM">System</option>
             <option value="INTEGRATION">Integration</option>
             <option value="AI">AI</option>
+            <option value="TRAINING">Training</option>
           </select>
           <select value={read} onChange={(e) => setRead(e.target.value)}>
             <option value="ALL">All Status</option>
@@ -49,10 +89,16 @@ export default function Page() {
             <option value="READ">Read</option>
           </select>
           <button
+            type="button"
             className="btn-secondary"
             onClick={async () => {
-              await markAllNotificationsRead();
-              setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+              try {
+                await markAllNotificationsRead();
+                setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+                setMsg("All notifications marked as read.");
+              } catch (e) {
+                setMsg(e?.message || "Failed to mark notifications as read");
+              }
             }}
           >
             Mark all read
@@ -62,6 +108,43 @@ export default function Page() {
 
       <section className="section">
         <div className="card">
+          <div className="welcome-actions mb-12">
+            {canTrainingOps && (
+              <button
+                type="button"
+                className={`btn-secondary ${category === "TRAINING" ? "active" : ""}`}
+                onClick={() => {
+                  setCategory("TRAINING");
+                  setRead("UNREAD");
+                }}
+              >
+                Training Unread
+              </button>
+            )}
+            {canMachineOps && (
+              <button
+                type="button"
+                className={`btn-secondary ${category === "INTEGRATION" ? "active" : ""}`}
+                onClick={() => {
+                  setCategory("INTEGRATION");
+                  setRead("UNREAD");
+                }}
+              >
+                Integration Unread
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setCategory("ALL");
+                setRead("ALL");
+              }}
+            >
+              Reset Filters
+            </button>
+          </div>
+          {msg ? <p className="muted">{msg}</p> : null}
           {loading && <p>Loading...</p>}
           {!loading && (
             <table className="table lite">
@@ -86,22 +169,27 @@ export default function Page() {
                   <td>{n.body || "-"}</td>
                   <td>
                       <button
+                        type="button"
                         className="btn-secondary"
                         onClick={async () => {
-                          if (n.read) {
-                            await markNotificationUnread(n._id);
-                            setItems((prev) =>
-                              prev.map((item) =>
-                                item._id === n._id ? { ...item, read: false } : item
-                              )
-                            );
-                          } else {
-                            await markNotificationRead(n._id);
-                            setItems((prev) =>
-                              prev.map((item) =>
-                                item._id === n._id ? { ...item, read: true } : item
-                              )
-                            );
+                          try {
+                            if (n.read) {
+                              await markNotificationUnread(n._id);
+                              setItems((prev) =>
+                                prev.map((item) =>
+                                  item._id === n._id ? { ...item, read: false } : item
+                                )
+                              );
+                            } else {
+                              await markNotificationRead(n._id);
+                              setItems((prev) =>
+                                prev.map((item) =>
+                                  item._id === n._id ? { ...item, read: true } : item
+                                )
+                              );
+                            }
+                          } catch (e) {
+                            setMsg(e?.message || "Failed to update notification");
                           }
                         }}
                       >

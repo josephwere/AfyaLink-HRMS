@@ -29,7 +29,7 @@ export default function RegulatoryReports() {
           <p className="muted">Generated compliance snapshot for workforce, approvals, and security events.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={run} disabled={loading}>
+          <button type="button" className="btn-primary" onClick={run} disabled={loading}>
             {loading ? "Generating..." : "Generate Report"}
           </button>
         </div>

@@ -1,15 +1,25 @@
 import React from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { apiFetch } from '../../services/api';
+import apiFetch from '../../utils/apiFetch';
 
 export default function CheckoutStripe(){
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE || "");
   const start = async () => {
-    const res = await apiFetch('/api/payments/stripe/create-intent', { method: 'POST', body: { amount: 1000, currency: 'usd' } });
-    const js = await res.json();
-    const stripe = await stripePromise;
-    const { clientSecret } = js;
-    alert('Client secret: ' + clientSecret);
+    try {
+      const js = await apiFetch('/api/payments/stripe/create-intent', {
+        method: 'POST',
+        body: { amount: 1000, currency: 'usd' },
+      });
+      const stripe = await stripePromise;
+      const clientSecret = js?.data?.clientSecret || js?.clientSecret;
+      if (!stripe || !clientSecret) {
+        alert("Stripe is not configured correctly.");
+        return;
+      }
+      alert('Client secret: ' + clientSecret);
+    } catch (err) {
+      alert(err?.message || "Failed to start Stripe checkout");
+    }
   };
-  return (<div><h2>Stripe Checkout (demo)</h2><button onClick={start}>Pay $10</button></div>);
+  return (<div><h2>Stripe Checkout (demo)</h2><button type="button" onClick={start}>Pay $10</button></div>);
 }

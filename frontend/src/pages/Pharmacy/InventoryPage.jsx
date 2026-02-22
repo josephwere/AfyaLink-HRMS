@@ -9,7 +9,10 @@ export default function InventoryPage() {
     <ModuleWorkspace
       title="Inventory"
       subtitle="Stock visibility, reorder thresholds and replenishment management."
-      actions={[{ label: "Open Inventory", variant: "primary", onClick: () => navigate("/inventory") }, { label: "Reorder Planner" }]}
+      actions={[
+        { label: "Open Inventory", variant: "primary", onClick: () => navigate("/inventory") },
+        { label: "Reorder Planner", path: "/pharmacy/suppliers#planning" },
+      ]}
       panels={[
         { title: "Stock Levels", body: "Current quantity by item and category." },
         { title: "Low Stock", body: "Items below configured safety threshold." },

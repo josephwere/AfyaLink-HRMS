@@ -22,9 +22,15 @@ export default function PharmacyDashboard() {
 
     try {
       const data = await apiFetch("/api/encounters?stage=PHARMACY");
-      setQueue(data || []);
+      const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      setQueue(rows);
     } catch {
       setMsg("Failed to load pharmacy queue");
+      setQueue([]);
     } finally {
       setLoading(false);
     }
@@ -66,6 +72,7 @@ export default function PharmacyDashboard() {
               <strong>{e.patient?.name}</strong>
 
               <button
+                type="button"
                 disabled={!canDispense}
                 onClick={() =>
                   dispense(e._id, e.prescriptions?.[0])

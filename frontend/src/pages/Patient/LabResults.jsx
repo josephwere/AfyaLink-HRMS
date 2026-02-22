@@ -6,7 +6,10 @@ export default function PatientLabResults() {
     <ModuleWorkspace
       title="Lab Results"
       subtitle="View completed labs, flagged values and trend history."
-      actions={[{ label: "View Results", variant: "primary" }, { label: "Download PDF" }]}
+      actions={[
+        { label: "View Results", variant: "primary", path: "/patient/lab-results#results" },
+        { label: "Download PDF", onClick: () => window.print() },
+      ]}
       panels={[
         { title: "Completed", body: "Completed test result archive." },
         { title: "Flagged", body: "Abnormal values requiring review." },

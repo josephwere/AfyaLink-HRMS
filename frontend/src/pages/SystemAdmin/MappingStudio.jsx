@@ -168,7 +168,7 @@ export default function MappingStudio() {
           <p className="muted">Create mappings, preview transformations, and verify signed provenance.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -196,9 +196,9 @@ export default function MappingStudio() {
             Mapping JSON
             <textarea rows={10} value={form.mappingJson} onChange={(e) => setForm((p) => ({ ...p, mappingJson: e.target.value }))} />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={save}>{editingId ? "Update Mapping" : "Save Mapping"}</button>
-            <button className="btn-secondary" onClick={() => { setForm(DEFAULT_FORM); setEditingId(null); }}>Reset</button>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={save}>{editingId ? "Update Mapping" : "Save Mapping"}</button>
+            <button type="button" className="btn-secondary" onClick={() => { setForm(DEFAULT_FORM); setEditingId(null); }}>Reset</button>
           </div>
         </div>
       </section>
@@ -230,8 +230,8 @@ export default function MappingStudio() {
             Source payload ({format})
             <textarea rows={8} value={previewPayload} onChange={(e) => setPreviewPayload(e.target.value)} />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runPreview}>Preview Transform</button>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runPreview}>Preview Transform</button>
           </div>
           {previewResult && (
             <details style={{ marginTop: 10 }} open>
@@ -253,9 +253,9 @@ export default function MappingStudio() {
             Signature
             <input value={verifyInput} onChange={(e) => setVerifyInput(e.target.value)} />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-secondary" onClick={runSign}>Sign Payload</button>
-            <button className="btn-secondary" onClick={runVerify}>Verify Signature</button>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-secondary" onClick={runSign}>Sign Payload</button>
+            <button type="button" className="btn-secondary" onClick={runVerify}>Verify Signature</button>
           </div>
           {verifyResult && (
             <div className="card" style={{ marginTop: 10 }}>
@@ -284,8 +284,8 @@ export default function MappingStudio() {
                   <td>{m.sourceSystem}</td>
                   <td>{m.targetSystem}</td>
                   <td>
-                    <button className="btn-secondary" onClick={() => edit(m)}>Edit</button>
-                    <button className="btn-danger" onClick={() => remove(m._id)}>Delete</button>
+                    <button type="button" className="btn-secondary" onClick={() => edit(m)}>Edit</button>
+                    <button type="button" className="btn-danger" onClick={() => remove(m._id)}>Delete</button>
                   </td>
                 </tr>
               ))}

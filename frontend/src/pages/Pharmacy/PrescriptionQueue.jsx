@@ -6,7 +6,10 @@ export default function PrescriptionQueue() {
     <ModuleWorkspace
       title="Prescription Queue"
       subtitle="Pending and active prescriptions awaiting dispensing workflow."
-      actions={[{ label: "Open Queue", variant: "primary" }, { label: "Verify Interactions" }]}
+      actions={[
+        { label: "Open Queue", variant: "primary", path: "/pharmacy/queue#pending" },
+        { label: "Verify Interactions", path: "/doctor/prescriptions#interactions" },
+      ]}
       panels={[
         { title: "Pending", body: "Newly created prescriptions awaiting validation." },
         { title: "In Progress", body: "Prescriptions currently being dispensed." },

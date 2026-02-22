@@ -57,6 +57,7 @@ export default function BillingActions({ encounter }) {
       )}
 
       <button
+        type="button"
         className="button gradient-blue"
         disabled={loading || !canPreauth || alreadyApproved}
         onClick={requestShaPreauth}

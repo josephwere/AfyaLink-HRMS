@@ -66,7 +66,7 @@ export default function ResetPassword() {
           required
         />
 
-        <button disabled={loading || !!error}>
+        <button type="submit" disabled={loading || !!error}>
           {loading ? "Resetting..." : "Reset password"}
         </button>
       </form>

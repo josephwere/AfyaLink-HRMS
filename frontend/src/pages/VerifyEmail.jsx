@@ -86,6 +86,7 @@ export default function VerifyEmail() {
           />
 
           <button
+            type="button"
             onClick={handleResend}
             disabled={loading || cooldown > 0 || !email}
             className="btn secondary"

@@ -135,7 +135,7 @@ export default function AccessControl() {
               </option>
             ))}
           </select>
-          <button className="btn" onClick={loadScope} disabled={loading}>
+          <button type="button" className="btn" onClick={loadScope} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -165,7 +165,7 @@ export default function AccessControl() {
         ))}
 
         <div className="form-actions">
-          <button className="btn primary" onClick={onSave} disabled={!selectedUserId || busy}>
+          <button type="button" className="btn primary" onClick={onSave} disabled={!selectedUserId || busy}>
             Save Access Rules
           </button>
         </div>

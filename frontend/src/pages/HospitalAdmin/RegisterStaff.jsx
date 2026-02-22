@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-import api from "../../services/api";
+import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 
 export default function RegisterStaff() {
@@ -36,7 +36,13 @@ export default function RegisterStaff() {
     }
   }, [location.search]);
 
-  if (user?.role !== "HOSPITAL_ADMIN") {
+  if (
+    user?.role !== "HOSPITAL_ADMIN" &&
+    user?.role !== "HR_MANAGER" &&
+    user?.role !== "SUPER_ADMIN" &&
+    user?.role !== "SYSTEM_ADMIN" &&
+    user?.role !== "DEVELOPER"
+  ) {
     return <p>🚫 Access denied</p>;
   }
 
@@ -45,11 +51,14 @@ export default function RegisterStaff() {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await api.post("/api/hospital-admin/register-staff", form);
-      setMsg(res.data?.msg || "✅ Staff registered");
+      const res = await apiFetch("/api/hospital-admin/register-staff", {
+        method: "POST",
+        body: form,
+      });
+      setMsg(res?.msg || "✅ Staff registered");
       setForm({ name: "", email: "", password: "", role: "doctor" });
     } catch (err) {
-      setMsg(err.response?.data?.msg || "Failed to register staff");
+      setMsg(err?.message || "Failed to register staff");
     } finally {
       setLoading(false);
     }
@@ -105,7 +114,7 @@ export default function RegisterStaff() {
           <option value="payroll_officer">Payroll Officer</option>
           <option value="community_health_worker">Community Health Worker</option>
         </select>
-        <button disabled={loading}>
+        <button type="submit" disabled={loading}>
           {loading ? "Creating..." : "Register Staff"}
         </button>
       </form>

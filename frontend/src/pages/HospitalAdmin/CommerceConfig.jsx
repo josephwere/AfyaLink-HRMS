@@ -74,7 +74,7 @@ export default function CommerceConfig() {
           <p className="muted">Configure insurance services (e.g. SHA) and payment methods visible to patients.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>
             Open Branding & Customization
           </button>
         </div>
@@ -103,7 +103,7 @@ export default function CommerceConfig() {
                     <td><input value={row.name || ""} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, name: e.target.value } : r))} /></td>
                     <td><input value={row.country || ""} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, country: e.target.value.toUpperCase() } : r))} /></td>
                     <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, enabled: e.target.checked } : r))} /></td>
-                    <td><button className="btn-secondary" onClick={() => setInsuranceProviders((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
+                    <td><button type="button" className="btn-secondary" onClick={() => setInsuranceProviders((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
                   </tr>
                 ))}
                 {insuranceProviders.length === 0 && (
@@ -112,7 +112,7 @@ export default function CommerceConfig() {
               </tbody>
             </table>
           </div>
-          <button className="btn-secondary" onClick={() => setInsuranceProviders((prev) => [...prev, emptyInsurance()])}>Add Insurance Provider</button>
+          <button type="button" className="btn-secondary" onClick={() => setInsuranceProviders((prev) => [...prev, emptyInsurance()])}>Add Insurance Provider</button>
         </div>
       </section>
 
@@ -151,7 +151,7 @@ export default function CommerceConfig() {
                       />
                     </td>
                     <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, enabled: e.target.checked } : r))} /></td>
-                    <td><button className="btn-secondary" onClick={() => setPaymentMethods((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
+                    <td><button type="button" className="btn-secondary" onClick={() => setPaymentMethods((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
                   </tr>
                 ))}
                 {paymentMethods.length === 0 && (
@@ -160,12 +160,12 @@ export default function CommerceConfig() {
               </tbody>
             </table>
           </div>
-          <button className="btn-secondary" onClick={() => setPaymentMethods((prev) => [...prev, emptyPayment()])}>Add Payment Method</button>
+          <button type="button" className="btn-secondary" onClick={() => setPaymentMethods((prev) => [...prev, emptyPayment()])}>Add Payment Method</button>
         </div>
       </section>
 
       <section className="section">
-        <button className="btn-primary" onClick={save} disabled={saving}>
+        <button type="button" className="btn-primary" onClick={save} disabled={saving}>
           {saving ? "Saving..." : "Save Settings"}
         </button>
       </section>

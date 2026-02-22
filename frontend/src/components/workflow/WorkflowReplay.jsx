@@ -7,8 +7,8 @@ export default function WorkflowReplay({ encounterId }) {
   useEffect(() => {
     if (!encounterId) return;
     apiFetch(`/api/workflows/replay/${encounterId}`)
-      .then(r => r.json())
-      .then(setData);
+      .then(setData)
+      .catch(() => setData(null));
   }, [encounterId]);
 
   if (!data) return null;

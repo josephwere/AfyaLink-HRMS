@@ -95,19 +95,21 @@ export default function AdminInsuranceActions({ encounter }) {
           JUSTIFICATION
       ========================== */}
       <textarea
+        className="full-width"
         placeholder="Enter justification (required for audit)"
         value={justification}
         onChange={(e) => setJustification(e.target.value)}
         rows={4}
-        style={{ width: "100%", marginBottom: 12 }}
+        style={{ marginBottom: 12 }}
         disabled={loading}
       />
 
       {/* =========================
           ACTION BUTTONS
       ========================== */}
-      <div style={{ display: "flex", gap: 12 }}>
+      <div className="actions-row gap-12">
         <button
+          type="button"
           onClick={approve}
           disabled={!canApprove || loading}
           style={{ background: "#16a34a", color: "white" }}
@@ -116,6 +118,7 @@ export default function AdminInsuranceActions({ encounter }) {
         </button>
 
         <button
+          type="button"
           onClick={reject}
           disabled={!canReject || loading}
           style={{ background: "#dc2626", color: "white" }}

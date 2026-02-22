@@ -40,13 +40,13 @@ export default function PatientInsurance() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={() => navigate("/patient/hospitals")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/patient/hospitals")}>
             Browse Hospitals
           </button>
-          <button className="btn-primary" onClick={() => navigate("/patient/appointments")}>
+          <button type="button" className="btn-primary" onClick={() => navigate("/patient/appointments")}>
             Book Appointment
           </button>
-          <button className="btn-secondary" onClick={() => navigate("/payments")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/payments")}>
             Pay Bills
           </button>
         </div>
@@ -77,7 +77,7 @@ export default function PatientInsurance() {
               <p className="muted">{profile?.insuranceProfile?.status || "PENDING"}</p>
             </div>
           </div>
-          <button className="btn-secondary" onClick={() => navigate("/profile")}>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/profile")}>
             Update Insurance Profile
           </button>
         </div>
@@ -124,10 +124,10 @@ export default function PatientInsurance() {
                       </td>
                       <td>
                         <div className="row-actions">
-                          <button className="btn-secondary" onClick={() => navigate(`/patient/appointments?hospitalId=${h._id}`)}>
+                          <button type="button" className="btn-secondary" onClick={() => navigate(`/patient/appointments?hospitalId=${h._id}`)}>
                             Book
                           </button>
-                          <button className="btn-secondary" onClick={() => navigate(`/payments?hospitalId=${h._id}`)}>
+                          <button type="button" className="btn-secondary" onClick={() => navigate(`/payments?hospitalId=${h._id}`)}>
                             Pay Bill
                           </button>
                         </div>

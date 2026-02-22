@@ -134,8 +134,8 @@ export default function ClinicalIntelligence() {
             <label>Patients/Nurse<input type="number" value={forecastInput.avgPatientsPerNurse} onChange={(e) => setForecastInput((p) => ({ ...p, avgPatientsPerNurse: Number(e.target.value || 1) }))} /></label>
             <label>Horizon Days<input type="number" value={forecastInput.horizonDays} onChange={(e) => setForecastInput((p) => ({ ...p, horizonDays: Number(e.target.value || 1) }))} /></label>
           </div>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runForecast} disabled={loading === "forecast"}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runForecast} disabled={loading === "forecast"}>
               {loading === "forecast" ? "Running..." : "Run Staffing Forecast"}
             </button>
           </div>
@@ -154,8 +154,8 @@ export default function ClinicalIntelligence() {
             <label>Leave Balance<input type="number" value={burnoutInput.leaveBalanceDays} onChange={(e) => setBurnoutInput((p) => ({ ...p, leaveBalanceDays: Number(e.target.value || 0) }))} /></label>
             <label>Incidents 30d<input type="number" value={burnoutInput.incidentsIn30d} onChange={(e) => setBurnoutInput((p) => ({ ...p, incidentsIn30d: Number(e.target.value || 0) }))} /></label>
           </div>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runBurnout} disabled={loading === "burnout"}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runBurnout} disabled={loading === "burnout"}>
               {loading === "burnout" ? "Running..." : "Run Burnout Scoring"}
             </button>
           </div>
@@ -171,8 +171,8 @@ export default function ClinicalIntelligence() {
             Interventions JSON
             <textarea rows={7} value={causalInput.interventionsJson} onChange={(e) => setCausalInput((p) => ({ ...p, interventionsJson: e.target.value }))} />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runCausal} disabled={loading === "causal"}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runCausal} disabled={loading === "causal"}>
               {loading === "causal" ? "Running..." : "Run Causal Simulation"}
             </button>
           </div>
@@ -187,8 +187,8 @@ export default function ClinicalIntelligence() {
             Departments JSON
             <textarea rows={8} value={twinInput.departmentsJson} onChange={(e) => setTwinInput((p) => ({ ...p, departmentsJson: e.target.value }))} />
           </label>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={runTwin} disabled={loading === "twin"}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={runTwin} disabled={loading === "twin"}>
               {loading === "twin" ? "Running..." : "Run Digital Twin"}
             </button>
           </div>

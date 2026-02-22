@@ -15,6 +15,7 @@ import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
 import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 import { runWorkforceAutomationSweep } from "./workers/workforceAutomationSweep.js";
 import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWorker.js";
+import { runTrainingOverdueSweep } from "./workers/trainingOverdueWorker.js";
 
 dotenv.config();
 
@@ -96,6 +97,16 @@ const start = async () => {
         }
       } catch (err) {
         console.error("[SUBSCRIPTION_SWEEP] failed", err);
+      }
+    }, { timezone: "Africa/Nairobi" });
+    cron.schedule("15 */3 * * *", async () => {
+      try {
+        const result = await runTrainingOverdueSweep();
+        if (result.created > 0) {
+          console.log(`[TRAINING_SWEEP] scanned=${result.scanned} created=${result.created}`);
+        }
+      } catch (err) {
+        console.error("[TRAINING_SWEEP] failed", err);
       }
     }, { timezone: "Africa/Nairobi" });
 

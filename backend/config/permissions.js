@@ -8,12 +8,17 @@ export const PERMISSIONS = {
     "*": ["*"],
    audit: ["read"],
   },
+  SYSTEM_ADMIN: {
+    "*": ["*"],
+    audit: ["read"],
+  },
   DEVELOPER: {
     "*": ["*"],
     audit: ["read"],
   },
 
   HOSPITAL_ADMIN: {
+    admin: ["read", "write"],
     appointments: ["create", "read", "update", "delete"],
     patients: ["create", "read", "update"],
     users: ["create", "read", "update"],
@@ -21,32 +26,48 @@ export const PERMISSIONS = {
     reports: ["read"],
      audit: ["read"],
     inventory: ["read", "update"],
-    pharmacy: ["read", "dispense"],
+    pharmacy: ["read", "write", "dispense"],
+    security: ["view"],
+    ACCESS_ENTRY: ["VERIFY", "CHECK_IN", "CHECK_OUT"],
+    emergency: ["revoke"],
   },
 
   DOCTOR: {
-    appointments: ["read", "update"],
+    appointments: ["create", "read", "update", "delete"],
+    patients: ["read"],
     records: ["create", "read", "update"],
     consultation: ["complete"],
     prescriptions: ["create", "read"],
     lab_orders: ["create", "read"],
+    doctor: ["write"],
   },
 
   NURSE: {
     appointments: ["read"],
+    patients: ["read"],
     records: ["read"],
   },
 
   LAB_TECH: {
+    patients: ["read"],
     lab_orders: ["read", "update"],
     lab_results: ["create", "read"],
   },
 
  
 PHARMACIST: {
-  pharmacy: ["read", "dispense"],
+  pharmacy: ["read", "write", "dispense"],
   inventory: ["read", "update"],
 },
+
+  SECURITY_ADMIN: {
+    security: ["view"],
+    ACCESS_ENTRY: ["VERIFY", "CHECK_IN", "CHECK_OUT"],
+  },
+  SECURITY_OFFICER: {
+    security: ["view"],
+    ACCESS_ENTRY: ["VERIFY", "CHECK_IN", "CHECK_OUT"],
+  },
 
   PATIENT: {
     appointments: ["create", "read", "read_own"],

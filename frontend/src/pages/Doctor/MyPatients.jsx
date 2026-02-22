@@ -89,10 +89,10 @@ export default function MyPatients() {
                   <td>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "-"}</td>
                   <td>
                     <div className="doctor-actions-row">
-                      <button className="btn-secondary" onClick={() => navigate(`/doctor/medical-records?patientId=${p._id}`)}>Open Record</button>
-                      <button className="btn-secondary" onClick={() => navigate(`/doctor/reports-notes?patientId=${p._id}`)}>Add Note</button>
-                      <button className="btn-secondary" onClick={() => navigate(`/doctor/prescriptions?patientId=${p._id}`)}>Prescribe</button>
-                      <button className="btn-secondary" onClick={() => navigate(`/doctor/referrals?patientId=${p._id}`)}>Refer</button>
+                      <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/medical-records?patientId=${p._id}`)}>Open Record</button>
+                      <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/reports-notes?patientId=${p._id}`)}>Add Note</button>
+                      <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/prescriptions?patientId=${p._id}`)}>Prescribe</button>
+                      <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/referrals?patientId=${p._id}`)}>Refer</button>
                     </div>
                   </td>
                 </tr>

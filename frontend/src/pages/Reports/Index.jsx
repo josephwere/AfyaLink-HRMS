@@ -142,7 +142,7 @@ export default function Reports() {
       <section className="section">
         <div className="action-list">
           {canSeeAll && (
-            <button
+            <button type="button"
               className={`action-pill ${tab === "all" ? "active" : ""}`}
               onClick={() => setTab("all")}
             >
@@ -150,7 +150,7 @@ export default function Reports() {
             </button>
           )}
           {canSeeMine && (
-            <button
+            <button type="button"
               className={`action-pill ${tab === "mine" ? "active" : ""}`}
               onClick={() => setTab("mine")}
             >
@@ -180,7 +180,7 @@ export default function Reports() {
               value={form.content}
               onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
             />
-            <button className="btn-primary" onClick={onCreate}>
+            <button type="button" className="btn-primary" onClick={onCreate}>
               Create Report
             </button>
           </div>
@@ -208,7 +208,7 @@ export default function Reports() {
                     )}
                   </div>
                   {canSeeAll && (
-                    <button
+                    <button type="button"
                       className="btn-secondary"
                       onClick={() => onDelete(r._id)}
                     >
@@ -221,7 +221,7 @@ export default function Reports() {
           )}
           {canLoadMore && (
             <div style={{ marginTop: 12 }}>
-              <button
+              <button type="button"
                 className="btn-secondary"
                 disabled={loadingMore}
                 onClick={onLoadMore}

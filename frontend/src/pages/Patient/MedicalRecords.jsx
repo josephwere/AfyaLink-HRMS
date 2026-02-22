@@ -6,7 +6,10 @@ export default function PatientMedicalRecords() {
     <ModuleWorkspace
       title="Medical Records"
       subtitle="Personal longitudinal records across visits, procedures, labs and files."
-      actions={[{ label: "Open Timeline", variant: "primary" }, { label: "Download Record" }]}
+      actions={[
+        { label: "Open Timeline", variant: "primary", path: "/patient/medical-records#timeline" },
+        { label: "Download Record", onClick: () => window.print() },
+      ]}
       panels={[
         { title: "Visits", body: "Consultation and admission history." },
         { title: "Procedures", body: "Procedure and treatment history." },

@@ -9,7 +9,7 @@ import { normalizeRole } from "../utils/normalizeRole.js";
 export const hospitalKPIs = async (req, res) => {
   try {
     const role = normalizeRole(req.user?.role);
-    if (!["HOSPITAL_ADMIN", "SUPER_ADMIN"].includes(role)) {
+    if (!["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"].includes(role)) {
       return res.status(403).json({ message: "Admin only" });
     }
 

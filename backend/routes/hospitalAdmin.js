@@ -5,7 +5,16 @@ import { registerStaff, getHospitalStaff } from "../controllers/hospitalAdmin.js
 
 const router = express.Router();
 
-router.use(protect, requireRole("HOSPITAL_ADMIN"));
+router.use(
+  protect,
+  requireRole(
+    "HOSPITAL_ADMIN",
+    "HR_MANAGER",
+    "SYSTEM_ADMIN",
+    "SUPER_ADMIN",
+    "DEVELOPER"
+  )
+);
 
 router.post("/register-staff", registerStaff);
 router.get("/staff", getHospitalStaff);

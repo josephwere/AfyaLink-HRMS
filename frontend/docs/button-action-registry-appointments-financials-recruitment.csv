@@ -1,0 +1,42 @@
+page,button_text,handler,target_route_or_api,status,button_type
+frontend/src/pages/Appointments.jsx,"{patientsLoadingMore ? ""Loading..."" : ""Load more patients""}",loadMorePatients,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Appointments.jsx,cancelAppointment(a._id)} > Cancel,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Appointments.jsx,Schedule,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Doctor/Appointments.jsx,Create,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Doctor/Appointments.jsx,remove(it._id)}>Delete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Doctor/Appointments.jsx,update(it._id)}>Complete,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/approvals"")}>Incident Reports",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/approvals"")}>Leave Approvals",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/commerce-config"")}>Insurance & Payments",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/customization"")}>Branding & Customization",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/financials"")}>Budget & Financials",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/financials"")}>Financials",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-alerts"")} > View Machine Alerts",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-connectivity"")} > Open Machine Connectivity Console",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/machine-connectivity"")}>Machine Connectivity",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/recruitment-ads"")}>Recruitment Ads",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/register-staff"")}>Recruitment Requests",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Staff Directory",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/hospital-admin/staff"")}>Staff Directory",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/notifications"")}>Announcements",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/reports"")}>Attendance Heatmap",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Dashboard.jsx,"navigate(""/workforce/requests#shift"")}>Shift Calendar",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,claim(it._id)}>Claim,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,Create Invoice,(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/Financials.jsx,pay(it._id)}>Pay,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,"setPage(p=>Math.max(1,p-1))}>Prev",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/Financials.jsx,setPage(p=>p+1)}>Next,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"{saving ? ""Posting..."" : ""Post Vacancy""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""ACTIVE"")}>Activate",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""CLOSED"")}>Close",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"setStatus(ad._id, ""PAUSED"")}>Pause",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""HIRED"")}>Hire",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""REJECTED"")}>Reject",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""SHORTLISTED"")}>Shortlist",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/HospitalAdmin/RecruitmentAds.jsx,"updateApplicationStatus(a._id, ""UNDER_REVIEW"")}>Review",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,Cancel,cancelApply,(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,startApply(ad._id)}> Apply in AfyaLink,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/AdsFeed.jsx,"submitApplication(ad._id)}> {submitting ? ""Submitting..."" : ""Submit Application""}",(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Patient/MyAppointments.jsx,"{saving ? ""Submitting..."" : ""Submit Appointment""}",(none),(manual),MANUAL_REVIEW,submit
+frontend/src/pages/Payments/PaymentsPage.jsx,payMpesa(tx)} style={{ marginLeft: 8 }} > M-Pesa,(none),(manual),MANUAL_REVIEW,button
+frontend/src/pages/Payments/PaymentsPage.jsx,payStripe(tx)} > Stripe,(none),(manual),MANUAL_REVIEW,button

@@ -7,8 +7,8 @@ export default function Prescriptions() {
       title="Prescriptions"
       subtitle="Drug search, interaction warnings, dosage guidance and secure e-prescription export."
       actions={[
-        { label: "Create Prescription", variant: "primary" },
-        { label: "Interaction Check" },
+        { label: "Create Prescription", variant: "primary", path: "/doctor/prescriptions#new" },
+        { label: "Interaction Check", path: "/doctor/prescriptions#interactions" },
       ]}
       panels={[
         { title: "Medication Builder", body: "Search, dose, route, duration and refill controls." },

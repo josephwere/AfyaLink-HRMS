@@ -16,6 +16,14 @@ async function getQueueCounts(queue) {
   return queue.getJobCounts("waiting", "active", "completed", "failed", "delayed");
 }
 
+async function safeRun(fn, fallback) {
+  try {
+    return await fn();
+  } catch {
+    return fallback;
+  }
+}
+
 export const getDeveloperOverview = async (_req, res) => {
   try {
     const [
@@ -29,37 +37,45 @@ export const getDeveloperOverview = async (_req, res) => {
       workforceBreached,
     ] =
       await Promise.all([
-        getQueueCounts(integrationQueue),
-        getQueueCounts(integrationDLQ),
-        getQueueCounts(notificationQueue),
-        getQueueCounts(webhookQueue),
-        LeaveRequest.countDocuments({ status: "PENDING" }),
-        OvertimeRequest.countDocuments({ status: "PENDING" }),
-        ShiftRequest.countDocuments({ status: "PENDING" }),
-        Promise.all([
-          LeaveRequest.countDocuments({
-            status: "PENDING",
-            $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
-          }),
-          OvertimeRequest.countDocuments({
-            status: "PENDING",
-            $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
-          }),
-          ShiftRequest.countDocuments({
-            status: "PENDING",
-            $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
-          }),
-        ]),
+        safeRun(() => getQueueCounts(integrationQueue), {}),
+        safeRun(() => getQueueCounts(integrationDLQ), {}),
+        safeRun(() => getQueueCounts(notificationQueue), {}),
+        safeRun(() => getQueueCounts(webhookQueue), {}),
+        safeRun(() => LeaveRequest.countDocuments({ status: "PENDING" }), 0),
+        safeRun(() => OvertimeRequest.countDocuments({ status: "PENDING" }), 0),
+        safeRun(() => ShiftRequest.countDocuments({ status: "PENDING" }), 0),
+        safeRun(
+          () =>
+            Promise.all([
+              LeaveRequest.countDocuments({
+                status: "PENDING",
+                $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
+              }),
+              OvertimeRequest.countDocuments({
+                status: "PENDING",
+                $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
+              }),
+              ShiftRequest.countDocuments({
+                status: "PENDING",
+                $or: [{ slaBreachedAt: { $ne: null } }, { slaDueAt: { $lte: new Date() } }],
+              }),
+            ]),
+          [0, 0, 0]
+        ),
       ]);
 
-    const webhookLogs = await Audit.find({
-      action: { $regex: /^webhook\./ },
-    })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
+    const webhookLogs = await safeRun(
+      () =>
+        Audit.find({
+          action: { $regex: /^webhook\./ },
+        })
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean(),
+      []
+    );
 
-    const hospitals = await Hospital.find().select("features").lean();
+    const hospitals = await safeRun(() => Hospital.find().select("features").lean(), []);
     const totals = {};
     hospitals.forEach((h) => {
       const features = h.features || {};

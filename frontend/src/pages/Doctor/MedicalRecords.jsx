@@ -7,8 +7,8 @@ export default function MedicalRecords() {
       title="Medical Records"
       subtitle="Longitudinal patient history across visits, surgeries, labs, radiology and attachments."
       actions={[
-        { label: "Open Patient Timeline", variant: "primary" },
-        { label: "Upload Attachment" },
+        { label: "Open Patient Timeline", variant: "primary", path: "/doctor/medical-records#timeline" },
+        { label: "Upload Attachment", path: "/doctor/medical-records#upload" },
       ]}
       panels={[
         { title: "Visit History", body: "Past consultations and clinical notes timeline." },

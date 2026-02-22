@@ -1,18 +1,20 @@
-import api from "./api";
+import apiFetch from "../utils/apiFetch";
 
 export const getSystemAdminMetrics = async () => {
-  const res = await api.get("/api/system-admin/metrics");
-  return res.data;
+  return apiFetch("/api/system-admin/metrics");
 };
 
 export const getRiskPolicy = async () => {
-  const res = await api.get("/api/system-admin/risk-policy");
-  return res.data?.policy || null;
+  const res = await apiFetch("/api/system-admin/risk-policy");
+  return res?.policy || null;
 };
 
 export const updateRiskPolicy = async (payload) => {
-  const res = await api.put("/api/system-admin/risk-policy", payload);
-  return res.data?.policy || null;
+  const res = await apiFetch("/api/system-admin/risk-policy", {
+    method: "PUT",
+    body: payload,
+  });
+  return res?.policy || null;
 };
 
 export const listAbacPolicies = async (params = {}) => {
@@ -22,59 +24,73 @@ export const listAbacPolicies = async (params = {}) => {
   if (params.action) query.set("action", params.action);
   if (params.activeOnly) query.set("activeOnly", "1");
   const qs = query.toString();
-  const res = await api.get(`/api/system-admin/abac-policies${qs ? `?${qs}` : ""}`);
-  return res.data?.items || [];
+  const res = await apiFetch(`/api/system-admin/abac-policies${qs ? `?${qs}` : ""}`);
+  return res?.items || [];
 };
 
 export const createAbacPolicy = async (payload) => {
-  const res = await api.post("/api/system-admin/abac-policies", payload);
-  return res.data;
+  return apiFetch("/api/system-admin/abac-policies", {
+    method: "POST",
+    body: payload,
+  });
 };
 
 export const updateAbacPolicy = async (id, payload) => {
-  const res = await api.put(`/api/system-admin/abac-policies/${id}`, payload);
-  return res.data;
+  return apiFetch(`/api/system-admin/abac-policies/${id}`, {
+    method: "PUT",
+    body: payload,
+  });
 };
 
 export const deleteAbacPolicy = async (id) => {
-  const res = await api.delete(`/api/system-admin/abac-policies/${id}`);
-  return res.data;
+  return apiFetch(`/api/system-admin/abac-policies/${id}`, {
+    method: "DELETE",
+  });
 };
 
 export const simulateAbacPolicy = async (payload) => {
-  const res = await api.post("/api/system-admin/abac-simulate", payload);
-  return res.data;
+  return apiFetch("/api/system-admin/abac-simulate", {
+    method: "POST",
+    body: payload,
+  });
 };
 
 export const listAbacTestCases = async (params = {}) => {
   const query = new URLSearchParams();
   if (params.activeOnly) query.set("activeOnly", "1");
   const qs = query.toString();
-  const res = await api.get(`/api/system-admin/abac-test-cases${qs ? `?${qs}` : ""}`);
-  return res.data?.items || [];
+  const res = await apiFetch(`/api/system-admin/abac-test-cases${qs ? `?${qs}` : ""}`);
+  return res?.items || [];
 };
 
 export const createAbacTestCase = async (payload) => {
-  const res = await api.post("/api/system-admin/abac-test-cases", payload);
-  return res.data;
+  return apiFetch("/api/system-admin/abac-test-cases", {
+    method: "POST",
+    body: payload,
+  });
 };
 
 export const updateAbacTestCase = async (id, payload) => {
-  const res = await api.put(`/api/system-admin/abac-test-cases/${id}`, payload);
-  return res.data;
+  return apiFetch(`/api/system-admin/abac-test-cases/${id}`, {
+    method: "PUT",
+    body: payload,
+  });
 };
 
 export const deleteAbacTestCase = async (id) => {
-  const res = await api.delete(`/api/system-admin/abac-test-cases/${id}`);
-  return res.data;
+  return apiFetch(`/api/system-admin/abac-test-cases/${id}`, {
+    method: "DELETE",
+  });
 };
 
 export const runAbacTestCase = async (id) => {
-  const res = await api.post(`/api/system-admin/abac-test-cases/${id}/run`);
-  return res.data;
+  return apiFetch(`/api/system-admin/abac-test-cases/${id}/run`, {
+    method: "POST",
+  });
 };
 
 export const runAllAbacTestCases = async () => {
-  const res = await api.post("/api/system-admin/abac-test-cases/run-all");
-  return res.data;
+  return apiFetch("/api/system-admin/abac-test-cases/run-all", {
+    method: "POST",
+  });
 };

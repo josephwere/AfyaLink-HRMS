@@ -6,7 +6,10 @@ export default function MyShift() {
     <ModuleWorkspace
       title="My Shift"
       subtitle="Current shift details, handover notes and real-time ward responsibilities."
-      actions={[{ label: "Start Round", variant: "primary" }, { label: "Handover Notes" }]}
+      actions={[
+        { label: "Start Round", variant: "primary", path: "/nurse/patients" },
+        { label: "Handover Notes", path: "/communication" },
+      ]}
       panels={[
         { title: "Shift Window", body: "Current shift block and assigned zone." },
         { title: "Handover", body: "Incoming and outgoing shift notes." },

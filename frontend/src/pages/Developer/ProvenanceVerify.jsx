@@ -52,7 +52,7 @@ export default function ProvenanceVerify() {
           <p className="muted">Verify signed transfer payload integrity for receiving hospitals.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={loadTransfers}>Refresh Transfers</button>
+          <button type="button" className="btn-secondary" onClick={loadTransfers}>Refresh Transfers</button>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function ProvenanceVerify() {
           />
 
           <div className="welcome-actions">
-            <button className="btn-primary" onClick={verify} disabled={loading || !transferId || !signature}>
+            <button type="button" className="btn-primary" onClick={verify} disabled={loading || !transferId || !signature}>
               {loading ? "Verifying..." : "Verify Signature"}
             </button>
           </div>
@@ -107,4 +107,3 @@ export default function ProvenanceVerify() {
     </div>
   );
 }
-

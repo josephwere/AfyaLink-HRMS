@@ -174,9 +174,9 @@ export default function SecurityOfficerDashboard() {
           <h3>Gate Verification</h3>
           <div className="grid info-grid">
             <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Access code" />
-            <button className="btn-secondary" onClick={onVerify} disabled={busy || !code}>Verify</button>
-            <button className="btn-secondary" onClick={onCheckIn} disabled={busy || !accessCode}>Check In</button>
-            <button className="btn-secondary" onClick={onCheckOut} disabled={busy || !accessCode}>Check Out</button>
+            <button type="button" className="btn-secondary" onClick={onVerify} disabled={busy || !code}>Verify</button>
+            <button type="button" className="btn-secondary" onClick={onCheckIn} disabled={busy || !accessCode}>Check In</button>
+            <button type="button" className="btn-secondary" onClick={onCheckOut} disabled={busy || !accessCode}>Check Out</button>
           </div>
           {verifyResult ? (
             <div className="alert-stack">

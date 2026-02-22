@@ -1,49 +1,28 @@
 import React, { useState } from "react";
-import API_BASE from "../../config/api";
+import apiFetch from "../../utils/apiFetch";
 
 
 export default function PaymentsPageFull() {
   const [amount, setAmount] = useState(100);
 
   async function payStripe() {
-    const res = await fetch(
-      `${API_BASE}/payments/stripe/create-intent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount: Number(amount) }),
-      }
-    );
+    const js = await apiFetch("/api/payments/stripe/create-intent", {
+      method: "POST",
+      body: { amount: Number(amount) },
+    });
+    const clientSecret = js?.data?.clientSecret || js?.clientSecret;
 
-    const js = await res.json();
-
-    if (js.error) {
-      alert(js.error);
-      return;
-    }
-
-    alert(
-      "Client secret: " +
-        js.clientSecret +
-        "\n(Use Stripe.js on frontend to complete payment)"
-    );
+    alert(`Client secret: ${clientSecret || "N/A"}\n(Use Stripe.js on frontend to complete payment)`);
   }
 
   async function payMpesa() {
-    const res = await fetch(`${API_BASE}/payments/mpesa/stk`, {
+    const js = await apiFetch("/api/payments/mpesa/stk", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+      body: {
         amount: Number(amount),
         phone: "2547XXXXXXXX",
-      }),
+      },
     });
-
-    const js = await res.json();
     alert(JSON.stringify(js, null, 2));
   }
 
@@ -60,11 +39,11 @@ export default function PaymentsPageFull() {
         />
       </div>
 
-      <button onClick={payStripe}>
+      <button type="button" onClick={payStripe}>
         Pay with Stripe (create intent)
       </button>
 
-      <button onClick={payMpesa}>
+      <button type="button" onClick={payMpesa}>
         Pay with M-Pesa (STK push)
       </button>
     </div>

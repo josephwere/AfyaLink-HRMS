@@ -55,7 +55,7 @@ export default function AIExtractionHistory() {
           <p className="muted">Audit trail of NeuroEdge document extraction operations.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -108,11 +108,12 @@ export default function AIExtractionHistory() {
               />
             </label>
           </div>
-          <div className="welcome-actions" style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={() => load(filters)} disabled={loading}>
+          <div className="welcome-actions mt-10">
+            <button type="button" className="btn-primary" onClick={() => load(filters)} disabled={loading}>
               Apply Filters
             </button>
             <button
+              type="button"
               className="btn-secondary"
               onClick={() => {
                 const reset = { action: "AI_DOCUMENT_EXTRACTED", hospital: "", limit: 100 };

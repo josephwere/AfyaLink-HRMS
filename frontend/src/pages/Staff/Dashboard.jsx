@@ -39,8 +39,8 @@ export default function StaffDashboard() {
           <p className="muted">Role-specific operational dashboard with requests, queues and alerts.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate("/staff")}>Open Workspace</button>
-          <button className="btn-secondary" onClick={() => navigate("/workforce/requests")}>My Requests</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>Open Workspace</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests")}>My Requests</button>
         </div>
       </div>
 

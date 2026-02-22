@@ -55,8 +55,8 @@ export default function MpesaPayButton({ amount = 100, initialPhone = "", onSucc
         />
       </label>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={startPayment} disabled={loading} style={{ flex: 1, padding: 10 }}>
+      <div className="actions-row">
+        <button type="button" className="btn-primary full-width" onClick={startPayment} disabled={loading}>
           {loading ? "Processing…" : `Pay KES ${amount}`}
         </button>
       </div>
