@@ -6,15 +6,13 @@ const BASE_ITEMS = [
   { label: "Analytics", path: "/analytics" },
   { label: "Reports", path: "/reports" },
   { label: "Inventory", path: "/inventory" },
-    { label: "Payments", path: "/payments" },
-    { label: "Payment Operations", path: "/payments/full" },
-    { label: "Payment Settings", path: "/admin/payment-settings" },
+  { label: "Payments", path: "/payments" },
+  { label: "Payment Operations", path: "/payments/full" },
   { label: "AI Assistant", path: "/ai/medical" },
   { label: "AI Triage", path: "/ai/triage" },
   { label: "AI Voice Dictation", path: "/ai/voice" },
   { label: "AI Document Extract", path: "/ai/extract" },
   { label: "AI Chatbot", path: "/ai/chatbot" },
-  { label: "Print Center", path: "/admin/print-center" },
 ];
 
 const ROLE_ITEMS = {
@@ -32,6 +30,8 @@ const ROLE_ITEMS = {
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
     { label: "Launch Readiness", path: "/admin/launch-readiness" },
+    { label: "Payment Settings", path: "/admin/payment-settings" },
+    { label: "Notifications", path: "/notifications" },
   ],
   SYSTEM_ADMIN: [
     { label: "System Admin Dashboard", path: "/system-admin" },
@@ -51,6 +51,7 @@ const ROLE_ITEMS = {
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
     { label: "Launch Readiness", path: "/admin/launch-readiness" },
+    { label: "Notifications", path: "/notifications" },
   ],
   HOSPITAL_ADMIN: [
     { label: "Hospital Admin", path: "/hospital-admin" },
@@ -93,6 +94,7 @@ const ROLE_ITEMS = {
     { label: "Appointments", path: "/doctor/appointments" },
     { label: "My Requests", path: "/workforce/requests" },
     { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
+    { label: "Notifications", path: "/notifications" },
   ],
   NURSE: [
     { label: "Nurse Dashboard", path: "/nurse" },
@@ -106,6 +108,7 @@ const ROLE_ITEMS = {
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
     { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
+    { label: "Notifications", path: "/notifications" },
   ],
   LAB_TECH: [
     { label: "Lab Dashboard", path: "/lab-tech" },
@@ -118,6 +121,7 @@ const ROLE_ITEMS = {
     { label: "Lab Tests", path: "/labtech/labs" },
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
   ],
   PHARMACIST: [
     { label: "Pharmacy", path: "/pharmacy" },
@@ -129,6 +133,7 @@ const ROLE_ITEMS = {
     { label: "Pharmacy Reports", path: "/pharmacy/reports" },
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
   ],
   HR_MANAGER: [
     { label: "HR Manager", path: "/hr-manager" },
@@ -136,10 +141,12 @@ const ROLE_ITEMS = {
     { label: "Training Playbook", path: "/admin/training-playbook" },
     { label: "My Requests", path: "/workforce/requests" },
     { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
+    { label: "Notifications", path: "/notifications" },
   ],
   PAYROLL_OFFICER: [
     { label: "Payroll Officer", path: "/payroll-officer" },
     { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
   ],
   COMMUNITY_HEALTH_WORKER: [
     { label: "CHW Dashboard", path: "/community-health-worker" },
@@ -147,6 +154,7 @@ const ROLE_ITEMS = {
     { label: "Disease Surveillance", path: "/community-health-worker" },
     { label: "Referrals", path: "/community-health-worker" },
     { label: "Communication Center", path: "/communication" },
+    { label: "Notifications", path: "/notifications" },
   ],
   DEVELOPER: [
     { label: "Developer Console", path: "/developer" },
@@ -169,23 +177,36 @@ const ROLE_ITEMS = {
     { label: "Training Tracker", path: "/admin/training-tracker" },
     { label: "Training Playbook", path: "/admin/training-playbook" },
     { label: "Launch Readiness", path: "/admin/launch-readiness" },
+    { label: "Notifications", path: "/notifications" },
   ],
   SECURITY_ADMIN: [
     { label: "Security Admin", path: "/security-admin" },
     { label: "Print Center", path: "/admin/print-center" },
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
   ],
   SECURITY_OFFICER: [
     { label: "Security Officer", path: "/security-officer" },
     { label: "Communication Center", path: "/communication" },
     { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
   ],
-  RADIOLOGIST: [{ label: "My Requests", path: "/workforce/requests" }],
-  THERAPIST: [{ label: "My Requests", path: "/workforce/requests" }],
-  RECEPTIONIST: [{ label: "My Requests", path: "/workforce/requests" }],
+  RADIOLOGIST: [
+    { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
+  ],
+  THERAPIST: [
+    { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
+  ],
+  RECEPTIONIST: [
+    { label: "My Requests", path: "/workforce/requests" },
+    { label: "Notifications", path: "/notifications" },
+  ],
   PATIENT: [
     { label: "Patient Dashboard", path: "/patient" },
+    { label: "Notifications", path: "/notifications" },
     { label: "Hospitals", path: "/patient/hospitals" },
     { label: "Vacancy Feed", path: "/patient/ads" },
     { label: "My Appointments", path: "/patient/appointments" },

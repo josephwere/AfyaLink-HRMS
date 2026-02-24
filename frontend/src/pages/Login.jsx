@@ -24,6 +24,7 @@ export default function Login() {
   const [info, setInfo] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   /* -------------------------
      Post-register notice
@@ -51,6 +52,17 @@ export default function Login() {
     return () => document.body.classList.remove("auth-route");
   }, []);
 
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
   /* -------------------------
      Email/password login
   -------------------------- */
@@ -74,6 +86,10 @@ export default function Login() {
       }
 
       if (!result?.user) throw new Error("Invalid credentials");
+
+      if (result?.offline) {
+        setInfo("Offline mode: signed in using cached credentials on this device.");
+      }
 
       if (!result.user.emailVerified && !result.user.phoneVerified) {
         setInfo("Account not verified. Complete verification in Profile.");
@@ -110,6 +126,11 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
         {googleError && <div className="auth-error">{googleError}</div>}
+        {isOffline && (
+          <div className="auth-info">
+            You are offline. Login works only for accounts previously signed in on this device.
+          </div>
+        )}
 
         <label>Email, phone or national ID</label>
         <input

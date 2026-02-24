@@ -8,6 +8,7 @@ import {
 } from "react";
 import { apiFetch, logout as apiLogout } from "./apiFetch";
 import { normalizeRole } from "./normalizeRole";
+import { flushOfflineRegistrations } from "./offlineRegistration";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -34,6 +35,83 @@ function parseJwt(token) {
 const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
 const STRICT_IMPERSONATION_KEY = "strict_impersonation";
+const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
+
+function normalizeIdentifier(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function readOfflineLoginStore() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_LOGIN_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeOfflineLoginStore(store) {
+  try {
+    localStorage.setItem(OFFLINE_LOGIN_KEY, JSON.stringify(store || {}));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function makeSalt() {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function sha256(value) {
+  const data = new TextEncoder().encode(String(value || ""));
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function rememberOfflineLoginCredential(user, identifier, password) {
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  if (!normalizedIdentifier || !password || typeof crypto?.subtle?.digest !== "function") return;
+  const salt = makeSalt();
+  const hash = await sha256(`${salt}::${normalizedIdentifier}::${password}`);
+  const profile = {
+    id: user?.id,
+    name: user?.name,
+    email: user?.email,
+    phone: user?.phone,
+    role: normalizeRole(user?.role),
+    emailVerified: Boolean(user?.emailVerified),
+    phoneVerified: Boolean(user?.phoneVerified),
+    twoFactorVerified: true,
+  };
+  const store = readOfflineLoginStore();
+  store[normalizedIdentifier] = {
+    salt,
+    hash,
+    profile,
+    updatedAt: new Date().toISOString(),
+  };
+  writeOfflineLoginStore(store);
+}
+
+async function tryOfflineLogin(identifier, password) {
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  if (!normalizedIdentifier || !password || typeof crypto?.subtle?.digest !== "function") {
+    return null;
+  }
+  const store = readOfflineLoginStore();
+  const record = store[normalizedIdentifier];
+  if (!record?.salt || !record?.hash || !record?.profile) return null;
+  const computed = await sha256(`${record.salt}::${normalizedIdentifier}::${password}`);
+  if (computed !== record.hash) return null;
+  return { ...record.profile, offlineSession: true };
+}
 
 export function AuthProvider({ children }) {
   const [baseUser, setBaseUser] = useState(null);
@@ -146,6 +224,18 @@ export function AuthProvider({ children }) {
 
         const isExpired = decoded?.exp && decoded.exp * 1000 < Date.now();
         if (!decodedRole || isExpired) {
+          if (!navigator.onLine) {
+            const offlineParsed = JSON.parse(storedUser);
+            if (mounted) {
+              setBaseUser({
+                ...offlineParsed,
+                role: normalizeRole(offlineParsed?.role || decodedRole),
+                twoFactorVerified: true,
+                offlineSession: true,
+              });
+            }
+            return;
+          }
           if (!refreshToken) throw new Error("Token expired");
 
           const res = await fetch(
@@ -267,6 +357,15 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  useEffect(() => {
+    const sync = () => {
+      flushOfflineRegistrations().catch(() => {});
+    };
+    sync();
+    window.addEventListener("online", sync);
+    return () => window.removeEventListener("online", sync);
+  }, []);
+
   /* --------------------------------------------------
      LOGIN
   -------------------------------------------------- */
@@ -314,13 +413,34 @@ export function AuthProvider({ children }) {
     /* ============================
        🔐 EMAIL / PASSWORD LOGIN
     ============================ */
-    const data = await apiFetch("/api/auth/login", {
-      method: "POST",
-      body: {
-        identifier: identifierOrToken,
-        password: passwordOrOptions,
-      },
-    });
+    let data;
+    try {
+      data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: {
+          identifier: identifierOrToken,
+          password: passwordOrOptions,
+        },
+      });
+    } catch (err) {
+      const networkLike =
+        String(err?.message || "")
+          .toLowerCase()
+          .includes("network error") || !navigator.onLine;
+      if (networkLike) {
+        const offlineUser = await tryOfflineLogin(identifierOrToken, passwordOrOptions);
+        if (offlineUser) {
+          setBaseUser({
+            ...offlineUser,
+            role: normalizeRole(offlineUser.role),
+            twoFactorVerified: true,
+            offlineSession: true,
+          });
+          return { user: offlineUser, offline: true };
+        }
+      }
+      throw err;
+    }
 
     /* 🔐 2FA REQUIRED */
     if (data.requires2FA) {
@@ -349,6 +469,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem("refreshToken", data.refreshToken);
     }
     localStorage.setItem("user", JSON.stringify(safeUser));
+    rememberOfflineLoginCredential(safeUser, identifierOrToken, passwordOrOptions).catch(() => {});
 
     const decoded = parseJwt(data.accessToken);
 

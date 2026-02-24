@@ -9,6 +9,10 @@ import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
 import { getCountryOptions } from "../utils/countryDialCodes";
+import {
+  enqueueOfflineRegistration,
+  flushOfflineRegistrations,
+} from "../utils/offlineRegistration";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -36,6 +40,15 @@ export default function Register() {
     return () => document.body.classList.remove("auth-route");
   }, []);
 
+  React.useEffect(() => {
+    const sync = () => {
+      flushOfflineRegistrations().catch(() => {});
+    };
+    sync();
+    window.addEventListener("online", sync);
+    return () => window.removeEventListener("online", sync);
+  }, []);
+
   /* -------------------------
      Form input handler
   -------------------------- */
@@ -56,6 +69,26 @@ export default function Register() {
       return;
     }
 
+    const payload = {
+      name: form.name.trim(),
+      email: form.email ? form.email.toLowerCase().trim() : undefined,
+      phone:
+        form.phoneCountry && form.phoneLocal
+          ? toE164(form.phoneCountry, form.phoneLocal)
+          : undefined,
+      nationalIdNumber: form.nationalIdNumber || undefined,
+      nationalIdCountry: form.nationalIdCountry || undefined,
+      password: form.password,
+    };
+
+    if (!navigator.onLine) {
+      enqueueOfflineRegistration(payload);
+      setInfo(
+        "Offline: registration saved on this device and will auto-submit when internet returns."
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError("");
@@ -63,17 +96,7 @@ export default function Register() {
 
       const data = await apiFetch("/api/auth/register", {
         method: "POST",
-        body: {
-          name: form.name.trim(),
-          email: form.email ? form.email.toLowerCase().trim() : undefined,
-          phone:
-            form.phoneCountry && form.phoneLocal
-              ? toE164(form.phoneCountry, form.phoneLocal)
-              : undefined,
-          nationalIdNumber: form.nationalIdNumber || undefined,
-          nationalIdCountry: form.nationalIdCountry || undefined,
-          password: form.password,
-        },
+        body: payload,
       });
 
       // Auto-login after registration if backend provides tokens
@@ -90,8 +113,16 @@ export default function Register() {
         navigate("/login");
       }
     } catch (err) {
-      const msg = err.message || "Registration failed";
-      setError(msg);
+      const msg = err.message || "";
+      const networkLike = msg.toLowerCase().includes("network error") || !navigator.onLine;
+      if (networkLike) {
+        enqueueOfflineRegistration(payload);
+        setInfo(
+          "Network unavailable. Registration saved offline and will auto-submit when internet returns."
+        );
+      } else {
+        setError(msg || "Registration failed");
+      }
     } finally {
       setSubmitting(false);
     }

@@ -1322,6 +1322,7 @@ export default function App() {
 
           {/* SHARED PAGES */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin/notifications" element={<Navigate to="/notifications" replace />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route
             path="/communication"
