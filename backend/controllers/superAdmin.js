@@ -137,13 +137,26 @@ export const getHospitals = async (req, res) => {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const q = String(req.query.q || "").trim();
+    const withoutAdmin = String(req.query.withoutAdmin || "").toLowerCase() === "true";
 
     const filter = {};
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
         { code: { $regex: q, $options: "i" } },
+        { contact: { $regex: q, $options: "i" } },
       ];
+    }
+
+    if (withoutAdmin) {
+      filter.$or = filter.$or || [];
+      const noAdminsClauses = [{ admins: { $exists: false } }, { admins: { $size: 0 } }];
+      if (filter.$or.length) {
+        filter.$and = [{ $or: filter.$or }, { $or: noAdminsClauses }];
+        delete filter.$or;
+      } else {
+        filter.$or = noAdminsClauses;
+      }
     }
 
     const [rows, total] = await Promise.all([

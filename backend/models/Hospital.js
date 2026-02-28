@@ -88,6 +88,15 @@ const hospitalSchema = new mongoose.Schema(
     /* ================= SOFT DELETE ================= */
     active: { type: Boolean, default: true },
 
+    /* ================= LOCATION (PATIENT DISCOVERY) ================= */
+    location: {
+      country: { type: String, trim: true, default: "" },
+      region: { type: String, trim: true, default: "" },
+      city: { type: String, trim: true, default: "" },
+      lat: { type: Number, min: -90, max: 90, default: null },
+      lng: { type: Number, min: -180, max: 180, default: null },
+    },
+
     /* ================= LINKED ADMINS ================= */
     admins: [
       {
@@ -170,6 +179,7 @@ const hospitalSchema = new mongoose.Schema(
 
 hospitalSchema.index({ active: 1, createdAt: -1 });
 hospitalSchema.index({ name: 1 });
+hospitalSchema.index({ "location.lat": 1, "location.lng": 1 });
 
 /* ======================================================
    🧠 HOSPITAL ONBOARDING DEFAULTS (PLAN-BASED, SAFE)

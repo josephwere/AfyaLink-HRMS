@@ -5,17 +5,53 @@ import { cacheDel } from "../utils/cache.js";
 import { diffObjects } from "../utils/diff.js";
 import { audit } from "../utils/audit.js";
 
+const toNumberOrNull = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const haversineKm = (lat1, lng1, lat2, lng2) => {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return 6371 * c;
+};
+
 /* ================= CREATE HOSPITAL ================= */
 
 export const createHospital = async (req, res, next) => {
   try {
-    const { name, address, contact, code } = req.body;
+    const {
+      name,
+      address,
+      contact,
+      code,
+      country,
+      region,
+      city,
+      lat,
+      lng,
+      location,
+    } = req.body;
 
     const hospital = await Hospital.create({
       name,
       address,
       contact,
       code: code || "H-" + uuidv4().slice(0, 8),
+      location: {
+        country: String(location?.country || country || "").trim(),
+        region: String(location?.region || region || "").trim(),
+        city: String(location?.city || city || "").trim(),
+        lat: toNumberOrNull(location?.lat ?? lat),
+        lng: toNumberOrNull(location?.lng ?? lng),
+      },
       subscription: {
         paid: false,
         status: "TRIAL",
@@ -189,7 +225,21 @@ export const updateHospitalFeatures = async (req, res, next) => {
 export const updateHospital = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, address, contact, code, active, plan, subscription } = req.body || {};
+    const {
+      name,
+      address,
+      contact,
+      code,
+      active,
+      plan,
+      subscription,
+      country,
+      region,
+      city,
+      lat,
+      lng,
+      location,
+    } = req.body || {};
 
     const hospital = await Hospital.findById(id);
     if (!hospital) {
@@ -202,6 +252,25 @@ export const updateHospital = async (req, res, next) => {
     if (address !== undefined) hospital.address = String(address).trim();
     if (contact !== undefined) hospital.contact = String(contact).trim();
     if (code !== undefined) hospital.code = String(code).trim();
+
+    if (location || country !== undefined || region !== undefined || city !== undefined || lat !== undefined || lng !== undefined) {
+      hospital.location = hospital.location || {};
+      if (location?.country !== undefined || country !== undefined) {
+        hospital.location.country = String(location?.country ?? country ?? "").trim();
+      }
+      if (location?.region !== undefined || region !== undefined) {
+        hospital.location.region = String(location?.region ?? region ?? "").trim();
+      }
+      if (location?.city !== undefined || city !== undefined) {
+        hospital.location.city = String(location?.city ?? city ?? "").trim();
+      }
+      if (location?.lat !== undefined || lat !== undefined) {
+        hospital.location.lat = toNumberOrNull(location?.lat ?? lat);
+      }
+      if (location?.lng !== undefined || lng !== undefined) {
+        hospital.location.lng = toNumberOrNull(location?.lng ?? lng);
+      }
+    }
     if (active !== undefined) hospital.active = Boolean(active);
     if (plan !== undefined) hospital.plan = plan;
     if (subscription && typeof subscription === "object") {
@@ -304,6 +373,9 @@ export const listMarketplaceHospitals = async (req, res, next) => {
     const q = (req.query.q || "").trim();
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "20", 10), 1), 100);
+    const lat = toNumberOrNull(req.query.lat);
+    const lng = toNumberOrNull(req.query.lng);
+    const radiusKm = Math.max(Number(req.query.radiusKm || 100), 1);
 
     const filter = { active: true };
     if (q) {
@@ -311,44 +383,69 @@ export const listMarketplaceHospitals = async (req, res, next) => {
         { name: { $regex: q, $options: "i" } },
         { code: { $regex: q, $options: "i" } },
         { address: { $regex: q, $options: "i" } },
+        { "location.region": { $regex: q, $options: "i" } },
+        { "location.city": { $regex: q, $options: "i" } },
       ];
     }
 
-    const [items, total] = await Promise.all([
-      Hospital.find(filter)
-        .select("name code address contact insuranceProviders patientPaymentMethods subscription")
-        .sort({ name: 1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      Hospital.countDocuments(filter),
-    ]);
+    const enableDistanceSort = lat !== null && lng !== null;
+
+    const rows = await Hospital.find(filter)
+      .select("name code address contact insuranceProviders patientPaymentMethods subscription location")
+      .sort(enableDistanceSort ? { createdAt: -1 } : { name: 1 })
+      .lean();
 
     const now = new Date();
-    const mapped = items.map((h) => {
-      const trialEndsAt = h?.subscription?.trialEndsAt ? new Date(h.subscription.trialEndsAt) : null;
-      const status = h?.subscription?.status || "TRIAL";
-      const paid = status === "ACTIVE";
-      const trialExpired = trialEndsAt ? now > trialEndsAt : false;
-      const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
-      return {
-        _id: h._id,
-        name: h.name,
-        code: h.code,
-        address: h.address,
-        contact: h.contact,
-        subscriptionState: {
-          status,
-          trialEndsAt,
-          trialExpired,
-          premiumPaused,
-        },
-        insuranceProviders: (h.insuranceProviders || []).filter((i) => i?.enabled !== false),
-        patientPaymentMethods: (h.patientPaymentMethods || []).filter((m) => m?.enabled !== false),
-      };
-    });
+    const mapped = rows
+      .map((h) => {
+        const trialEndsAt = h?.subscription?.trialEndsAt ? new Date(h.subscription.trialEndsAt) : null;
+        const status = h?.subscription?.status || "TRIAL";
+        const paid = status === "ACTIVE";
+        const trialExpired = trialEndsAt ? now > trialEndsAt : false;
+        const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
 
-    return res.json({ items: mapped, total, page, limit });
+        const hLat = toNumberOrNull(h?.location?.lat);
+        const hLng = toNumberOrNull(h?.location?.lng);
+        const distanceKm =
+          enableDistanceSort && hLat !== null && hLng !== null
+            ? haversineKm(lat, lng, hLat, hLng)
+            : null;
+
+        return {
+          _id: h._id,
+          name: h.name,
+          code: h.code,
+          address: h.address,
+          contact: h.contact,
+          location: h.location || {},
+          distanceKm,
+          subscriptionState: {
+            status,
+            trialEndsAt,
+            trialExpired,
+            premiumPaused,
+          },
+          insuranceProviders: (h.insuranceProviders || []).filter((i) => i?.enabled !== false),
+          patientPaymentMethods: (h.patientPaymentMethods || []).filter((m) => m?.enabled !== false),
+        };
+      })
+      .filter((row) => {
+        if (!enableDistanceSort || row.distanceKm === null) return true;
+        return row.distanceKm <= radiusKm;
+      })
+      .sort((a, b) => {
+        if (!enableDistanceSort) return String(a.name || "").localeCompare(String(b.name || ""));
+        if (a.distanceKm === null && b.distanceKm === null) return 0;
+        if (a.distanceKm === null) return 1;
+        if (b.distanceKm === null) return -1;
+        return a.distanceKm - b.distanceKm;
+      });
+
+    const total = mapped.length;
+    const start = (page - 1) * limit;
+    const items = mapped.slice(start, start + limit);
+
+    return res.json({ items, total, page, limit });
   } catch (err) {
     return next(err);
   }

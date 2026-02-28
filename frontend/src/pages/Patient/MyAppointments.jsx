@@ -3,10 +3,19 @@ import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
+const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
 
 export default function MyAppointments() {
   const [searchParams] = useSearchParams();
   const hospitalFromQuery = searchParams.get("hospitalId") || "";
+  const savedLocation = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(PATIENT_LOCATION_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
   const [hospitalId, setHospitalId] = useState(
     () => hospitalFromQuery || localStorage.getItem(SELECTED_HOSPITAL_KEY) || ""
   );
@@ -17,12 +26,19 @@ export default function MyAppointments() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [doctorSearch, setDoctorSearch] = useState("");
+  const [locationMode, setLocationMode] = useState(savedLocation?.mode || "manual");
+  const [lat, setLat] = useState(savedLocation?.lat ?? "");
+  const [lng, setLng] = useState(savedLocation?.lng ?? "");
+  const [radiusKm, setRadiusKm] = useState(savedLocation?.radiusKm ?? 100);
+  const [locationLabel, setLocationLabel] = useState(savedLocation?.label || "");
+  const [locating, setLocating] = useState(false);
   const [form, setForm] = useState({ scheduledAt: "", reason: "", doctor: "" });
 
   const selectedHospital = useMemo(
     () => hospitals.find((h) => String(h._id) === String(hospitalId)) || null,
     [hospitals, hospitalId]
   );
+
   const filteredDoctors = useMemo(() => {
     const q = doctorSearch.trim().toLowerCase();
     if (!q) return doctors;
@@ -34,9 +50,20 @@ export default function MyAppointments() {
     });
   }, [doctors, doctorSearch]);
 
+  const locationReady = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+
   const loadHospitals = async () => {
+    if (!locationReady) {
+      setHospitals([]);
+      setHospitalId("");
+      return;
+    }
     try {
-      const data = await apiFetch("/api/hospitals/marketplace?limit=100");
+      const data = await apiFetch(
+        `/api/hospitals/marketplace?limit=100&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(
+          lng
+        )}&radiusKm=${encodeURIComponent(radiusKm)}`
+      );
       const rows = Array.isArray(data?.items) ? data.items : [];
       setHospitals(rows);
       if (!hospitalId && rows.length) {
@@ -82,8 +109,9 @@ export default function MyAppointments() {
   };
 
   useEffect(() => {
+    if (!locationReady) return;
     loadHospitals();
-  }, []);
+  }, [lat, lng, radiusKm]);
 
   useEffect(() => {
     if (!hospitalId) return;
@@ -100,8 +128,48 @@ export default function MyAppointments() {
     }
   }, [doctors]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      PATIENT_LOCATION_KEY,
+      JSON.stringify({
+        mode: locationMode,
+        lat,
+        lng,
+        radiusKm,
+        label: locationLabel,
+      })
+    );
+  }, [locationMode, lat, lng, radiusKm, locationLabel]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setMsg("Geolocation is not available in this browser.");
+      return;
+    }
+    setLocating(true);
+    setMsg("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(String(pos.coords.latitude));
+        setLng(String(pos.coords.longitude));
+        setLocationMode("gps");
+        setLocationLabel("Current location");
+        setLocating(false);
+      },
+      () => {
+        setMsg("Could not read your current location. Enter coordinates manually.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    if (!locationReady) {
+      setMsg("Choose location first to find nearby hospitals.");
+      return;
+    }
     if (!hospitalId || !form.scheduledAt) {
       setMsg("Select hospital and date/time");
       return;
@@ -133,7 +201,7 @@ export default function MyAppointments() {
       <div className="welcome-panel">
         <div>
           <h2>My Appointments</h2>
-          <p className="muted">Book and manage appointments in your selected hospital.</p>
+          <p className="muted">Choose your location first, then book in the nearest hospital.</p>
         </div>
       </div>
 
@@ -141,28 +209,68 @@ export default function MyAppointments() {
 
       <section className="section">
         <div className="card premium-card">
+          <h3>1) Choose Location</h3>
+          <label>Location mode</label>
+          <select value={locationMode} onChange={(e) => setLocationMode(e.target.value)}>
+            <option value="manual">Manual Coordinates</option>
+            <option value="gps">Use Current GPS</option>
+          </select>
+
+          {locationMode === "gps" && (
+            <button type="button" className="btn-secondary" onClick={useCurrentLocation} disabled={locating}>
+              {locating ? "Detecting..." : "Use Current Location"}
+            </button>
+          )}
+
+          <label>Latitude</label>
+          <input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="-1.286389" />
+
+          <label>Longitude</label>
+          <input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="36.817223" />
+
+          <label>Search radius (km)</label>
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={radiusKm}
+            onChange={(e) => setRadiusKm(Number(e.target.value || 100))}
+          />
+
+          <label>Location label (optional)</label>
+          <input
+            value={locationLabel}
+            onChange={(e) => setLocationLabel(e.target.value)}
+            placeholder="Nairobi CBD"
+          />
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="card premium-card">
+          <h3>2) Select Nearest Hospital</h3>
           <label>Hospital</label>
-          <select
-            value={hospitalId}
-            onChange={(e) => setHospitalId(e.target.value)}
-          >
-            <option value="">Select hospital</option>
+          <select value={hospitalId} onChange={(e) => setHospitalId(e.target.value)} disabled={!locationReady}>
+            <option value="">{locationReady ? "Select nearest hospital" : "Choose location first"}</option>
             {hospitals.map((h) => (
               <option key={h._id} value={h._id}>
-                {h.name} ({h.code || "—"})
+                {h.name} {Number.isFinite(Number(h.distanceKm)) ? `• ${Number(h.distanceKm).toFixed(1)} km` : ""}
               </option>
             ))}
           </select>
           {selectedHospital ? (
             <p className="muted" style={{ marginTop: 8 }}>
               Using: {selectedHospital.name}
+              {Number.isFinite(Number(selectedHospital.distanceKm))
+                ? ` (${Number(selectedHospital.distanceKm).toFixed(1)} km away)`
+                : ""}
             </p>
           ) : null}
         </div>
       </section>
 
       <section className="section">
-        <h3>Book Appointment</h3>
+        <h3>3) Book Appointment</h3>
         <form className="card premium-card" onSubmit={submit}>
           <label>Date & Time</label>
           <input

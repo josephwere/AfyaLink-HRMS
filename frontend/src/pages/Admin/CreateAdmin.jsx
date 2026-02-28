@@ -23,36 +23,66 @@ export default function CreateAdmin() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [msg, setMsg] = useState(null);
   const actorRole = String(user?.role || "").toUpperCase();
   const canCreateAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
   const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
 
-  // 🔒 Hard stop — UI level
   if (!canCreateAdmins) {
     return <p>🚫 Access denied</p>;
   }
 
-  React.useEffect(() => {
-    listHospitals({ page: 1, limit: 1000 })
-      .then((data) => {
-        const rows = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.hospitals)
-          ? data.hospitals
-          : Array.isArray(data?.items)
-          ? data.items
-          : [];
-        setHospitals(rows);
-      })
-      .catch(() => setHospitals([]));
+  const loadHospitals = React.useCallback(async (q = "") => {
+    setLoadingHospitals(true);
+    try {
+      const data = await listHospitals({
+        page: 1,
+        limit: 1000,
+        withoutAdmin: true,
+        q: q || undefined,
+      });
+      const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.hospitals)
+        ? data.hospitals
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      setHospitals(rows);
+    } catch {
+      setHospitals([]);
+    } finally {
+      setLoadingHospitals(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    loadHospitals("");
+  }, [loadHospitals]);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      loadHospitals(hospitalQuery.trim());
+    }, 250);
+    return () => clearTimeout(t);
+  }, [hospitalQuery, loadHospitals]);
 
   const filteredHospitals = useMemo(() => {
     const q = hospitalQuery.trim().toLowerCase();
     if (!q) return hospitals;
-    return hospitals.filter((h) => String(h?.name || "").toLowerCase().includes(q));
+    return hospitals.filter((h) => {
+      const name = String(h?.name || "").toLowerCase();
+      const code = String(h?.code || "").toLowerCase();
+      const address = String(h?.address || "").toLowerCase();
+      return name.includes(q) || code.includes(q) || address.includes(q);
+    });
   }, [hospitals, hospitalQuery]);
+
+  const selectedHospital = useMemo(
+    () => hospitals.find((h) => String(h._id) === String(form.hospitalId)) || null,
+    [hospitals, form.hospitalId]
+  );
 
   const submit = async (e) => {
     e.preventDefault();
@@ -101,6 +131,7 @@ export default function CreateAdmin() {
         branch: "",
       });
       setHospitalQuery("");
+      loadHospitals("");
     } catch (err) {
       setMsg(err?.message || "Failed to create admin");
     } finally {
@@ -118,9 +149,7 @@ export default function CreateAdmin() {
             placeholder="Full name"
             value={form.name}
             required
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
 
           <input
@@ -128,9 +157,7 @@ export default function CreateAdmin() {
             type="email"
             value={form.email}
             required
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
 
           <input
@@ -138,16 +165,12 @@ export default function CreateAdmin() {
             type="password"
             value={form.password}
             required
-            onChange={(e) =>
-              setForm({ ...form, password: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
 
           <select
             value={form.role}
-            onChange={(e) =>
-              setForm({ ...form, role: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
           >
             <option value="HOSPITAL_ADMIN">Hospital Admin</option>
             {canCreateSystemLevel && <option value="SYSTEM_ADMIN">System Admin</option>}
@@ -156,49 +179,42 @@ export default function CreateAdmin() {
         </DismissibleCardSection>
 
         {form.role === "HOSPITAL_ADMIN" && (
-          <DismissibleCardSection title="Hospital Assignment">
+          <DismissibleCardSection title="Hospital Assignment (No Admin Yet)">
             <input
-              list="hospital-options"
-              placeholder="Type hospital name"
+              placeholder="Global search: hospital name, code, address"
               value={hospitalQuery}
-              onChange={(e) => {
-                const value = e.target.value;
-                setHospitalQuery(value);
-                const match = hospitals.find(
-                  (h) => String(h?.name || "").toLowerCase() === value.trim().toLowerCase()
-                );
-                setForm({ ...form, hospitalId: match?._id || "" });
-              }}
-              required
+              onChange={(e) => setHospitalQuery(e.target.value)}
             />
-            <datalist id="hospital-options">
-              {hospitals.map((h) => (
-                <option key={h._id} value={h.name} />
-              ))}
-            </datalist>
 
             <select
               value={form.hospitalId}
               onChange={(e) => {
                 const hospitalId = e.target.value;
-                const selected = hospitals.find((h) => String(h._id) === String(hospitalId));
-                setForm({
-                  ...form,
-                  hospitalId,
-                });
-                if (selected?.name) setHospitalQuery(selected.name);
+                setForm({ ...form, hospitalId });
               }}
               required
             >
               <option value="">
-                {hospitals.length ? "Select hospital" : "No hospitals available"}
+                {loadingHospitals
+                  ? "Loading hospitals..."
+                  : filteredHospitals.length
+                  ? "Select latest hospital without admin"
+                  : "No hospitals without admin found"}
               </option>
               {filteredHospitals.map((h) => (
                 <option key={h._id} value={h._id}>
-                  {h.name}
+                  {h.name} {h.code ? `(${h.code})` : ""}
                 </option>
               ))}
             </select>
+
+            {selectedHospital && (
+              <p className="muted" style={{ marginTop: 6 }}>
+                Selected: {selectedHospital.name}
+                {selectedHospital.address ? ` • ${selectedHospital.address}` : ""}
+              </p>
+            )}
+
             <input
               placeholder="Branch (optional, e.g. Kisumu Branch)"
               value={form.branch}

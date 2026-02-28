@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
+const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
 
 export default function PatientHospitals() {
   const navigate = useNavigate();
@@ -14,13 +15,39 @@ export default function PatientHospitals() {
     () => localStorage.getItem(SELECTED_HOSPITAL_KEY) || ""
   );
 
+  const savedLocation = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(PATIENT_LOCATION_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
+  const [lat, setLat] = useState(savedLocation?.lat ?? "");
+  const [lng, setLng] = useState(savedLocation?.lng ?? "");
+  const [radiusKm, setRadiusKm] = useState(savedLocation?.radiusKm ?? 100);
+  const [msg, setMsg] = useState("");
+  const [locating, setLocating] = useState(false);
+
+  const locationReady = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+
   const load = async () => {
     setLoading(true);
+    setMsg("");
     try {
-      const data = await apiFetch(`/api/hospitals/marketplace?q=${encodeURIComponent(q)}&limit=100`);
+      const params = new URLSearchParams();
+      params.set("q", q);
+      params.set("limit", "100");
+      if (locationReady) {
+        params.set("lat", String(lat));
+        params.set("lng", String(lng));
+        params.set("radiusKm", String(radiusKm));
+      }
+      const data = await apiFetch(`/api/hospitals/marketplace?${params.toString()}`);
       setItems(Array.isArray(data?.items) ? data.items : []);
     } catch {
       setItems([]);
+      setMsg("Failed to load hospitals");
     } finally {
       setLoading(false);
     }
@@ -28,7 +55,14 @@ export default function PatientHospitals() {
 
   useEffect(() => {
     load();
-  }, [q]);
+  }, [q, lat, lng, radiusKm]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      PATIENT_LOCATION_KEY,
+      JSON.stringify({ lat, lng, radiusKm, mode: "manual" })
+    );
+  }, [lat, lng, radiusKm]);
 
   const selectedHospital = useMemo(
     () => items.find((h) => String(h._id) === String(selectedHospitalId)) || null,
@@ -40,16 +74,40 @@ export default function PatientHospitals() {
     localStorage.setItem(SELECTED_HOSPITAL_KEY, String(id));
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setMsg("Geolocation is not available in this browser.");
+      return;
+    }
+    setLocating(true);
+    setMsg("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(String(pos.coords.latitude));
+        setLng(String(pos.coords.longitude));
+        setLocating(false);
+      },
+      () => {
+        setMsg("Could not read your current location. Enter coordinates manually.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Hospitals</h2>
+          <h2>Hospitals Near You</h2>
           <p className="muted">
-            Search hospitals, select one, then book appointments and pay bills in that hospital context.
+            Choose your location first. AfyaLink lists nearby hospitals so you can pick your preferred one.
           </p>
         </div>
         <div className="welcome-actions">
+          <button type="button" className="btn-secondary" onClick={useCurrentLocation} disabled={locating}>
+            {locating ? "Detecting..." : "Use Current Location"}
+          </button>
           <button
             type="button"
             className="btn-primary"
@@ -58,19 +116,22 @@ export default function PatientHospitals() {
           >
             Book Appointment
           </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={!selectedHospitalId}
-            onClick={() => navigate(`/payments?hospitalId=${selectedHospitalId}`)}
-          >
-            Pay Bills
-          </button>
         </div>
       </div>
 
+      {msg && <div className="card">{msg}</div>}
+
       <section className="section">
         <div className="card premium-card">
+          <label>Latitude</label>
+          <input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="-1.286389" />
+
+          <label>Longitude</label>
+          <input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="36.817223" />
+
+          <label>Radius (km)</label>
+          <input type="number" min={1} max={500} value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value || 100))} />
+
           <label>Search hospitals</label>
           <input
             value={q}
@@ -92,8 +153,8 @@ export default function PatientHospitals() {
                 <thead>
                   <tr>
                     <th>Hospital</th>
+                    <th>Distance</th>
                     <th>Insurance</th>
-                    <th>Payment Channels</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -104,14 +165,10 @@ export default function PatientHospitals() {
                         <strong>{h.name}</strong>
                         <div className="muted">{h.code || "—"} • {h.address || "No address"}</div>
                       </td>
+                      <td>{Number.isFinite(Number(h.distanceKm)) ? `${Number(h.distanceKm).toFixed(1)} km` : "—"}</td>
                       <td>
                         {(h.insuranceProviders || []).length
                           ? h.insuranceProviders.map((i) => i.name || i.code).join(", ")
-                          : "Not configured"}
-                      </td>
-                      <td>
-                        {(h.patientPaymentMethods || []).length
-                          ? h.patientPaymentMethods.map((m) => m.label || m.type).join(", ")
                           : "Not configured"}
                       </td>
                       <td>
@@ -129,13 +186,6 @@ export default function PatientHospitals() {
                             onClick={() => navigate(`/patient/appointments?hospitalId=${h._id}`)}
                           >
                             Book
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => navigate(`/payments?hospitalId=${h._id}`)}
-                          >
-                            Pay
                           </button>
                         </div>
                       </td>
