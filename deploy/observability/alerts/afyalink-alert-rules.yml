@@ -1,38 +1,69 @@
 groups:
-  - name: afyalink-core-alerts
+  - name: afyalink-slo-alerts
     rules:
-      - alert: AfyaLinkHigh5xxRate
-        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.02
+      # 99.9% availability SLO => 0.1% error budget.
+      # Fast burn catches critical ongoing outages.
+      - alert: AfyaLinkAvailabilityBurnFast
+        expr: (sum(rate(afyalink_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(afyalink_http_requests_total[5m])), 1e-9)) > 0.0144
+        for: 5m
+        labels:
+          severity: critical
+          service: afyalink-backend
+          slo: api-availability
+        annotations:
+          summary: "Fast error-budget burn on API availability"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"
+
+      # Slow burn catches persistent degradation.
+      - alert: AfyaLinkAvailabilityBurnSlow
+        expr: (sum(rate(afyalink_http_requests_total{status=~"5.."}[1h])) / clamp_min(sum(rate(afyalink_http_requests_total[1h])), 1e-9)) > 0.003
+        for: 10m
+        labels:
+          severity: warning
+          service: afyalink-backend
+          slo: api-availability
+        annotations:
+          summary: "Slow error-budget burn on API availability"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"
+
+      - alert: AfyaLinkApiP95LatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(afyalink_http_request_duration_ms_bucket{route!="/healthz",route!="/readyz"}[5m])) by (le)) > 1200
+        for: 10m
+        labels:
+          severity: warning
+          service: afyalink-backend
+          slo: api-latency
+        annotations:
+          summary: "API p95 latency is above 1200ms"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"
+
+      - alert: AfyaLinkLoginP95LatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(afyalink_http_request_duration_ms_bucket{route="/api/auth/login"}[5m])) by (le)) > 600
+        for: 10m
+        labels:
+          severity: warning
+          service: afyalink-backend
+          slo: login-latency
+        annotations:
+          summary: "Login p95 latency is above 600ms"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"
+
+      - alert: AfyaLinkRequestVolumeDrop
+        expr: sum(rate(afyalink_http_requests_total[10m])) < 0.01
+        for: 20m
+        labels:
+          severity: warning
+          service: afyalink-backend
+        annotations:
+          summary: "Request traffic dropped unexpectedly"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"
+
+      - alert: AfyaLink5xxSpike
+        expr: sum(rate(afyalink_http_requests_total{status=~"5.."}[5m])) > 1
         for: 10m
         labels:
           severity: critical
           service: afyalink-backend
         annotations:
-          summary: "High 5xx error ratio on AfyaLink backend"
-
-      - alert: AfyaLinkP95LatencyHigh
-        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1.5
-        for: 15m
-        labels:
-          severity: warning
-          service: afyalink-backend
-        annotations:
-          summary: "p95 latency above 1.5s"
-
-      - alert: AfyaLinkQueueBacklogHigh
-        expr: sum(queue_backlog_total) > 500
-        for: 10m
-        labels:
-          severity: warning
-          service: afyalink-backend
-        annotations:
-          summary: "Queue backlog above threshold"
-
-      - alert: AfyaLinkConnectorFailures
-        expr: sum(rate(connector_failures_total[10m])) > 0.1
-        for: 15m
-        labels:
-          severity: critical
-          service: afyalink-backend
-        annotations:
-          summary: "Connector failure rate elevated"
+          summary: "5xx response rate spike detected"
+          runbook_url: "https://runbooks.afyalink.local/sre/incident-command"

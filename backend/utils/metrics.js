@@ -3,7 +3,10 @@ const startedAt = Date.now();
 const metricsState = {
   httpRequestsTotal: new Map(),
   httpRequestDurationMs: new Map(),
+  httpRequestDurationBuckets: new Map(),
 };
+
+const LATENCY_BUCKETS_MS = [50, 100, 200, 400, 800, 1200, 2000, 5000];
 
 function keyForStatus(method, route, status) {
   return `${method}|${route}|${status}`;
@@ -40,6 +43,15 @@ export function recordHttpRequest(req, statusCode, durationMs) {
   bucket.sumMs += durationMs;
   bucket.maxMs = Math.max(bucket.maxMs, durationMs);
   metricsState.httpRequestDurationMs.set(latencyKey, bucket);
+
+  const histogram = metricsState.httpRequestDurationBuckets.get(latencyKey) || new Map();
+  for (const upperBound of LATENCY_BUCKETS_MS) {
+    if (durationMs <= upperBound) {
+      histogram.set(String(upperBound), (histogram.get(String(upperBound)) || 0) + 1);
+    }
+  }
+  histogram.set("+Inf", (histogram.get("+Inf") || 0) + 1);
+  metricsState.httpRequestDurationBuckets.set(latencyKey, histogram);
 }
 
 function escapeLabelValue(value) {
@@ -83,15 +95,25 @@ export function renderPrometheusMetrics() {
   lines.push("# TYPE afyalink_http_request_duration_ms_sum counter");
   lines.push("# HELP afyalink_http_request_duration_ms_max Request max latency in milliseconds");
   lines.push("# TYPE afyalink_http_request_duration_ms_max gauge");
+  lines.push("# HELP afyalink_http_request_duration_ms_bucket Request latency histogram buckets in milliseconds");
+  lines.push("# TYPE afyalink_http_request_duration_ms_bucket counter");
   for (const [key, value] of metricsState.httpRequestDurationMs.entries()) {
     const { method, route } = parseLatencyKey(key);
     const labels = `method="${escapeLabelValue(method)}",route="${escapeLabelValue(route)}"`;
     lines.push(`afyalink_http_request_duration_ms_count{${labels}} ${value.count}`);
     lines.push(`afyalink_http_request_duration_ms_sum{${labels}} ${value.sumMs}`);
     lines.push(`afyalink_http_request_duration_ms_max{${labels}} ${value.maxMs}`);
+
+    const histogram = metricsState.httpRequestDurationBuckets.get(key) || new Map();
+    const orderedBounds = [...LATENCY_BUCKETS_MS.map(String), "+Inf"];
+    for (const bound of orderedBounds) {
+      const count = histogram.get(bound) || 0;
+      lines.push(
+        `afyalink_http_request_duration_ms_bucket{${labels},le="${escapeLabelValue(bound)}"} ${count}`
+      );
+    }
   }
 
   lines.push("");
   return lines.join("\n");
 }
-
