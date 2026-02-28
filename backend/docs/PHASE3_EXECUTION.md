@@ -32,6 +32,11 @@ npm --prefix backend run staging:failover:run
 npm --prefix backend run phase3:gate
 ```
 
+6. Consolidated operations gate (before/with phase 3):
+```bash
+npm --prefix backend run ops:full:gate
+```
+
 ## Artifacts
 - `backend/artifacts/pilot-onboarding/<hospital-slug>/`
 - `backend/artifacts/hypercare/snapshot-*.json`
@@ -39,4 +44,6 @@ npm --prefix backend run phase3:gate
 
 ## Notes
 - `phase3:gate` assumes reachable DB and backend endpoint for readiness/security tests.
+- `phase3:gate` now enforces `perf:capacity:gate`; ensure k6 summary exists first:
+  - `npm --prefix backend run perf:k6:kenya-peak`
 - Keep `MONGO_URI`, `FRONTEND_URL`, and `METRICS_TOKEN` correctly configured.

@@ -208,6 +208,7 @@ export default function LaunchReadiness() {
 {`npm --prefix backend run phase0:gate
 npm --prefix backend run phase1:gate
 npm --prefix backend run phase2:gate
+npm --prefix backend run ops:full:gate
 npm --prefix backend run phase3:gate
 npm --prefix backend run phase4:gate
 npm --prefix backend run phase5:gate
@@ -226,4 +227,3 @@ npm --prefix backend run readiness:legal-only`}
     </div>
   );
 }
-
