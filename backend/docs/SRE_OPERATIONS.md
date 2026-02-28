@@ -36,3 +36,15 @@
 - 24/7 rotation for backend + platform.
 - Escalation chain: primary -> secondary -> leadership.
 - Runbook links embedded in alerts.
+
+## Incident Workflow APIs
+- `POST /api/sre/incidents`: declare incident.
+- `POST /api/sre/incidents/:id/ack`: acknowledge incident ownership.
+- `POST /api/sre/incidents/:id/escalate`: escalate and assign comms owner.
+- `POST /api/sre/incidents/:id/mitigate`: mark mitigation applied.
+- `POST /api/sre/incidents/:id/resolve`: resolve incident.
+- `GET /api/sre/incidents`: list incidents for operations handoff.
+
+## Connector SLA Reliability APIs
+- `GET /api/connectors/analytics/sla-summary`: connector SLA health by operation.
+- `GET /api/connectors/:connectorId/sla-events`: recent connector SLA probes.

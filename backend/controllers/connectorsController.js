@@ -1,4 +1,5 @@
 import Connector from '../models/Connector.js';
+import ConnectorSlaEvent from "../models/ConnectorSlaEvent.js";
 import axios from 'axios';
 import { decrypt } from '../services/cryptoService.js';
 import fhirAdapter from '../services/fhirAdapter.js';
@@ -108,4 +109,75 @@ export async function connectorAnalytics(req,res){
   res.json(data);
 }
 
-export default { createConnector, listConnectors, testRestConnection, testFHIR, connectorAnalytics };
+export async function connectorSlaSummary(req, res) {
+  try {
+    const hospitalId = req.user?.hospitalId || null;
+    const windowHours = Math.min(Math.max(Number(req.query.windowHours) || 24, 1), 24 * 14);
+    const since = new Date(Date.now() - windowHours * 60 * 60 * 1000);
+
+    const match = { createdAt: { $gte: since } };
+    if (hospitalId) match.hospitalId = hospitalId;
+
+    const rows = await ConnectorSlaEvent.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { connectorId: "$connectorId", operation: "$operation" },
+          total: { $sum: 1 },
+          okTotal: { $sum: { $cond: ["$ok", 1, 0] } },
+          breachTotal: { $sum: { $cond: ["$breach", 1, 0] } },
+          avgLatencyMs: { $avg: "$latencyMs" },
+          maxLatencyMs: { $max: "$latencyMs" },
+          lastSeenAt: { $max: "$createdAt" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          connectorId: "$_id.connectorId",
+          operation: "$_id.operation",
+          total: 1,
+          okTotal: 1,
+          breachTotal: 1,
+          successRate: {
+            $cond: [{ $gt: ["$total", 0] }, { $divide: ["$okTotal", "$total"] }, 0],
+          },
+          breachRate: {
+            $cond: [{ $gt: ["$total", 0] }, { $divide: ["$breachTotal", "$total"] }, 0],
+          },
+          avgLatencyMs: { $round: ["$avgLatencyMs", 2] },
+          maxLatencyMs: 1,
+          lastSeenAt: 1,
+        },
+      },
+      { $sort: { breachRate: -1, avgLatencyMs: -1 } },
+    ]);
+
+    return res.json({ windowHours, count: rows.length, summary: rows });
+  } catch (err) {
+    return res.status(500).json({ message: err.message || "Failed to load connector SLA summary" });
+  }
+}
+
+export async function listConnectorSlaEvents(req, res) {
+  try {
+    const connectorId = req.params.connectorId;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const filter = { connectorId };
+    if (req.user?.hospitalId) filter.hospitalId = req.user.hospitalId;
+    const events = await ConnectorSlaEvent.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
+    return res.json({ count: events.length, events });
+  } catch (err) {
+    return res.status(500).json({ message: err.message || "Failed to load connector SLA events" });
+  }
+}
+
+export default {
+  createConnector,
+  listConnectors,
+  testRestConnection,
+  testFHIR,
+  connectorAnalytics,
+  connectorSlaSummary,
+  listConnectorSlaEvents,
+};
