@@ -96,6 +96,9 @@ import AccessControl from "./pages/Admin/AccessControl";
 import PrintCenter from "./pages/Admin/PrintCenter";
 import OfflineOps from "./pages/Admin/OfflineOps";
 import LaunchReadiness from "./pages/Admin/LaunchReadiness";
+import SreIncidentOps from "./pages/Admin/SreIncidentOps";
+import SupportTickets from "./pages/Admin/SupportTickets";
+import PilotOnboardingOps from "./pages/Admin/PilotOnboardingOps";
 
 /* =======================
    DASHBOARDS
@@ -1349,6 +1352,55 @@ export default function App() {
                   ]}
                 >
                   <LaunchReadiness />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="sre-incidents"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                    "SECURITY_ADMIN",
+                  ]}
+                >
+                  <SreIncidentOps />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="support-tickets"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                    "HR_MANAGER",
+                    "SECURITY_ADMIN",
+                  ]}
+                >
+                  <SupportTickets />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="pilot-onboarding"
+              element={
+                <RequireRole
+                  roles={[
+                    "SUPER_ADMIN",
+                    "SYSTEM_ADMIN",
+                    "DEVELOPER",
+                    "HOSPITAL_ADMIN",
+                    "HR_MANAGER",
+                  ]}
+                >
+                  <PilotOnboardingOps />
                 </RequireRole>
               }
             />

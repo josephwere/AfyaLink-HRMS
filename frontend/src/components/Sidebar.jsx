@@ -451,6 +451,15 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/launch-readiness" icon="analytics" onSelect={onClose}>
                   Launch Readiness
                 </Item>
+                <Item to="/admin/sre-incidents" icon="notifications" onSelect={onClose}>
+                  SRE Incidents
+                </Item>
+                <Item to="/admin/support-tickets" icon="reports" onSelect={onClose}>
+                  Support Tickets
+                </Item>
+                <Item to="/admin/pilot-onboarding" icon="admin" onSelect={onClose}>
+                  Pilot Onboarding
+                </Item>
                 <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
                   Audit Logs
                 </Item>
