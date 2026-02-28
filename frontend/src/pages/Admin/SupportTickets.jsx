@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { createSupportTicket, listSupportTickets, updateSupportTicket } from "../../services/opsApi";
+import {
+  createSupportTicket,
+  exportSupportTicketsCsv,
+  listSupportTickets,
+  updateSupportTicket,
+} from "../../services/opsApi";
 
 export default function SupportTickets() {
   const [tickets, setTickets] = useState([]);
@@ -72,28 +77,17 @@ export default function SupportTickets() {
     }
   };
 
-  const exportCsv = () => {
-    const esc = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const header = ["Ticket Key", "Status", "Priority", "Category", "Title", "Incident", "Created At"];
-    const rows = tickets.map((ticket) => [
-      ticket.ticketKey,
-      ticket.status,
-      ticket.priority,
-      ticket.category || "",
-      ticket.title || "",
-      ticket.linkedIncident?.incidentKey || "",
-      ticket.createdAt ? new Date(ticket.createdAt).toISOString() : "",
-    ]);
-    const csv = [header, ...rows].map((cols) => cols.map(esc).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `support-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  const exportCsv = async () => {
+    try {
+      await exportSupportTicketsCsv({
+        q: q || undefined,
+        status: status || undefined,
+        priority: priority || undefined,
+        limit: 10000,
+      });
+    } catch (err) {
+      setMessage(err?.message || "Failed to export support tickets CSV.");
+    }
   };
 
   return (

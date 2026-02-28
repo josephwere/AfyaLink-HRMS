@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ackSreIncident,
   createSreIncident,
+  exportSreIncidentsCsv,
   escalateSreIncident,
   listSreIncidents,
   mitigateSreIncident,
@@ -77,28 +78,17 @@ export default function SreIncidentOps() {
     }
   };
 
-  const exportCsv = () => {
-    const esc = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const header = ["Incident Key", "Status", "Severity", "Service", "Summary", "Source Alert", "Created At"];
-    const rows = items.map((item) => [
-      item.incidentKey,
-      item.status,
-      item.severity,
-      item.service || "",
-      item.summary || "",
-      item.sourceAlert || "",
-      item.createdAt ? new Date(item.createdAt).toISOString() : "",
-    ]);
-    const csv = [header, ...rows].map((cols) => cols.map(esc).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sre-incidents-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  const exportCsv = async () => {
+    try {
+      await exportSreIncidentsCsv({
+        q: q || undefined,
+        status: status || undefined,
+        severity: severity || undefined,
+        limit: 10000,
+      });
+    } catch (err) {
+      setMessage(err?.message || "Failed to export incidents CSV.");
+    }
   };
 
   return (

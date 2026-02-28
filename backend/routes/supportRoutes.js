@@ -5,6 +5,7 @@ import { requireRole } from "../middleware/roleMiddleware.js";
 import SupportTicket from "../models/SupportTicket.js";
 import SreIncident from "../models/SreIncident.js";
 import AuditLog from "../models/AuditLog.js";
+import { recordExportEvent } from "../utils/exportAudit.js";
 
 const router = express.Router();
 
@@ -16,6 +17,10 @@ function normalizeScope(req, requestedHospital) {
   const role = String(req.user?.effectiveRole || req.user?.role || "").toUpperCase();
   const privileged = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   return privileged ? requestedHospital || null : req.user?.hospital || null;
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
 router.use(
@@ -61,6 +66,79 @@ router.get("/tickets", async (req, res) => {
     return res.json({ count: tickets.length, tickets });
   } catch (err) {
     return res.status(500).json({ message: err.message || "Failed to list support tickets" });
+  }
+});
+
+router.get("/tickets/export.csv", async (req, res) => {
+  try {
+    const hospital = normalizeScope(req, req.query.hospital || null);
+    const status = req.query.status ? String(req.query.status).toUpperCase() : null;
+    const priority = req.query.priority ? String(req.query.priority).toUpperCase() : null;
+    const q = String(req.query.q || "").trim();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 5000, 1), 10000);
+
+    const filter = {};
+    if (hospital) filter.hospital = hospital;
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (q) {
+      filter.$or = [
+        { ticketKey: { $regex: q, $options: "i" } },
+        { title: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const tickets = await SupportTicket.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate("linkedIncident", "incidentKey")
+      .lean();
+
+    await recordExportEvent({
+      req,
+      action: "EXPORT_SUPPORT_TICKETS_CSV",
+      resource: "SupportTicket",
+      format: "CSV",
+      rowCount: tickets.length,
+      metadata: {
+        status: status || null,
+        priority: priority || null,
+        hospital: hospital || null,
+      },
+    });
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="support-tickets-${Date.now()}.csv"`);
+    const header = [
+      "ticketKey",
+      "status",
+      "priority",
+      "category",
+      "title",
+      "description",
+      "linkedIncident",
+      "createdAt",
+      "resolvedAt",
+    ];
+    res.write(`${header.join(",")}\n`);
+    for (const row of tickets) {
+      const line = [
+        row.ticketKey,
+        row.status,
+        row.priority,
+        row.category || "",
+        row.title || "",
+        row.description || "",
+        row.linkedIncident?.incidentKey || "",
+        row.createdAt ? new Date(row.createdAt).toISOString() : "",
+        row.resolvedAt ? new Date(row.resolvedAt).toISOString() : "",
+      ];
+      res.write(`${line.map(csvEscape).join(",")}\n`);
+    }
+    return res.end();
+  } catch (err) {
+    return res.status(500).json({ message: err.message || "Failed to export support tickets" });
   }
 });
 
