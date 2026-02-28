@@ -404,6 +404,13 @@ export default function Sidebar({ open = true, onClose }) {
                 >
                   Financials
                 </Item>
+                <Item
+                  to="/hospital-admin/pharmacy-referrals"
+                  icon="pharmacy"
+                  onSelect={onClose}
+                >
+                  Pharmacy Referrals
+                </Item>
                 {canSelfService && (
                   <Item
                     to="/workforce/requests"

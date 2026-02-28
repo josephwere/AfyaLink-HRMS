@@ -13,8 +13,27 @@ function setFavicon(href) {
   link.href = href;
 }
 
+function preloadImage(url) {
+  if (!url) return;
+  const img = new Image();
+  img.decoding = "async";
+  img.loading = "eager";
+  img.src = url;
+}
+
+function readCachedBranding() {
+  try {
+    const cached = localStorage.getItem("afyalink_public_branding");
+    if (!cached) return {};
+    const branding = JSON.parse(cached);
+    return branding && typeof branding === "object" ? { branding } : {};
+  } catch {
+    return {};
+  }
+}
+
 export function SystemSettingsProvider({ children }) {
-  const [baseSettings, setBaseSettings] = useState(null);
+  const [baseSettings, setBaseSettings] = useState(() => readCachedBranding());
   const [hospitalCustomization, setHospitalCustomization] = useState(null);
   const base = import.meta.env.VITE_API_URL || "";
   const BRANDING_CACHE_KEY = "afyalink_public_branding";
@@ -139,6 +158,10 @@ export function SystemSettingsProvider({ children }) {
     if (branding.appIcon) root.style.setProperty("--brand-icon", `url(${branding.appIcon})`);
     if (branding.loginBackground) root.style.setProperty("--login-bg", `url(${branding.loginBackground})`);
     if (branding.homeBackground) root.style.setProperty("--home-bg", `url(${branding.homeBackground})`);
+    preloadImage(branding.logo);
+    preloadImage(branding.appIcon);
+    preloadImage(branding.loginBackground);
+    preloadImage(branding.homeBackground);
     if (settings?.hospitalCustomization?.theme?.primaryColor) {
       root.style.setProperty("--primary", settings.hospitalCustomization.theme.primaryColor);
     }

@@ -108,6 +108,7 @@ import PharmacyDashboard from "./pages/Pharmacy/Index";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import SuperAdminHospitals from "./pages/SuperAdmin/Hospitals";
 import SuperAdminSystemSettings from "./pages/SuperAdmin/SystemSettings";
+import SuperAdminPharmacies from "./pages/SuperAdmin/Pharmacies";
 import HospitalAdminDashboard from "./pages/HospitalAdmin/Dashboard";
 import HospitalAdminRegisterStaff from "./pages/HospitalAdmin/RegisterStaff";
 import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
@@ -118,6 +119,7 @@ import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
 import HospitalCustomization from "./pages/HospitalAdmin/Customization";
 import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConnectivity";
 import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
+import HospitalAdminPharmacyReferrals from "./pages/HospitalAdmin/PharmacyReferrals";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -1052,6 +1054,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/super-admin/pharmacies"
+            element={
+              <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <SuperAdminPharmacies />
+              </RequireRole>
+            }
+          />
 
           {/* SYSTEM ADMIN */}
           <Route
@@ -1191,6 +1201,14 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminMachineAlerts />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/pharmacy-referrals"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminPharmacyReferrals />
               </RequireRole>
             }
           />

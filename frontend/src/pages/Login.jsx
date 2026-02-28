@@ -24,6 +24,7 @@ export default function Login() {
   const [info, setInfo] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [slowAuth, setSlowAuth] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   /* -------------------------
@@ -53,6 +54,17 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    if (!settings?.branding) return;
+    const preload = [settings.branding.loginBackground, settings.branding.logo].filter(Boolean);
+    preload.forEach((url) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.loading = "eager";
+      img.src = url;
+    });
+  }, [settings]);
+
+  useEffect(() => {
     const onOnline = () => setIsOffline(false);
     const onOffline = () => setIsOffline(true);
     window.addEventListener("online", onOnline);
@@ -71,7 +83,9 @@ export default function Login() {
     setError("");
     setInfo("");
     setSubmitting(true);
+    setSlowAuth(false);
     clearError?.();
+    const slowTimer = setTimeout(() => setSlowAuth(true), 5000);
 
     try {
       rememberMe
@@ -101,7 +115,9 @@ export default function Login() {
     } catch (err) {
       setError(err.message || "Invalid credentials");
     } finally {
+      clearTimeout(slowTimer);
       setSubmitting(false);
+      setSlowAuth(false);
     }
   };
 
@@ -129,6 +145,11 @@ export default function Login() {
         {isOffline && (
           <div className="auth-info">
             You are offline. Login works only for accounts previously signed in on this device.
+          </div>
+        )}
+        {slowAuth && (
+          <div className="auth-info">
+            Signing in is taking longer than usual. Please wait a few seconds.
           </div>
         )}
 

@@ -22,6 +22,57 @@ import { getRiskPolicy } from "../utils/riskPolicy.js";
 const generateOtp = () =>
   crypto.randomInt(100000, 999999).toString();
 
+const withTimeout = async (promise, ms = 1200, fallback = null) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+const fireAndForget = (promise) => {
+  Promise.resolve(promise).catch(() => {});
+};
+
+const setStepUpOtp = async (userId, otp) => {
+  const key = `2fa:${userId}`;
+  let stored = false;
+  try {
+    const out = await withTimeout(redis.set(key, otp, { ex: 300 }), 900, null);
+    stored = Boolean(out);
+  } catch {
+    stored = false;
+  }
+  if (!stored) {
+    await setOtp(key, otp, 300);
+  } else {
+    fireAndForget(setOtp(key, otp, 300));
+  }
+};
+
+const getStepUpOtp = async (userId) => {
+  const key = `2fa:${userId}`;
+  try {
+    const fromRedis = await withTimeout(redis.get(key), 900, null);
+    if (fromRedis) return String(fromRedis);
+  } catch {
+    // fallback below
+  }
+  return getOtp(key);
+};
+
+const clearStepUpOtp = async (userId) => {
+  const key = `2fa:${userId}`;
+  fireAndForget(withTimeout(redis.del(key), 900, null));
+  await delOtp(key);
+};
+
 const send2FACode = async (user, otp) => {
   try {
     if (user.email) {
@@ -337,19 +388,25 @@ export const login = async (req, res) => {
 
     const policy = await getRiskPolicy();
     const risk = assessLoginRisk(req, user, policy);
-    await persistRiskAssessment(user, risk);
+    fireAndForget(persistRiskAssessment(user, risk));
     if (risk.level === "HIGH" || risk.level === "CRITICAL") {
       const otp = generateOtp();
-      await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
-      await send2FACode(user, otp);
+      await setStepUpOtp(user._id, otp);
+      fireAndForget(withTimeout(send2FACode(user, otp), 3000, null));
 
       if (risk.level === "CRITICAL") {
         const restrictionMinutes = Number(policy?.restrictionMinutes ?? 30);
         const restrictedUntil = new Date(Date.now() + restrictionMinutes * 60 * 1000);
-        await redis.set(
-          `risk:restricted:${String(user._id)}`,
-          JSON.stringify({ reason: "CRITICAL_LOGIN_RISK", until: restrictedUntil.toISOString() }),
-          { ex: restrictionMinutes * 60 }
+        fireAndForget(
+          withTimeout(
+            redis.set(
+              `risk:restricted:${String(user._id)}`,
+              JSON.stringify({ reason: "CRITICAL_LOGIN_RISK", until: restrictedUntil.toISOString() }),
+              { ex: restrictionMinutes * 60 }
+            ),
+            1000,
+            null
+          )
         );
         user.sessionSecurity = {
           ...(user.sessionSecurity || {}),
@@ -400,8 +457,8 @@ export const login = async (req, res) => {
       }
 
       const otp = generateOtp();
-      await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
-      await send2FACode(user, otp);
+      await setStepUpOtp(user._id, otp);
+      fireAndForget(withTimeout(send2FACode(user, otp), 3000, null));
       return res.json({
         success: true,
         requires2FA: true,
@@ -435,28 +492,32 @@ export const login = async (req, res) => {
       lastRiskLevel: risk.level,
       restrictedUntil: null,
     };
-    await redis.del(`risk:restricted:${String(user._id)}`);
+    fireAndForget(withTimeout(redis.del(`risk:restricted:${String(user._id)}`), 1000, null));
     await user.save();
 
-    await AuditLog.create({
-      actorId: user._id,
-      actorRole: user.role,
-      action: "USER_LOGIN",
-      resource: "User",
-      resourceId: user._id,
-      hospital: user.hospital || null,
-      metadata: { riskLevel: risk.level, riskScore: risk.score },
-      success: true,
-    });
-    await appendComplianceLedger({
-      actorId: user._id,
-      actorRole: user.role,
-      action: "USER_LOGIN",
-      resource: "User",
-      resourceId: user._id,
-      hospital: user.hospital || null,
-      metadata: { riskLevel: risk.level, riskScore: risk.score },
-    });
+    fireAndForget(
+      AuditLog.create({
+        actorId: user._id,
+        actorRole: user.role,
+        action: "USER_LOGIN",
+        resource: "User",
+        resourceId: user._id,
+        hospital: user.hospital || null,
+        metadata: { riskLevel: risk.level, riskScore: risk.score },
+        success: true,
+      })
+    );
+    fireAndForget(
+      appendComplianceLedger({
+        actorId: user._id,
+        actorRole: user.role,
+        action: "USER_LOGIN",
+        resource: "User",
+        resourceId: user._id,
+        hospital: user.hospital || null,
+        metadata: { riskLevel: risk.level, riskScore: risk.score },
+      })
+    );
 
     res.json({
       success: true,
@@ -656,9 +717,9 @@ export const verify2FAOtp = async (req, res) => {
         }
       }
     } else {
-      const savedOtp = await redis.get(`2fa:${userId}`);
+      const savedOtp = await getStepUpOtp(userId);
       verified = Boolean(savedOtp && savedOtp === String(otp));
-      if (verified) await redis.del(`2fa:${userId}`);
+      if (verified) await clearStepUpOtp(userId);
     }
 
     if (!verified) {

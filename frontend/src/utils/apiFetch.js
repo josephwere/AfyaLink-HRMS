@@ -67,14 +67,19 @@ async function apiFetch(path, options = {}, _retry = false) {
     headers["Content-Type"] = "application/json";
   }
 
+  const timeoutMs = Number(requestOptions.timeoutMs || (isAuthRoute ? 20000 : 15000));
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...requestOptions,
       credentials: "include",
       headers,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
     if (!_skipOfflineQueue && canQueueOfflineMutation(path, requestOptions.method, requestOptions.body)) {
       queueOfflineMutation({
         path,
@@ -89,7 +94,12 @@ async function apiFetch(path, options = {}, _retry = false) {
         message: "Offline: action queued and will sync automatically.",
       };
     }
+    if (err?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
     throw new Error("Network error. Please check your connection.");
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   /* ----------------------------------

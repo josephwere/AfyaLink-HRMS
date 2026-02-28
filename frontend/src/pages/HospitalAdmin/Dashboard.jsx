@@ -150,6 +150,7 @@ export default function Dashboard() {
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/financials")}>Financials</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/machine-connectivity")}>Machine Connectivity</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>Branding & Customization</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/pharmacy-referrals")}>Pharmacy Referrals</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
         </div>
       </div>
@@ -219,6 +220,7 @@ export default function Dashboard() {
             <button type="button" className="action-link" onClick={() => navigate("/reports")}>Attendance Heatmap</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/financials")}>Budget & Financials</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/pharmacy-referrals")}>Nearest Pharmacy Routing</button>
             <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=NURSE&status=IN_PROGRESS")}>Training Tracker Board</button>
           </div>
         </div>

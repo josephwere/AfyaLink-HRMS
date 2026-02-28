@@ -82,6 +82,7 @@ export default function Dashboard() {
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/create-admin")}>Role Management</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>Global Payroll</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/settings")}>System Settings</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/pharmacies")}>Registered Pharmacies</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
         </div>
       </div>
@@ -146,6 +147,7 @@ export default function Dashboard() {
             <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
             <button type="button" className="action-link" onClick={() => navigate("/security-admin")}>Security Incidents</button>
             <button type="button" className="action-link" onClick={() => navigate("/system-admin")}>System Status Monitor</button>
+            <button type="button" className="action-link" onClick={() => navigate("/super-admin/pharmacies")}>Pharmacy Registry</button>
             <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=HOSPITAL_ADMIN&status=NOT_STARTED")}>Training Tracker Board</button>
           </div>
         </div>

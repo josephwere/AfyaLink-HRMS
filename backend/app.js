@@ -128,6 +128,7 @@ import printingRoutes from "./routes/printingRoutes.js";
 import communityHealthWorkerRoutes from "./routes/communityHealthWorkerRoutes.js";
 import machineConnectivityRoutes from "./routes/machineConnectivityRoutes.js";
 import trainingTrackerRoutes from "./routes/trainingTrackerRoutes.js";
+import pharmacyNetworkRoutes from "./routes/pharmacyNetworkRoutes.js";
 
 
 
@@ -240,6 +241,7 @@ app.use("/api/printing", printingRoutes);
 app.use("/api/chw", communityHealthWorkerRoutes);
 app.use("/api/machine-connectivity", machineConnectivityRoutes);
 app.use("/api/training", trainingTrackerRoutes);
+app.use("/api/pharmacy-network", pharmacyNetworkRoutes);
 
 
 /* ======================================================
