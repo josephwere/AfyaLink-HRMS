@@ -9,7 +9,7 @@ export default function OPDWorkspace() {
       actions={[
         { label: "Open Consultation", variant: "primary", path: "/doctor/opd#consult" },
         { label: "Print Summary", onClick: () => window.print() },
-        { label: "Send to Pharmacy", path: "/pharmacy/queue" },
+        { label: "Send to Pharmacy", path: "/hospital-admin/pharmacy-referrals" },
       ]}
       panels={[
         { title: "Patient Summary", body: "Vitals, allergies and insurance context." },
