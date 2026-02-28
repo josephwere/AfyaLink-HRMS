@@ -13,6 +13,8 @@
     "authz:regression": "node scripts/authz-regression.mjs",
     "audit:route-lockdown": "node scripts/route-lockdown-audit.mjs",
     "audit:abac-tests": "node scripts/abac-regression-audit.mjs",
+    "audit:indexes": "node scripts/index-readiness-audit.mjs",
+    "audit:indexes:db": "node scripts/index-readiness-audit.mjs --with-db",
     "security:gate": "npm run audit:route-lockdown && npm run authz:regression && npm run audit:abac-tests",
     "preprod:preflight": "NODE_ENV=production node scripts/production-preflight.mjs",
     "preprod:gate": "npm run preprod:preflight && npm run security:gate && npm run test",
