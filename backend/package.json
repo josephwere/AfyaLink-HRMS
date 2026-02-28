@@ -48,7 +48,8 @@
     "test:gateway:ci:strict": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "lint": "eslint . --ext .js,.jsx || true",
     "format": "prettier --write \"**/*.{js,jsx,json,md,css}\" || true",
-    "start:prod": "NODE_ENV=production node server.js"
+    "start:prod": "NODE_ENV=production node server.js",
+    "perf:k6:global-burst": "k6 run perf/k6/global-burst.js"
   },
   "dependencies": {
     "@automerge/automerge": "^2.0.5",
@@ -90,8 +91,6 @@
     "ws": "^8.14.2",
     "google-auth-library": "^9.6.0",
     "json2csv": "5.0.7"
-
-
   },
   "devDependencies": {
     "jest": "^29.6.1",
