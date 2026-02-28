@@ -72,6 +72,30 @@ export default function SupportTickets() {
     }
   };
 
+  const exportCsv = () => {
+    const esc = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const header = ["Ticket Key", "Status", "Priority", "Category", "Title", "Incident", "Created At"];
+    const rows = tickets.map((ticket) => [
+      ticket.ticketKey,
+      ticket.status,
+      ticket.priority,
+      ticket.category || "",
+      ticket.title || "",
+      ticket.linkedIncident?.incidentKey || "",
+      ticket.createdAt ? new Date(ticket.createdAt).toISOString() : "",
+    ]);
+    const csv = [header, ...rows].map((cols) => cols.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `support-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -82,6 +106,9 @@ export default function SupportTickets() {
         <div className="welcome-actions">
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" className="btn-secondary" onClick={exportCsv} disabled={!tickets.length}>
+            Export CSV
           </button>
         </div>
       </div>
