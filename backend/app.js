@@ -11,6 +11,7 @@ import { trace } from "./middleware/traceMiddleware.js";
 import { denyAudit } from "./middleware/denyAudit.js";
 import { metricsMiddleware } from "./middleware/metricsMiddleware.js";
 import { renderPrometheusMetrics } from "./utils/metrics.js";
+import { authLimiter, aiGatewayLimiter } from "./middleware/trafficGuards.js";
 
 /* ======================================================
    🌱 ENV
@@ -176,6 +177,12 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
 app.use(metricsMiddleware);
+
+/* ======================================================
+   🚦 TRAFFIC GUARDS (SCALE HARDENING)
+====================================================== */
+app.use("/api/auth", authLimiter);
+app.use("/api/ai/gateway", aiGatewayLimiter);
 
 /* ======================================================
    🚨 EMERGENCY

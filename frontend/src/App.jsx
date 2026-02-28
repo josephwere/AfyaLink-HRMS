@@ -157,6 +157,23 @@ function RootEntry() {
   return <Navigate to={user ? redirectByRole(user) : "/login"} replace />;
 }
 
+const SHARED_NOTIFICATION_ROLES = [
+  "SUPER_ADMIN",
+  "SYSTEM_ADMIN",
+  "DEVELOPER",
+  "HOSPITAL_ADMIN",
+  "DOCTOR",
+  "NURSE",
+  "LAB_TECH",
+  "PHARMACIST",
+  "SECURITY_ADMIN",
+  "SECURITY_OFFICER",
+  "RECEPTIONIST",
+  "HR_MANAGER",
+  "PAYROLL_OFFICER",
+  "COMMUNITY_HEALTH_WORKER",
+];
+
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div />;
@@ -1271,7 +1288,6 @@ export default function App() {
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="realtime" element={<RealTimeIntegrations />} />
             <Route path="crdt-patients" element={<CRDTPatientEditor />} />
-            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="access-control" element={<AccessControl />} />
             <Route
               path="payment-settings"
@@ -1340,8 +1356,22 @@ export default function App() {
 
           {/* SHARED PAGES */}
           <Route path="/profile" element={<Profile />} />
-          <Route path="/admin/notifications" element={<Navigate to="/notifications" replace />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route
+            path="/admin/notifications"
+            element={
+              <RequireRole roles={SHARED_NOTIFICATION_ROLES}>
+                <NotificationsPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <RequireRole roles={SHARED_NOTIFICATION_ROLES}>
+                <NotificationsPage />
+              </RequireRole>
+            }
+          />
           <Route
             path="/communication"
             element={
