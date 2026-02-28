@@ -115,14 +115,18 @@ body.auth-route {
 .auth-bg {
   min-height: 100dvh;
   height: 100dvh;
-  background: var(--login-bg) center/cover no-repeat,
-    linear-gradient(135deg, #0f766e, #2563eb);
+  background: linear-gradient(135deg, #0f766e, #2563eb);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+}
+
+.auth-bg.auth-bg-ready {
+  background: var(--login-bg) center/cover no-repeat,
+    linear-gradient(135deg, #0f766e, #2563eb);
 }
 
 .auth-card {
@@ -1531,11 +1535,42 @@ body.auth-route {
   .navbar {
     flex-wrap: wrap;
   }
-  .sidebar {
-    display: none;
-  }
   .app-grid {
-    min-height: auto;
+    min-height: 100dvh;
+    height: calc(100dvh - 56px);
+  }
+  .main {
+    padding: 14px 12px calc(84px + env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px);
+  }
+  .sidebar-collapsed .sidebar {
+    display: flex;
+  }
+  .sidebar {
+    display: flex;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: min(86vw, 320px);
+    max-width: 320px;
+    height: calc(100dvh - 56px);
+    min-height: calc(100dvh - 56px);
+    z-index: 25;
+    transform: translateX(-106%);
+    transition: transform 180ms ease;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  .sidebar.collapsed {
+    width: min(86vw, 320px);
+    max-width: 320px;
+    padding: 16px 12px;
+    transform: translateX(-106%);
+  }
+  .sidebar-backdrop {
+    z-index: 24;
   }
   .icon-upload-row {
     grid-template-columns: 1fr;

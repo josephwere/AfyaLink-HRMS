@@ -286,6 +286,17 @@ function AppLayout() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    const mobile = window.matchMedia("(max-width: 900px)").matches;
+    if (!mobile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sidebarOpen, user]);
+
+  useEffect(() => {
     const onSecurity = (event) => {
       const detail = event?.detail || {};
       setSecurityNotice({

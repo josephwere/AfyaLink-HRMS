@@ -421,6 +421,7 @@ export function AuthProvider({ children }) {
           identifier: identifierOrToken,
           password: passwordOrOptions,
         },
+        timeoutMs: 12000,
       });
     } catch (err) {
       const networkLike =

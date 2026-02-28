@@ -13,11 +13,11 @@ function setFavicon(href) {
   link.href = href;
 }
 
-function preloadImage(url) {
+function preloadImage(url, { eager = false } = {}) {
   if (!url) return;
   const img = new Image();
   img.decoding = "async";
-  img.loading = "eager";
+  img.loading = eager ? "eager" : "lazy";
   img.src = url;
 }
 
@@ -158,10 +158,20 @@ export function SystemSettingsProvider({ children }) {
     if (branding.appIcon) root.style.setProperty("--brand-icon", `url(${branding.appIcon})`);
     if (branding.loginBackground) root.style.setProperty("--login-bg", `url(${branding.loginBackground})`);
     if (branding.homeBackground) root.style.setProperty("--home-bg", `url(${branding.homeBackground})`);
-    preloadImage(branding.logo);
-    preloadImage(branding.appIcon);
-    preloadImage(branding.loginBackground);
-    preloadImage(branding.homeBackground);
+    const connection = navigator?.connection || navigator?.mozConnection || navigator?.webkitConnection;
+    const saveData = Boolean(connection?.saveData);
+    const slowNetwork = /2g/.test(String(connection?.effectiveType || ""));
+    const canWarmHeavyAssets = !saveData && !slowNetwork;
+
+    preloadImage(branding.logo, { eager: true });
+    preloadImage(branding.appIcon, { eager: false });
+    if (canWarmHeavyAssets) {
+      const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 500));
+      schedule(() => {
+        preloadImage(branding.loginBackground, { eager: false });
+        preloadImage(branding.homeBackground, { eager: false });
+      });
+    }
     if (settings?.hospitalCustomization?.theme?.primaryColor) {
       root.style.setProperty("--primary", settings.hospitalCustomization.theme.primaryColor);
     }

@@ -94,7 +94,7 @@ export default function Sidebar({ open = true, onClose }) {
   if (user.role === "GUEST") {
     return (
       <aside
-        className={`sidebar ${open ? "" : "collapsed"}`}
+        className={`sidebar ${open ? "is-open" : "collapsed"}`}
         onWheel={(e) => e.stopPropagation()}
       >
         <div className="sidebar-header sticky">
@@ -174,7 +174,7 @@ export default function Sidebar({ open = true, onClose }) {
 
   return (
     <aside
-      className={`sidebar ${open ? "" : "collapsed"}`}
+      className={`sidebar ${open ? "is-open" : "collapsed"}`}
       onWheel={(e) => e.stopPropagation()}
     >
       <div className="sidebar-header sticky">
