@@ -12,6 +12,12 @@
 - Tier 2: integration/configuration troubleshooting.
 - Tier 3: engineering escalation.
 
+## Pilot Ops APIs
+- `GET /api/pilot/onboarding`: list onboarding checklists.
+- `POST /api/pilot/onboarding`: create/update pilot onboarding checklist.
+- `PATCH /api/pilot/onboarding/:id/item/:key`: mark checklist item complete/incomplete.
+- `GET /api/sre/incidents`: operations incident handoff view.
+
 ## SLA Targets
 - Sev1 response: <= 15 min.
 - Sev2 response: <= 1 hour.
