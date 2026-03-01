@@ -1,7 +1,11 @@
 import Appointment from '../models/Appointment.js';
+import Patient from "../models/Patient.js";
+import Prescription from "../models/Prescription.js";
+import User from "../models/User.js";
 import { predictNextAvailableSlot, simpleRiskScore } from '../utils/aiUtils.js';
 import { extractDocumentBase64 } from "../services/aiAdapter.js";
 import { logAudit } from "../services/auditService.js";
+import { normalizeRole } from "../utils/normalizeRole.js";
 
 export const suggestSlot = async (req, res, next) => {
   try {
@@ -60,5 +64,185 @@ export const extractDocument = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+async function resolvePatientIdsForUser(userId, hospitalId = null) {
+  const user = await User.findById(userId).select("phone nationalIdNumber");
+  if (!user) return [];
+  const filters = [];
+  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
+  if (user.phone) filters.push({ contact: user.phone });
+  filters.push({ "metadata.userId": userId });
+  const where = { active: true, $or: filters };
+  if (hospitalId) where.hospital = hospitalId;
+  const rows = await Patient.find(where).select("_id");
+  return rows.map((p) => String(p._id));
+}
+
+function buildAdvice({ role, symptoms = [], vitals = {}, assistantProfile = {}, nextAppointmentAt = null }) {
+  const alerts = [];
+  const recommendations = [];
+  const normalizedSymptoms = symptoms.map((s) => String(s || "").toLowerCase());
+  const temp = Number(vitals.temperatureC || 0);
+  const spo2 = Number(vitals.spo2 || 0);
+
+  if (spo2 > 0 && spo2 < 92) {
+    alerts.push("Low oxygen level detected (SpO2 below 92%). Seek urgent medical care.");
+  }
+  if (temp >= 39) {
+    alerts.push("High fever detected (>=39°C). Consult a doctor as soon as possible.");
+  }
+  if (normalizedSymptoms.some((s) => /chest pain|shortness of breath|faint/.test(s))) {
+    alerts.push("Critical symptom detected. Visit emergency care immediately.");
+  }
+
+  if (nextAppointmentAt) {
+    recommendations.push(`Upcoming appointment: ${new Date(nextAppointmentAt).toLocaleString()}. Keep this visit.`);
+  } else if (role === "PATIENT") {
+    recommendations.push("No upcoming appointment found. Book a check-up if symptoms persist.");
+  }
+
+  const meds = Array.isArray(assistantProfile?.medications) ? assistantProfile.medications : [];
+  if (meds.length) {
+    recommendations.push(
+      `Dose reminder: ${meds
+        .slice(0, 3)
+        .map((m) => `${m.name || "Medication"} (${m.schedule || "as prescribed"})`)
+        .join(", ")}.`
+    );
+  }
+
+  const conditions = Array.isArray(assistantProfile?.conditions) ? assistantProfile.conditions : [];
+  if (conditions.length) {
+    recommendations.push(`Chronic care check: monitor ${conditions.slice(0, 3).join(", ")} regularly.`);
+  }
+
+  if (!alerts.length && !recommendations.length) {
+    recommendations.push("Maintain hydration, rest, and monitor your symptoms. Seek care if symptoms worsen.");
+  }
+
+  return {
+    alerts,
+    recommendations,
+    disclaimer:
+      "AI guidance is supportive only and not a diagnosis. Follow clinician instructions and local emergency protocols.",
+  };
+}
+
+export const getAssistantContext = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const hospitalId = req.user?.hospitalId || req.user?.hospital || null;
+    let nextAppointment = null;
+
+    if (role === "PATIENT") {
+      const patientIds = await resolvePatientIdsForUser(req.user.id, hospitalId || null);
+      if (patientIds.length) {
+        nextAppointment = await Appointment.findOne({
+          patient: { $in: patientIds },
+          scheduledAt: { $gte: new Date() },
+          status: { $in: ["Scheduled", "CheckedIn", "InConsultation"] },
+        })
+          .sort({ scheduledAt: 1 })
+          .select("scheduledAt reason status")
+          .lean();
+      }
+    } else if (role === "DOCTOR") {
+      nextAppointment = await Appointment.findOne({
+        doctor: req.user.id,
+        scheduledAt: { $gte: new Date() },
+        status: { $in: ["Scheduled", "CheckedIn", "InConsultation"] },
+      })
+        .sort({ scheduledAt: 1 })
+        .select("scheduledAt reason status")
+        .lean();
+    }
+
+    const activePrescriptions = await Prescription.countDocuments({
+      patient: req.user.id,
+      status: { $in: ["Pending"] },
+    });
+
+    const profile = req.user?.metadata?.aiAssistant || {};
+    return res.json({
+      success: true,
+      context: {
+        role,
+        nextAppointment,
+        activePrescriptions,
+        assistantProfile: profile,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updateAssistantProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const current = user.metadata && typeof user.metadata === "object" ? user.metadata : {};
+    const incoming = req.body?.assistantProfile || {};
+    user.metadata = {
+      ...current,
+      aiAssistant: {
+        conditions: Array.isArray(incoming.conditions)
+          ? incoming.conditions.map((x) => String(x).trim()).filter(Boolean)
+          : [],
+        medications: Array.isArray(incoming.medications)
+          ? incoming.medications.map((m) => ({
+              name: String(m?.name || "").trim(),
+              dosage: String(m?.dosage || "").trim(),
+              schedule: String(m?.schedule || "").trim(),
+            }))
+          : [],
+        notes: String(incoming.notes || "").trim(),
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    await user.save();
+    return res.json({ success: true, assistantProfile: user.metadata.aiAssistant });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getAssistantAdvice = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const hospitalId = req.user?.hospitalId || req.user?.hospital || null;
+    let nextAppointmentAt = null;
+    if (role === "PATIENT") {
+      const patientIds = await resolvePatientIdsForUser(req.user.id, hospitalId || null);
+      if (patientIds.length) {
+        const appt = await Appointment.findOne({
+          patient: { $in: patientIds },
+          scheduledAt: { $gte: new Date() },
+          status: { $in: ["Scheduled", "CheckedIn", "InConsultation"] },
+        })
+          .sort({ scheduledAt: 1 })
+          .select("scheduledAt")
+          .lean();
+        nextAppointmentAt = appt?.scheduledAt || null;
+      }
+    }
+
+    const profile = req.user?.metadata?.aiAssistant || {};
+    const advice = buildAdvice({
+      role,
+      symptoms: Array.isArray(req.body?.symptoms) ? req.body.symptoms : [],
+      vitals: req.body?.vitals || {},
+      assistantProfile: profile,
+      nextAppointmentAt,
+    });
+
+    return res.json({
+      success: true,
+      advice,
+    });
+  } catch (err) {
+    return next(err);
   }
 };

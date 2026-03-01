@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
+import {
+  createCustomizationRequest,
+  listCustomizationRequests,
+} from "../../services/customizationRequestApi";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -39,6 +43,17 @@ export default function HospitalCustomization() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [requests, setRequests] = useState([]);
+  const [reqSaving, setReqSaving] = useState(false);
+  const [requestForm, setRequestForm] = useState({
+    scope: "HOSPITAL",
+    country: "",
+    title: "",
+    requirements: "",
+    requestedModules: "",
+    exclusiveDeployment: true,
+    desiredGoLiveDate: "",
+  });
 
   const load = async () => {
     setLoading(true);
@@ -60,8 +75,11 @@ export default function HospitalCustomization() {
           ...(data?.customization?.modules || {}),
         },
       });
+      const reqData = await listCustomizationRequests();
+      setRequests(reqData?.items || []);
     } catch {
       setForm(DEFAULT_FORM);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -98,6 +116,40 @@ export default function HospitalCustomization() {
         [key]: dataUrl,
       },
     }));
+  };
+
+  const submitRequest = async () => {
+    setReqSaving(true);
+    setMsg("");
+    try {
+      await createCustomizationRequest({
+        scope: requestForm.scope,
+        country: requestForm.country,
+        title: requestForm.title,
+        requirements: requestForm.requirements,
+        requestedModules: String(requestForm.requestedModules || "")
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        exclusiveDeployment: requestForm.exclusiveDeployment,
+        desiredGoLiveDate: requestForm.desiredGoLiveDate || undefined,
+      });
+      setMsg("Customization request submitted. AfyaLink developers will review and deliver your dedicated version plan.");
+      setRequestForm({
+        scope: "HOSPITAL",
+        country: "",
+        title: "",
+        requirements: "",
+        requestedModules: "",
+        exclusiveDeployment: true,
+        desiredGoLiveDate: "",
+      });
+      await load();
+    } catch (error) {
+      setMsg(error?.message || "Failed to submit customization request.");
+    } finally {
+      setReqSaving(false);
+    }
   };
 
   if (loading) return <p>Loading customization...</p>;
@@ -270,6 +322,107 @@ export default function HospitalCustomization() {
         <button type="button" className="btn-primary" onClick={save} disabled={saving}>
           {saving ? "Saving..." : "Save Customization"}
         </button>
+      </section>
+
+      <section className="section">
+        <h3>Dedicated Version Request (Hospital/Country)</h3>
+        <div className="card form">
+          <label>Scope</label>
+          <select
+            value={requestForm.scope}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, scope: e.target.value }))}
+          >
+            <option value="HOSPITAL">Hospital-only</option>
+            <option value="COUNTRY">Country program</option>
+            <option value="REGION">Regional deployment</option>
+            <option value="GLOBAL">Global variant</option>
+          </select>
+
+          <label>Country (optional, ISO code)</label>
+          <input
+            value={requestForm.country}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, country: e.target.value }))}
+            placeholder="KE"
+          />
+
+          <label>Request title</label>
+          <input
+            value={requestForm.title}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="Private pharmacy referral workflow"
+          />
+
+          <label>Requirements</label>
+          <textarea
+            rows={4}
+            value={requestForm.requirements}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, requirements: e.target.value }))}
+            placeholder="Describe required workflows, integrations, compliance, and reports."
+          />
+
+          <label>Requested modules (comma-separated)</label>
+          <input
+            value={requestForm.requestedModules}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, requestedModules: e.target.value }))}
+            placeholder="HL7 lab ingest, custom payroll, national reports"
+          />
+
+          <label>
+            <input
+              type="checkbox"
+              checked={requestForm.exclusiveDeployment}
+              onChange={(e) =>
+                setRequestForm((prev) => ({ ...prev, exclusiveDeployment: e.target.checked }))
+              }
+            />
+            Dedicated private version (exclusive to requester)
+          </label>
+
+          <label>Desired go-live date</label>
+          <input
+            type="date"
+            value={requestForm.desiredGoLiveDate}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, desiredGoLiveDate: e.target.value }))}
+          />
+
+          <button type="button" className="btn-secondary" onClick={submitRequest} disabled={reqSaving}>
+            {reqSaving ? "Submitting..." : "Submit Dedicated Version Request"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Recent Customization Requests</h3>
+        <div className="card table-wrap">
+          <table className="table lite">
+            <thead>
+              <tr>
+                <th>Created</th>
+                <th>Title</th>
+                <th>Scope</th>
+                <th>Status</th>
+                <th>Exclusive</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>No requests yet.</td>
+                </tr>
+              ) : (
+                requests.map((r) => (
+                  <tr key={r._id}>
+                    <td>{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td>{r.title}</td>
+                    <td>{r.scope}{r.country ? ` (${r.country})` : ""}</td>
+                    <td>{r.status}</td>
+                    <td>{r.exclusiveDeployment ? "Yes" : "No"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

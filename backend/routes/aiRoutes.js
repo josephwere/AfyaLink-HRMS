@@ -2,7 +2,14 @@
 
 import express from "express";
 import multer from "multer";
-import { suggestSlot, patientRisk, extractDocument } from "../controllers/aiController.js";
+import {
+  suggestSlot,
+  patientRisk,
+  extractDocument,
+  getAssistantContext,
+  updateAssistantProfile,
+  getAssistantAdvice,
+} from "../controllers/aiController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
 import aiGatewayRoutes from "./aiGatewayRoutes.js";
@@ -27,6 +34,9 @@ router.use(
 router.get("/slot", suggestSlot);
 router.post("/risk", patientRisk);
 router.post("/extract", upload.single("file"), extractDocument);
+router.get("/assistant/context", getAssistantContext);
+router.put("/assistant/profile", updateAssistantProfile);
+router.post("/assistant/advice", getAssistantAdvice);
 router.use("/gateway", aiGatewayRoutes);
 
 export default router;

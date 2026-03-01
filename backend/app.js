@@ -133,6 +133,7 @@ import pharmacyNetworkRoutes from "./routes/pharmacyNetworkRoutes.js";
 import sreIncidentRoutes from "./routes/sreIncidentRoutes.js";
 import pilotOpsRoutes from "./routes/pilotOpsRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import customizationRequestRoutes from "./routes/customizationRequestRoutes.js";
 
 
 
@@ -255,6 +256,7 @@ app.use("/api/pharmacy-network", pharmacyNetworkRoutes);
 app.use("/api/sre/incidents", sreIncidentRoutes);
 app.use("/api/pilot", pilotOpsRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/customization-requests", customizationRequestRoutes);
 
 
 /* ======================================================
