@@ -42,6 +42,7 @@ export default function HospitalCustomization() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCard, setSavingCard] = useState("");
   const [msg, setMsg] = useState("");
   const [requests, setRequests] = useState([]);
   const [reqSaving, setReqSaving] = useState(false);
@@ -89,21 +90,41 @@ export default function HospitalCustomization() {
     load();
   }, []);
 
-  const save = async () => {
+  const persistCustomization = async (customizationPatch, successMsg = "Hospital customization saved successfully.") => {
     setSaving(true);
     setMsg("");
     try {
       await apiFetch("/api/hospital-admin/customization", {
         method: "PUT",
-        body: { customization: form },
+        body: { customization: customizationPatch },
       });
-      setMsg("Hospital customization saved successfully.");
+      setMsg(successMsg);
       await load();
     } catch (error) {
       setMsg(error?.message || "Failed to save customization.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const save = async () => {
+    await persistCustomization(form, "All customization settings saved.");
+  };
+
+  const saveCard = async (key) => {
+    const patchMap = {
+      enabled: { enabled: form.enabled },
+      branding: { branding: form.branding },
+      theme: { theme: form.theme },
+      modules: { modules: form.modules },
+    };
+    if (!patchMap[key]) return;
+    setSavingCard(key);
+    await persistCustomization(
+      patchMap[key],
+      `${key.charAt(0).toUpperCase()}${key.slice(1)} settings saved.`
+    );
+    setSavingCard("");
   };
 
   const uploadBranding = async (key, file) => {
@@ -163,6 +184,11 @@ export default function HospitalCustomization() {
             Make AfyaLink match your hospital identity, theme, and module preferences.
           </p>
         </div>
+        <div className="welcome-actions">
+          <button type="button" className="btn-primary" onClick={save} disabled={saving}>
+            {saving ? "Saving..." : "Save All Customization"}
+          </button>
+        </div>
       </div>
 
       {msg && <div className="card">{msg}</div>}
@@ -178,6 +204,14 @@ export default function HospitalCustomization() {
             />
             Enable hospital customization
           </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("enabled")}
+            disabled={saving || savingCard === "enabled"}
+          >
+            {savingCard === "enabled" ? "Saving..." : "Save Activation"}
+          </button>
         </div>
       </section>
 
@@ -214,6 +248,14 @@ export default function HospitalCustomization() {
           <input type="file" accept="image/*" onChange={(e) => uploadBranding("loginBackground", e.target.files?.[0])} />
           <label>Home Background</label>
           <input type="file" accept="image/*" onChange={(e) => uploadBranding("homeBackground", e.target.files?.[0])} />
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("branding")}
+            disabled={saving || savingCard === "branding"}
+          >
+            {savingCard === "branding" ? "Saving..." : "Save Branding"}
+          </button>
         </div>
       </section>
 
@@ -270,6 +312,14 @@ export default function HospitalCustomization() {
             <option value="MINIMAL">Minimal</option>
             <option value="DENSE">Dense</option>
           </select>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("theme")}
+            disabled={saving || savingCard === "theme"}
+          >
+            {savingCard === "theme" ? "Saving..." : "Save Theme"}
+          </button>
         </div>
       </section>
 
@@ -315,13 +365,15 @@ export default function HospitalCustomization() {
             />
             Show Analytics navigation
           </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("modules")}
+            disabled={saving || savingCard === "modules"}
+          >
+            {savingCard === "modules" ? "Saving..." : "Save Module Visibility"}
+          </button>
         </div>
-      </section>
-
-      <section className="section">
-        <button type="button" className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? "Saving..." : "Save Customization"}
-        </button>
       </section>
 
       <section className="section">

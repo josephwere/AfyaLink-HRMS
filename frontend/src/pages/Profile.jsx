@@ -98,6 +98,8 @@ export default function Profile() {
   const [licenseMsg, setLicenseMsg] = useState("");
   const [extendedSaving, setExtendedSaving] = useState(false);
   const [extendedMsg, setExtendedMsg] = useState("");
+  const [sectionSaving, setSectionSaving] = useState({});
+  const [sectionMsg, setSectionMsg] = useState({});
 
   // Global production profile fields
   const [basic, setBasic] = useState({
@@ -322,79 +324,113 @@ export default function Profile() {
     }
   };
 
-  const saveExtendedProfile = async () => {
+  const buildExtendedPayload = () => ({
+    gender: basic.gender || undefined,
+    dateOfBirth: basic.dateOfBirth || undefined,
+    nationality: basic.nationality || undefined,
+    address: basic.address || undefined,
+    emergencyContact: {
+      name: basic.emergencyName || undefined,
+      relationship: basic.emergencyRelationship || undefined,
+      phone: basic.emergencyPhone || undefined,
+    },
+    employment: {
+      employeeId: employment.employeeId || undefined,
+      department: employment.department || undefined,
+      reportingManager: employment.reportingManager || undefined,
+      employmentType: employment.employmentType || undefined,
+      hireDate: employment.hireDate || undefined,
+      contractStart: employment.contractStart || undefined,
+      contractEnd: employment.contractEnd || undefined,
+      workLocation: employment.workLocation || undefined,
+      branch: employment.branch || undefined,
+    },
+    credentials: {
+      specialization: credentials.specialization || undefined,
+      subSpecialization: credentials.subSpecialization || undefined,
+      cmeCredits: credentials.cmeCredits === "" ? undefined : Number(credentials.cmeCredits),
+      researchPublications:
+        credentials.researchPublications === ""
+          ? undefined
+          : Number(credentials.researchPublications),
+      testAuthorizationLevel: credentials.testAuthorizationLevel || undefined,
+      certifications: credentials.certifications
+        ? credentials.certifications.split(",").map((s) => s.trim()).filter(Boolean)
+        : [],
+      educationHistory: credentials.educationHistory
+        ? credentials.educationHistory.split(",").map((s) => s.trim()).filter(Boolean)
+        : [],
+    },
+    financial: {
+      bankName: financial.bankName || undefined,
+      bankAccountName: financial.bankAccountName || undefined,
+      bankAccountNumber: financial.bankAccountNumber || undefined,
+      bankBranch: financial.bankBranch || undefined,
+      taxId: financial.taxId || undefined,
+      pensionInfo: financial.pensionInfo || undefined,
+      salaryStructure: financial.salaryStructure || undefined,
+      allowances: financial.allowances === "" ? undefined : Number(financial.allowances),
+      deductions: financial.deductions === "" ? undefined : Number(financial.deductions),
+    },
+    systemProfile: {
+      status: systemProfile.status || undefined,
+      accessExpiresAt: systemProfile.accessExpiresAt || undefined,
+    },
+    insuranceProfile: {
+      providerCode: insurance.providerCode || undefined,
+      providerName: insurance.providerName || undefined,
+      memberNumber: insurance.memberNumber || undefined,
+      balance: insurance.balance === "" ? undefined : Number(insurance.balance),
+      currency: insurance.currency || undefined,
+      status: insurance.status || undefined,
+    },
+  });
+
+  const sectionPayloadMap = (allPayload) => ({
+    basicInfo: {
+      gender: allPayload.gender,
+      dateOfBirth: allPayload.dateOfBirth,
+      nationality: allPayload.nationality,
+      address: allPayload.address,
+      emergencyContact: allPayload.emergencyContact,
+    },
+    employmentInfo: { employment: allPayload.employment },
+    credentialsInfo: { credentials: allPayload.credentials },
+    financialInfo: { financial: allPayload.financial },
+    insuranceProfile: { insuranceProfile: allPayload.insuranceProfile },
+    systemData: { systemProfile: allPayload.systemProfile },
+  });
+
+  const saveExtendedProfile = async (sectionKey = "") => {
     setExtendedSaving(true);
     setExtendedMsg("");
+    if (sectionKey) {
+      setSectionSaving((prev) => ({ ...prev, [sectionKey]: true }));
+      setSectionMsg((prev) => ({ ...prev, [sectionKey]: "" }));
+    }
     try {
+      const allPayload = buildExtendedPayload();
+      const payload = sectionKey ? sectionPayloadMap(allPayload)[sectionKey] || {} : allPayload;
       await apiFetch("/api/profile", {
         method: "PUT",
-        body: {
-          gender: basic.gender || undefined,
-          dateOfBirth: basic.dateOfBirth || undefined,
-          nationality: basic.nationality || undefined,
-          address: basic.address || undefined,
-          emergencyContact: {
-            name: basic.emergencyName || undefined,
-            relationship: basic.emergencyRelationship || undefined,
-            phone: basic.emergencyPhone || undefined,
-          },
-          employment: {
-            employeeId: employment.employeeId || undefined,
-            department: employment.department || undefined,
-            reportingManager: employment.reportingManager || undefined,
-            employmentType: employment.employmentType || undefined,
-            hireDate: employment.hireDate || undefined,
-            contractStart: employment.contractStart || undefined,
-            contractEnd: employment.contractEnd || undefined,
-            workLocation: employment.workLocation || undefined,
-            branch: employment.branch || undefined,
-          },
-          credentials: {
-            specialization: credentials.specialization || undefined,
-            subSpecialization: credentials.subSpecialization || undefined,
-            cmeCredits: credentials.cmeCredits === "" ? undefined : Number(credentials.cmeCredits),
-            researchPublications:
-              credentials.researchPublications === ""
-                ? undefined
-                : Number(credentials.researchPublications),
-            testAuthorizationLevel: credentials.testAuthorizationLevel || undefined,
-            certifications: credentials.certifications
-              ? credentials.certifications.split(",").map((s) => s.trim()).filter(Boolean)
-              : [],
-            educationHistory: credentials.educationHistory
-              ? credentials.educationHistory.split(",").map((s) => s.trim()).filter(Boolean)
-              : [],
-          },
-          financial: {
-            bankName: financial.bankName || undefined,
-            bankAccountName: financial.bankAccountName || undefined,
-            bankAccountNumber: financial.bankAccountNumber || undefined,
-            bankBranch: financial.bankBranch || undefined,
-            taxId: financial.taxId || undefined,
-            pensionInfo: financial.pensionInfo || undefined,
-            salaryStructure: financial.salaryStructure || undefined,
-            allowances: financial.allowances === "" ? undefined : Number(financial.allowances),
-            deductions: financial.deductions === "" ? undefined : Number(financial.deductions),
-          },
-          systemProfile: {
-            status: systemProfile.status || undefined,
-            accessExpiresAt: systemProfile.accessExpiresAt || undefined,
-          },
-          insuranceProfile: {
-            providerCode: insurance.providerCode || undefined,
-            providerName: insurance.providerName || undefined,
-            memberNumber: insurance.memberNumber || undefined,
-            balance: insurance.balance === "" ? undefined : Number(insurance.balance),
-            currency: insurance.currency || undefined,
-            status: insurance.status || undefined,
-          },
-        },
+        body: payload,
       });
-      setExtendedMsg("Profile details updated.");
+      const okMsg = sectionKey ? "Section saved." : "Profile details updated.";
+      setExtendedMsg(okMsg);
+      if (sectionKey) {
+        setSectionMsg((prev) => ({ ...prev, [sectionKey]: okMsg }));
+      }
     } catch (err) {
-      setExtendedMsg(err.message || "Failed to update profile details");
+      const failMsg = err.message || "Failed to update profile details";
+      setExtendedMsg(failMsg);
+      if (sectionKey) {
+        setSectionMsg((prev) => ({ ...prev, [sectionKey]: failMsg }));
+      }
     } finally {
       setExtendedSaving(false);
+      if (sectionKey) {
+        setSectionSaving((prev) => ({ ...prev, [sectionKey]: false }));
+      }
     }
   };
 
@@ -1699,6 +1735,16 @@ export default function Profile() {
           value={basic.emergencyPhone}
           onChange={(e) => setBasic({ ...basic, emergencyPhone: e.target.value })}
         />
+        <button
+          type="button"
+          className="primary"
+          onClick={() => saveExtendedProfile("basicInfo")}
+          disabled={Boolean(sectionSaving.basicInfo)}
+          style={{ marginTop: 8 }}
+        >
+          {sectionSaving.basicInfo ? "Saving..." : "Save Basic Info"}
+        </button>
+        {sectionMsg.basicInfo && <p style={{ marginTop: 8 }}>{sectionMsg.basicInfo}</p>}
       </DismissibleSection>
 
       <DismissibleSection
@@ -1770,6 +1816,16 @@ export default function Profile() {
           value={employment.branch}
           onChange={(e) => setEmployment({ ...employment, branch: e.target.value })}
         />
+        <button
+          type="button"
+          className="primary"
+          onClick={() => saveExtendedProfile("employmentInfo")}
+          disabled={Boolean(sectionSaving.employmentInfo)}
+          style={{ marginTop: 8 }}
+        >
+          {sectionSaving.employmentInfo ? "Saving..." : "Save Employment Info"}
+        </button>
+        {sectionMsg.employmentInfo && <p style={{ marginTop: 8 }}>{sectionMsg.employmentInfo}</p>}
       </DismissibleSection>
 
       <DismissibleSection
@@ -1828,6 +1884,16 @@ export default function Profile() {
             setCredentials({ ...credentials, testAuthorizationLevel: e.target.value })
           }
         />
+        <button
+          type="button"
+          className="primary"
+          onClick={() => saveExtendedProfile("credentialsInfo")}
+          disabled={Boolean(sectionSaving.credentialsInfo)}
+          style={{ marginTop: 8 }}
+        >
+          {sectionSaving.credentialsInfo ? "Saving..." : "Save Credentials"}
+        </button>
+        {sectionMsg.credentialsInfo && <p style={{ marginTop: 8 }}>{sectionMsg.credentialsInfo}</p>}
       </DismissibleSection>
 
       <DismissibleSection
@@ -1890,6 +1956,16 @@ export default function Profile() {
           value={financial.deductions}
           onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
         />
+        <button
+          type="button"
+          className="primary"
+          onClick={() => saveExtendedProfile("financialInfo")}
+          disabled={Boolean(sectionSaving.financialInfo)}
+          style={{ marginTop: 8 }}
+        >
+          {sectionSaving.financialInfo ? "Saving..." : "Save Financial Info"}
+        </button>
+        {sectionMsg.financialInfo && <p style={{ marginTop: 8 }}>{sectionMsg.financialInfo}</p>}
       </DismissibleSection>
 
       <DismissibleSection
@@ -1935,6 +2011,16 @@ export default function Profile() {
           <option value="ACTIVE">Active</option>
           <option value="INACTIVE">Inactive</option>
         </select>
+        <button
+          type="button"
+          className="primary"
+          onClick={() => saveExtendedProfile("insuranceProfile")}
+          disabled={Boolean(sectionSaving.insuranceProfile)}
+          style={{ marginTop: 8 }}
+        >
+          {sectionSaving.insuranceProfile ? "Saving..." : "Save Insurance Profile"}
+        </button>
+        {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
       </DismissibleSection>
 
       <DismissibleSection
@@ -1965,13 +2051,13 @@ export default function Profile() {
         />
         <button type="button"
           className="primary"
-          onClick={saveExtendedProfile}
-          disabled={extendedSaving}
+          onClick={() => saveExtendedProfile("systemData")}
+          disabled={Boolean(sectionSaving.systemData)}
           style={{ marginTop: 8 }}
         >
-          {extendedSaving ? "Saving..." : "Save Full Profile"}
+          {sectionSaving.systemData ? "Saving..." : "Save System Data"}
         </button>
-        {extendedMsg && <p style={{ marginTop: 8 }}>{extendedMsg}</p>}
+        {sectionMsg.systemData && <p style={{ marginTop: 8 }}>{sectionMsg.systemData}</p>}
       </DismissibleSection>
 
       <DismissibleSection

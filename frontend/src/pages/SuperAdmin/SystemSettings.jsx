@@ -86,6 +86,7 @@ export default function SystemSettings() {
     },
   });
   const [loading, setLoading] = useState(false);
+  const [savingCard, setSavingCard] = useState("");
   const [msg, setMsg] = useState(null);
   const [initialForm, setInitialForm] = useState(null);
 
@@ -146,26 +147,54 @@ export default function SystemSettings() {
     return patch;
   };
 
-  const save = async () => {
+  const persistPatch = async (patch, successMessage = "Settings saved.") => {
     setLoading(true);
     setMsg(null);
     try {
-      const patch = buildPatch(form, initialForm);
       if (!Object.keys(patch).length) {
         setMsg("No changes to save.");
         return;
       }
       const res = await updateSystemSettings(patch);
-      setMsg("✅ Settings saved");
+      setMsg(successMessage);
       if (res.settings) {
         setSettings(res.settings);
         setInitialForm(res.settings);
+        setForm({
+          branding: { ...form.branding, ...(res.settings.branding || {}) },
+          ai: { ...form.ai, ...(res.settings.ai || {}) },
+          monetization: {
+            ...form.monetization,
+            ...(res.settings.monetization || {}),
+            featureAccess: {
+              ...(form.monetization.featureAccess || {}),
+              ...(res.settings?.monetization?.featureAccess || {}),
+            },
+          },
+        });
       }
     } catch (err) {
       setMsg(err?.message || "Failed to save settings");
     } finally {
       setLoading(false);
     }
+  };
+
+  const save = async () => {
+    const patch = buildPatch(form, initialForm);
+    await persistPatch(patch, "All settings saved.");
+  };
+
+  const saveCard = async (key) => {
+    const map = {
+      branding: { branding: form.branding },
+      monetization: { monetization: form.monetization },
+      ai: { ai: form.ai },
+    };
+    if (!map[key]) return;
+    setSavingCard(key);
+    await persistPatch(map[key], `${key.charAt(0).toUpperCase()}${key.slice(1)} settings saved.`);
+    setSavingCard("");
   };
 
   const handleFile = async (key, file) => {
@@ -249,7 +278,7 @@ export default function SystemSettings() {
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={save} disabled={loading}>
-            {loading ? "Saving..." : "Save Settings"}
+            {loading ? "Saving..." : "Save All Settings"}
           </button>
         </div>
       </div>
@@ -269,6 +298,14 @@ export default function SystemSettings() {
           <input type="file" accept="image/*" onChange={(e) => handleFile("loginBackground", e.target.files?.[0])} />
           <label>Home Background Image</label>
           <input type="file" accept="image/*" onChange={(e) => handleFile("homeBackground", e.target.files?.[0])} />
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("branding")}
+            disabled={loading || savingCard === "branding"}
+          >
+            {savingCard === "branding" ? "Saving..." : "Save Branding"}
+          </button>
         </div>
       </section>
 
@@ -292,6 +329,14 @@ export default function SystemSettings() {
               )}
             </div>
           ))}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("branding")}
+            disabled={loading || savingCard === "branding"}
+          >
+            {savingCard === "branding" ? "Saving..." : "Save Sidebar Icons"}
+          </button>
         </div>
       </section>
 
@@ -360,6 +405,14 @@ export default function SystemSettings() {
               </select>
             </div>
           ))}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("monetization")}
+            disabled={loading || savingCard === "monetization"}
+          >
+            {savingCard === "monetization" ? "Saving..." : "Save Free/Premium Policy"}
+          </button>
         </div>
       </section>
 
@@ -398,6 +451,14 @@ export default function SystemSettings() {
               setForm((f) => ({ ...f, ai: { ...f.ai, greeting: e.target.value } }))
             }
           />
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("ai")}
+            disabled={loading || savingCard === "ai"}
+          >
+            {savingCard === "ai" ? "Saving..." : "Save AI Settings"}
+          </button>
         </div>
       </section>
     </div>
