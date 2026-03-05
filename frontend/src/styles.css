@@ -1342,7 +1342,7 @@ body.auth-route {
   right: 16px;
   bottom: 88px;
   width: min(520px, calc(100vw - 24px));
-  max-height: calc(100dvh - 120px);
+  max-height: min(760px, calc(100dvh - 112px));
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: 14px;
@@ -1367,6 +1367,11 @@ body.auth-route {
   gap: 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--app-border);
+  flex: 0 0 auto;
+  background: inherit;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ai-panel-head h3 {
@@ -1380,9 +1385,13 @@ body.auth-route {
 
 .ai-panel-body {
   padding: 10px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
   gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 
 .ai-status-card {
@@ -1762,11 +1771,32 @@ body.auth-route {
     right: 8px;
     left: 8px;
     width: auto;
-    bottom: 80px;
-    max-height: calc(100dvh - 96px);
+    bottom: max(10px, env(safe-area-inset-bottom));
+    top: 64px;
+    max-height: none;
+    height: auto;
+    border-radius: 12px;
+  }
+  .ai-panel-head {
+    padding: 10px 12px;
+  }
+  .ai-panel-body {
+    padding: 10px;
+    gap: 8px;
   }
   .ai-health-grid {
     grid-template-columns: 1fr;
+  }
+  .ai-float {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 10px 12px;
+  }
+  .ai-float-badge {
+    font-size: 12px;
+  }
+  .ai-float-sub {
+    font-size: 10px;
   }
   .icon-upload-row {
     grid-template-columns: 1fr;
