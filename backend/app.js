@@ -158,6 +158,15 @@ app.use(
         "http://localhost:3000",
       ]);
       if (allowlist.has(origin)) return callback(null, true);
+      // Dev-safe: allow localhost/127.0.0.1 on any port (e.g. Vite 5173/5174/5175)
+      try {
+        const parsed = new URL(origin);
+        if (["localhost", "127.0.0.1"].includes(parsed.hostname)) {
+          return callback(null, true);
+        }
+      } catch {
+        // ignore invalid origin string and continue to explicit deny
+      }
       if (origin.endsWith(".vercel.app")) return callback(null, true);
       return callback(new Error(`CORS blocked: ${origin}`));
     },

@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { isPrivilegedOverrideAllowed, isReadOnlyOverrideAllowed } from "./readOnlyOverride.js";
 import { resolveEffectiveRole } from "./effectiveRole.js";
 import { redis } from "../utils/redis.js";
+import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 dotenv.config();
 
@@ -60,7 +61,17 @@ const authenticate = async (req, res, next) => {
     }
 
     const actualRole = user.role;
-    const effectiveRole = resolveEffectiveRole(req, actualRole);
+    let effectiveRole = resolveEffectiveRole(req, actualRole);
+    // Prevent "empty data" incidents: hospital-scoped impersonation without hospital context
+    // can force null/invalid tenant filters and hide existing data.
+    if (
+      effectiveRole !== actualRole &&
+      HOSPITAL_SCOPED_ROLES.includes(String(effectiveRole || "").toUpperCase()) &&
+      !user.hospital &&
+      !req.headers["x-hospital"]
+    ) {
+      effectiveRole = actualRole;
+    }
     user.actualRole = actualRole;
     user.effectiveRole = effectiveRole;
     user.role = effectiveRole;

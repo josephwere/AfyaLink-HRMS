@@ -94,3 +94,27 @@ export const runAllAbacTestCases = async () => {
     method: "POST",
   });
 };
+
+export const listConnectorSdkTargets = async () => {
+  const res = await apiFetch("/api/connectors");
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.items)) return res.items;
+  return [];
+};
+
+export const getConnectorSdkManifest = async () => {
+  return apiFetch("/api/connectors/sdk/manifest");
+};
+
+export const getConnectorRuntime = async (connectorId) => {
+  if (!connectorId) throw new Error("Connector is required");
+  return apiFetch(`/api/connectors/${connectorId}/runtime`);
+};
+
+export const updateConnectorRuntime = async (connectorId, payload) => {
+  if (!connectorId) throw new Error("Connector is required");
+  return apiFetch(`/api/connectors/${connectorId}/runtime`, {
+    method: "PATCH",
+    body: payload,
+  });
+};

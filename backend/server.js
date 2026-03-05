@@ -39,6 +39,12 @@ const allowedOrigins = [
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    if (["localhost", "127.0.0.1"].includes(parsed.hostname)) return true;
+  } catch {
+    // ignore invalid origin string and continue with explicit checks
+  }
   if (origin.endsWith(".vercel.app")) return true;
   return false;
 };

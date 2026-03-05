@@ -141,6 +141,7 @@ import NlpAnalytics from "./pages/SystemAdmin/NlpAnalytics";
 import RegulatoryReports from "./pages/SystemAdmin/RegulatoryReports";
 import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
 import SystemMigrations from "./pages/SystemAdmin/Migrations";
+import ConnectorSdk from "./pages/SystemAdmin/ConnectorSdk";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -1200,6 +1201,14 @@ export default function App() {
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
                 <SystemMigrations />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/connector-sdk"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
+                <ConnectorSdk />
               </RequireRole>
             }
           />

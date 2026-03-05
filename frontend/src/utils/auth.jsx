@@ -36,6 +36,15 @@ const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
 const STRICT_IMPERSONATION_KEY = "strict_impersonation";
 const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
+const AUTH_API_BASE =
+  import.meta.env.VITE_API_URL ||
+  window.__ENV__?.API_URL ||
+  `${window.location.protocol}//${window.location.hostname}:5000`;
+
+function clearRoleOverrideState() {
+  localStorage.removeItem(ROLE_OVERRIDE_KEY);
+  localStorage.removeItem(STRICT_IMPERSONATION_KEY);
+}
 
 function normalizeIdentifier(value) {
   return String(value || "").trim().toLowerCase();
@@ -145,7 +154,7 @@ export function AuthProvider({ children }) {
     refreshInFlightRef.current = true;
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
+        `${AUTH_API_BASE}/api/auth/refresh`,
         {
           method: "POST",
           credentials: "include",
@@ -239,7 +248,7 @@ export function AuthProvider({ children }) {
           if (!refreshToken) throw new Error("Token expired");
 
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
+            `${AUTH_API_BASE}/api/auth/refresh`,
             {
               method: "POST",
               credentials: "include",
@@ -401,6 +410,9 @@ export function AuthProvider({ children }) {
         localStorage.setItem("refreshToken", passwordOrOptions.refreshToken);
       }
       localStorage.setItem("user", JSON.stringify(safeUser));
+      clearRoleOverrideState();
+      setRoleOverrideState("");
+      setStrictImpersonationState(false);
 
       setBaseUser({
         ...safeUser,
@@ -470,6 +482,9 @@ export function AuthProvider({ children }) {
       localStorage.setItem("refreshToken", data.refreshToken);
     }
     localStorage.setItem("user", JSON.stringify(safeUser));
+    clearRoleOverrideState();
+    setRoleOverrideState("");
+    setStrictImpersonationState(false);
     rememberOfflineLoginCredential(safeUser, identifierOrToken, passwordOrOptions).catch(() => {});
 
     const decoded = parseJwt(data.accessToken);
@@ -496,6 +511,9 @@ export function AuthProvider({ children }) {
     }
     localStorage.removeItem("2fa_pending");
     localStorage.removeItem("2fa_user");
+    clearRoleOverrideState();
+    setRoleOverrideState("");
+    setStrictImpersonationState(false);
 
     const storedUser = JSON.parse(localStorage.getItem("user"));
 

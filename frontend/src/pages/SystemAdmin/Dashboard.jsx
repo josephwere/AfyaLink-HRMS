@@ -258,6 +258,7 @@ export default function SystemAdminDashboard() {
           <button type="button" className="action-link" onClick={() => navigate("/developer/webhook-retry")}>Webhook Retry</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/abac")}>ABAC Policies</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/mapping-studio")}>Mapping Studio</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/connector-sdk")}>Connector SDK</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/nlp-analytics")}>NLP Analytics</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>Clinical Intelligence</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/regulatory-reports")}>Regulatory Reports</button>

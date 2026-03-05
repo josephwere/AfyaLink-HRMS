@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { resolveEffectiveRole } from "./effectiveRole.js";
+import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 /* ======================================================
    AUTHENTICATION (JWT + 2FA ENFORCEMENT)
@@ -32,7 +33,15 @@ export default async function auth(req, res, next) {
     }
 
     const actualRole = user.role;
-    const effectiveRole = resolveEffectiveRole(req, actualRole);
+    let effectiveRole = resolveEffectiveRole(req, actualRole);
+    if (
+      effectiveRole !== actualRole &&
+      HOSPITAL_SCOPED_ROLES.includes(String(effectiveRole || "").toUpperCase()) &&
+      !user.hospital &&
+      !req.headers["x-hospital"]
+    ) {
+      effectiveRole = actualRole;
+    }
     user.actualRole = actualRole;
     user.effectiveRole = effectiveRole;
     user.role = effectiveRole;

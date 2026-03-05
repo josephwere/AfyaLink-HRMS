@@ -15,6 +15,14 @@ const ALLOWED_STATUSES = new Set([
   "ROLLBACK",
   "PAUSED",
 ]);
+const STATUS_TO_RUNTIME = {
+  DRY_RUN: { mode: "SHADOW", dryRun: true },
+  PARALLEL_RUN: { mode: "MIRROR", dryRun: false },
+  CUTOVER_READY: { mode: "MIRROR", dryRun: false },
+  CUTOVER_DONE: { mode: "CUTOVER", dryRun: false },
+  ROLLBACK: { mode: "ROLLBACK", dryRun: true },
+  PAUSED: { mode: "PAUSED", dryRun: true },
+};
 
 function isPrivileged(role) {
   return PRIVILEGED.has(String(role || "").toUpperCase());
@@ -45,6 +53,22 @@ async function writeAudit(req, action, resourceId, after = null) {
     userAgent: req.get("user-agent"),
     after,
   });
+}
+
+async function syncConnectorRuntime(project, status) {
+  const connectorId = project?.sourceSystem?.connectorId;
+  const runtimeTarget = STATUS_TO_RUNTIME[String(status || "").toUpperCase()];
+  if (!connectorId || !runtimeTarget) return null;
+  const connector = await Connector.findById(connectorId);
+  if (!connector) return null;
+  connector.runtime = {
+    ...(connector.runtime || {}),
+    mode: runtimeTarget.mode,
+    dryRun: runtimeTarget.dryRun,
+    migrationProjectId: project._id,
+  };
+  await connector.save();
+  return connector;
 }
 
 export const createMigrationProject = async (req, res, next) => {
@@ -269,6 +293,7 @@ export const startMigrationDryRun = async (req, res, next) => {
       lastRunAt: new Date(),
     };
     await project.save();
+    await syncConnectorRuntime(project, "DRY_RUN");
 
     await writeAudit(req, "MIGRATION_DRY_RUN_STARTED", project._id, {
       strategy: project.strategy?.mode,
@@ -280,6 +305,49 @@ export const startMigrationDryRun = async (req, res, next) => {
       message:
         "Dry run started. Validate mappings, data quality and consent-safe extraction before cutover.",
       project,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const transitionMigrationProject = async (req, res, next) => {
+  try {
+    const filter = { ...buildFilter(req), _id: req.params.id };
+    const project = await HospitalMigrationProject.findOne(filter);
+    if (!project) return res.status(404).json({ message: "Migration project not found" });
+
+    const nextStatus = String(req.body?.status || "").toUpperCase();
+    if (!ALLOWED_STATUSES.has(nextStatus)) {
+      return res.status(400).json({ message: "Invalid migration status" });
+    }
+
+    project.status = nextStatus;
+    project.updatedBy = req.user._id;
+    project.progress = {
+      ...project.progress,
+      lastRunAt: new Date(),
+    };
+    await project.save();
+    const connector = await syncConnectorRuntime(project, nextStatus);
+
+    await writeAudit(req, "MIGRATION_STATUS_TRANSITIONED", project._id, {
+      status: nextStatus,
+      connectorId: project.sourceSystem?.connectorId || null,
+      connectorRuntimeMode: connector?.runtime?.mode || null,
+      connectorDryRun: connector?.runtime?.dryRun ?? null,
+    });
+
+    return res.json({
+      success: true,
+      project,
+      connectorRuntime: connector
+        ? {
+            connectorId: connector._id,
+            mode: connector.runtime?.mode,
+            dryRun: connector.runtime?.dryRun,
+          }
+        : null,
     });
   } catch (err) {
     return next(err);

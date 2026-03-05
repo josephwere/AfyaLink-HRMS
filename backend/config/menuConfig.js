@@ -116,6 +116,7 @@ export const MENU = [
       { label: "Deployment Manager", path: "/developer", icon: "settings" },
       { label: "Integration Hub", path: "/admin/realtime", icon: "settings" },
       { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Connector SDK", path: "/system-admin/connector-sdk", icon: "settings" },
       { label: "Communication Center", path: "/communication", icon: "notifications" },
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },

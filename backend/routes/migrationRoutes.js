@@ -7,6 +7,7 @@ import {
   listMigrationProjects,
   startMigrationDryRun,
   testMigrationConnector,
+  transitionMigrationProject,
   updateMigrationProject,
 } from "../controllers/migrationController.js";
 
@@ -21,6 +22,7 @@ router.post("/", createMigrationProject);
 router.get("/", listMigrationProjects);
 router.get("/:id", getMigrationProject);
 router.patch("/:id", updateMigrationProject);
+router.post("/:id/transition", transitionMigrationProject);
 router.post("/:id/test-connector", testMigrationConnector);
 router.post("/:id/dry-run", startMigrationDryRun);
 
