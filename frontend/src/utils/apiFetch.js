@@ -2,7 +2,14 @@
 
 import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const FALLBACK_API_BASE =
+  typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.hostname}:5000`
+    : "http://localhost:5000";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  window.__ENV__?.API_URL ||
+  FALLBACK_API_BASE;
 
 class ApiError extends Error {
   constructor(message, status, data) {
