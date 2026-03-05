@@ -381,7 +381,36 @@ body.auth-route {
 
 [data-theme="dark"] .btn,
 [data-theme="dark"] button {
-  color: #f8fafc;
+  color: var(--app-text);
+}
+
+/* Keep dark-mode button text/background contrast explicit. */
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .action-link,
+[data-theme="dark"] .card button.primary,
+[data-theme="dark"] .card button.success,
+[data-theme="dark"] .card button.danger {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .action-pill,
+[data-theme="dark"] .card button:not(.primary):not(.success):not(.danger):not(.btn-primary):not(.action-link) {
+  background: #1f2937 !important;
+  color: #e5e7eb !important;
+  border: 1px solid #374151 !important;
+}
+
+[data-theme="dark"] .btn-secondary.active {
+  background: #1e3a8a !important;
+  color: #dbeafe !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="dark"] .auth-card label,
+[data-theme="dark"] .card label,
+[data-theme="dark"] .card.form label {
+  color: var(--app-text) !important;
 }
 
 [data-theme="dark"] a {
@@ -1324,6 +1353,13 @@ body.auth-route {
   overflow: hidden;
 }
 
+.ai-panel.premium {
+  border-color: color-mix(in oklab, var(--app-border) 68%, #14b8a6 32%);
+  background:
+    radial-gradient(1200px 420px at 100% -20%, color-mix(in oklab, #14b8a6 14%, transparent), transparent 55%),
+    var(--app-surface);
+}
+
 .ai-panel-head {
   display: flex;
   justify-content: space-between;
@@ -1347,6 +1383,41 @@ body.auth-route {
   overflow: auto;
   display: grid;
   gap: 10px;
+}
+
+.ai-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ai-health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ai-kpi {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.ai-kpi strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.ai-inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ai-response-card {
+  border-color: color-mix(in oklab, var(--app-border) 72%, #0ea5e9 28%);
 }
 
 /* =========================
@@ -1693,6 +1764,9 @@ body.auth-route {
     width: auto;
     bottom: 80px;
     max-height: calc(100dvh - 96px);
+  }
+  .ai-health-grid {
+    grid-template-columns: 1fr;
   }
   .icon-upload-row {
     grid-template-columns: 1fr;
@@ -2287,6 +2361,27 @@ body.auth-route {
   color: var(--app-text);
 }
 
+[data-theme="dark"] .welcome-panel {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .notif-menu {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .profile-menu button {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .profile-menu .danger {
+  color: #f87171;
+}
+
 [data-theme="dark"] .card {
   background: var(--app-surface);
   color: var(--app-text);
@@ -2310,6 +2405,27 @@ body.auth-route {
 [data-theme="dark"] .card h3,
 [data-theme="dark"] .card-value {
   color: var(--app-text);
+}
+
+[data-theme="dark"] .card p {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .card p.muted,
+[data-theme="dark"] .card .muted {
+  color: var(--app-muted) !important;
+}
+
+[data-theme="dark"] .auth-info {
+  background: #102a43;
+  color: #dbeafe;
+  border: 1px solid #1d4b79;
+}
+
+[data-theme="dark"] .auth-error {
+  background: #3b0a0a;
+  color: #fecaca;
+  border: 1px solid #7f1d1d;
 }
 
 [data-theme="dark"] .card input[type="password"],
