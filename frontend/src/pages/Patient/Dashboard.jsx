@@ -18,7 +18,7 @@ export default function Dashboard() {
       <div className="welcome-panel">
         <div>
           <h2>Patient Self-Service Portal</h2>
-          <p className="muted">Appointments, records, lab results, billing and insurance in one place.</p>
+          <p className="muted">Simple patient view for appointments, results, bills, and insurance.</p>
         </div>
         <div className="welcome-actions">
           <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>

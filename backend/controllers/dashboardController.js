@@ -22,11 +22,39 @@ import { normalizeRole } from "../utils/normalizeRole.js";
 
 const LICENSE_ROLES = [
   "DOCTOR",
+  "SURGEON",
   "NURSE",
   "LAB_TECH",
   "PHARMACIST",
   "RADIOLOGIST",
   "THERAPIST",
+];
+
+const DASHBOARD_ACTION_MATRIX = [
+  { dashboard: "Doctor", route: "/doctor", action: "Create Encounter", target: "POST /api/encounters", expectedResult: "Encounter opened and patient workflow starts" },
+  { dashboard: "Doctor", route: "/doctor", action: "Send To Pharmacy", target: "POST /api/pharmacy/referrals", expectedResult: "Pharmacy referral created for patient" },
+  { dashboard: "Nurse", route: "/nurse", action: "Record Vitals", target: "POST /api/encounters/:id/vitals", expectedResult: "Vitals saved to encounter timeline" },
+  { dashboard: "Lab Tech", route: "/lab-tech", action: "Order Lab Test", target: "POST /api/lab/orders", expectedResult: "Lab order queued and visible in worklist" },
+  { dashboard: "Radiologist", route: "/radiologist", action: "Upload Report", target: "POST /api/imaging/reports", expectedResult: "Imaging report attached to patient file" },
+  { dashboard: "Therapist", route: "/therapist", action: "Create Session Note", target: "POST /api/therapy/sessions", expectedResult: "Therapy note saved and auditable" },
+  { dashboard: "Receptionist", route: "/receptionist", action: "Register Walk-in", target: "POST /api/patients", expectedResult: "Patient profile created" },
+  { dashboard: "Surgeon", route: "/surgeon", action: "Schedule Surgery", target: "POST /api/appointments", expectedResult: "Surgery appointment booked" },
+  { dashboard: "Hospital Admin", route: "/hospital-admin", action: "Register Staff", target: "POST /api/staff", expectedResult: "Staff account created and scoped to hospital" },
+  { dashboard: "Hospital Admin", route: "/hospital-admin", action: "Initiate Staff Transfer", target: "POST /api/staff-transfers", expectedResult: "Transfer request created for source+target approval" },
+  { dashboard: "Hospital Admin", route: "/hospital-admin", action: "Demote Staff To Patient", target: "PATCH /api/users/:id/demote-to-patient", expectedResult: "Staff access removed and user downgraded to PATIENT" },
+  { dashboard: "Hospital Admin Assistant", route: "/hospital-admin", action: "Assign Staff Credentials", target: "PUT /api/staff/:id", expectedResult: "Staff profile updated with verified identity fields" },
+  { dashboard: "HR Manager", route: "/hr", action: "Approve Leave", target: "PATCH /api/workforce/leave/:id/approve", expectedResult: "Leave request approved" },
+  { dashboard: "Payroll Officer", route: "/payroll", action: "Create Invoice", target: "POST /api/financials/invoice", expectedResult: "Invoice generated and auditable" },
+  { dashboard: "Security Admin", route: "/security-admin", action: "Open Incident", target: "POST /api/security/incidents", expectedResult: "Incident lifecycle starts with audit trail" },
+  { dashboard: "Security Officer", route: "/security-officer", action: "Update Incident", target: "PATCH /api/security/incidents/:id", expectedResult: "Incident status updated" },
+  { dashboard: "Community Health Worker", route: "/community-health-worker", action: "Create Referral", target: "POST /api/chw/referrals", expectedResult: "Referral assigned to facility queue" },
+  { dashboard: "Super Admin", route: "/super-admin", action: "Register Hospital", target: "POST /api/hospitals", expectedResult: "Hospital created and visible in latest-first list" },
+  { dashboard: "System Admin", route: "/super-admin", action: "Assign Hospital Admin", target: "POST /api/hospitals/:id/admin", expectedResult: "Admin linked to selected hospital" },
+  { dashboard: "Emergency Command", route: "/ops/emergency-command", action: "Track Escalations", target: "GET /api/dashboard/ops/emergency-command", expectedResult: "Live emergency queue and dispatch metrics shown" },
+  { dashboard: "Neonatal ICU", route: "/ops/neonatal-icu", action: "Monitor NICU", target: "GET /api/dashboard/ops/neonatal-icu", expectedResult: "NICU load and follow-up risks shown" },
+  { dashboard: "Dialysis Ops", route: "/ops/dialysis", action: "Track Sessions", target: "GET /api/dashboard/ops/dialysis", expectedResult: "Dialysis sessions and backlog shown" },
+  { dashboard: "Oncology Day-Care", route: "/ops/oncology-daycare", action: "Track Day-Care", target: "GET /api/dashboard/ops/oncology-daycare", expectedResult: "Oncology cycles and queue status shown" },
+  { dashboard: "All Roles", route: "global", action: "Ask NeuroEdge Assistant", target: "POST /api/ai/assistant/chat", expectedResult: "Assistant response returned with safety envelope" },
 ];
 
 function startOfDay(date = new Date()) {
@@ -345,6 +373,501 @@ export async function staffDashboard(req, res) {
   } catch (err) {
     console.error("Staff dashboard error:", err);
     res.status(500).json({ message: "Failed to load staff dashboard" });
+  }
+}
+
+export async function radiologistDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const userId = req.user._id;
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [pendingImagingOrders, completedToday, unreadNotifications, myPendingRequests] =
+      await Promise.all([
+        LabOrder.countDocuments({ ...hospital, status: "Pending" }),
+        LabOrder.countDocuments({
+          ...hospital,
+          status: "Completed",
+          completedAt: { $gte: todayStart, $lte: todayEnd },
+        }),
+        Notification.countDocuments({ user: userId, read: false }),
+        Promise.all([
+          LeaveRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          OvertimeRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          ShiftRequest.countDocuments({ requester: userId, status: "PENDING" }),
+        ]).then(([l, o, s]) => l + o + s),
+      ]);
+
+    return res.json({
+      pendingImagingOrders,
+      completedToday,
+      unreadNotifications,
+      myPendingRequests,
+    });
+  } catch (err) {
+    console.error("Radiologist dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load radiologist dashboard" });
+  }
+}
+
+export async function therapistDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const userId = req.user._id;
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [appointmentsToday, upcomingAppointments, unreadNotifications, myPendingRequests] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          status: { $ne: "Cancelled" },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gt: todayEnd },
+          status: "Scheduled",
+        }),
+        Notification.countDocuments({ user: userId, read: false }),
+        Promise.all([
+          LeaveRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          OvertimeRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          ShiftRequest.countDocuments({ requester: userId, status: "PENDING" }),
+        ]).then(([l, o, s]) => l + o + s),
+      ]);
+
+    return res.json({
+      appointmentsToday,
+      upcomingAppointments,
+      unreadNotifications,
+      myPendingRequests,
+    });
+  } catch (err) {
+    console.error("Therapist dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load therapist dashboard" });
+  }
+}
+
+export async function receptionistDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const userId = req.user._id;
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [appointmentsToday, patientsTotal, unreadNotifications, myPendingRequests] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          status: { $ne: "Cancelled" },
+        }),
+        Patient.countDocuments(hospital),
+        Notification.countDocuments({ user: userId, read: false }),
+        Promise.all([
+          LeaveRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          OvertimeRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          ShiftRequest.countDocuments({ requester: userId, status: "PENDING" }),
+        ]).then(([l, o, s]) => l + o + s),
+      ]);
+
+    return res.json({
+      appointmentsToday,
+      patientsTotal,
+      unreadNotifications,
+      myPendingRequests,
+    });
+  } catch (err) {
+    console.error("Receptionist dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load receptionist dashboard" });
+  }
+}
+
+export async function surgeonDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const userId = req.user._id;
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const surgeryReasonMatcher = /surgery|procedure|operation/i;
+    const [surgeriesToday, upcomingSurgeries, activeEncounters, unreadNotifications, myPendingRequests] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          doctor: userId,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: surgeryReasonMatcher },
+          status: { $ne: "Cancelled" },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          doctor: userId,
+          scheduledAt: { $gt: todayEnd },
+          reason: { $regex: surgeryReasonMatcher },
+          status: "Scheduled",
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          doctor: userId,
+          state: { $ne: WORKFLOW.CLOSED },
+        }),
+        Notification.countDocuments({ user: userId, read: false }),
+        Promise.all([
+          LeaveRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          OvertimeRequest.countDocuments({ requester: userId, status: "PENDING" }),
+          ShiftRequest.countDocuments({ requester: userId, status: "PENDING" }),
+        ]).then(([l, o, s]) => l + o + s),
+      ]);
+
+    return res.json({
+      surgeriesToday,
+      upcomingSurgeries,
+      activeEncounters,
+      unreadNotifications,
+      myPendingRequests,
+    });
+  } catch (err) {
+    console.error("Surgeon dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load surgeon dashboard" });
+  }
+}
+
+export async function triageOpsDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [arrivalsToday, pendingTriage, activeEncounters, urgentLabBacklog] = await Promise.all([
+      Appointment.countDocuments({
+        ...hospital,
+        scheduledAt: { $gte: todayStart, $lte: todayEnd },
+        status: { $in: ["Scheduled", "CheckedIn"] },
+      }),
+      Appointment.countDocuments({
+        ...hospital,
+        status: "CheckedIn",
+      }),
+      Encounter.countDocuments({
+        ...hospital,
+        state: { $ne: WORKFLOW.CLOSED },
+      }),
+      LabOrder.countDocuments({
+        ...hospital,
+        status: "Pending",
+      }),
+    ]);
+
+    return res.json({
+      arrivalsToday,
+      pendingTriage,
+      activeEncounters,
+      urgentLabBacklog,
+    });
+  } catch (err) {
+    console.error("Triage ops dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load triage ops dashboard" });
+  }
+}
+
+export async function icuOpsDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [activeInpatients, admissionsToday, highRiskFollowups, pendingLabResults] =
+      await Promise.all([
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          admittedAt: { $gte: todayStart, $lte: todayEnd },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: /icu|critical|ward|follow[\s-]?up/i },
+          status: { $ne: "Cancelled" },
+        }),
+        LabOrder.countDocuments({
+          ...hospital,
+          status: "Pending",
+        }),
+      ]);
+
+    return res.json({
+      activeInpatients,
+      admissionsToday,
+      highRiskFollowups,
+      pendingLabResults,
+    });
+  } catch (err) {
+    console.error("ICU ops dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load ICU ops dashboard" });
+  }
+}
+
+export async function theatreOpsDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+    const surgeryMatcher = /surgery|procedure|operation|theatre/i;
+
+    const [surgeriesToday, upcomingSurgeries, activeSurgicalEncounters, postOpFollowups] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: surgeryMatcher },
+          status: { $ne: "Cancelled" },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gt: todayEnd },
+          reason: { $regex: surgeryMatcher },
+          status: "Scheduled",
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gt: todayStart },
+          reason: { $regex: /post[\s-]?op|follow[\s-]?up/i },
+          status: "Scheduled",
+        }),
+      ]);
+
+    return res.json({
+      surgeriesToday,
+      upcomingSurgeries,
+      activeSurgicalEncounters,
+      postOpFollowups,
+    });
+  } catch (err) {
+    console.error("Theatre ops dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load theatre ops dashboard" });
+  }
+}
+
+export async function imagingOpsDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [imagingPending, imagingCompletedToday, criticalReadsBacklog, openEquipmentIssues] =
+      await Promise.all([
+        LabOrder.countDocuments({
+          ...hospital,
+          status: "Pending",
+        }),
+        LabOrder.countDocuments({
+          ...hospital,
+          status: "Completed",
+          completedAt: { $gte: todayStart, $lte: todayEnd },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          reason: { $regex: /ct|mri|x[\s-]?ray|ultrasound|imaging/i },
+          status: "Scheduled",
+        }),
+        Notification.countDocuments({
+          user: req.user._id,
+          read: false,
+        }),
+      ]);
+
+    return res.json({
+      imagingPending,
+      imagingCompletedToday,
+      criticalReadsBacklog,
+      openEquipmentIssues,
+    });
+  } catch (err) {
+    console.error("Imaging ops dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load imaging ops dashboard" });
+  }
+}
+
+export async function emergencyCommandDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [activeEmergencies, escalatedIncidents, ambulanceDispatchesToday, triageBacklog] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          status: "Scheduled",
+          reason: { $regex: /emergency|trauma|critical|ambulance/i },
+        }),
+        SecurityIncident.countDocuments({
+          ...hospital,
+          status: "ESCALATED",
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          createdAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: /ambulance|transfer/i },
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+          riskLevel: { $in: ["HIGH", "CRITICAL"] },
+        }),
+      ]);
+
+    return res.json({
+      activeEmergencies,
+      escalatedIncidents,
+      ambulanceDispatchesToday,
+      triageBacklog,
+    });
+  } catch (err) {
+    console.error("Emergency command dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load emergency command dashboard" });
+  }
+}
+
+export async function neonatalIcuDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [nicuAdmissionsToday, activeNicuCases, highRiskFollowups, pendingCriticalLabs] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: /nicu|neonatal|newborn|incubator/i },
+          status: { $ne: "Cancelled" },
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+          department: { $regex: /nicu|neonatal/i },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          status: "Scheduled",
+          reason: { $regex: /nicu follow|newborn follow|neonatal follow/i },
+        }),
+        LabOrder.countDocuments({
+          ...hospital,
+          status: "Pending",
+          testName: { $regex: /bilirubin|blood gas|sepsis|nicu/i },
+        }),
+      ]);
+
+    return res.json({
+      nicuAdmissionsToday,
+      activeNicuCases,
+      highRiskFollowups,
+      pendingCriticalLabs,
+    });
+  } catch (err) {
+    console.error("Neonatal ICU dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load neonatal ICU dashboard" });
+  }
+}
+
+export async function dialysisOpsDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [sessionsToday, upcomingSessions, activeDialysisCases, delayedSessions] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: /dialysis|hemodialysis|peritoneal/i },
+          status: { $ne: "Cancelled" },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gt: todayEnd },
+          reason: { $regex: /dialysis|hemodialysis|peritoneal/i },
+          status: "Scheduled",
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+          department: { $regex: /dialysis|renal/i },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          reason: { $regex: /dialysis|hemodialysis|peritoneal/i },
+          status: "Scheduled",
+          scheduledAt: { $lte: new Date(Date.now() - 30 * 60 * 1000) },
+        }),
+      ]);
+
+    return res.json({
+      sessionsToday,
+      upcomingSessions,
+      activeDialysisCases,
+      delayedSessions,
+    });
+  } catch (err) {
+    console.error("Dialysis ops dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load dialysis ops dashboard" });
+  }
+}
+
+export async function oncologyDaycareDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+
+    const [cyclesToday, upcomingCycles, activeOncologyCases, pendingChemoOrders] =
+      await Promise.all([
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gte: todayStart, $lte: todayEnd },
+          reason: { $regex: /oncology|chemotherapy|radiotherapy|daycare/i },
+          status: { $ne: "Cancelled" },
+        }),
+        Appointment.countDocuments({
+          ...hospital,
+          scheduledAt: { $gt: todayEnd },
+          reason: { $regex: /oncology|chemotherapy|radiotherapy|daycare/i },
+          status: "Scheduled",
+        }),
+        Encounter.countDocuments({
+          ...hospital,
+          state: { $ne: WORKFLOW.CLOSED },
+          department: { $regex: /oncology|cancer/i },
+        }),
+        Prescription.countDocuments({
+          ...hospital,
+          status: { $in: ["Pending", "Active"] },
+          medication: { $regex: /chemo|oncology|cancer/i },
+        }),
+      ]);
+
+    return res.json({
+      cyclesToday,
+      upcomingCycles,
+      activeOncologyCases,
+      pendingChemoOrders,
+    });
+  } catch (err) {
+    console.error("Oncology day-care dashboard error:", err);
+    return res.status(500).json({ message: "Failed to load oncology day-care dashboard" });
   }
 }
 
@@ -733,4 +1256,29 @@ export async function communityHealthWorkerDashboard(req, res) {
     console.error("CHW dashboard error:", err);
     return res.status(500).json({ message: "Failed to load CHW dashboard" });
   }
+}
+
+export async function getDashboardActionMatrix(req, res) {
+  return res.json({
+    generatedAt: new Date().toISOString(),
+    total: DASHBOARD_ACTION_MATRIX.length,
+    matrix: DASHBOARD_ACTION_MATRIX,
+  });
+}
+
+export async function exportDashboardActionMatrixCsv(_req, res) {
+  const rows = [
+    ["dashboard", "route", "action", "target", "expectedResult"],
+    ...DASHBOARD_ACTION_MATRIX.map((row) => [
+      JSON.stringify(row.dashboard),
+      JSON.stringify(row.route),
+      JSON.stringify(row.action),
+      JSON.stringify(row.target),
+      JSON.stringify(row.expectedResult),
+    ]),
+  ];
+  const csv = rows.map((r) => r.join(",")).join("\n");
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=dashboard-action-matrix.csv");
+  return res.status(200).send(csv);
 }

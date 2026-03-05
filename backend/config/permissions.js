@@ -31,6 +31,16 @@ export const PERMISSIONS = {
     ACCESS_ENTRY: ["VERIFY", "CHECK_IN", "CHECK_OUT"],
     emergency: ["revoke"],
   },
+  HOSPITAL_ADMIN_ASSISTANT: {
+    admin: ["read"],
+    appointments: ["create", "read", "update"],
+    patients: ["create", "read", "update"],
+    users: ["create", "read", "update"],
+    reports: ["read"],
+    inventory: ["read"],
+    pharmacy: ["read"],
+    security: ["view"],
+  },
 
   DOCTOR: {
     appointments: ["create", "read", "update", "delete"],

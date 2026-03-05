@@ -74,8 +74,8 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Super Admin Control Center</h2>
-          <p className="muted">Global governance for hospitals, workforce, payroll, security and platform health.</p>
+          <h2>Super Admin Dashboard</h2>
+          <p className="muted">Simple global view for hospitals, staff, security, and system status.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
@@ -124,7 +124,7 @@ export default function Dashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Global Admin Workspace</h3>
+          <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button
               type="button"
@@ -153,7 +153,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card doctor-alerts-card">
-          <h3>Right Insights Panel</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Active Sessions: {data?.activeHospitals ?? "—"}</div>
             <div className="action-pill">Pending Requests: {data?.pendingRequests ?? "—"}</div>

@@ -20,6 +20,7 @@ export default function RegisterStaff() {
     const role = String(qs.get("role") || "").toLowerCase();
     const allowed = new Set([
       "doctor",
+      "hospital_admin_assistant",
       "nurse",
       "lab_tech",
       "pharmacist",
@@ -38,6 +39,7 @@ export default function RegisterStaff() {
 
   if (
     user?.role !== "HOSPITAL_ADMIN" &&
+    user?.role !== "HOSPITAL_ADMIN_ASSISTANT" &&
     user?.role !== "HR_MANAGER" &&
     user?.role !== "SUPER_ADMIN" &&
     user?.role !== "SYSTEM_ADMIN" &&
@@ -102,6 +104,7 @@ export default function RegisterStaff() {
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
         >
+          <option value="hospital_admin_assistant">Hospital Admin Assistant</option>
           <option value="doctor">Doctor</option>
           <option value="nurse">Nurse</option>
           <option value="lab_tech">Lab Tech</option>

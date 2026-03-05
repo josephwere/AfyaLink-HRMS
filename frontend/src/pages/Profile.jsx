@@ -42,8 +42,10 @@ export default function Profile() {
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
     "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
     "DEVELOPER",
     "DOCTOR",
+    "SURGEON",
     "NURSE",
     "LAB_TECH",
     "PHARMACIST",
@@ -715,6 +717,11 @@ export default function Profile() {
       "Clinical schedule and patient workload context",
       "CME credits and publications tracking",
     ],
+    SURGEON: [
+      "Surgery privileges, theatre assignment, and specialization profile",
+      "Pre-op and post-op workflow accountability",
+      "Clinical readiness, licensing, and emergency on-call context",
+    ],
     NURSE: [
       "Ward/department assignment and shift readiness",
       "Clinical workload and overtime visibility",
@@ -847,6 +854,24 @@ export default function Profile() {
         "Use handover notes for continuity.",
       ],
       kpi: ["Consultation completion", "Turnaround time", "Clinical documentation quality"],
+    },
+    SURGEON: {
+      goal: "Deliver safe surgical care from pre-op to post-op continuity.",
+      firstHour: [
+        "Review theatre schedule and urgent surgery queue.",
+        "Confirm pre-op readiness and required diagnostics.",
+        "Check active encounters requiring immediate intervention.",
+      ],
+      daily: [
+        "Complete operative notes and post-op orders promptly.",
+        "Coordinate with anaesthesia, nursing, and lab/radiology teams.",
+        "Track complications and escalation handoffs with clear documentation.",
+      ],
+      safety: [
+        "Use checklist-driven verification before every procedure.",
+        "Document consent and surgical findings with full traceability.",
+      ],
+      kpi: ["On-time surgery start", "Post-op documentation completion", "Complication escalation time"],
     },
     NURSE: {
       goal: "Execute bedside workflow, vitals, meds, and incident escalation.",

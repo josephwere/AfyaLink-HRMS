@@ -9,7 +9,7 @@ export default function GuestDashboard() {
       <div className="welcome-panel">
         <div>
           <h2>AfyaLink Guest Portal</h2>
-          <p className="muted">Public access for appointments, doctor directory, services and pre-registration.</p>
+          <p className="muted">Simple guest view for booking and basic services.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/register")}>Book Appointment</button>

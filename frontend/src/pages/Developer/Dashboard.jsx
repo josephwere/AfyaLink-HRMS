@@ -61,9 +61,9 @@ export default function DeveloperDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Developer Engineering Console</h2>
+          <h2>Developer Dashboard</h2>
           <p className="muted">
-            API observability, queue health, trust controls and SLA operations.
+            Simple developer view for queue health, trust checks, and tools.
           </p>
         </div>
         <div className="welcome-actions">

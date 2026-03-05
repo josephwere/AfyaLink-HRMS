@@ -123,9 +123,14 @@ import HospitalCustomization from "./pages/HospitalAdmin/Customization";
 import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConnectivity";
 import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
 import HospitalAdminPharmacyReferrals from "./pages/HospitalAdmin/PharmacyReferrals";
+import HospitalAdminStaffTransfers from "./pages/HospitalAdmin/StaffTransfers";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
+import RadiologistDashboard from "./pages/Radiologist/Dashboard";
+import TherapistDashboard from "./pages/Therapist/Dashboard";
+import ReceptionistDashboard from "./pages/Receptionist/Dashboard";
+import SurgeonDashboard from "./pages/Surgeon/Dashboard";
 import HRManagerDashboard from "./pages/HRManager/Dashboard";
 import PayrollOfficerDashboard from "./pages/PayrollOfficer/Dashboard";
 import DeveloperDashboard from "./pages/Developer/Dashboard";
@@ -144,6 +149,14 @@ import DecisionCockpit from "./pages/Developer/DecisionCockpit";
 import ProvenanceVerify from "./pages/Developer/ProvenanceVerify";
 import AIExtractionHistory from "./pages/Developer/AIExtractionHistory";
 import CommunityHealthWorkerDashboard from "./pages/CommunityHealthWorker/Dashboard";
+import TriageOpsDashboard from "./pages/Operations/TriageOpsDashboard";
+import IcuOpsDashboard from "./pages/Operations/IcuOpsDashboard";
+import TheatreOpsDashboard from "./pages/Operations/TheatreOpsDashboard";
+import ImagingOpsDashboard from "./pages/Operations/ImagingOpsDashboard";
+import EmergencyCommandDashboard from "./pages/Operations/EmergencyCommandDashboard";
+import NeonatalIcuDashboard from "./pages/Operations/NeonatalIcuDashboard";
+import DialysisOpsDashboard from "./pages/Operations/DialysisOpsDashboard";
+import OncologyDaycareDashboard from "./pages/Operations/OncologyDaycareDashboard";
 
 /* =======================
    ADMIN
@@ -165,6 +178,7 @@ const SHARED_NOTIFICATION_ROLES = [
   "SYSTEM_ADMIN",
   "DEVELOPER",
   "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
   "DOCTOR",
   "NURSE",
   "LAB_TECH",
@@ -172,6 +186,7 @@ const SHARED_NOTIFICATION_ROLES = [
   "SECURITY_ADMIN",
   "SECURITY_OFFICER",
   "RECEPTIONIST",
+  "SURGEON",
   "HR_MANAGER",
   "PAYROLL_OFFICER",
   "COMMUNITY_HEALTH_WORKER",
@@ -230,6 +245,7 @@ function AppLayout() {
       case "PAYROLL_OFFICER":
         return "/api/dashboard/payroll";
       case "HOSPITAL_ADMIN":
+      case "HOSPITAL_ADMIN_ASSISTANT":
         return "/api/dashboard/hospital-admin";
       case "SECURITY_ADMIN":
         return "/api/dashboard/security-admin";
@@ -242,9 +258,13 @@ function AppLayout() {
       case "SUPER_ADMIN":
         return "/api/dashboard/super-admin";
       case "RADIOLOGIST":
+        return "/api/dashboard/radiologist";
       case "THERAPIST":
+        return "/api/dashboard/therapist";
       case "RECEPTIONIST":
-        return "/api/dashboard/staff";
+        return "/api/dashboard/receptionist";
+      case "SURGEON":
+        return "/api/dashboard/surgeon";
       default:
         return null;
     }
@@ -493,7 +513,7 @@ function AppLayout() {
           }
 
           if (
-            ["RADIOLOGIST", "THERAPIST", "RECEPTIONIST"].includes(role) &&
+            ["RADIOLOGIST", "THERAPIST", "RECEPTIONIST", "SURGEON"].includes(role) &&
             dash.myPendingRequests > 0
           ) {
             list.push({
@@ -789,6 +809,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/surgeon"
+            element={
+              <RequireRole roles={["SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
+                <SurgeonDashboard />
+              </RequireRole>
+            }
+          />
 
           {/* NURSE */}
           <Route
@@ -989,6 +1017,30 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/radiologist"
+            element={
+              <RequireRole roles={["RADIOLOGIST", "SUPER_ADMIN", "DEVELOPER"]}>
+                <RadiologistDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/therapist"
+            element={
+              <RequireRole roles={["THERAPIST", "SUPER_ADMIN", "DEVELOPER"]}>
+                <TherapistDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/receptionist"
+            element={
+              <RequireRole roles={["RECEPTIONIST", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ReceptionistDashboard />
+              </RequireRole>
+            }
+          />
 
           {/* HR MANAGER */}
           <Route
@@ -1156,7 +1208,7 @@ export default function App() {
           <Route
             path="/hospital-admin"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminDashboard />
               </RequireRole>
             }
@@ -1164,7 +1216,7 @@ export default function App() {
           <Route
             path="/hospital-admin/register-staff"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminRegisterStaff />
               </RequireRole>
             }
@@ -1173,7 +1225,7 @@ export default function App() {
             path="/hospital-admin/approvals"
             element={
               <RequireRole
-                roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}
+                roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}
               >
                 <HospitalAdminApprovals />
               </RequireRole>
@@ -1182,8 +1234,16 @@ export default function App() {
           <Route
             path="/hospital-admin/staff"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminStaffManagement />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/staff-transfers"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminStaffTransfers />
               </RequireRole>
             }
           />
@@ -1238,7 +1298,7 @@ export default function App() {
           <Route
             path="/hospital-admin/pharmacy-referrals"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "SURGEON", "NURSE", "RECEPTIONIST", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminPharmacyReferrals />
               </RequireRole>
             }
@@ -1444,6 +1504,7 @@ export default function App() {
                   "SYSTEM_ADMIN",
                   "DEVELOPER",
                   "HOSPITAL_ADMIN",
+                  "HOSPITAL_ADMIN_ASSISTANT",
                   "DOCTOR",
                   "NURSE",
                   "LAB_TECH",
@@ -1451,6 +1512,7 @@ export default function App() {
                   "SECURITY_ADMIN",
                   "SECURITY_OFFICER",
                   "RECEPTIONIST",
+                  "SURGEON",
                   "HR_MANAGER",
                   "PAYROLL_OFFICER",
                 ]}
@@ -1480,12 +1542,14 @@ export default function App() {
               <RequireRole
                 roles={[
                   "HOSPITAL_ADMIN",
+                  "HOSPITAL_ADMIN_ASSISTANT",
                   "HR_MANAGER",
                   "PAYROLL_OFFICER",
                   "DOCTOR",
                   "NURSE",
                   "LAB_TECH",
                   "PHARMACIST",
+                  "SURGEON",
                   "RADIOLOGIST",
                   "THERAPIST",
                   "RECEPTIONIST",
@@ -1498,9 +1562,73 @@ export default function App() {
             }
           />
           <Route
+            path="/ops/triage"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <TriageOpsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/icu"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <IcuOpsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/theatre"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <TheatreOpsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/imaging"
+            element={
+              <RequireRole roles={["RADIOLOGIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ImagingOpsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/emergency-command"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "SECURITY_ADMIN", "SECURITY_OFFICER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <EmergencyCommandDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/neonatal-icu"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <NeonatalIcuDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/dialysis"
+            element={
+              <RequireRole roles={["DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <DialysisOpsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/ops/oncology-daycare"
+            element={
+              <RequireRole roles={["DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <OncologyDaycareDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/doctor/appointments"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorAppointments />
               </RequireRole>
             }
@@ -1508,7 +1636,7 @@ export default function App() {
           <Route
             path="/doctor/schedule"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <MySchedule />
               </RequireRole>
             }
@@ -1516,7 +1644,7 @@ export default function App() {
           <Route
             path="/doctor/patients"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <MyPatients />
               </RequireRole>
             }
@@ -1524,7 +1652,7 @@ export default function App() {
           <Route
             path="/doctor/opd"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <OPDWorkspace />
               </RequireRole>
             }
@@ -1532,7 +1660,7 @@ export default function App() {
           <Route
             path="/doctor/ward"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <InpatientWard />
               </RequireRole>
             }
@@ -1540,7 +1668,7 @@ export default function App() {
           <Route
             path="/doctor/surgery"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <SurgeryProcedures />
               </RequireRole>
             }
@@ -1548,7 +1676,7 @@ export default function App() {
           <Route
             path="/doctor/lab-results"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <LabResults />
               </RequireRole>
             }
@@ -1556,7 +1684,7 @@ export default function App() {
           <Route
             path="/doctor/prescriptions"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <Prescriptions />
               </RequireRole>
             }
@@ -1564,7 +1692,7 @@ export default function App() {
           <Route
             path="/doctor/medical-records"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <MedicalRecords />
               </RequireRole>
             }
@@ -1572,7 +1700,7 @@ export default function App() {
           <Route
             path="/doctor/referrals"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <Referrals />
               </RequireRole>
             }
@@ -1580,7 +1708,7 @@ export default function App() {
           <Route
             path="/doctor/performance"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorPerformance />
               </RequireRole>
             }
@@ -1588,7 +1716,7 @@ export default function App() {
           <Route
             path="/doctor/cme"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <CMECertifications />
               </RequireRole>
             }
@@ -1596,7 +1724,7 @@ export default function App() {
           <Route
             path="/doctor/leave"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorLeaveRequests />
               </RequireRole>
             }
@@ -1604,7 +1732,7 @@ export default function App() {
           <Route
             path="/doctor/reports-notes"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorReportsNotes />
               </RequireRole>
             }
@@ -1612,7 +1740,7 @@ export default function App() {
           <Route
             path="/doctor/settings"
             element={
-              <RequireRole roles={["DOCTOR", "SUPER_ADMIN", "DEVELOPER"]}>
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorSettings />
               </RequireRole>
             }

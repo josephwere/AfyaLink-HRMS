@@ -138,8 +138,8 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Hospital Admin Operations</h2>
-          <p className="muted">Branch-level staffing, approvals, bed flow, attendance and alerts.</p>
+          <h2>Hospital Admin Dashboard</h2>
+          <p className="muted">Simple hospital view for staff, approvals, and daily operations.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
@@ -214,7 +214,7 @@ export default function Dashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Center Workspace</h3>
+          <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button type="button" className="action-link" onClick={() => navigate("/workforce/requests#shift")}>Shift Calendar</button>
             <button type="button" className="action-link" onClick={() => navigate("/reports")}>Attendance Heatmap</button>
@@ -226,7 +226,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card doctor-alerts-card">
-          <h3>Right Panel</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Pending Approvals: {data?.pendingRequests ?? "—"}</div>
             <div className="action-pill">Critical Alerts: {data?.appointmentsToday ?? "—"}</div>

@@ -36,7 +36,7 @@ export default function StaffDashboard() {
       <div className="welcome-panel">
         <div>
           <h2>{roleTitle}</h2>
-          <p className="muted">Role-specific operational dashboard with requests, queues and alerts.</p>
+          <p className="muted">Simple staff view for requests, queues, and alerts.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>Open Workspace</button>

@@ -77,13 +77,12 @@ export default function Dashboard() {
       <div className="welcome-panel">
         <div>
           <h2>Doctor Clinical Workspace</h2>
-          <p className="muted">Welcome, Dr. {user?.name || "Clinician"}. Zero-click access to today’s patients and critical alerts.</p>
+          <p className="muted">Welcome, Dr. {user?.name || "Clinician"}. Keep patient care fast and clear.</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Today’s Patients</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/schedule")}>Open Schedule</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/leave")}>Leave Requests</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Open Patients</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Write Notes</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>Complete Plan</button>
         </div>
       </div>
 
@@ -150,7 +149,7 @@ export default function Dashboard() {
                 ))}
                 {appointments.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="muted">No appointments loaded.</td>
+                    <td colSpan="5" className="muted">No appointments</td>
                   </tr>
                 )}
               </tbody>
@@ -166,7 +165,7 @@ export default function Dashboard() {
                 <span>{n.title || "Clinical Alert"}</span>
               </button>
             ))}
-            {alerts.length === 0 && <div className="muted">No active alerts.</div>}
+            {alerts.length === 0 && <div className="muted">No alerts</div>}
           </div>
         </div>
       </section>

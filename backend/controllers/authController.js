@@ -480,7 +480,7 @@ export const login = async (req, res) => {
       riskScore: risk.score,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id });
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
     user.refreshTokens.push(refreshToken);
     await upsertTrustedDevice(user, risk);
     user.sessionSecurity = {
@@ -652,7 +652,7 @@ export const googleAuth = async (req, res) => {
       twoFactorVerified: true,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id });
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
     user.refreshTokens.push(refreshToken);
     await user.save();
     await appendComplianceLedger({
@@ -741,7 +741,7 @@ export const verify2FAOtp = async (req, res) => {
       riskScore: risk.score,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id });
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
     user.refreshTokens.push(refreshToken);
     await redis.set(`stepup:last:${String(user._id)}`, new Date().toISOString(), { ex: 3600 });
     await redis.del(`risk:restricted:${String(user._id)}`);

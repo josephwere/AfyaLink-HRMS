@@ -6,6 +6,7 @@ import {
   listUsers,
   updateUser,
   createUser,
+  demoteStaffToPatient,
 } from "../controllers/userController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
@@ -44,7 +45,7 @@ router.post(
 router.get(
   "/",
   protect,
-  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HR_MANAGER", "DEVELOPER"),
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "DEVELOPER"),
   listUsers
 );
 
@@ -57,8 +58,15 @@ router.get(
 router.patch(
   "/:id",
   protect,
-  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HR_MANAGER", "DEVELOPER"),
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "DEVELOPER"),
   updateUser
+);
+
+router.patch(
+  "/:id/demote-to-patient",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DEVELOPER"),
+  demoteStaffToPatient
 );
 
 export default router;

@@ -196,8 +196,8 @@ export default function SystemAdminDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>System Admin Technical Center</h2>
-          <p className="muted">Operational reliability, queue health, integration stability and deployment visibility.</p>
+          <h2>System Admin Dashboard</h2>
+          <p className="muted">Simple technical view for queues, integrations, and system health.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>

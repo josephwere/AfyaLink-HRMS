@@ -1,0 +1,23 @@
+export const HOSPITAL_SCOPED_ROLES = Object.freeze([
+  "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
+  "DOCTOR",
+  "SURGEON",
+  "NURSE",
+  "LAB_TECH",
+  "PHARMACIST",
+  "RADIOLOGIST",
+  "THERAPIST",
+  "RECEPTIONIST",
+  "SECURITY_OFFICER",
+  "SECURITY_ADMIN",
+  "HR_MANAGER",
+  "PAYROLL_OFFICER",
+  "COMMUNITY_HEALTH_WORKER",
+]);
+
+export const STAFF_ROLES = Object.freeze(
+  HOSPITAL_SCOPED_ROLES.filter((role) => role !== "HOSPITAL_ADMIN")
+);
+
+export const NON_STAFF_ROLES = Object.freeze(["PATIENT", "GUEST"]);

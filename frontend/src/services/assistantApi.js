@@ -14,3 +14,14 @@ export const getAssistantAdvice = (payload) =>
     body: payload || {},
   });
 
+export const chatAssistant = (payload) =>
+  apiFetch("/api/ai/assistant/chat", {
+    method: "POST",
+    body: payload || {},
+  });
+
+export const summarizeAssistantPage = (payload) =>
+  apiFetch("/api/ai/assistant/summarize", {
+    method: "POST",
+    body: payload || {},
+  });

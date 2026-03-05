@@ -19,8 +19,8 @@ export default function PharmacyDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Pharmacy Control Center</h2>
-          <p className="muted">Prescription queue, inventory, controlled drugs and expiry monitoring.</p>
+          <h2>Pharmacy Dashboard</h2>
+          <p className="muted">Simple pharmacy view for dispensing, stock, and expiry checks.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/pharmacy/queue")}>Prescription Queue</button>
@@ -51,7 +51,7 @@ export default function PharmacyDashboard() {
                 {items.slice(0, 10).map((i) => (
                   <tr key={i._id}><td>{i.name || "-"}</td><td>{i.qty ?? "-"}</td><td>{i.minStock ?? "-"}</td><td>{Number(i.qty || 0) <= Number(i.minStock || 0) ? "Low" : "OK"}</td></tr>
                 ))}
-                {items.length === 0 && <tr><td colSpan="4" className="muted">No inventory data.</td></tr>}
+                {items.length === 0 && <tr><td colSpan="4" className="muted">No inventory</td></tr>}
               </tbody>
             </table>
           </div>

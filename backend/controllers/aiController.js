@@ -3,7 +3,7 @@ import Patient from "../models/Patient.js";
 import Prescription from "../models/Prescription.js";
 import User from "../models/User.js";
 import { predictNextAvailableSlot, simpleRiskScore } from '../utils/aiUtils.js';
-import { extractDocumentBase64 } from "../services/aiAdapter.js";
+import { extractDocumentBase64, assistantChat } from "../services/aiAdapter.js";
 import { logAudit } from "../services/auditService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 
@@ -241,6 +241,59 @@ export const getAssistantAdvice = async (req, res, next) => {
     return res.json({
       success: true,
       advice,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getAssistantChat = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const profile = req.user?.metadata?.aiAssistant || {};
+    const message = String(req.body?.message || "").trim();
+    const pageContext = String(req.body?.pageContext || "").trim();
+    if (!message) {
+      return res.status(400).json({ message: "message is required" });
+    }
+
+    const out = await assistantChat({
+      message,
+      role,
+      pageContext,
+      healthProfile: profile,
+    });
+
+    return res.json({
+      success: true,
+      answer: out?.text || out?.answer || "No response generated",
+      provider: out?.provider || "unknown",
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const summarizeAssistantPage = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const pageContext = String(req.body?.pageContext || "").trim();
+    if (!pageContext) {
+      return res.status(400).json({ message: "pageContext is required" });
+    }
+
+    const out = await assistantChat({
+      message:
+        "Summarize this page into: (1) key points, (2) urgent actions, (3) next best actions. Keep it short.",
+      role,
+      pageContext,
+      healthProfile: req.user?.metadata?.aiAssistant || {},
+    });
+
+    return res.json({
+      success: true,
+      summary: out?.text || out?.answer || "No summary generated",
+      provider: out?.provider || "unknown",
     });
   } catch (err) {
     return next(err);

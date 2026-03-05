@@ -18,7 +18,7 @@ export default function LabTechDashboard() {
       <div className="welcome-panel">
         <div>
           <h2>Lab Technician Diagnostics</h2>
-          <p className="muted">Test queue, sample tracking, quality control and equipment readiness.</p>
+          <p className="muted">Simple lab view for test queue, samples, and quality checks.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/lab-tech/test-queue")}>Test Queue</button>
@@ -39,7 +39,7 @@ export default function LabTechDashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Center Workspace</h3>
+          <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button type="button" className="action-link" onClick={() => navigate("/lab-tech/test-queue")}>Test Processing Table</button>
             <button type="button" className="action-link" onClick={() => navigate("/lab-tech/samples")}>Sample Tracking</button>
@@ -49,7 +49,7 @@ export default function LabTechDashboard() {
         </div>
 
         <div className="card doctor-alerts-card">
-          <h3>Right Insights</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Equipment Status: Live</div>
             <div className="action-pill">Urgent Flagged: {data?.overdueOrders ?? "—"}</div>

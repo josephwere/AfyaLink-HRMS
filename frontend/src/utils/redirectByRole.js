@@ -10,6 +10,7 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   SUPER_ADMIN: "/super-admin",
   SYSTEM_ADMIN: "/system-admin",
   HOSPITAL_ADMIN: "/hospital-admin",
+  HOSPITAL_ADMIN_ASSISTANT: "/hospital-admin",
   SECURITY_ADMIN: "/security-admin",
   SECURITY_OFFICER: "/security-officer",
   HR_MANAGER: "/hr-manager",
@@ -19,6 +20,7 @@ const ROLE_REDIRECT_MAP = Object.freeze({
 
   // 🩺 Clinical staff
   DOCTOR: "/doctor",
+  SURGEON: "/surgeon",
   NURSE: "/nurse",
   LAB_TECH: "/lab-tech",
   PHARMACIST: "/pharmacy",
@@ -28,9 +30,9 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   GUEST: "/guest",
 
   // 🚨 future-proof (backend may add later)
-  RADIOLOGIST: "/staff",
-  THERAPIST: "/staff",
-  RECEPTIONIST: "/staff",
+  RADIOLOGIST: "/radiologist",
+  THERAPIST: "/therapist",
+  RECEPTIONIST: "/receptionist",
 });
 
 /**

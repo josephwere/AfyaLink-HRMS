@@ -11,6 +11,8 @@ import {
   createStaff,
   updateStaff,
   deactivateStaff, // 👈 soft delete
+  getStaffIdentityChecklist,
+  exportStaffIdentityChecklistCsv,
 } from "../controllers/staffController.js";
 
 const router = express.Router();
@@ -22,7 +24,7 @@ const router = express.Router();
  */
 router.use(
   protect,
-  requireRole("HOSPITAL_ADMIN", "SUPER_ADMIN")
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN")
 );
 
 /**
@@ -31,6 +33,7 @@ router.use(
  * ======================================================
  */
 router.get("/", getAllStaff);
+router.get("/identity-checklist/export.csv", exportStaffIdentityChecklistCsv);
 
 /**
  * ======================================================
@@ -38,6 +41,7 @@ router.get("/", getAllStaff);
  * ======================================================
  */
 router.get("/:id", getStaffById);
+router.get("/:id/identity-checklist", getStaffIdentityChecklist);
 
 /**
  * ======================================================

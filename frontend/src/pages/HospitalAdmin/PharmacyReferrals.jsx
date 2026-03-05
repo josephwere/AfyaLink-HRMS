@@ -237,7 +237,7 @@ export default function HospitalAdminPharmacyReferrals() {
                 ))}
                 {referrals.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="muted">No referrals yet</td>
+                    <td colSpan={4} className="muted">No referrals</td>
                   </tr>
                 )}
               </tbody>

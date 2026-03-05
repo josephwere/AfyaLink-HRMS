@@ -6,8 +6,10 @@ const VIEWABLE_ROLES = new Set([
   "SUPER_ADMIN",
   "SYSTEM_ADMIN",
   "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
   "DEVELOPER",
   "DOCTOR",
+  "SURGEON",
   "NURSE",
   "LAB_TECH",
   "PHARMACIST",
@@ -39,4 +41,3 @@ export function resolveEffectiveRole(req, actualRole) {
   }
   return normalizedRequested;
 }
-

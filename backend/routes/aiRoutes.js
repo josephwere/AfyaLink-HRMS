@@ -9,6 +9,8 @@ import {
   getAssistantContext,
   updateAssistantProfile,
   getAssistantAdvice,
+  getAssistantChat,
+  summarizeAssistantPage,
 } from "../controllers/aiController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
@@ -37,6 +39,8 @@ router.post("/extract", upload.single("file"), extractDocument);
 router.get("/assistant/context", getAssistantContext);
 router.put("/assistant/profile", updateAssistantProfile);
 router.post("/assistant/advice", getAssistantAdvice);
+router.post("/assistant/chat", getAssistantChat);
+router.post("/assistant/summarize", summarizeAssistantPage);
 router.use("/gateway", aiGatewayRoutes);
 
 export default router;

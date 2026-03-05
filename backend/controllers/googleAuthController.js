@@ -58,7 +58,7 @@ export const googleLogin = async (req, res) => {
       twoFactorVerified: true,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id });
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
     user.refreshTokens.push(refreshToken);
     await user.save();
 

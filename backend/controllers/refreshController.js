@@ -25,6 +25,14 @@ export const refreshToken = async (req, res) => {
       return res.status(401).json({ msg: "Invalid refresh token" });
     }
 
+    const startedAtRaw = decoded?.sessionStartedAt || (decoded?.iat ? new Date(decoded.iat * 1000).toISOString() : null);
+    const startedAtMs = startedAtRaw ? new Date(startedAtRaw).getTime() : NaN;
+    const maxDays = Math.max(Number(process.env.JWT_MAX_SESSION_DAYS || 7), 1);
+    const maxAgeMs = maxDays * 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(startedAtMs) || Date.now() - startedAtMs > maxAgeMs) {
+      return res.status(401).json({ msg: "Session expired. Please login again." });
+    }
+
     const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ msg: "User not found" });
@@ -39,7 +47,10 @@ export const refreshToken = async (req, res) => {
       (t) => t !== refreshToken
     );
 
-    const newRefreshToken = signRefreshToken({ id: user._id });
+    const newRefreshToken = signRefreshToken({
+      id: user._id,
+      sessionStartedAt: new Date(startedAtMs).toISOString(),
+    });
     user.refreshTokens.push(newRefreshToken);
 
     const accessToken = signAccessToken({

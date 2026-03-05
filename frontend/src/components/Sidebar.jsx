@@ -250,8 +250,20 @@ export default function Sidebar({ open = true, onClose }) {
                     <Item to="/pharmacy" icon="pharmacy" onSelect={onClose}>
                       Pharmacist
                     </Item>
+                    <Item to="/surgeon" icon="doctor" onSelect={onClose}>
+                      Surgeon
+                    </Item>
+                    <Item to="/radiologist" icon="staff" onSelect={onClose}>
+                      Radiologist
+                    </Item>
+                    <Item to="/therapist" icon="staff" onSelect={onClose}>
+                      Therapist
+                    </Item>
+                    <Item to="/receptionist" icon="staff" onSelect={onClose}>
+                      Receptionist
+                    </Item>
                     <Item to="/staff" icon="staff" onSelect={onClose}>
-                      Staff (Radiology/Therapy/Reception)
+                      Shared Staff
                     </Item>
                     <Item to="/community-health-worker" icon="staff" onSelect={onClose}>
                       Community Health Worker

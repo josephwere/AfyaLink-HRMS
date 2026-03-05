@@ -118,8 +118,8 @@ export default function SecurityOfficerDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Security Officer Field Console</h2>
-          <p className="muted">Current shift execution, visitor flow, gate scanning and incident response.</p>
+          <h2>Security Officer Dashboard</h2>
+          <p className="muted">Simple security view for shifts, access checks, and incidents.</p>
         </div>
       </div>
 
@@ -212,7 +212,7 @@ export default function SecurityOfficerDashboard() {
                 ))}
                 {!inside?.length ? (
                   <tr>
-                    <td colSpan={4}>No active entries</td>
+                    <td colSpan={4}>No entries</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -227,7 +227,7 @@ export default function SecurityOfficerDashboard() {
                 <strong>{row.code}</strong> {row.personType} - {row.status}
               </div>
             ))}
-            {!logs?.length ? <div className="alert-item">No logs available</div> : null}
+            {!logs?.length ? <div className="alert-item">No logs</div> : null}
           </div>
         </div>
       </section>

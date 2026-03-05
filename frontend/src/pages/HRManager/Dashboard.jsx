@@ -132,8 +132,8 @@ export default function HRManagerDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>HR Manager Command Center</h2>
-          <p className="muted">Recruitment, onboarding, contracts, performance and workforce analytics.</p>
+          <h2>HR Manager Dashboard</h2>
+          <p className="muted">Simple HR view for hiring, staff records, and performance.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Pipeline</button>
@@ -198,7 +198,7 @@ export default function HRManagerDashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Center Workspace</h3>
+          <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Kanban</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Contracts</button>
@@ -209,7 +209,7 @@ export default function HRManagerDashboard() {
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Right Insights</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Pending Requests: {data?.pendingRequests?.total ?? "—"}</div>
             <div className="action-pill">Incomplete Staff: {data?.incompleteStaff ?? "—"}</div>

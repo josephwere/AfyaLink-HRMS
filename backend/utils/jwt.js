@@ -35,9 +35,13 @@ export const signAccessToken = (user) => {
    REFRESH TOKEN (LONG-LIVED)
 ====================================================== */
 export const signRefreshToken = (user) => {
+  const sessionStartedAt =
+    user?.sessionStartedAt ||
+    user?.sessionStart ||
+    new Date().toISOString();
   return jwt.sign(
-    { id: user._id },
+    { id: user._id || user.id, sessionStartedAt },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
   );
 };

@@ -90,9 +90,52 @@ export async function extractDocumentBase64({ contentBase64, mimeType, filename 
   };
 }
 
+export async function assistantChat({ message, role, pageContext, healthProfile }) {
+  const safeRole = String(role || "USER");
+  const safeMessage = String(message || "").trim();
+  const safePage = String(pageContext || "").slice(0, 8000);
+  const safeHealth = typeof healthProfile === "object" && healthProfile ? healthProfile : {};
+
+  if (NEUROEDGE_KEY) {
+    return callNeuroEdge("/assistant/chat", {
+      message: safeMessage,
+      role: safeRole,
+      page_context: safePage,
+      health_profile: safeHealth,
+    });
+  }
+
+  if (OPENAI_KEY) {
+    const prompt = [
+      "You are NeuroEdge Personal Assistant inside AfyaLink.",
+      "Rules:",
+      "- Be concise and practical.",
+      "- If medical risk appears high, advise seeking clinician/emergency help.",
+      "- Never claim diagnosis certainty.",
+      "",
+      `User role: ${safeRole}`,
+      `Health profile: ${JSON.stringify(safeHealth)}`,
+      `Page context: ${safePage || "N/A"}`,
+      `User message: ${safeMessage}`,
+      "",
+      "Respond with plain text and optional short bullets.",
+    ].join("\n");
+
+    const text = await callOpenAI(prompt, { max_tokens: 600, temperature: 0.2 });
+    return { provider: "openai", text };
+  }
+
+  return {
+    provider: "fallback",
+    text:
+      "AI chat provider is not configured. Configure NEUROEDGE_API_KEY or OPENAI_API_KEY to enable full assistant responses.",
+  };
+}
+
 export default {
   diagnoseSymptoms,
   treatmentGuidelines,
   transcribeAudioBase64,
   extractDocumentBase64,
+  assistantChat,
 };

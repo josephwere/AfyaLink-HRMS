@@ -9,6 +9,7 @@ router.use(
   protect,
   requireRole(
     "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
     "HR_MANAGER",
     "SYSTEM_ADMIN",
     "SUPER_ADMIN",

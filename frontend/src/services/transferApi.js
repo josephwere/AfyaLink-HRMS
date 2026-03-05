@@ -20,4 +20,8 @@ export const verifyTransferProvenance = async ({ transferId, payload, signature 
   });
 };
 
-export default { listTransfers, verifyTransferProvenance };
+export const getTransferHandoverPackage = async (transferId) => {
+  return apiFetch(`/api/transfers/${transferId}/handover-package`);
+};
+
+export default { listTransfers, verifyTransferProvenance, getTransferHandoverPackage };

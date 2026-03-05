@@ -134,6 +134,7 @@ import sreIncidentRoutes from "./routes/sreIncidentRoutes.js";
 import pilotOpsRoutes from "./routes/pilotOpsRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import customizationRequestRoutes from "./routes/customizationRequestRoutes.js";
+import staffTransferRoutes from "./routes/staffTransferRoutes.js";
 
 
 
@@ -257,6 +258,7 @@ app.use("/api/sre/incidents", sreIncidentRoutes);
 app.use("/api/pilot", pilotOpsRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/customization-requests", customizationRequestRoutes);
+app.use("/api/staff-transfers", staffTransferRoutes);
 
 
 /* ======================================================

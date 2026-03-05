@@ -369,7 +369,7 @@ export default function CommunityHealthWorkerDashboard() {
     <div className="dashboard chw-dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Community Health Worker Console</h2>
+          <h2>Community Health Dashboard</h2>
           <p className="muted">
             Offline-first household care, maternal/child follow-up, vaccination, surveillance, and referrals.
           </p>
@@ -487,7 +487,7 @@ export default function CommunityHealthWorkerDashboard() {
                 {v.category} • {v.status} • {new Date(v.createdAt).toLocaleString()}
               </div>
             ))}
-            {!visits.length ? <div className="alert-item">No visits yet</div> : null}
+            {!visits.length ? <div className="alert-item">No visits</div> : null}
           </div>
         </div>
       </section>
@@ -625,7 +625,7 @@ export default function CommunityHealthWorkerDashboard() {
                 Visits: {p.visitsCompleted} • Missed: {p.missedVisits} • Vaccinations: {p.vaccinationsAdministered}
               </div>
             ))}
-            {!performance.length ? <div className="alert-item">No performance logs</div> : null}
+            {!performance.length ? <div className="alert-item">No performance data</div> : null}
           </div>
         </div>
       </section>

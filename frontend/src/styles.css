@@ -322,6 +322,72 @@ body.auth-route {
   text-align: center;
 }
 
+/* =========================
+   DARK MODE VISIBILITY HARDENING
+========================= */
+[data-theme="dark"] .dashboard,
+[data-theme="dark"] .card,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .module-workspace,
+[data-theme="dark"] .content,
+[data-theme="dark"] .section {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] p,
+[data-theme="dark"] label,
+[data-theme="dark"] span,
+[data-theme="dark"] td,
+[data-theme="dark"] th,
+[data-theme="dark"] li {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .muted,
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .hint,
+[data-theme="dark"] .meta {
+  color: var(--app-muted) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--app-muted);
+}
+
+[data-theme="dark"] table,
+[data-theme="dark"] thead,
+[data-theme="dark"] tbody,
+[data-theme="dark"] tr {
+  background: transparent;
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .btn,
+[data-theme="dark"] button {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] a {
+  color: #93c5fd;
+}
+
 .kpi-label {
   font-size: 0.85rem;
   color: #6b7280;
@@ -2502,4 +2568,55 @@ body.auth-route {
   border-color: #22c55e;
   background: #dcfce7;
   color: #166534;
+}
+
+/* =========================
+   DARK MODE VISIBILITY HARDENING (FINAL OVERRIDES)
+========================= */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] p,
+[data-theme="dark"] label,
+[data-theme="dark"] span,
+[data-theme="dark"] td,
+[data-theme="dark"] th,
+[data-theme="dark"] li {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .module-workspace,
+[data-theme="dark"] .section,
+[data-theme="dark"] pre {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--app-surface-2) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme="dark"] .pill {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .pill.warning {
+  background: #3f2f06;
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .pill.success {
+  background: #0f2e1a;
+  color: #86efac;
 }

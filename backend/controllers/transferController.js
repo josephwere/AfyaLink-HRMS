@@ -1,6 +1,10 @@
 import Transfer from "../models/Transfer.js";
 import Patient from "../models/Patient.js";
 import TransferConsent from "../models/TransferConsent.js";
+import Encounter from "../models/Encounter.js";
+import LabOrder from "../models/LabOrder.js";
+import Prescription from "../models/Prescription.js";
+import Report from "../models/Report.js";
 import AuditLog from "../models/AuditLog.js";
 import { getIO } from "../utils/socket.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
@@ -133,6 +137,117 @@ function toHL7ADT(patient, transfer, consent) {
   ].join("\r");
 }
 
+async function buildTransferHandoverPackage(transfer, consent) {
+  const patient = await Patient.findById(transfer.patient).lean();
+  if (!patient) {
+    return { ok: false, status: 404, message: "Patient not found", missing: ["patient"] };
+  }
+
+  const latestEncounter = await Encounter.findOne({
+    patient: transfer.patient,
+    hospital: transfer.fromHospital,
+  })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  const encounterId = latestEncounter?._id || null;
+
+  const [latestLabs, latestPrescriptions, latestReports] = await Promise.all([
+    encounterId
+      ? LabOrder.find({ encounter: encounterId }).sort({ createdAt: -1 }).limit(10).lean()
+      : [],
+    encounterId
+      ? Prescription.find({ encounter: encounterId }).sort({ createdAt: -1 }).limit(10).lean()
+      : [],
+    Report.find({ patient: transfer.patient, hospital: transfer.fromHospital })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean(),
+  ]);
+
+  const handoverSummary =
+    transfer?.metadata?.handoverSummary ||
+    latestEncounter?.consultationNotes ||
+    latestEncounter?.diagnosis ||
+    "";
+
+  const missing = [];
+  if (!patient.firstName || !patient.lastName) missing.push("patient_name");
+  if (!patient.dob) missing.push("patient_dob");
+  if (!patient.gender) missing.push("patient_gender");
+  if (!latestEncounter) missing.push("latest_encounter");
+  if (!handoverSummary || !String(handoverSummary).trim()) missing.push("handover_summary");
+  if (!latestEncounter?.diagnosis || !String(latestEncounter.diagnosis).trim()) {
+    missing.push("latest_diagnosis");
+  }
+  if (latestLabs.length === 0 && latestPrescriptions.length === 0 && latestReports.length === 0) {
+    missing.push("clinical_artifacts");
+  }
+
+  const totalChecks = 7;
+  const completionScore = Math.max(0, Math.round(((totalChecks - missing.length) / totalChecks) * 100));
+
+  return {
+    ok: true,
+    completionScore,
+    missing,
+    package: {
+      transferId: String(transfer._id),
+      patient: {
+        id: String(patient._id),
+        firstName: patient.firstName || "",
+        lastName: patient.lastName || "",
+        dob: patient.dob || null,
+        gender: patient.gender || "",
+        nationalId: patient.nationalId || "",
+        countryId: patient.countryId || "",
+        contact: patient.contact || "",
+        address: patient.address || "",
+        insurance: patient.insurance || {},
+      },
+      encounter: latestEncounter
+        ? {
+            id: String(latestEncounter._id),
+            state: latestEncounter.state,
+            diagnosis: latestEncounter.diagnosis || "",
+            consultationNotes: latestEncounter.consultationNotes || "",
+            updatedAt: latestEncounter.updatedAt,
+          }
+        : null,
+      labs: latestLabs.map((it) => ({
+        id: String(it._id),
+        testName: it.testName,
+        status: it.status,
+        result: it.result || "",
+        completedAt: it.completedAt || null,
+      })),
+      prescriptions: latestPrescriptions.map((it) => ({
+        id: String(it._id),
+        status: it.status,
+        medications: it.medications || [],
+        dispensedAt: it.dispensedAt || null,
+      })),
+      reports: latestReports.map((it) => ({
+        id: String(it._id),
+        title: it.title || "",
+        createdAt: it.createdAt,
+      })),
+      consent: consent
+        ? {
+            id: String(consent._id),
+            status: consent.status,
+            scopes: consent.scopes || [],
+            expiresAt: consent.expiresAt || null,
+          }
+        : null,
+      handoverSummary: String(handoverSummary || ""),
+      generatedAt: new Date().toISOString(),
+      completionScore,
+      missing,
+    },
+  };
+}
+
 export const listTransfers = async (req, res, next) => {
   try {
     const hospital = resolveHospital(req);
@@ -226,9 +341,31 @@ export const requestTransfer = async (req, res, next) => {
     const hospital = resolveHospital(req);
     if (!hospital) return res.status(400).json({ message: "Hospital context required" });
 
+    const role = normalizeRole(req.user?.role || "");
+    const requestedFromHospital =
+      ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role) && req.body?.fromHospital
+        ? req.body.fromHospital
+        : hospital;
+    const targetHospital = req.body?.toHospital;
+    const patientId = req.body?.patient;
+    if (!targetHospital || !patientId) {
+      return res.status(400).json({ message: "patient and toHospital are required" });
+    }
+
+    const patient = await Patient.findById(patientId).lean();
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    if (String(patient.hospital) !== String(requestedFromHospital)) {
+      return res.status(403).json({ message: "Patient is not under source hospital scope" });
+    }
+    if (String(requestedFromHospital) === String(targetHospital)) {
+      return res.status(400).json({ message: "Source and destination hospital cannot be the same" });
+    }
+
     const payload = {
       ...req.body,
-      fromHospital: req.body.fromHospital || hospital,
+      fromHospital: requestedFromHospital,
+      toHospital: targetHospital,
+      patient: patientId,
       requestedBy: req.user._id,
       status: "Pending",
     };
@@ -389,7 +526,30 @@ export const completeTransfer = async (req, res, next) => {
       return res.status(403).json({ message: "Cross-hospital access denied" });
     }
 
+    const consent = await TransferConsent.findOne({ transfer: t._id }).lean();
+    const handover = await buildTransferHandoverPackage(t, consent);
+    if (!handover.ok) {
+      return res.status(handover.status || 400).json({ message: handover.message || "Handover package generation failed" });
+    }
+
+    const forceComplete = req.body?.forceComplete === true;
+    if (handover.completionScore < 100 && !forceComplete) {
+      return res.status(422).json({
+        message: "Transfer cannot be completed. Handover package has missing clinical fields.",
+        completionScore: handover.completionScore,
+        missing: handover.missing,
+        handover: handover.package,
+      });
+    }
+
     t.status = "Completed";
+    t.metadata = {
+      ...(t.metadata || {}),
+      handoverPackage: handover.package,
+      handoverCompletionScore: handover.completionScore,
+      handoverMissing: handover.missing,
+      completedWithOverride: forceComplete && handover.completionScore < 100,
+    };
     t.audit.push({ by: req.user._id, action: "completed", at: new Date() });
     await t.save();
 
@@ -416,7 +576,29 @@ export const completeTransfer = async (req, res, next) => {
     try {
       getIO().to(String(t.toHospital)).emit("transferCompleted", t);
     } catch (_e) {}
-    res.json(t);
+    res.json({ ...t.toObject(), handover: handover.package });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const transferHandoverPackage = async (req, res, next) => {
+  try {
+    const transfer = req.transfer || (await Transfer.findById(req.params.id).lean());
+    if (!transfer) return res.status(404).json({ message: "Transfer not found" });
+
+    const guard = req.transfer
+      ? { ok: true, consent: req.transferConsent || null }
+      : await requireConsentForCrossHospitalRead(req, transfer);
+    if (!guard.ok) return res.status(guard.status).json({ message: guard.message });
+
+    const consent =
+      guard.consent || req.transferConsent || (await TransferConsent.findOne({ transfer: transfer._id }).lean());
+    const handover = await buildTransferHandoverPackage(transfer, consent);
+    if (!handover.ok) {
+      return res.status(handover.status || 400).json({ message: handover.message || "Handover package generation failed" });
+    }
+    return res.json(handover.package);
   } catch (err) {
     next(err);
   }

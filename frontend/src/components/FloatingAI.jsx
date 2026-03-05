@@ -3,6 +3,8 @@ import { useSystemSettings } from "../utils/systemSettings.jsx";
 import {
   getAssistantAdvice,
   getAssistantContext,
+  chatAssistant,
+  summarizeAssistantPage,
   updateAssistantProfile,
 } from "../services/assistantApi";
 
@@ -29,6 +31,8 @@ export default function FloatingAI() {
   const [conditionsInput, setConditionsInput] = useState("");
   const [medicationsInput, setMedicationsInput] = useState("");
   const [notes, setNotes] = useState("");
+  const [chatPrompt, setChatPrompt] = useState("");
+  const [chatAnswer, setChatAnswer] = useState("");
 
   const aiName = ai?.name || "NeuroEdge";
   const greeting = ai?.greeting || "Ask AI";
@@ -100,6 +104,37 @@ export default function FloatingAI() {
       setMsg(err?.message || "Failed to save assistant profile");
     } finally {
       setSaveBusy(false);
+    }
+  };
+
+  const askAssistant = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
+      const out = await chatAssistant({
+        message: chatPrompt,
+        pageContext,
+      });
+      setChatAnswer(out?.answer || "");
+    } catch (err) {
+      setMsg(err?.message || "Failed to get assistant answer");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const summarizePage = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
+      const out = await summarizeAssistantPage({ pageContext });
+      setChatAnswer(out?.summary || "");
+    } catch (err) {
+      setMsg(err?.message || "Failed to summarize page");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -175,6 +210,31 @@ export default function FloatingAI() {
               )}
 
               <div className="card form">
+                <h4>Ask AI</h4>
+                <label>Question</label>
+                <textarea
+                  rows={3}
+                  value={chatPrompt}
+                  onChange={(e) => setChatPrompt(e.target.value)}
+                  placeholder="Ask anything about this page or your workflow..."
+                />
+                <div className="row-actions">
+                  <button type="button" className="btn-primary" onClick={askAssistant} disabled={busy || !chatPrompt.trim()}>
+                    {busy ? "Thinking..." : "Ask AI"}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={summarizePage} disabled={busy}>
+                    Summarize This Page
+                  </button>
+                </div>
+                {chatAnswer && (
+                  <div className="card">
+                    <h4>Assistant Response</h4>
+                    <p style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>{chatAnswer}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="card form">
                 <h4>Health Profile for Better Advice</h4>
                 <label>Known conditions (comma-separated)</label>
                 <input
@@ -201,4 +261,3 @@ export default function FloatingAI() {
     </>
   );
 }
-

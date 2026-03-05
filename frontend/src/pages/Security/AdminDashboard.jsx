@@ -88,8 +88,8 @@ export default function SecurityAdminDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Security Governance Dashboard</h2>
-          <p className="muted">Access control, visitor management, incident response and device authorization.</p>
+          <h2>Security Admin Dashboard</h2>
+          <p className="muted">Simple security admin view for access, visitors, and incident control.</p>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ export default function SecurityAdminDashboard() {
                 {row.expiresAt ? new Date(row.expiresAt).toLocaleString() : ""}
               </div>
             ))}
-            {!overstays?.length ? <div className="alert-item">No overstays</div> : null}
+            {!overstays?.length ? <div className="alert-item">No overstay cases</div> : null}
           </div>
         </div>
       </section>

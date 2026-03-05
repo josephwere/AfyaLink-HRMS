@@ -34,7 +34,7 @@ router.post(
 router.get(
   "/",
   protect,
-  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"),
   listHospitals
 );
 

@@ -8,6 +8,7 @@ import { logAudit } from "../services/auditService.js";
 
 const HOSPITAL_WORKER_ROLES = [
   "DOCTOR",
+  "SURGEON",
   "NURSE",
   "LAB_TECH",
   "PHARMACIST",
@@ -285,4 +286,3 @@ export const removeDelegatedPermission = async (req, res) => {
     return res.status(500).json({ message: "Failed to remove delegated permission" });
   }
 };
-

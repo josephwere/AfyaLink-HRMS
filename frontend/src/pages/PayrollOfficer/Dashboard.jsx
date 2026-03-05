@@ -18,7 +18,7 @@ export default function PayrollOfficerDashboard() {
       <div className="welcome-panel">
         <div>
           <h2>Payroll Officer Engine</h2>
-          <p className="muted">Run payroll, manage deductions, taxes, loans and audit-ready payroll history.</p>
+          <p className="muted">Simple payroll view for salary, deductions, and payment history.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/payments/full")}>Run Payroll</button>
@@ -48,7 +48,7 @@ export default function PayrollOfficerDashboard() {
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Right Insights</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Pending Approvals: {data?.pendingApprovals ?? "—"}</div>
             <div className="action-pill">Overdue Payroll: {data?.overduePayroll ?? "—"}</div>

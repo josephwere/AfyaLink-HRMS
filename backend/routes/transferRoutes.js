@@ -12,6 +12,7 @@ import {
   exportTransferHL7,
   verifyTransferProvenance,
   transferAuditTrail,
+  transferHandoverPackage,
 } from "../controllers/transferController.js";
 import { protect } from '../middleware/authMiddleware.js';
 import { permit } from '../middleware/roleMiddleware.js';
@@ -62,6 +63,15 @@ router.get(
 );
 router.post("/:id/consent/grant", protect, permit("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"), grantTransferConsent);
 router.post("/:id/consent/revoke", protect, permit("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"), revokeTransferConsent);
+router.get(
+  "/:id/handover-package",
+  protect,
+  permit("DOCTOR", "NURSE", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  requireTransferConsent({ writeBypass: true }),
+  attachTransferAbacContext({ requiredScopes: ["demographics", "encounters"] }),
+  abacGuard({ domain: "INTEROP", resource: "transfer_export", action: "read", fallbackAllow: true }),
+  transferHandoverPackage
+);
 router.get(
   "/:id/fhir",
   protect,

@@ -3,6 +3,54 @@ import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import Hospital from "../models/Hospital.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
+import { normalizeRole } from "../utils/normalizeRole.js";
+import { HOSPITAL_SCOPED_ROLES, STAFF_ROLES } from "../utils/roleSets.js";
+
+const ALL_ASSIGNABLE_ROLES = new Set([
+  "SUPER_ADMIN",
+  "SYSTEM_ADMIN",
+  "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
+  "DEVELOPER",
+  "DOCTOR",
+  "SURGEON",
+  "NURSE",
+  "LAB_TECH",
+  "PHARMACIST",
+  "RADIOLOGIST",
+  "THERAPIST",
+  "RECEPTIONIST",
+  "SECURITY_OFFICER",
+  "SECURITY_ADMIN",
+  "HR_MANAGER",
+  "PAYROLL_OFFICER",
+  "COMMUNITY_HEALTH_WORKER",
+  "PATIENT",
+  "GUEST",
+]);
+
+const HOSPITAL_ADMIN_ASSIGNABLE_ROLES = new Set([
+  "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
+  "DOCTOR",
+  "SURGEON",
+  "NURSE",
+  "LAB_TECH",
+  "PHARMACIST",
+  "RADIOLOGIST",
+  "THERAPIST",
+  "RECEPTIONIST",
+  "SECURITY_OFFICER",
+  "SECURITY_ADMIN",
+  "HR_MANAGER",
+  "PAYROLL_OFFICER",
+  "COMMUNITY_HEALTH_WORKER",
+  "PATIENT",
+  "GUEST",
+]);
+
+const HOSPITAL_SCOPED_ROLES_SET = new Set(HOSPITAL_SCOPED_ROLES);
+const STAFF_ROLES_SET = new Set(STAFF_ROLES);
 
 /**
  * POST /api/users
@@ -19,10 +67,20 @@ export const createUser = async (req, res, next) => {
 
     const STAFF_ROLES = [
       "HOSPITAL_ADMIN",
+      "HOSPITAL_ADMIN_ASSISTANT",
       "DOCTOR",
+      "SURGEON",
       "NURSE",
       "LAB_TECH",
       "PHARMACIST",
+      "RADIOLOGIST",
+      "THERAPIST",
+      "RECEPTIONIST",
+      "SECURITY_OFFICER",
+      "SECURITY_ADMIN",
+      "HR_MANAGER",
+      "PAYROLL_OFFICER",
+      "COMMUNITY_HEALTH_WORKER",
     ];
 
     const isStaff = STAFF_ROLES.includes(role);
@@ -112,6 +170,44 @@ export const getMe = async (req, res, next) => {
  */
 export const listUsers = async (req, res, next) => {
   try {
+    if (String(req.query.groupByHospital || "") === "1") {
+      const actorRole = String(req.user?.role || "").toUpperCase();
+      if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
+        return res.status(403).json({ message: "Only global admins can group users by hospital" });
+      }
+      const grouped = await User.aggregate([
+        {
+          $group: {
+            _id: { hospital: "$hospital", role: "$role" },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: "hospitals",
+            localField: "_id.hospital",
+            foreignField: "_id",
+            as: "hospitalRef",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            hospitalId: "$_id.hospital",
+            hospitalName: {
+              $ifNull: [{ $arrayElemAt: ["$hospitalRef.name", 0] }, "UNASSIGNED"],
+            },
+            role: "$_id.role",
+            count: 1,
+          },
+        },
+        {
+          $sort: { hospitalName: 1, role: 1 },
+        },
+      ]);
+      return res.json({ items: grouped });
+    }
+
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const cursor = req.query.cursor || null;
@@ -196,10 +292,14 @@ export const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+    const actorRole = normalizeRole(String(req.user?.actualRole || req.user?.role || ""));
+    const isGlobalAdmin =
+      actorRole === "SUPER_ADMIN" ||
+      actorRole === "SYSTEM_ADMIN" ||
+      actorRole === "DEVELOPER";
 
     // 🔐 Password changes handled elsewhere
     delete updates.password;
-    delete updates.hospital;
     // allow active status update for admin deactivation
 
     const user = await User.findById(id);
@@ -209,8 +309,6 @@ export const updateUser = async (req, res, next) => {
     }
 
     // 🔐 TENANT ISOLATION (CRITICAL)
-    const actorRole = String(req.user?.role || "").toUpperCase();
-    const isGlobalAdmin = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
     if (
       !isGlobalAdmin &&
       user.hospital?.toString() !== req.user.hospitalId?.toString()
@@ -226,6 +324,106 @@ export const updateUser = async (req, res, next) => {
       });
     }
 
+    // Protected accounts cannot be role-escalated/deactivated by non-super-admin actors.
+    if (user.protectedAccount && actorRole !== "SUPER_ADMIN") {
+      return res.status(403).json({ message: "Protected account can only be modified by Super Admin" });
+    }
+
+    const roleRequested = Object.prototype.hasOwnProperty.call(updates, "role");
+    if (roleRequested) {
+      const nextRole = normalizeRole(updates.role);
+      if (!ALL_ASSIGNABLE_ROLES.has(nextRole)) {
+        return res.status(400).json({ message: "Invalid target role" });
+      }
+
+      // HR managers can update profile fields, but not role escalation.
+      if (actorRole === "HR_MANAGER") {
+        return res.status(403).json({ message: "HR Manager cannot change user roles" });
+      }
+
+      if (actorRole === "HOSPITAL_ADMIN" || actorRole === "HOSPITAL_ADMIN_ASSISTANT") {
+        if (!HOSPITAL_ADMIN_ASSIGNABLE_ROLES.has(nextRole)) {
+          return res.status(403).json({ message: "Hospital admin scope cannot assign this role" });
+        }
+      } else if (!isGlobalAdmin) {
+        return res.status(403).json({ message: "You are not allowed to change roles" });
+      }
+
+      const previousRole = normalizeRole(user.role);
+      updates.role = nextRole;
+
+      // Hospital-scoped role changes must remain within actor's hospital context.
+      if ((actorRole === "HOSPITAL_ADMIN" || actorRole === "HOSPITAL_ADMIN_ASSISTANT") && HOSPITAL_SCOPED_ROLES_SET.has(nextRole)) {
+        const actorHospital = req.user.hospitalId || req.user.hospital;
+        if (!actorHospital) {
+          return res.status(400).json({ message: "Hospital context missing for role assignment" });
+        }
+        if (user.hospital && String(user.hospital) !== String(actorHospital)) {
+          return res.status(403).json({ message: "Cannot assign role across hospitals" });
+        }
+        updates.hospital = actorHospital;
+      }
+
+      // Global actor may explicitly target hospital during assignment.
+      if (isGlobalAdmin && req.body?.hospital) {
+        updates.hospital = req.body.hospital;
+      }
+
+      if (isGlobalAdmin && HOSPITAL_SCOPED_ROLES_SET.has(nextRole)) {
+        const targetHospital = updates.hospital || user.hospital || null;
+        if (!targetHospital) {
+          return res.status(400).json({
+            message: "Hospital is required when assigning hospital-scoped roles",
+          });
+        }
+        updates.hospital = targetHospital;
+      }
+
+      // If assigning non hospital-scoped role, clear hospital unless explicit override provided.
+      if (!HOSPITAL_SCOPED_ROLES_SET.has(nextRole) && updates.hospital === undefined) {
+        if (!["PATIENT", "GUEST"].includes(nextRole)) {
+          updates.hospital = null;
+        }
+      }
+
+      if (HOSPITAL_SCOPED_ROLES_SET.has(nextRole)) {
+        updates.employment = {
+          ...(user.employment || {}),
+          ...(updates.employment || {}),
+          status: "ACTIVE",
+          separationDate: undefined,
+          separationReason: undefined,
+          transferRequest: undefined,
+        };
+      } else if (nextRole === "PATIENT" || nextRole === "GUEST") {
+        updates.employment = {
+          ...(user.employment || {}),
+          ...(updates.employment || {}),
+          status: "INACTIVE",
+          separationDate: new Date(),
+          transferRequest: undefined,
+        };
+      }
+
+      await audit({
+        req,
+        action: "CHANGE_USER_ROLE",
+        resource: "User",
+        resourceId: user._id,
+        metadata: {
+          fromRole: previousRole,
+          toRole: nextRole,
+          actorRole,
+          actorHospital: req.user?.hospitalId || req.user?.hospital || null,
+        },
+      });
+    } else {
+      // No role change requested: prevent non-global actors from changing hospital ownership.
+      if (!isGlobalAdmin) {
+        delete updates.hospital;
+      }
+    }
+
     Object.assign(user, updates);
     await user.save();
 
@@ -239,6 +437,71 @@ export const updateUser = async (req, res, next) => {
     res.json(
       user.toObject({ getters: true, versionKey: false })
     );
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const demoteStaffToPatient = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const reason = String(req.body?.reason || "Employment ended").trim();
+    const actorRole = normalizeRole(String(req.user?.actualRole || req.user?.role || ""));
+    const isGlobalAdmin =
+      actorRole === "SUPER_ADMIN" ||
+      actorRole === "SYSTEM_ADMIN" ||
+      actorRole === "DEVELOPER";
+
+    if (actorRole === "HR_MANAGER") {
+      return res.status(403).json({ message: "HR Manager cannot demote users to patient" });
+    }
+
+    const user = await User.findById(id);
+    if (!user || !user.active) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const targetRole = normalizeRole(String(user.role || ""));
+    if (!HOSPITAL_SCOPED_ROLES_SET.has(targetRole) && !STAFF_ROLES_SET.has(targetRole)) {
+      return res.status(400).json({ message: "Only hospital staff can be demoted to patient" });
+    }
+
+    if (
+      !isGlobalAdmin &&
+      String(user.hospital || "") !== String(req.user.hospitalId || req.user.hospital || "")
+    ) {
+      return res.status(403).json({ message: "Cannot modify staff outside your hospital" });
+    }
+
+    const previousRole = targetRole;
+    const previousHospital = user.hospital;
+    user.role = "PATIENT";
+    user.hospital = null;
+    user.employment = user.employment || {};
+    user.employment.status = "INACTIVE";
+    user.employment.separationDate = new Date();
+    user.employment.separationReason = reason;
+    user.employment.transferRequest = undefined;
+    await user.save();
+
+    await audit({
+      req,
+      action: "STAFF_DEMOTED_TO_PATIENT",
+      resource: "User",
+      resourceId: user._id,
+      metadata: {
+        fromRole: previousRole,
+        toRole: "PATIENT",
+        fromHospital: previousHospital || null,
+        reason,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Staff member demoted to patient",
+      user: user.toObject({ getters: true, versionKey: false }),
+    });
   } catch (err) {
     next(err);
   }

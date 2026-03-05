@@ -2,6 +2,7 @@
 
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 const { Schema, model } = mongoose;
 
@@ -49,8 +50,10 @@ const userSchema = new Schema(
         "SUPER_ADMIN",
         "SYSTEM_ADMIN",
         "HOSPITAL_ADMIN",
+        "HOSPITAL_ADMIN_ASSISTANT",
         "DEVELOPER",
         "DOCTOR",
+        "SURGEON",
         "NURSE",
         "LAB_TECH",
         "PHARMACIST",
@@ -231,6 +234,12 @@ const userSchema = new Schema(
       employeeId: { type: String, index: true },
       department: String,
       reportingManager: String,
+      status: {
+        type: String,
+        enum: ["ACTIVE", "INACTIVE", "TRANSFER_PENDING"],
+        default: "INACTIVE",
+        index: true,
+      },
       employmentType: {
         type: String,
         enum: ["FULL_TIME", "LOCUM", "CONTRACT", "PART_TIME", "INTERN"],
@@ -240,6 +249,12 @@ const userSchema = new Schema(
       contractEnd: Date,
       workLocation: String,
       branch: String,
+      separationDate: Date,
+      separationReason: String,
+      transferRequest: {
+        type: Schema.Types.ObjectId,
+        ref: "StaffTransferRequest",
+      },
     },
 
     /* =========================
@@ -322,6 +337,7 @@ const userSchema = new Schema(
 
 userSchema.index({ hospital: 1, active: 1, createdAt: -1 });
 userSchema.index({ hospital: 1, role: 1, active: 1, createdAt: -1 });
+userSchema.index({ hospital: 1, "employment.employeeId": 1 }, { sparse: true });
 userSchema.index({ "sessionSecurity.lastRiskLevel": 1, "sessionSecurity.lastLoginAt": -1 });
 
 /* ======================================================
@@ -336,6 +352,25 @@ userSchema.pre("save", function (next) {
     }
   }
   next();
+});
+
+userSchema.pre("validate", function (next) {
+  if (HOSPITAL_SCOPED_ROLES.includes(this.role) && !this.hospital) {
+    return next(new Error(`${this.role} must be linked to a hospital`));
+  }
+
+  this.employment = this.employment || {};
+  if (HOSPITAL_SCOPED_ROLES.includes(this.role)) {
+    if (!this.employment.status || this.employment.status === "INACTIVE") {
+      this.employment.status = "ACTIVE";
+    }
+  } else if (this.role === "PATIENT" || this.role === "GUEST") {
+    if (!this.employment.status || this.employment.status === "ACTIVE") {
+      this.employment.status = "INACTIVE";
+    }
+  }
+
+  return next();
 });
 
 /* ======================================================

@@ -18,12 +18,12 @@ export default function NurseDashboard() {
       <div className="welcome-panel">
         <div>
           <h2>Nurse Clinical Operations</h2>
-          <p className="muted">Shift execution, patient assignment, medication administration and incident logging.</p>
+          <p className="muted">Daily nursing tasks in one clear workspace.</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>My Shift</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/patients")}>Assigned Patients</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/leave")}>Leave Requests</button>
+          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>Open Shift</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/vitals")}>Record Vitals</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/medication")}>Give Medication</button>
         </div>
       </div>
 
@@ -39,7 +39,7 @@ export default function NurseDashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Center Workspace</h3>
+          <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button className="action-link" type="button" onClick={() => navigate("/nurse/patients")}>Patient Task List</button>
             <button className="action-link" type="button" onClick={() => navigate("/nurse/medication")}>Medication Administration</button>
@@ -49,7 +49,7 @@ export default function NurseDashboard() {
         </div>
 
         <div className="card doctor-alerts-card">
-          <h3>Right Panel</h3>
+          <h3>Alerts</h3>
           <div className="alert-stack">
             <div className="action-pill">Critical Alerts: {data?.appointmentsToday ?? "—"}</div>
             <div className="action-pill">Leave Pending: {data?.pendingRequests?.leave ?? "—"}</div>
