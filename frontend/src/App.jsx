@@ -199,6 +199,9 @@ const SHARED_NOTIFICATION_ROLES = [
   "HR_MANAGER",
   "PAYROLL_OFFICER",
   "COMMUNITY_HEALTH_WORKER",
+  "RADIOLOGIST",
+  "THERAPIST",
+  "PATIENT",
 ];
 
 function PublicOnly({ children }) {

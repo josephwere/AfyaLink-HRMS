@@ -39,6 +39,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
   const [submitting, setSubmitting] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [form, setForm] = useState(emptyApplicationForm);
+  const [openAdId, setOpenAdId] = useState("");
   const source = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return String(params.get("src") || defaultSource || "PATIENT_FEED").trim().toUpperCase();
@@ -77,6 +78,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
   const startApply = (adId) => {
     setApplyingId(adId);
+    setOpenAdId(adId);
     setResumeFile(null);
     setMsg("");
     trackRecruitmentAdEvent(adId, { event: "APPLY_INTENT", source }).catch(() => {});
@@ -106,6 +108,10 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
   const trackAndFollow = (adId, event) => () => {
     trackRecruitmentAdEvent(adId, { event, source }).catch(() => {});
+  };
+
+  const toggleOpenAd = (adId) => {
+    setOpenAdId((prev) => (String(prev) === String(adId) ? "" : String(adId)));
   };
 
   if (variant === "public") {
@@ -192,6 +198,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                 {ads.map((ad) => {
                   const existing = appByAdId.get(String(ad._id));
                   const showApply = String(applyingId) === String(ad._id);
+                  const showDetails = String(openAdId) === String(ad._id);
                   const gallery = Array.isArray(ad?.media?.gallery) ? ad.media.gallery : [];
 
                   return (
@@ -268,6 +275,13 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                       ) : null}
 
                       <div className="row-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => toggleOpenAd(ad._id)}
+                        >
+                          {showDetails ? "Close" : "Open"}
+                        </button>
                         {existing ? (
                           <span className="muted">Already applied</span>
                         ) : ad.applicationMode === "EXTERNAL" && ad.applyUrl ? (
@@ -330,6 +344,51 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                           </a>
                         ) : null}
                       </div>
+
+                      {showDetails ? (
+                        <div className="card" style={{ margin: "12px 0 0" }}>
+                          <h4 style={{ marginTop: 0 }}>Vacancy Details</h4>
+                          {ad.requirements?.length ? (
+                            <>
+                              <strong>Requirements</strong>
+                              <ul className="recruitment-detail-list">
+                                {ad.requirements.map((item) => (
+                                  <li key={`${ad._id}-req-${item}`}>{item}</li>
+                                ))}
+                              </ul>
+                            </>
+                          ) : null}
+
+                          <div className="recruitment-meta-grid">
+                            <div>
+                              <strong>Hiring Count</strong>
+                              <span>{ad.hiringCount || "1"}</span>
+                            </div>
+                            <div>
+                              <strong>Seniority</strong>
+                              <span>{ad.seniorityLevel || "Not set"}</span>
+                            </div>
+                            <div>
+                              <strong>Campaign Start</strong>
+                              <span>{ad.campaignStartAt ? new Date(ad.campaignStartAt).toLocaleDateString() : "Now"}</span>
+                            </div>
+                            <div>
+                              <strong>Expiry</strong>
+                              <span>{ad.expiresAt ? new Date(ad.expiresAt).toLocaleDateString() : "Open until filled"}</span>
+                            </div>
+                          </div>
+
+                          {ad.contactEmail || ad.contactPhone ? (
+                            <>
+                              <strong>Recruitment Contact</strong>
+                              <div className="recruitment-chip-wrap" style={{ marginTop: 8 }}>
+                                {ad.contactEmail ? <span className="tag-chip">{ad.contactEmail}</span> : null}
+                                {ad.contactPhone ? <span className="tag-chip">{ad.contactPhone}</span> : null}
+                              </div>
+                            </>
+                          ) : null}
+                        </div>
+                      ) : null}
 
                       {showApply ? (
                         <div className="card" style={{ margin: "12px 0 0" }}>

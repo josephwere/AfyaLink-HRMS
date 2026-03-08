@@ -1641,6 +1641,13 @@ body.auth-route {
   gap: 8px;
 }
 
+.recruitment-detail-list {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
 .recruitment-analytics-head {
   display: flex;
   justify-content: space-between;
