@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
+import { listRegisteredPharmacies } from "../../services/pharmacyNetworkApi";
 
 const HOSPITAL_ADMIN_ROLE_OPTIONS = [
   "HOSPITAL_ADMIN",
@@ -106,6 +107,9 @@ export default function StaffManagement() {
   const roleOptions = isGlobalActor ? GLOBAL_ROLE_OPTIONS : HOSPITAL_ADMIN_ROLE_OPTIONS;
   const [hospitalOptions, setHospitalOptions] = useState([]);
   const [hospitalByUser, setHospitalByUser] = useState({});
+  const [pharmacyOptions, setPharmacyOptions] = useState([]);
+  const [pharmacyByUser, setPharmacyByUser] = useState({});
+  const [missingPharmacyOnly, setMissingPharmacyOnly] = useState(false);
 
   if (
     user?.role !== "HOSPITAL_ADMIN" &&
@@ -127,6 +131,7 @@ export default function StaffManagement() {
         limit: String(limit),
       });
       if (q.trim()) params.set("q", q.trim());
+      if (missingPharmacyOnly) params.set("missingRegisteredPharmacy", "1");
       const res = await apiFetch(`/api/users?${params.toString()}`);
       const items = Array.isArray(res)
         ? res
@@ -144,6 +149,15 @@ export default function StaffManagement() {
         });
         return next;
       });
+      setPharmacyByUser((prev) => {
+        const next = { ...prev };
+        manageable.forEach((u) => {
+          if (!(u._id in next)) {
+            next[u._id] = u.registeredPharmacy || "";
+          }
+        });
+        return next;
+      });
       setTotal(Number(res?.total || manageable.length));
     } catch {
       setMsg("Failed to load staff");
@@ -155,7 +169,7 @@ export default function StaffManagement() {
 
   useEffect(() => {
     load();
-  }, [page]);
+  }, [page, missingPharmacyOnly]);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -163,12 +177,19 @@ export default function StaffManagement() {
       load();
     }, 300);
     return () => clearTimeout(id);
-  }, [q]);
+  }, [q, missingPharmacyOnly]);
+
+  const pharmacyNameById = pharmacyOptions.reduce((acc, item) => {
+    acc[String(item._id)] = item.name;
+    return acc;
+  }, {});
 
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const initialQ = qs.get("q") || "";
+    const initialMissingPharmacy = qs.get("missingRegisteredPharmacy") === "1";
     if (initialQ) setQ(initialQ);
+    if (initialMissingPharmacy) setMissingPharmacyOnly(true);
   }, [location.search]);
 
   useEffect(() => {
@@ -187,6 +208,21 @@ export default function StaffManagement() {
       mounted = false;
     };
   }, [isGlobalActor]);
+
+  useEffect(() => {
+    let mounted = true;
+    listRegisteredPharmacies({ includeInactive: false, limit: 500 })
+      .then((res) => {
+        if (!mounted) return;
+        setPharmacyOptions(Array.isArray(res?.items) ? res.items : []);
+      })
+      .catch(() => {
+        if (mounted) setPharmacyOptions([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const deactivate = async (id) => {
     try {
@@ -226,10 +262,39 @@ export default function StaffManagement() {
         payload.hospital = selectedHospital;
       }
 
+      if (normalizedTargetRole === "PHARMACIST") {
+        payload.registeredPharmacy = pharmacyByUser[id] || null;
+      } else {
+        payload.registeredPharmacy = null;
+      }
+
       await apiFetch(`/api/users/${id}`, { method: "PATCH", body: payload });
       await load();
     } catch (err) {
       setMsg(err?.message || "Failed to update role");
+    }
+  };
+
+  const saveAccess = async (staffUser) => {
+    try {
+      setMsg(null);
+      const normalizedTargetRole = String(staffUser?.role || "").toUpperCase();
+      const payload = { role: normalizedTargetRole };
+      if (isGlobalActor && HOSPITAL_SCOPED_ROLES.has(normalizedTargetRole)) {
+        const selectedHospital = hospitalByUser[staffUser._id] || "";
+        if (!selectedHospital) {
+          setMsg("Select a hospital before saving hospital-scoped access.");
+          return;
+        }
+        payload.hospital = selectedHospital;
+      }
+      payload.registeredPharmacy =
+        normalizedTargetRole === "PHARMACIST" ? pharmacyByUser[staffUser._id] || null : null;
+      await apiFetch(`/api/users/${staffUser._id}`, { method: "PATCH", body: payload });
+      setMsg("Staff access updated.");
+      await load();
+    } catch (err) {
+      setMsg(err?.message || "Failed to save staff access.");
     }
   };
 
@@ -248,6 +313,16 @@ export default function StaffManagement() {
             onChange={(e) => setQ(e.target.value)}
             style={{ minWidth: 280 }}
           />
+          <button
+            type="button"
+            className={`btn-secondary ${missingPharmacyOnly ? "active" : ""}`}
+            onClick={() => {
+              setPage(1);
+              setMissingPharmacyOnly((prev) => !prev);
+            }}
+          >
+            {missingPharmacyOnly ? "Show All Staff" : "Show Unlinked Pharmacists"}
+          </button>
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             Refresh
           </button>
@@ -259,6 +334,11 @@ export default function StaffManagement() {
       <section className="section">
         <h3>Users</h3>
         <div className="card">
+          <div className="welcome-actions mb-12">
+            <div className="action-pill">
+              Unlinked pharmacists: {staff.filter((item) => String(item.role || "").toUpperCase() === "PHARMACIST" && !pharmacyByUser[item._id]).length}
+            </div>
+          </div>
           <table className="table lite">
             <thead>
               <tr>
@@ -266,6 +346,7 @@ export default function StaffManagement() {
                 <th>Email</th>
                 <th>Role</th>
                 {isGlobalActor && <th>Hospital</th>}
+                <th>Pharmacy Link</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -311,8 +392,44 @@ export default function StaffManagement() {
                       </select>
                     </td>
                   )}
+                  <td>
+                    {String(s.role || "").toUpperCase() === "PHARMACIST" ? (
+                      <div>
+                        <select
+                          value={pharmacyByUser[s._id] || ""}
+                          onChange={(e) =>
+                            setPharmacyByUser((prev) => ({
+                              ...prev,
+                              [s._id]: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">No pharmacy</option>
+                          {pharmacyOptions.map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="muted" style={{ marginTop: 6 }}>
+                          {pharmacyByUser[s._id]
+                            ? pharmacyNameById[String(pharmacyByUser[s._id])] || "Linked pharmacy"
+                            : "Not linked"}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="muted">Not needed</span>
+                    )}
+                  </td>
                   <td>{s.active === false ? "Inactive" : "Active"}</td>
                   <td>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => saveAccess(s)}
+                    >
+                      Save Access
+                    </button>
                     <button
                       type="button"
                       className="btn-secondary"
@@ -334,7 +451,7 @@ export default function StaffManagement() {
               ))}
               {staff.length === 0 && (
                 <tr>
-                  <td colSpan={isGlobalActor ? 6 : 5}>No users found</td>
+                  <td colSpan={isGlobalActor ? 7 : 6}>No users found</td>
                 </tr>
               )}
             </tbody>

@@ -191,6 +191,13 @@ const userSchema = new Schema(
       index: true,
     },
 
+    registeredPharmacy: {
+      type: Schema.Types.ObjectId,
+      ref: "RegisteredPharmacy",
+      index: true,
+      default: null,
+    },
+
     nationalIdNumber: {
       type: String,
       index: true,

@@ -6,6 +6,7 @@ import {
   updateRegisteredPharmacy,
   createPharmacyReferral,
   listPharmacyReferrals,
+  updatePharmacyReferral,
 } from "../controllers/pharmacyNetworkController.js";
 
 const router = express.Router();
@@ -18,13 +19,18 @@ router.put("/pharmacies/:id", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELO
 
 router.get(
   "/referrals",
-  requireRole("HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  requireRole("HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PHARMACIST", "PATIENT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
   listPharmacyReferrals
 );
 router.post(
   "/referrals",
   requireRole("HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
   createPharmacyReferral
+);
+router.patch(
+  "/referrals/:id",
+  requireRole("PHARMACIST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  updatePharmacyReferral
 );
 
 export default router;

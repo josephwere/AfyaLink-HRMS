@@ -26,6 +26,11 @@ const systemSettingsSchema = new Schema(
       digitalTwinEnabled: { type: Boolean, default: false },
       greeting: { type: String, default: "Hi, how can I help?" },
     },
+    communications: {
+      callsEnabled: { type: Boolean, default: true },
+      videoCallsEnabled: { type: Boolean, default: true },
+      voiceCallsEnabled: { type: Boolean, default: true },
+    },
     monetization: {
       strategy: { type: String, default: "CORE_FREE_PREMIUM_ADDONS" },
       enforceUsageLimits: { type: Boolean, default: false },

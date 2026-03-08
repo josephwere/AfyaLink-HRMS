@@ -3,6 +3,17 @@ import {
   createAppointment,
   listAppointments,
   listHospitalDoctors,
+  getHospitalSlotSuggestions,
+  getHospitalAppointmentOps,
+  assignAppointmentDoctor,
+  getDoctorAvailability,
+  upsertDoctorAvailability,
+  listCalls,
+  createCallSession,
+  blockCallSession,
+  activateCallSession,
+  endCallSession,
+  softDeleteCallSession,
   getAppointment,
   updateAppointment,
   deleteAppointment,
@@ -11,6 +22,7 @@ import {
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/authorize.js";
 import { audit } from "../middleware/audit.js";
+import { requireRole } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
@@ -44,6 +56,90 @@ router.get(
   protect,
   authorize("appointments", "read"),
   listHospitalDoctors
+);
+
+router.get(
+  "/suggestions",
+  protect,
+  authorize("appointments", "read"),
+  getHospitalSlotSuggestions
+);
+
+router.get(
+  "/ops/queue",
+  protect,
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  getHospitalAppointmentOps
+);
+
+router.post(
+  "/:id/assign",
+  protect,
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  audit("APPOINTMENT_ASSIGN_DOCTOR", "appointments"),
+  assignAppointmentDoctor
+);
+
+router.get(
+  "/doctors/:doctorId/availability",
+  protect,
+  authorize("appointments", "read"),
+  getDoctorAvailability
+);
+
+router.put(
+  "/doctors/:doctorId/availability",
+  protect,
+  authorize("appointments", "update"),
+  audit("DOCTOR_AVAILABILITY_UPSERT", "appointments"),
+  upsertDoctorAvailability
+);
+
+router.get(
+  "/calls",
+  protect,
+  authorize("appointments", "read"),
+  listCalls
+);
+
+router.post(
+  "/calls",
+  protect,
+  authorize("appointments", "create"),
+  audit("CALL_SESSION_CREATE", "appointments"),
+  createCallSession
+);
+
+router.patch(
+  "/calls/:id/block",
+  protect,
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  audit("CALL_SESSION_BLOCK", "appointments"),
+  blockCallSession
+);
+
+router.patch(
+  "/calls/:id/activate",
+  protect,
+  authorize("appointments", "update"),
+  audit("CALL_SESSION_ACTIVATE", "appointments"),
+  activateCallSession
+);
+
+router.patch(
+  "/calls/:id/end",
+  protect,
+  authorize("appointments", "update"),
+  audit("CALL_SESSION_END", "appointments"),
+  endCallSession
+);
+
+router.delete(
+  "/calls/:id",
+  protect,
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  audit("CALL_SESSION_DELETE", "appointments"),
+  softDeleteCallSession
 );
 
 /**

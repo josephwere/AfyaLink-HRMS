@@ -143,6 +143,9 @@ export default function Dashboard() {
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointments")}>Appointment Ops</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/consultation-monitor")}>Consultation Monitor</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointment-analytics")}>Appointment Analytics</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>Leave Approvals</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Requests</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/recruitment-ads")}>Recruitment Ads</button>
@@ -162,6 +165,13 @@ export default function Dashboard() {
           <StatCard title="Bed Occupancy" value={data?.patientsTotal ?? "—"} />
           <StatCard title="Shift Coverage %" value={data?.openShifts ?? "—"} />
           <StatCard title="Department Alerts" value={data?.pendingRequests ?? "—"} />
+          <StatCard title="Pending Doctor Assignments" value={data?.pendingAssignments ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
+          <StatCard title="Active Consultation Calls" value={data?.activeConsultationCalls ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
+          <StatCard
+            title="Unlinked Pharmacists"
+            value={data?.unlinkedPharmacists ?? "—"}
+            onClick={() => navigate("/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist")}
+          />
           <StatCard
             title="Training Completion %"
             value={trainingStats.completionRate}
@@ -217,8 +227,11 @@ export default function Dashboard() {
           <h3>Main Tasks</h3>
           <div className="panel-grid">
             <button type="button" className="action-link" onClick={() => navigate("/workforce/requests#shift")}>Shift Calendar</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/appointments")}>Appointment Queue</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/appointment-analytics")}>Demand Analytics</button>
             <button type="button" className="action-link" onClick={() => navigate("/reports")}>Attendance Heatmap</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist")}>Fix Pharmacy Links</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/financials")}>Budget & Financials</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/pharmacy-referrals")}>Nearest Pharmacy Routing</button>
             <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=NURSE&status=IN_PROGRESS")}>Training Tracker Board</button>
@@ -230,7 +243,32 @@ export default function Dashboard() {
           <div className="alert-stack">
             <div className="action-pill">Pending Approvals: {data?.pendingRequests ?? "—"}</div>
             <div className="action-pill">Critical Alerts: {data?.appointmentsToday ?? "—"}</div>
+            <div className="action-pill">Pharmacists Linked: {data?.linkedPharmacists ?? "—"}/{data?.pharmacists ?? "—"}</div>
+            {(data?.unreadPharmacyRiskNotifications ?? 0) > 0 ? (
+              <div className="action-pill" style={{ borderColor: "#ef4444", color: "#ef4444" }}>
+                Pharmacy Risk Unread: {data?.unreadPharmacyRiskNotifications}
+              </div>
+            ) : null}
+            {data?.pharmacyCoverageRisk ? (
+              <div className="action-pill" style={{ borderColor: "#ef4444", color: "#ef4444" }}>
+                Pharmacy feature is on but no pharmacist is linked to a pharmacy.
+              </div>
+            ) : null}
+            {!data?.pharmacyCoverageRisk && data?.pharmacyLinkageWarning ? (
+              <div className="action-pill" style={{ borderColor: "#f59e0b", color: "#f59e0b" }}>
+                Some pharmacists still need pharmacy links.
+              </div>
+            ) : null}
             <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>Announcements</button>
+            {(data?.pharmacyCoverageRisk || data?.pharmacyLinkageWarning) ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => navigate("/notifications?category=PHARMACY&read=UNREAD")}
+              >
+                Pharmacy Risk Alerts{(data?.unreadPharmacyRiskNotifications ?? 0) > 0 ? ` (${data.unreadPharmacyRiskNotifications})` : ""}
+              </button>
+            ) : null}
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>Incident Reports</button>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
 import { useTheme } from "../utils/theme.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { listNotifications } from "../services/notificationsApi";
 
 function NavIcon({ name }) {
   const { settings } = useSystemSettings();
@@ -55,6 +56,7 @@ export default function Sidebar({ open = true, onClose }) {
   const navigate = useNavigate();
   const [dynamicMenu, setDynamicMenu] = useState([]);
   const [menuLoaded, setMenuLoaded] = useState(false);
+  const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -79,6 +81,14 @@ export default function Sidebar({ open = true, onClose }) {
   const canSelfService = !["SUPER_ADMIN", "SYSTEM_ADMIN", "GUEST", "PATIENT"].includes(
     normalizedRole
   );
+  const canPharmacyOps = [
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "DEVELOPER",
+    "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
+    "PHARMACIST",
+  ].includes(normalizedRole);
 
   const UnverifiedBadge = () =>
     !user.emailVerified ? <span className="badge-dot">!</span> : null;
@@ -90,6 +100,29 @@ export default function Sidebar({ open = true, onClose }) {
     if (!showAnalytics && (path === "/analytics" || path.startsWith("/analytics"))) return false;
     return true;
   };
+
+  useEffect(() => {
+    if (!canPharmacyOps) {
+      setPharmacyRiskAlertCount(0);
+      return undefined;
+    }
+
+    const refresh = () => {
+      listNotifications({ query: "category=PHARMACY&read=false&limit=120" })
+        .then((data) => {
+          const rows = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+          const count = rows.filter(
+            (n) => String(n?.meta?.type || "").toUpperCase() === "PHARMACY_COVERAGE_RISK"
+          ).length;
+          setPharmacyRiskAlertCount(count);
+        })
+        .catch(() => setPharmacyRiskAlertCount(0));
+    };
+
+    refresh();
+    const id = setInterval(refresh, 15000);
+    return () => clearInterval(id);
+  }, [canPharmacyOps]);
 
   if (user.role === "GUEST") {
     return (
@@ -475,7 +508,12 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
                   Audit Logs
                 </Item>
-                <Item to="/notifications" icon="notifications" onSelect={onClose}>
+                <Item
+                  to="/notifications"
+                  icon="notifications"
+                  onSelect={onClose}
+                  badge={pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : ""}
+                >
                   Notifications
                 </Item>
               </Section>
@@ -741,7 +779,7 @@ function Section({ title, children }) {
   );
 }
 
-function Item({ to, children, icon, onSelect }) {
+function Item({ to, children, icon, onSelect, badge = "" }) {
   const navigate = useNavigate();
   return (
     <li>
@@ -754,6 +792,7 @@ function Item({ to, children, icon, onSelect }) {
       >
         <NavIcon name={icon} />
         {children}
+        {badge ? <span className="notif-badge">{badge}</span> : null}
       </button>
     </li>
   );

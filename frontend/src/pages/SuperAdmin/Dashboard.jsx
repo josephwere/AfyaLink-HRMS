@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
+import apiFetch from "../../utils/apiFetch";
 import { triggerAction } from "../../services/actionApi";
 import { getSuperAdminDashboard } from "../../services/dashboardApi";
 import { getDeveloperOverview } from "../../services/developerApi";
@@ -22,10 +23,17 @@ export default function Dashboard() {
     overdueInProgress: 0,
     completionRate: 0,
   });
+  const [unlinkedPharmacists, setUnlinkedPharmacists] = useState(0);
 
   useEffect(() => {
     getSuperAdminDashboard().then(setData).catch(() => setData(null));
     getDeveloperOverview().then(setOps).catch(() => setOps(null));
+    apiFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500")
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setUnlinkedPharmacists(rows.length);
+      })
+      .catch(() => setUnlinkedPharmacists(0));
     listTrainingTrackers({ limit: 300 })
       .then((res) => {
         const rows = Array.isArray(res?.items) ? res.items : [];
@@ -101,6 +109,12 @@ export default function Dashboard() {
           <StatCard title="Payroll This Month" value={data?.paymentsThisMonth ?? "—"} />
           <StatCard title="Workforce Pending" value={ops?.queues?.workforce?.totalPending ?? "—"} />
           <StatCard title="Workforce Breached" value={ops?.queues?.workforce?.breached ?? "—"} />
+          <StatCard title="Total Pharmacists" value={data?.pharmacists ?? "—"} />
+          <StatCard
+            title="Unlinked Pharmacists"
+            value={unlinkedPharmacists}
+            onClick={() => navigate("/system-admin/pharmacy-access-audit")}
+          />
           <StatCard
             title="Training Completion %"
             value={training.completionRate}
@@ -148,6 +162,7 @@ export default function Dashboard() {
             <button type="button" className="action-link" onClick={() => navigate("/security-admin")}>Security Incidents</button>
             <button type="button" className="action-link" onClick={() => navigate("/system-admin")}>System Status Monitor</button>
             <button type="button" className="action-link" onClick={() => navigate("/super-admin/pharmacies")}>Pharmacy Registry</button>
+            <button type="button" className="action-link" onClick={() => navigate("/system-admin/pharmacy-access-audit")}>Pharmacy Access Audit</button>
             <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=HOSPITAL_ADMIN&status=NOT_STARTED")}>Training Tracker Board</button>
           </div>
         </div>
@@ -158,6 +173,7 @@ export default function Dashboard() {
             <div className="action-pill">Active Sessions: {data?.activeHospitals ?? "—"}</div>
             <div className="action-pill">Pending Requests: {data?.pendingRequests ?? "—"}</div>
             <div className="action-pill">Invoices: {data?.invoicesThisMonth ?? "—"}</div>
+            <div className="action-pill">Hospitals With Pharmacists: {data?.hospitalsWithPharmacists ?? "—"}</div>
             <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>Open Alerts</button>
           </div>
         </div>

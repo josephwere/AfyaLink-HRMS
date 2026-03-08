@@ -17,6 +17,7 @@ class WorkflowService {
       ...context,
       workflowId,
       status: "Scheduled",
+      assignmentStatus: context.doctor ? "ASSIGNED" : "PENDING",
     });
     appointment.$locals = { ...(appointment.$locals || {}), viaWorkflow: true };
     await appointment.save();

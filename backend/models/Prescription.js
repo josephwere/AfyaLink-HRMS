@@ -5,11 +5,24 @@ const PrescriptionSchema = new mongoose.Schema(
     encounter: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Encounter",
-      required: true,
       index: true,
+      default: null,
+    },
+
+    appointment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Appointment",
+      index: true,
+      default: null,
     },
 
     patient: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    patientRecord: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Patient",
+      index: true,
+      default: null,
+    },
     doctor: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     hospital: { type: mongoose.Schema.Types.ObjectId, ref: "Hospital", required: true },
 
@@ -22,13 +35,30 @@ const PrescriptionSchema = new mongoose.Schema(
       },
     ],
 
+    summary: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    advice: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     status: {
       type: String,
-      enum: ["Pending", "Dispensed", "Cancelled"],
-      default: "Pending",
+      enum: ["CREATED", "DISPENSED", "CANCELLED"],
+      default: "CREATED",
       index: true,
     },
 
+    dispensedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     dispensedAt: Date,
   },
   { timestamps: true }

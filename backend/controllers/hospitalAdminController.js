@@ -1,5 +1,7 @@
 import Hospital from "../models/Hospital.js";
 import AuditLog from "../models/AuditLog.js";
+import Notification from "../models/Notification.js";
+import User from "../models/User.js";
 
 function resolveHospitalId(req) {
   const role = String(req.user?.role || "").toUpperCase();
@@ -8,6 +10,69 @@ function resolveHospitalId(req) {
     return req.query?.hospitalId || req.body?.hospitalId || req.user?.hospital;
   }
   return req.user?.hospital;
+}
+
+async function getPharmacyCoverageStats(hospitalId) {
+  const [pharmacists, linkedPharmacists] = await Promise.all([
+    User.countDocuments({
+      hospital: hospitalId,
+      role: "PHARMACIST",
+      active: true,
+    }),
+    User.countDocuments({
+      hospital: hospitalId,
+      role: "PHARMACIST",
+      active: true,
+      registeredPharmacy: { $ne: null },
+    }),
+  ]);
+  return {
+    pharmacists,
+    linkedPharmacists,
+    unlinkedPharmacists: Math.max(0, pharmacists - linkedPharmacists),
+  };
+}
+
+async function notifyPharmacyCoverageRisk({ hospital, actorId }) {
+  const recipients = await User.find({
+    hospital: hospital._id,
+    role: "HOSPITAL_ADMIN",
+    active: true,
+  })
+    .select("_id")
+    .lean();
+
+  const recipientIds = recipients.map((row) => String(row._id));
+  if (actorId && !recipientIds.includes(String(actorId))) {
+    recipientIds.push(String(actorId));
+  }
+
+  if (!recipientIds.length) return;
+
+  const existing = await Notification.findOne({
+    hospital: hospital._id,
+    category: "PHARMACY",
+    "meta.type": "PHARMACY_COVERAGE_RISK",
+    read: false,
+  })
+    .select("_id")
+    .lean();
+
+  if (existing) return;
+
+  await Notification.insertMany(
+    recipientIds.map((userId) => ({
+      title: "Pharmacy Coverage Risk",
+      body: "Pharmacy is enabled, but no pharmacist is linked to a registered pharmacy yet.",
+      category: "PHARMACY",
+      user: userId,
+      hospital: hospital._id,
+      meta: {
+        type: "PHARMACY_COVERAGE_RISK",
+        path: "/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist",
+      },
+    }))
+  );
 }
 
 /* ======================================================
@@ -97,6 +162,8 @@ export const updateHospitalFeatures = async (req, res) => {
     }
 
     const before = { ...hospital.features };
+    const coverageBefore = await getPharmacyCoverageStats(hospital._id);
+    const riskBefore = Boolean(before?.pharmacy) && coverageBefore.pharmacists > 0 && coverageBefore.linkedPharmacists === 0;
 
     /* 🔐 UPDATE ONLY KNOWN FEATURES */
     Object.keys(updates).forEach((key) => {
@@ -106,6 +173,19 @@ export const updateHospitalFeatures = async (req, res) => {
     });
 
     await hospital.save();
+
+    const coverageAfter = coverageBefore;
+    const riskAfter =
+      Boolean(hospital.features?.pharmacy) &&
+      coverageAfter.pharmacists > 0 &&
+      coverageAfter.linkedPharmacists === 0;
+
+    if (!riskBefore && riskAfter) {
+      await notifyPharmacyCoverageRisk({
+        hospital,
+        actorId: req.user?._id || null,
+      });
+    }
 
     /* 🧾 AUDIT LOG (FORENSIC-GRADE) */
     await AuditLog.create({

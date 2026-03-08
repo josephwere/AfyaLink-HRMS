@@ -36,3 +36,10 @@ export async function createPharmacyReferral(payload) {
     body: payload,
   });
 }
+
+export async function updatePharmacyReferral(id, payload) {
+  return apiFetch(`/api/pharmacy-network/referrals/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+}

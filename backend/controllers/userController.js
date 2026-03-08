@@ -2,9 +2,11 @@ import User from "../models/User.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import Hospital from "../models/Hospital.js";
+import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { HOSPITAL_SCOPED_ROLES, STAFF_ROLES } from "../utils/roleSets.js";
+import { collectPharmacyLinkBackfillPreview } from "../services/pharmacyLinkBackfillService.js";
 
 const ALL_ASSIGNABLE_ROLES = new Set([
   "SUPER_ADMIN",
@@ -229,6 +231,10 @@ export const listUsers = async (req, res, next) => {
 
     const roleFilter = String(req.query.role || "").trim().toUpperCase();
     if (roleFilter) filter.role = roleFilter;
+    if (String(req.query.missingRegisteredPharmacy || "") === "1") {
+      filter.role = "PHARMACIST";
+      filter.registeredPharmacy = null;
+    }
 
     if (q) {
       filter.$or = [
@@ -284,6 +290,30 @@ export const listUsers = async (req, res, next) => {
   }
 };
 
+export const getPharmacyLinkBackfillPreview = async (req, res, next) => {
+  try {
+    const actorRole = String(req.user?.role || "").toUpperCase();
+    if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
+      return res.status(403).json({ message: "Only global admins can preview pharmacy backfill results" });
+    }
+
+    const preview = await collectPharmacyLinkBackfillPreview();
+    return res.json({
+      summary: {
+        scanned: preview.scanned,
+        matched: preview.matched.length,
+        ambiguous: preview.ambiguous.length,
+        skipped: preview.skipped.length,
+      },
+      matched: preview.matched,
+      ambiguous: preview.ambiguous,
+      skipped: preview.skipped,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /**
  * PUT /api/users/:id
  * Update user (same hospital only, active only)
@@ -303,6 +333,8 @@ export const updateUser = async (req, res, next) => {
     // allow active status update for admin deactivation
 
     const user = await User.findById(id);
+    const previousRole = normalizeRole(String(user?.role || ""));
+    const previousRegisteredPharmacy = user?.registeredPharmacy ? String(user.registeredPharmacy) : null;
 
     if (!user || !user.active) {
       return res.status(404).json({ message: "User not found" });
@@ -349,7 +381,6 @@ export const updateUser = async (req, res, next) => {
         return res.status(403).json({ message: "You are not allowed to change roles" });
       }
 
-      const previousRole = normalizeRole(user.role);
       updates.role = nextRole;
 
       // Hospital-scoped role changes must remain within actor's hospital context.
@@ -384,6 +415,10 @@ export const updateUser = async (req, res, next) => {
         if (!["PATIENT", "GUEST"].includes(nextRole)) {
           updates.hospital = null;
         }
+      }
+
+      if (nextRole !== "PHARMACIST" && updates.registeredPharmacy === undefined) {
+        updates.registeredPharmacy = null;
       }
 
       if (HOSPITAL_SCOPED_ROLES_SET.has(nextRole)) {
@@ -424,8 +459,45 @@ export const updateUser = async (req, res, next) => {
       }
     }
 
+    if (Object.prototype.hasOwnProperty.call(updates, "registeredPharmacy")) {
+      const nextRole = normalizeRole(updates.role || user.role);
+      if (nextRole !== "PHARMACIST") {
+        updates.registeredPharmacy = null;
+      } else if (updates.registeredPharmacy) {
+        const pharmacy = await RegisteredPharmacy.findById(updates.registeredPharmacy).select("_id status").lean();
+        if (!pharmacy || pharmacy.status !== "ACTIVE") {
+          return res.status(422).json({ message: "Registered pharmacy not found or inactive" });
+        }
+      } else {
+        updates.registeredPharmacy = null;
+      }
+    }
+
     Object.assign(user, updates);
     await user.save();
+
+    const nextRegisteredPharmacy = user?.registeredPharmacy ? String(user.registeredPharmacy) : null;
+    if (previousRegisteredPharmacy !== nextRegisteredPharmacy) {
+      await audit({
+        req,
+        action: "PHARMACIST_LINKAGE_UPDATE",
+        resource: "User",
+        resourceId: user._id,
+        before: {
+          role: previousRole,
+          registeredPharmacy: previousRegisteredPharmacy,
+        },
+        after: {
+          role: normalizeRole(String(user.role || "")),
+          registeredPharmacy: nextRegisteredPharmacy,
+        },
+        metadata: {
+          actorRole,
+          hospital: user.hospital || null,
+          linked: Boolean(nextRegisteredPharmacy),
+        },
+      });
+    }
 
     await audit({
       req,

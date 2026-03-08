@@ -66,6 +66,11 @@ export default function SystemSettings() {
       url: "",
       greeting: "Hi, how can I help?",
     },
+    communications: {
+      callsEnabled: true,
+      videoCallsEnabled: true,
+      voiceCallsEnabled: true,
+    },
     monetization: {
       strategy: "CORE_FREE_PREMIUM_ADDONS",
       enforceUsageLimits: false,
@@ -100,6 +105,7 @@ export default function SystemSettings() {
         const next = {
           branding: { ...form.branding, ...(data.branding || {}) },
           ai: { ...form.ai, ...(data.ai || {}) },
+          communications: { ...form.communications, ...(data.communications || {}) },
           monetization: {
             ...form.monetization,
             ...(data.monetization || {}),
@@ -163,6 +169,7 @@ export default function SystemSettings() {
         setForm({
           branding: { ...form.branding, ...(res.settings.branding || {}) },
           ai: { ...form.ai, ...(res.settings.ai || {}) },
+          communications: { ...form.communications, ...(res.settings.communications || {}) },
           monetization: {
             ...form.monetization,
             ...(res.settings.monetization || {}),
@@ -190,6 +197,7 @@ export default function SystemSettings() {
       branding: { branding: form.branding },
       monetization: { monetization: form.monetization },
       ai: { ai: form.ai },
+      communications: { communications: form.communications },
     };
     if (!map[key]) return;
     setSavingCard(key);
@@ -458,6 +466,59 @@ export default function SystemSettings() {
             disabled={loading || savingCard === "ai"}
           >
             {savingCard === "ai" ? "Saving..." : "Save AI Settings"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Consultation Controls</h3>
+        <div className="card form">
+          <label>
+            <input
+              type="checkbox"
+              checked={form.communications.callsEnabled}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  communications: { ...f.communications, callsEnabled: e.target.checked },
+                }))
+              }
+            />
+            Enable all calls
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={form.communications.voiceCallsEnabled}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  communications: { ...f.communications, voiceCallsEnabled: e.target.checked },
+                }))
+              }
+            />
+            Enable voice calls
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={form.communications.videoCallsEnabled}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  communications: { ...f.communications, videoCallsEnabled: e.target.checked },
+                }))
+              }
+            />
+            Enable video calls
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("communications")}
+            disabled={loading || savingCard === "communications"}
+          >
+            {savingCard === "communications" ? "Saving..." : "Save Consultation Controls"}
           </button>
         </div>
       </section>

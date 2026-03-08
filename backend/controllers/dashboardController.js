@@ -10,6 +10,7 @@ import Patient from "../models/Patient.js";
 import User from "../models/User.js";
 import SecurityIncident from "../models/SecurityIncident.js";
 import Notification from "../models/Notification.js";
+import CallSession from "../models/CallSession.js";
 import Hospital from "../models/Hospital.js";
 import Household from "../models/Household.js";
 import FieldVisit from "../models/FieldVisit.js";
@@ -983,6 +984,7 @@ export async function securityOfficerDashboard(req, res) {
 export async function hospitalAdminDashboard(req, res) {
   try {
     const hospital = hospitalFilter(req);
+    const hospitalId = resolveHospitalScope(req);
     const todayStart = startOfDay();
     const todayEnd = endOfDay();
     const monthStart = startOfMonth();
@@ -1002,6 +1004,13 @@ export async function hospitalAdminDashboard(req, res) {
       shiftPending,
       invoicesTotal,
       overduePayroll,
+      pendingAssignments,
+      activeConsultationCalls,
+      pharmacists,
+      linkedPharmacists,
+      unlinkedPharmacists,
+      unreadPharmacyRiskNotifications,
+      hospitalRecord,
     ] = await Promise.all([
       User.countDocuments({
         ...hospital,
@@ -1050,7 +1059,42 @@ export async function hospitalAdminDashboard(req, res) {
         status: "Unpaid",
         createdAt: { $lte: overdueDate },
       }),
+      Appointment.countDocuments({
+        ...hospital,
+        doctor: { $exists: false },
+        status: { $nin: ["Cancelled", "Completed", "NoShow"] },
+      }),
+      CallSession.countDocuments({
+        ...hospital,
+        deletedAt: { $exists: false },
+        status: { $in: ["REQUESTED", "ACTIVE"] },
+      }),
+      User.countDocuments({ ...hospital, role: "PHARMACIST", active: true }),
+      User.countDocuments({
+        ...hospital,
+        role: "PHARMACIST",
+        active: true,
+        registeredPharmacy: { $ne: null },
+      }),
+      User.countDocuments({
+        ...hospital,
+        role: "PHARMACIST",
+        active: true,
+        registeredPharmacy: null,
+      }),
+      Notification.countDocuments({
+        hospital: hospitalId || req.user?.hospital || null,
+        user: req.user?._id || null,
+        category: "PHARMACY",
+        read: false,
+        "meta.type": "PHARMACY_COVERAGE_RISK",
+      }),
+      hospitalId ? Hospital.findById(hospitalId).select("features").lean() : null,
     ]);
+
+    const pharmacyFeatureEnabled = Boolean(hospitalRecord?.features?.pharmacy);
+    const pharmacyCoverageRisk = pharmacyFeatureEnabled && pharmacists > 0 && linkedPharmacists === 0;
+    const pharmacyLinkageWarning = pharmacyFeatureEnabled && unlinkedPharmacists > 0;
 
     res.json({
       totalStaff,
@@ -1063,6 +1107,15 @@ export async function hospitalAdminDashboard(req, res) {
       patientsTotal,
       pendingRequests: leavePending + overtimePending + shiftPending,
       openShifts: shiftPending,
+      pendingAssignments,
+      activeConsultationCalls,
+      pharmacists,
+      linkedPharmacists,
+      unlinkedPharmacists,
+      unreadPharmacyRiskNotifications,
+      pharmacyFeatureEnabled,
+      pharmacyCoverageRisk,
+      pharmacyLinkageWarning,
       invoicesThisMonth: invoicesTotal[0]?.total || 0,
       overduePayroll,
     });
@@ -1098,7 +1151,7 @@ export async function patientDashboard(req, res) {
       Prescription.countDocuments({
         ...hospital,
         patient: userId,
-        status: { $ne: "Cancelled" },
+        status: { $ne: "CANCELLED" },
       }),
       LabOrder.countDocuments({
         ...hospital,
@@ -1135,6 +1188,10 @@ export async function superAdminDashboard(req, res) {
       invoicesThisMonth,
       paymentsThisMonth,
       overduePayroll,
+      pharmacists,
+      linkedPharmacists,
+      unlinkedPharmacists,
+      hospitalsWithPharmacists,
     ] = await Promise.all([
       Hospital.countDocuments({}),
       Hospital.countDocuments({ active: true }),
@@ -1177,6 +1234,22 @@ export async function superAdminDashboard(req, res) {
         status: "Unpaid",
         createdAt: { $lte: overdueDate },
       }),
+      User.countDocuments({ role: "PHARMACIST", active: true }),
+      User.countDocuments({
+        role: "PHARMACIST",
+        active: true,
+        registeredPharmacy: { $ne: null },
+      }),
+      User.countDocuments({
+        role: "PHARMACIST",
+        active: true,
+        registeredPharmacy: null,
+      }),
+      User.distinct("hospital", {
+        role: "PHARMACIST",
+        active: true,
+        hospital: { $ne: null },
+      }).then((rows) => rows.filter(Boolean).length),
     ]);
 
     const [leavePending, overtimePending, shiftPending] = pendingRequests;
@@ -1193,6 +1266,10 @@ export async function superAdminDashboard(req, res) {
       invoicesThisMonth: invoicesThisMonth[0]?.total || 0,
       paymentsThisMonth: paymentsThisMonth[0]?.total || 0,
       overduePayroll,
+      pharmacists,
+      linkedPharmacists,
+      unlinkedPharmacists,
+      hospitalsWithPharmacists,
     });
   } catch (err) {
     console.error("Super admin dashboard error:", err);

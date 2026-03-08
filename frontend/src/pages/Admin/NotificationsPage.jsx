@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 import {
   listNotificationsFiltered,
@@ -10,16 +10,30 @@ import {
 
 export default function Page() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const role = String(user?.actualRole || user?.role || "").toUpperCase();
   const canTrainingOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
   const canMachineOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
   const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
+  const canPharmacyOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "PHARMACIST"].includes(role);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [category, setCategory] = useState("ALL");
-  const [read, setRead] = useState("ALL");
+  const queryFilters = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      category: params.get("category") || "ALL",
+      read: params.get("read") || "ALL",
+    };
+  }, [location.search]);
+  const [category, setCategory] = useState(queryFilters.category);
+  const [read, setRead] = useState(queryFilters.read);
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    setCategory(queryFilters.category);
+    setRead(queryFilters.read);
+  }, [queryFilters]);
 
   useEffect(() => {
     setLoading(true);
@@ -82,6 +96,7 @@ export default function Page() {
             <option value="INTEGRATION">Integration</option>
             <option value="AI">AI</option>
             <option value="TRAINING">Training</option>
+            <option value="PHARMACY">Pharmacy</option>
           </select>
           <select value={read} onChange={(e) => setRead(e.target.value)}>
             <option value="ALL">All Status</option>
@@ -133,6 +148,18 @@ export default function Page() {
                 Integration Unread
               </button>
             )}
+            {canPharmacyOps && (
+              <button
+                type="button"
+                className={`btn-secondary ${category === "PHARMACY" ? "active" : ""}`}
+                onClick={() => {
+                  setCategory("PHARMACY");
+                  setRead("UNREAD");
+                }}
+              >
+                Pharmacy Unread
+              </button>
+            )}
             <button
               type="button"
               className="btn-secondary"
@@ -166,8 +193,24 @@ export default function Page() {
                     {!n.read && <span className="badge-dot" style={{ marginLeft: 8 }}>!</span>}
                   </td>
                   <td>{n.category || "SYSTEM"}</td>
-                  <td>{n.body || "-"}</td>
                   <td>
+                    {n.body || "-"}
+                    {String(n?.meta?.type || "").toUpperCase() === "PHARMACY_COVERAGE_RISK" ? (
+                      <div className="muted" style={{ marginTop: 6 }}>
+                        Action: link pharmacists to registered pharmacies before referrals or dispensing fail.
+                      </div>
+                    ) : null}
+                  </td>
+                  <td>
+                      {n?.meta?.path ? (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => navigate(String(n.meta.path))}
+                        >
+                          Open
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className="btn-secondary"

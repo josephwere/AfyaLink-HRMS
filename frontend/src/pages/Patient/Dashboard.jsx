@@ -3,14 +3,40 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getPatientDashboard } from "../../services/dashboardApi";
+import apiFetch from "../../utils/apiFetch";
+import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const [latestVisit, setLatestVisit] = useState(null);
+  const [latestPrescription, setLatestPrescription] = useState(null);
+  const [latestReferral, setLatestReferral] = useState(null);
 
   useEffect(() => {
     getPatientDashboard().then(setData).catch(() => setData(null));
+    apiFetch("/api/appointments?limit=10")
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        const latestCompleted = rows.find(
+          (item) => item?.metadata?.consultationSummary || item?.notes || item?.status === "Completed"
+        );
+        setLatestVisit(latestCompleted || null);
+      })
+      .catch(() => setLatestVisit(null));
+    apiFetch("/api/pharmacy/prescriptions")
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setLatestPrescription(rows[0] || null);
+      })
+      .catch(() => setLatestPrescription(null));
+    listPharmacyReferrals({ limit: 20 })
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setLatestReferral(rows[0] || null);
+      })
+      .catch(() => setLatestReferral(null));
   }, []);
 
   return (
@@ -38,6 +64,52 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {latestPrescription ? (
+        <section className="section">
+          <div className="card premium-card">
+            <h3>Latest Prescription Status</h3>
+            <p>
+              <strong>{latestPrescription.summary || latestPrescription?.appointment?.serviceType || "Prescription"}</strong>
+            </p>
+            <p className="muted">Status: {latestPrescription.status}</p>
+            {latestPrescription.dispensedAt ? (
+              <p className="muted">
+                Dispensed: {new Date(latestPrescription.dispensedAt).toLocaleString()}
+              </p>
+            ) : null}
+            <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
+                Open Prescriptions
+              </button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
+                Open Notifications
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {latestReferral ? (
+        <section className="section">
+          <div className="card premium-card">
+            <h3>Latest Pharmacy Referral</h3>
+            <p>
+              <strong>{latestReferral?.pharmacy?.name || "Pharmacy Referral"}</strong>
+            </p>
+            <p className="muted">Status: {latestReferral.status}</p>
+            {latestReferral.reason ? <p className="muted">{latestReferral.reason}</p> : null}
+            <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
+                Open Referral Progress
+              </button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
+                Open Notifications
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
           <h3>Health Timeline</h3>
@@ -50,11 +122,40 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Notifications</h3>
-          <div className="alert-stack">
-            <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>Messages</button>
-            <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>Feedback</button>
-          </div>
+          <h3>Latest Visit Summary</h3>
+          {latestVisit ? (
+            <div className="alert-stack">
+              <div className="card">
+                <strong>{latestVisit?.metadata?.consultationSummary?.diagnosis || latestVisit?.serviceType || "Recent Visit"}</strong>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  {latestVisit?.metadata?.consultationSummary?.carePlan ||
+                    latestVisit?.notes ||
+                    "No detailed summary yet."}
+                </p>
+                {latestVisit?.metadata?.consultationSummary?.followUpDate ? (
+                  <div className="action-pill">
+                    Follow-up: {new Date(latestVisit.metadata.consultationSummary.followUpDate).toLocaleDateString()}
+                  </div>
+                ) : null}
+                <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/appointments")}>
+                    Open Appointments
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
+                    Prescriptions
+                  </button>
+                </div>
+              </div>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>Messages</button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>Feedback</button>
+            </div>
+          ) : (
+            <div className="alert-stack">
+              <div className="muted">No recent visit summary yet.</div>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>Messages</button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>Feedback</button>
+            </div>
+          )}
         </div>
       </section>
     </div>

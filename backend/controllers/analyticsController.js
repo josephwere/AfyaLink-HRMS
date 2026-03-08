@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import LeaveRequest from "../models/LeaveRequest.js";
 import OvertimeRequest from "../models/OvertimeRequest.js";
 import ShiftRequest from "../models/ShiftRequest.js";
+import CallSession from "../models/CallSession.js";
 import mongoose from 'mongoose';
 
 function getHospitalMatch(req) {
@@ -124,4 +125,129 @@ export async function nlpAnalyticsQuery(req, res) {
   }
 }
 
-export default { revenuePerDay, doctorUtilization, pharmacyProfit, nlpAnalyticsQuery };
+export async function appointmentOverview(req, res) {
+  try {
+    const Appointment = mongoose.modelNames().includes("Appointment") ? mongoose.model("Appointment") : null;
+    if (!Appointment) return res.json({ error: "Appointment model not found" });
+    const hospital = req.user?.hospital || null;
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const match = {
+      ...(hospital ? { hospital } : {}),
+      createdAt: { $gte: since },
+    };
+
+    const [statusRows, serviceRows, modeRows, pendingAssignments, noShowCount, total] =
+      await Promise.all([
+        Appointment.aggregate([
+          { $match: match },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ]),
+        Appointment.aggregate([
+          { $match: match },
+          { $group: { _id: "$serviceType", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 10 },
+        ]),
+        Appointment.aggregate([
+          { $match: match },
+          { $group: { _id: "$consultationMode", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ]),
+        Appointment.countDocuments({
+          ...(hospital ? { hospital } : {}),
+          assignmentStatus: "PENDING",
+          status: { $nin: ["Cancelled", "Completed", "NoShow"] },
+        }),
+        Appointment.countDocuments({
+          ...(hospital ? { hospital } : {}),
+          status: "NoShow",
+          scheduledAt: { $gte: since },
+        }),
+        Appointment.countDocuments(match),
+      ]);
+
+    return res.json({
+      totalAppointments30d: total,
+      pendingAssignments,
+      noShowRate: total ? Number(((noShowCount / total) * 100).toFixed(1)) : 0,
+      statusBreakdown: statusRows,
+      topServices: serviceRows,
+      consultationModes: modeRows,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+export async function appointmentLoadHeatmap(req, res) {
+  try {
+    const Appointment = mongoose.modelNames().includes("Appointment") ? mongoose.model("Appointment") : null;
+    if (!Appointment) return res.json({ error: "Appointment model not found" });
+    const hospital = req.user?.hospital || null;
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const rows = await Appointment.aggregate([
+      {
+        $match: {
+          ...(hospital ? { hospital } : {}),
+          scheduledAt: { $gte: since },
+        },
+      },
+      {
+        $project: {
+          dayOfWeek: { $dayOfWeek: "$scheduledAt" },
+          hour: { $hour: "$scheduledAt" },
+        },
+      },
+      {
+        $group: {
+          _id: { dayOfWeek: "$dayOfWeek", hour: "$hour" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.dayOfWeek": 1, "_id.hour": 1 } },
+    ]).allowDiskUse(true);
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+export async function consultationActivity(req, res) {
+  try {
+    const hospital = req.user?.hospital || null;
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const rows = await CallSession.aggregate([
+      {
+        $match: {
+          ...(hospital ? { hospital } : {}),
+          createdAt: { $gte: since },
+          deletedAt: { $exists: false },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            callType: "$callType",
+            status: "$status",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+export default {
+  revenuePerDay,
+  doctorUtilization,
+  pharmacyProfit,
+  nlpAnalyticsQuery,
+  appointmentOverview,
+  appointmentLoadHeatmap,
+  consultationActivity,
+};

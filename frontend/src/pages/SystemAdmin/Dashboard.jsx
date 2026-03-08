@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
+import apiFetch from "../../utils/apiFetch";
 import { getSystemAdminMetrics, getRiskPolicy, updateRiskPolicy } from "../../services/systemAdminApi";
 import { getDeveloperOverview, getTrustStatus, runWorkflowSlaScan } from "../../services/developerApi";
 import { runStaffingForecast, runDigitalTwin } from "../../services/mlApi";
@@ -32,6 +33,7 @@ export default function SystemAdminDashboard() {
     pendingShifts: [],
     trainingCompletion: [],
   });
+  const [unlinkedPharmacists, setUnlinkedPharmacists] = useState(0);
 
   const appendTrend = (key, value) => {
     setAiTrend((prev) => ({
@@ -150,6 +152,12 @@ export default function SystemAdminDashboard() {
         })
       );
     loadAi();
+    apiFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500")
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setUnlinkedPharmacists(rows.length);
+      })
+      .catch(() => setUnlinkedPharmacists(0));
     const timer = setInterval(loadAi, 45000);
     return () => clearInterval(timer);
   }, []);
@@ -228,6 +236,11 @@ export default function SystemAdminDashboard() {
           <StatCard title="Workforce Breached" value={devOverview?.queues?.workforce?.breached ?? "—"} />
           <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} />
           <StatCard
+            title="Unlinked Pharmacists"
+            value={unlinkedPharmacists}
+            onClick={() => navigate("/system-admin/pharmacy-access-audit")}
+          />
+          <StatCard
             title="Training Completion %"
             value={training.completionRate}
             trend={aiTrend.trainingCompletion}
@@ -258,6 +271,7 @@ export default function SystemAdminDashboard() {
           <button type="button" className="action-link" onClick={() => navigate("/developer/webhook-retry")}>Webhook Retry</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/abac")}>ABAC Policies</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/mapping-studio")}>Mapping Studio</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/pharmacy-access-audit")}>Pharmacy Access Audit</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/connector-sdk")}>Connector SDK</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/nlp-analytics")}>NLP Analytics</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>Clinical Intelligence</button>

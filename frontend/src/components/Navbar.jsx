@@ -138,6 +138,7 @@ export default function Navbar({ onToggleSidebar }) {
   const [notifItems, setNotifItems] = useState([]);
   const [machineAlertCount, setMachineAlertCount] = useState(0);
   const [trainingAlertCount, setTrainingAlertCount] = useState(0);
+  const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
   const [notifCategory, setNotifCategory] = useState("ALL");
   const [notifRead, setNotifRead] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -168,6 +169,14 @@ export default function Navbar({ onToggleSidebar }) {
     "DEVELOPER",
     "HOSPITAL_ADMIN",
     "HR_MANAGER",
+  ].includes(currentRole);
+  const canPharmacyOps = [
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "DEVELOPER",
+    "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
+    "PHARMACIST",
   ].includes(currentRole);
   const canApprovalsOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(
     currentRole
@@ -260,6 +269,14 @@ export default function Navbar({ onToggleSidebar }) {
         if (String(n?.category || "").toUpperCase() === "TRAINING") return true;
         const title = String(n?.title || "").toLowerCase();
         return title.includes("training");
+      }).length,
+    [notifItems]
+  );
+  const pharmacyRiskUnreadFromCurrent = useMemo(
+    () =>
+      notifItems.filter((n) => {
+        if (n.read) return false;
+        return String(n?.meta?.type || "").toUpperCase() === "PHARMACY_COVERAGE_RISK";
       }).length,
     [notifItems]
   );
@@ -378,6 +395,22 @@ export default function Navbar({ onToggleSidebar }) {
       .catch(() => setTrainingAlertCount(0));
   }, []);
 
+  const fetchPharmacyRiskAlerts = useCallback(() => {
+    if (!canPharmacyOps) {
+      setPharmacyRiskAlertCount(0);
+      return;
+    }
+    listNotifications({ query: "category=PHARMACY&read=false&limit=120" })
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        const count = rows.filter(
+          (n) => String(n?.meta?.type || "").toUpperCase() === "PHARMACY_COVERAGE_RISK"
+        ).length;
+        setPharmacyRiskAlertCount(count);
+      })
+      .catch(() => setPharmacyRiskAlertCount(0));
+  }, [canPharmacyOps]);
+
   const safeTrigger = useCallback(async (action) => {
     try {
       await triggerAction(action);
@@ -409,6 +442,13 @@ export default function Navbar({ onToggleSidebar }) {
     const id = setInterval(fetchTrainingAlerts, refreshIntervalMs);
     return () => clearInterval(id);
   }, [canTrainingOps, fetchTrainingAlerts]);
+
+  useEffect(() => {
+    if (!canPharmacyOps) return undefined;
+    fetchPharmacyRiskAlerts();
+    const id = setInterval(fetchPharmacyRiskAlerts, refreshIntervalMs);
+    return () => clearInterval(id);
+  }, [canPharmacyOps, fetchPharmacyRiskAlerts]);
 
   useEffect(() => {
     loadSlaStatus();
@@ -616,6 +656,23 @@ export default function Navbar({ onToggleSidebar }) {
             Training {trainingAlertCount || trainingUnreadFromCurrent || 0}
           </button>
         )}
+        {canPharmacyOps && (
+          <button
+            type="button"
+            className={`sla-status-chip ${pharmacyRiskAlertCount > 0 ? "risk" : "ok"}`}
+            title={
+              pharmacyRiskAlertCount > 0
+                ? `${pharmacyRiskAlertCount} unread pharmacy risk alerts`
+                : "No unread pharmacy risk alerts"
+            }
+            onClick={() => {
+              setNotifOpen(false);
+              navigate("/notifications?category=PHARMACY&read=UNREAD");
+            }}
+          >
+            Pharmacy Risk {pharmacyRiskAlertCount || pharmacyRiskUnreadFromCurrent || 0}
+          </button>
+        )}
         <div className="profile-wrap">
           <button type="button"
             className="icon-btn ghost"
@@ -703,6 +760,7 @@ export default function Navbar({ onToggleSidebar }) {
                   <option value="INTEGRATION">Integration</option>
                   <option value="AI">AI</option>
                   <option value="TRAINING">Training</option>
+                  <option value="PHARMACY">Pharmacy</option>
                 </select>
                 <select
                   value={notifRead}
@@ -739,6 +797,18 @@ export default function Navbar({ onToggleSidebar }) {
                 >
                   Machine Alerts
                 </button>
+                {canPharmacyOps && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setNotifOpen(false);
+                      navigate("/notifications?category=PHARMACY&read=UNREAD");
+                    }}
+                  >
+                    Pharmacy Risk
+                  </button>
+                )}
               </div>
               <div className="notif-list">
                 {notifItems.slice(0, 6).map((n) => (

@@ -61,6 +61,20 @@ const appointmentSchema = new Schema(
       max: 480,
     },
 
+    serviceType: {
+      type: String,
+      trim: true,
+      default: "General Consultation",
+      index: true,
+    },
+
+    consultationMode: {
+      type: String,
+      enum: ["IN_PERSON", "CHAT", "VOICE", "VIDEO"],
+      default: "IN_PERSON",
+      index: true,
+    },
+
     /* ==============================
        WORKFLOW STATUS
     ============================== */
@@ -75,6 +89,13 @@ const appointmentSchema = new Schema(
         "NoShow",
       ],
       default: "Scheduled",
+      index: true,
+    },
+
+    assignmentStatus: {
+      type: String,
+      enum: ["PENDING", "ASSIGNED", "REASSIGNED"],
+      default: "PENDING",
       index: true,
     },
 

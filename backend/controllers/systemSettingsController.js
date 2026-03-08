@@ -20,7 +20,7 @@ export const getPublicBranding = async (_req, res) => {
 };
 
 export const updateSystemSettings = async (req, res) => {
-  const { branding, ai, monetization } = req.body || {};
+  const { branding, ai, monetization, communications } = req.body || {};
   let doc = await SystemSettings.findOne();
   if (!doc) doc = await SystemSettings.create({});
 
@@ -55,6 +55,9 @@ export const updateSystemSettings = async (req, res) => {
       ...restMonetization,
       featureAccess: doc.monetization.featureAccess,
     };
+  }
+  if (communications) {
+    doc.communications = { ...doc.communications, ...communications };
   }
 
   await doc.save();

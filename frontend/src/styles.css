@@ -2366,6 +2366,185 @@ body.auth-route {
   padding: 14px;
 }
 
+.consultation-room-card {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.consultation-room-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.consultation-stage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.consultation-stage.voice {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.consultation-stream-card {
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: rgba(148, 163, 184, 0.08);
+  padding: 12px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.consultation-video {
+  width: 100%;
+  min-height: 220px;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #0f172a;
+}
+
+.consultation-audio-state {
+  min-height: 220px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top, rgba(14, 165, 233, 0.18), transparent 50%),
+    #0f172a;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.consultation-stream-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-text, #0f172a);
+}
+
+.consultation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.consultation-side-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.consultation-chat-card {
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: rgba(148, 163, 184, 0.05);
+  padding: 14px;
+}
+
+.consultation-chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.consultation-chat-bubble {
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.12);
+  padding: 10px 12px;
+}
+
+.consultation-chat-bubble.mine {
+  background: rgba(14, 165, 233, 0.14);
+}
+
+.consultation-chat-meta {
+  font-size: 12px;
+  color: var(--app-muted, #64748b);
+  margin-bottom: 4px;
+}
+
+.consultation-chat-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.consultation-notes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.consultation-summary-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-pill.connected {
+  background: rgba(22, 163, 74, 0.14);
+  color: #166534;
+}
+
+[data-theme="dark"] .consultation-stream-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .consultation-chat-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .consultation-chat-bubble {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+[data-theme="dark"] .consultation-chat-bubble.mine {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="dark"] .consultation-stream-label {
+  color: var(--app-text);
+}
+
+[data-theme="dark"] .action-pill.connected {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+@media (max-width: 900px) {
+  .consultation-stage,
+  .consultation-stage.voice,
+  .consultation-side-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .consultation-stream-card,
+  .consultation-audio-state,
+  .consultation-video {
+    min-height: 180px;
+  }
+}
+
 /* =========================
    DARK MODE CONTRAST FIXES
 ========================= */

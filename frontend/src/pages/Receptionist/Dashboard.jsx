@@ -22,6 +22,9 @@ export default function ReceptionistDashboard() {
           <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>
             My Requests
           </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/receptionist/booking-desk")}>
+            Booking Desk
+          </button>
         </div>
       </div>
 
@@ -34,7 +37,18 @@ export default function ReceptionistDashboard() {
           <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} />
         </div>
       </section>
+
+      <section className="section">
+        <h3>Main Tasks</h3>
+        <div className="panel-grid">
+          <button type="button" className="action-link" onClick={() => navigate("/receptionist/booking-desk")}>
+            Fast Hospital Booking
+          </button>
+          <button type="button" className="action-link" onClick={() => navigate("/notifications")}>
+            Front Desk Messages
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
-

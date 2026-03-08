@@ -49,6 +49,8 @@
     "postlaunch:review:init": "node scripts/postlaunch-review-init.mjs",
     "readiness:legal-only": "node scripts/legal-only-readiness-gate.mjs",
     "neuroedge:sync-indexes": "node scripts/neuroedge-gateway-sync-indexes.mjs",
+    "pharmacy:link:backfill:dry": "node scripts/pharmacy-link-backfill.mjs --dry-run",
+    "pharmacy:link:backfill": "node scripts/pharmacy-link-backfill.mjs",
     "test:gateway:ci": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "test:gateway:ci:strict": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "perf:k6:smoke": "k6 run --summary-export backend/artifacts/perf/smoke-summary.json perf/k6/smoke.js",

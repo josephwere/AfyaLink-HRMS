@@ -6,14 +6,20 @@ import apiFetch from "../../utils/apiFetch";
 export default function PharmacyDashboard() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
 
   useEffect(() => {
     apiFetch("/api/pharmacy?limit=25")
       .then((res) => setItems(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []))
       .catch(() => setItems([]));
+    apiFetch("/api/pharmacy/prescriptions")
+      .then((res) => setPrescriptions(Array.isArray(res?.items) ? res.items : []))
+      .catch(() => setPrescriptions([]));
   }, []);
 
   const lowStock = items.filter((i) => Number(i?.qty || 0) <= Number(i?.minStock || 0)).length;
+  const pendingPrescriptions = prescriptions.filter((item) => item.status === "CREATED").length;
+  const dispensedToday = prescriptions.filter((item) => item.status === "DISPENSED").length;
 
   return (
     <div className="dashboard">
@@ -32,7 +38,8 @@ export default function PharmacyDashboard() {
       <section className="section">
         <h3>Pharmacy Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Pending Prescriptions" value={items.length} />
+          <StatCard title="Pending Prescriptions" value={pendingPrescriptions} onClick={() => navigate("/pharmacy/queue")} />
+          <StatCard title="Dispensed" value={dispensedToday} onClick={() => navigate("/pharmacy/queue")} />
           <StatCard title="Low Stock Alerts" value={lowStock} />
           <StatCard title="Expiring Drugs" value="Live" />
           <StatCard title="Controlled Drugs" value="Tracked" />
@@ -45,13 +52,22 @@ export default function PharmacyDashboard() {
           <div className="table-wrap">
             <table className="doctor-table">
               <thead>
-                <tr><th>Drug</th><th>Qty</th><th>Min</th><th>Status</th></tr>
+                <tr><th>Patient</th><th>Prescription</th><th>Status</th><th>Doctor</th></tr>
               </thead>
               <tbody>
-                {items.slice(0, 10).map((i) => (
-                  <tr key={i._id}><td>{i.name || "-"}</td><td>{i.qty ?? "-"}</td><td>{i.minStock ?? "-"}</td><td>{Number(i.qty || 0) <= Number(i.minStock || 0) ? "Low" : "OK"}</td></tr>
+                {prescriptions.slice(0, 10).map((i) => (
+                  <tr key={i._id}>
+                    <td>
+                      {i?.patientRecord?.firstName
+                        ? `${i.patientRecord.firstName} ${i.patientRecord.lastName || ""}`.trim()
+                        : "-"}
+                    </td>
+                    <td>{i.summary || i?.appointment?.serviceType || "-"}</td>
+                    <td>{i.status}</td>
+                    <td>{i?.doctor?.name || "-"}</td>
+                  </tr>
                 ))}
-                {items.length === 0 && <tr><td colSpan="4" className="muted">No inventory</td></tr>}
+                {prescriptions.length === 0 && <tr><td colSpan="4" className="muted">No prescriptions</td></tr>}
               </tbody>
             </table>
           </div>

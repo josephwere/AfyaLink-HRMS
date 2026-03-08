@@ -118,6 +118,9 @@ import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
 import HospitalAdminStaffManagement from "./pages/HospitalAdmin/StaffManagement";
 import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
 import HospitalAdminFinancials from "./pages/HospitalAdmin/Financials";
+import HospitalAdminAppointments from "./pages/HospitalAdmin/Appointments";
+import HospitalAdminConsultationMonitor from "./pages/HospitalAdmin/ConsultationMonitor";
+import HospitalAdminAppointmentAnalytics from "./pages/HospitalAdmin/AppointmentAnalytics";
 import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
 import HospitalCustomization from "./pages/HospitalAdmin/Customization";
 import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConnectivity";
@@ -130,6 +133,7 @@ import StaffDashboard from "./pages/Staff/Dashboard";
 import RadiologistDashboard from "./pages/Radiologist/Dashboard";
 import TherapistDashboard from "./pages/Therapist/Dashboard";
 import ReceptionistDashboard from "./pages/Receptionist/Dashboard";
+import ReceptionistBookingDesk from "./pages/Receptionist/BookingDesk";
 import SurgeonDashboard from "./pages/Surgeon/Dashboard";
 import HRManagerDashboard from "./pages/HRManager/Dashboard";
 import PayrollOfficerDashboard from "./pages/PayrollOfficer/Dashboard";
@@ -142,6 +146,7 @@ import RegulatoryReports from "./pages/SystemAdmin/RegulatoryReports";
 import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
 import SystemMigrations from "./pages/SystemAdmin/Migrations";
 import ConnectorSdk from "./pages/SystemAdmin/ConnectorSdk";
+import PharmacyAccessAudit from "./pages/SystemAdmin/PharmacyAccessAudit";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -1042,6 +1047,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/receptionist/booking-desk"
+            element={
+              <RequireRole roles={["RECEPTIONIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ReceptionistBookingDesk />
+              </RequireRole>
+            }
+          />
 
           {/* HR MANAGER */}
           <Route
@@ -1212,6 +1225,14 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route
+            path="/system-admin/pharmacy-access-audit"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PharmacyAccessAudit />
+              </RequireRole>
+            }
+          />
 
           {/* HOSPITAL ADMIN */}
           <Route
@@ -1253,6 +1274,30 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminStaffTransfers />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/appointments"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminAppointments />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/consultation-monitor"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminConsultationMonitor />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/appointment-analytics"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminAppointmentAnalytics />
               </RequireRole>
             }
           />

@@ -1,5 +1,7 @@
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import PharmacyReferral from "../models/PharmacyReferral.js";
+import AuditLog from "../models/AuditLog.js";
+import Notification from "../models/Notification.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 
 const toNumberOrNull = (value) => {
@@ -29,6 +31,23 @@ function actorRole(req) {
 
 function actorHospital(req) {
   return req.user?.hospitalId || req.user?.hospital || null;
+}
+
+async function resolveActorPharmacyIds(req) {
+  const direct = req.user?.registeredPharmacy ? [String(req.user.registeredPharmacy)] : [];
+  if (direct.length) return direct;
+
+  const email = String(req.user?.email || "").trim().toLowerCase();
+  const phone = String(req.user?.phone || "").trim();
+  if (!email && !phone) return [];
+
+  const or = [];
+  if (email) or.push({ "contact.email": email });
+  if (phone) or.push({ "contact.phone": phone });
+  if (!or.length) return [];
+
+  const pharmacies = await RegisteredPharmacy.find({ $or: or, status: "ACTIVE" }).select("_id").lean();
+  return pharmacies.map((item) => String(item._id));
 }
 
 export const listRegisteredPharmacies = async (req, res, next) => {
@@ -196,8 +215,11 @@ export const createPharmacyReferral = async (req, res, next) => {
     const referral = await PharmacyReferral.create({
       hospital,
       pharmacy: pharmacy._id,
+      prescription: req.body?.prescriptionId || null,
       patientName,
       patientPhone: String(req.body?.patientPhone || "").trim(),
+      patientUser: req.body?.patientUser || null,
+      patientRecord: req.body?.patientRecord || null,
       reason: String(req.body?.reason || "").trim(),
       medicationNotes: String(req.body?.medicationNotes || "").trim(),
       urgent: Boolean(req.body?.urgent),
@@ -209,6 +231,42 @@ export const createPharmacyReferral = async (req, res, next) => {
       .populate("pharmacy", "name licenseNumber contact location status")
       .populate("createdBy", "name role")
       .lean();
+
+    await AuditLog.create({
+      actorId: req.user?._id || null,
+      actorRole: req.user?.role || null,
+      action: "PHARMACY_REFERRAL_CREATE",
+      resource: "PharmacyReferral",
+      resourceId: referral._id,
+      hospital,
+      success: true,
+      metadata: {
+        pharmacyId: pharmacy._id,
+        prescriptionId: req.body?.prescriptionId || null,
+        patientName,
+        patientUser: req.body?.patientUser || null,
+        urgent: Boolean(req.body?.urgent),
+      },
+    });
+
+    const notifications = [];
+    if (req.body?.patientUser) {
+      notifications.push({
+        title: "Pharmacy Referral Created",
+        body: "Your prescription was sent to a pharmacy for fulfillment.",
+        category: "PHARMACY",
+        user: req.body.patientUser,
+        hospital,
+        meta: {
+          referralId: referral._id,
+          pharmacyId: pharmacy._id,
+          path: "/patient/prescriptions",
+        },
+      });
+    }
+    if (notifications.length) {
+      await Notification.insertMany(notifications);
+    }
 
     return res.status(201).json({ success: true, referral: populated });
   } catch (err) {
@@ -223,23 +281,126 @@ export const listPharmacyReferrals = async (req, res, next) => {
 
     if (PRIVILEGED_ROLES.has(role)) {
       if (req.query.hospitalId) filter.hospital = req.query.hospitalId;
+    } else if (role === "PATIENT") {
+      filter.patientUser = req.user?._id || null;
+    } else if (role === "PHARMACIST") {
+      const pharmacyIds = await resolveActorPharmacyIds(req);
+      if (!pharmacyIds.length) {
+        return res.status(403).json({ message: "Pharmacist account is not linked to a registered pharmacy" });
+      }
+      if (req.query.pharmacyId && !pharmacyIds.includes(String(req.query.pharmacyId))) {
+        return res.status(403).json({ message: "Requested pharmacy is outside your pharmacy scope" });
+      }
+      filter.pharmacy = req.query.pharmacyId ? req.query.pharmacyId : { $in: pharmacyIds };
     } else {
       const hospital = actorHospital(req);
       if (!hospital) return res.status(400).json({ message: "Hospital context missing" });
       filter.hospital = hospital;
     }
 
-    if (req.query.pharmacyId) filter.pharmacy = req.query.pharmacyId;
+    if (req.query.pharmacyId && role !== "PHARMACIST") filter.pharmacy = req.query.pharmacyId;
     if (req.query.status) filter.status = req.query.status;
 
     const items = await PharmacyReferral.find(filter)
       .sort({ createdAt: -1 })
       .limit(200)
+      .populate("prescription", "status summary appointment")
       .populate("pharmacy", "name licenseNumber contact location status")
       .populate("createdBy", "name role")
       .lean();
 
     return res.json({ success: true, items });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updatePharmacyReferral = async (req, res, next) => {
+  try {
+    const role = actorRole(req);
+    const allowed = new Set(["PHARMACIST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
+    if (!allowed.has(role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const referral = await PharmacyReferral.findById(req.params.id);
+    if (!referral) return res.status(404).json({ message: "Referral not found" });
+
+    if (role === "PHARMACIST") {
+      const pharmacyIds = await resolveActorPharmacyIds(req);
+      if (!pharmacyIds.length) {
+        return res.status(403).json({ message: "Pharmacist account is not linked to a registered pharmacy" });
+      }
+      if (!pharmacyIds.includes(String(referral.pharmacy))) {
+        return res.status(403).json({ message: "Referral is outside your pharmacy scope" });
+      }
+    }
+
+    const nextStatus = String(req.body?.status || "").trim().toUpperCase();
+    if (!["PENDING", "ACCEPTED", "FULFILLED", "CANCELLED"].includes(nextStatus)) {
+      return res.status(422).json({ message: "Valid status is required" });
+    }
+
+    const before = referral.toObject();
+    referral.status = nextStatus;
+    referral.updatedBy = req.user?._id || null;
+    await referral.save();
+
+    await AuditLog.create({
+      actorId: req.user?._id || null,
+      actorRole: req.user?.role || null,
+      action: "PHARMACY_REFERRAL_UPDATE",
+      resource: "PharmacyReferral",
+      resourceId: referral._id,
+      hospital: referral.hospital,
+      success: true,
+      before: { status: before.status },
+      after: { status: referral.status },
+      metadata: {
+        pharmacyId: referral.pharmacy,
+      },
+    });
+
+    const notifications = [];
+    if (referral.patientUser) {
+      notifications.push({
+        title: "Pharmacy Referral Updated",
+        body: `Your pharmacy referral is now ${referral.status.toLowerCase()}.`,
+        category: "PHARMACY",
+        user: referral.patientUser,
+        hospital: referral.hospital,
+        meta: {
+          referralId: referral._id,
+          status: referral.status,
+          path: "/patient/prescriptions",
+        },
+      });
+    }
+    if (referral.createdBy) {
+      notifications.push({
+        title: "Pharmacy Referral Updated",
+        body: `Referral for ${referral.patientName} is now ${referral.status.toLowerCase()}.`,
+        category: "PHARMACY",
+        user: referral.createdBy,
+        hospital: referral.hospital,
+        meta: {
+          referralId: referral._id,
+          status: referral.status,
+          path: "/doctor/prescriptions",
+        },
+      });
+    }
+    if (notifications.length) {
+      await Notification.insertMany(notifications);
+    }
+
+    const populated = await PharmacyReferral.findById(referral._id)
+      .populate("prescription", "status summary appointment")
+      .populate("pharmacy", "name licenseNumber contact location status")
+      .populate("createdBy", "name role")
+      .lean();
+
+    return res.json({ success: true, referral: populated });
   } catch (err) {
     return next(err);
   }

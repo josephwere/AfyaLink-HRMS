@@ -4,6 +4,7 @@ import express from "express";
 import {
   getMe,
   listUsers,
+  getPharmacyLinkBackfillPreview,
   updateUser,
   createUser,
   demoteStaffToPatient,
@@ -21,6 +22,13 @@ const router = express.Router();
  * ======================================================
  */
 router.get("/me", protect, getMe);
+
+router.get(
+  "/pharmacy-link-backfill-preview",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getPharmacyLinkBackfillPreview
+);
 
 /**
  * ======================================================

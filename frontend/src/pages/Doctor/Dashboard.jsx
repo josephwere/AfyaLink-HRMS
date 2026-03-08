@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [availability, setAvailability] = useState([]);
   const [burnout, setBurnout] = useState(null);
   const [burnoutTrend, setBurnoutTrend] = useState([]);
 
@@ -56,6 +57,12 @@ export default function Dashboard() {
       })
       .catch(() => setAlerts([]));
 
+    if (user?.id) {
+      apiFetch(`/api/appointments/doctors/${user.id}/availability`)
+        .then((res) => setAvailability(Array.isArray(res?.items) ? res.items : []))
+        .catch(() => setAvailability([]));
+    }
+
     loadBurnout();
     const timer = setInterval(loadBurnout, 45000);
     return () => clearInterval(timer);
@@ -67,9 +74,19 @@ export default function Dashboard() {
       { title: "Inpatients Assigned", value: data?.activeEncounters ?? "—" },
       { title: "Surgeries Scheduled", value: data?.upcomingAppointments ?? "—" },
       { title: "Pending Lab Results", value: data?.pendingLabResults ?? "—" },
+      {
+        title: "Consultation Status",
+        value: (() => {
+          const today = availability.find((row) => Number(row.dayOfWeek) === new Date().getDay());
+          if (!today) return "Default";
+          if (today.consultationAvailable === false) return "Closed";
+          if (today.isAvailable === false) return "Bookings Off";
+          return "Open";
+        })(),
+      },
       { title: "License Expiry (Days)", value: data?.licenseExpiryDays ?? "—" },
     ],
-    [data]
+    [data, availability]
   );
 
   return (
@@ -83,6 +100,7 @@ export default function Dashboard() {
           <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Open Patients</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Write Notes</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>Complete Plan</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/settings")}>My Availability</button>
         </div>
       </div>
 

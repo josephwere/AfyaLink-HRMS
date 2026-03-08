@@ -51,6 +51,7 @@ export default function Notifications(){
             <option value="SYSTEM">System</option>
             <option value="INTEGRATION">Integration</option>
             <option value="AI">AI</option>
+            <option value="PHARMACY">Pharmacy</option>
           </select>
           <select value={read} onChange={(e) => setRead(e.target.value)}>
             <option value="ALL">All Status</option>
