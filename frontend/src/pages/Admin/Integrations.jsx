@@ -40,7 +40,15 @@ export default function Integrations(){
         <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}><option value='rest'>REST</option><option value='webhook'>Webhook</option><option value='import'>Import</option><option value='sync'>Sync</option></select>
         <input placeholder='url' value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))} />
         <select value={form.authType} onChange={e=>setForm(f=>({...f,authType:e.target.value}))}><option value='none'>None</option><option value='apikey'>API Key</option><option value='basic'>Basic</option></select>
-        {form.authType==='apikey' && (<input placeholder='apiKey' value={form.apiKey} onChange={e=>setForm(f=>({...f,apiKey:e.target.value}))} />)}
+        {form.authType==='apikey' && (
+          <PasswordInput
+            label=""
+            placeholder="apiKey"
+            value={form.apiKey}
+            autoComplete="off"
+            onChange={e=>setForm(f=>({...f,apiKey:e.target.value}))}
+          />
+        )}
         {form.authType==='basic' && (<><input placeholder='username' value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} /><PasswordInput label="" placeholder="password" value={form.password} autoComplete="current-password" onChange={e=>setForm(f=>({...f,password:e.target.value}))} /></>)}
         <div><h4>Retry Policy</h4>
           <label>Attempts</label><input type='number' value={form.retryPolicy.attempts} onChange={e=>setForm(f=>({...f,retryPolicy:{...f.retryPolicy,attempts: Number(e.target.value)}}))} />

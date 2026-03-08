@@ -85,16 +85,23 @@ export default function PasswordInput({
           autoComplete={autoComplete}
           disabled={disabled}
         />
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={disabled ? -1 : 0}
           className="password-toggle-btn"
-          onClick={() => setShow((prev) => !prev)}
+          onClick={() => !disabled && setShow((prev) => !prev)}
+          onKeyDown={(e) => {
+            if (disabled) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setShow((prev) => !prev);
+            }
+          }}
           aria-label={show ? "Hide password" : "Show password"}
           title={show ? "Hide password" : "Show password"}
-          disabled={disabled}
         >
           <EyeIcon open={show} />
-        </button>
+        </span>
       </div>
 
       {helperText ? <div className="muted">{helperText}</div> : null}

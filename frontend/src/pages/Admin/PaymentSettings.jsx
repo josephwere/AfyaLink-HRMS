@@ -252,7 +252,13 @@ export default function PaymentSettings() {
           <label>Account Name</label>
           <input value={form.bankAccountName} onChange={(e) => setForm((f) => ({ ...f, bankAccountName: e.target.value }))} />
           <label>Account Number (encrypted)</label>
-          <input value={form.bankAccountNumber} onChange={(e) => setForm((f) => ({ ...f, bankAccountNumber: e.target.value }))} />
+          <PasswordInput
+            label=""
+            value={form.bankAccountNumber}
+            autoComplete="off"
+            placeholder="Account number"
+            onChange={(e) => setForm((f) => ({ ...f, bankAccountNumber: e.target.value }))}
+          />
           <label>SWIFT/BIC</label>
           <input value={form.bankSwiftCode} onChange={(e) => setForm((f) => ({ ...f, bankSwiftCode: e.target.value }))} />
           <p className="muted">Stored metadata: {meta?.bank?.bankName || "-"} • {meta?.bank?.accountName || "-"} • account encrypted: {meta?.bank?.hasAccountNumber ? "Yes" : "No"}</p>
@@ -279,7 +285,13 @@ export default function PaymentSettings() {
             </div>
           </div>
           <label>Vault/Token Reference (encrypted)</label>
-          <input value={form.cardVaultRef} onChange={(e) => setForm((f) => ({ ...f, cardVaultRef: e.target.value }))} placeholder="Use gateway token/reference, not CVV/full PAN" />
+          <PasswordInput
+            label=""
+            value={form.cardVaultRef}
+            autoComplete="off"
+            placeholder="Use gateway token/reference, not CVV/full PAN"
+            onChange={(e) => setForm((f) => ({ ...f, cardVaultRef: e.target.value }))}
+          />
           <p className="muted">Stored metadata: {meta?.card?.brand || "-"} • ****{meta?.card?.last4 || "----"} • vault encrypted: {meta?.card?.hasVaultRef ? "Yes" : "No"}</p>
           <button type="button" className="btn-primary" onClick={() => saveSection("card")} disabled={busy}>
             {savingSection === "card" ? "Saving..." : "Save Card Payout Card"}
@@ -290,7 +302,13 @@ export default function PaymentSettings() {
           <label>Consumer Key</label>
           <input value={form.mpesaConsumerKey} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerKey: e.target.value }))} />
           <label>Consumer Secret (encrypted)</label>
-          <input value={form.mpesaConsumerSecret} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerSecret: e.target.value }))} />
+          <PasswordInput
+            label=""
+            value={form.mpesaConsumerSecret}
+            autoComplete="off"
+            placeholder="Consumer secret"
+            onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerSecret: e.target.value }))}
+          />
           <label>Shortcode</label>
           <input value={form.mpesaShortcode} onChange={(e) => setForm((f) => ({ ...f, mpesaShortcode: e.target.value }))} />
           <label>Paybill Number</label>
@@ -310,9 +328,21 @@ export default function PaymentSettings() {
           <label>Stripe Publishable Key</label>
           <input value={form.stripePublishable} onChange={(e) => setForm((f) => ({ ...f, stripePublishable: e.target.value }))} />
           <label>Stripe Secret Key (encrypted)</label>
-          <input value={form.stripeSecret} onChange={(e) => setForm((f) => ({ ...f, stripeSecret: e.target.value }))} />
+          <PasswordInput
+            label=""
+            value={form.stripeSecret}
+            autoComplete="off"
+            placeholder="Stripe secret key"
+            onChange={(e) => setForm((f) => ({ ...f, stripeSecret: e.target.value }))}
+          />
           <label>Flutterwave Secret (encrypted)</label>
-          <input value={form.flutterSecret} onChange={(e) => setForm((f) => ({ ...f, flutterSecret: e.target.value }))} />
+          <PasswordInput
+            label=""
+            value={form.flutterSecret}
+            autoComplete="off"
+            placeholder="Flutterwave secret"
+            onChange={(e) => setForm((f) => ({ ...f, flutterSecret: e.target.value }))}
+          />
           <p className="muted">
             Stripe secret saved: {meta?.stripe?.hasSecret ? "Yes" : "No"} • M-Pesa secret saved: {meta?.mpesa?.hasSecret ? "Yes" : "No"} • Flutterwave secret saved: {meta?.flutterwave?.hasSecret ? "Yes" : "No"}
           </p>
