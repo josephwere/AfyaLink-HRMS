@@ -2,9 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
+import { getSearchCatalog } from "../config/searchCatalog";
 import { useTheme } from "../utils/theme.jsx";
 import { triggerAction } from "../services/actionApi";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { globalSearch } from "../services/searchApi";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -23,6 +25,24 @@ function Icon({ name }) {
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinejoin="round"
+        />
+      </svg>
+    ),
+    megaphone: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M4 13V11a2 2 0 0 1 2-2h2l8-4v14l-8-4H6a2 2 0 0 1-2-2Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M10 15.5 11.5 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
         />
       </svg>
     ),
@@ -132,6 +152,9 @@ export default function Navbar({ onToggleSidebar }) {
   const [notifItems, setNotifItems] = useState([]);
   const [notifCategory, setNotifCategory] = useState("ALL");
   const [notifRead, setNotifRead] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const [remoteResults, setRemoteResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const refreshIntervalMs = 15000;
   const logo = settings?.branding?.logo;
   const profileRef = useRef(null);
@@ -139,11 +162,70 @@ export default function Navbar({ onToggleSidebar }) {
   const isGuest = user?.role === "GUEST";
   const currentRole = String(user?.role || "").toUpperCase();
   const homePath = user ? redirectByRole(user) : "/";
+  const canManageAds = ["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(currentRole);
+  const adsPath = canManageAds ? "/hospital-admin/recruitment-ads" : "/careers";
+  const catalog = useMemo(() => getSearchCatalog(user), [user]);
 
   const unreadCount = useMemo(
     () => notifItems.filter((n) => !n.read).length,
     [notifItems]
   );
+
+  const localResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return catalog
+      .filter((item) => item.label.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [catalog, search]);
+
+  useEffect(() => {
+    const query = search.trim();
+    if (!user || query.length < 2) {
+      setRemoteResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const role = String(user?.role || "").toUpperCase();
+    const canViewHospitals = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
+    const canViewWorkers = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
+    const id = setTimeout(() => {
+      globalSearch({ q: query, limit: 6 })
+        .then((data) => {
+          const hospitals = (data?.hospitals || []).map((h) => ({
+            label: `Hospital: ${h.name}${h.code ? ` (${h.code})` : ""}`,
+            path: canViewHospitals
+              ? `/super-admin/hospitals?q=${encodeURIComponent(h.name || h.code || "")}`
+              : homePath,
+          }));
+          const workers = (data?.workers || []).map((w) => ({
+            label: `${w.name} • ${w.role}`,
+            path: canViewWorkers
+              ? `/hospital-admin/staff?q=${encodeURIComponent(w.name || w.email || "")}`
+              : "/profile",
+          }));
+          setRemoteResults([...hospitals, ...workers]);
+        })
+        .catch(() => setRemoteResults([]))
+        .finally(() => setSearching(false));
+    }, 250);
+
+    return () => clearTimeout(id);
+  }, [search, user, homePath]);
+
+  const results = useMemo(() => {
+    const seen = new Set();
+    return [...remoteResults, ...localResults]
+      .filter((item) => {
+        const key = `${item.path}|${item.label}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 10);
+  }, [localResults, remoteResults]);
 
   const canOpenNotificationPath = useCallback(
     (path) => {
@@ -254,6 +336,61 @@ export default function Navbar({ onToggleSidebar }) {
           ) : (
             "AfyaLink HCM"
           )}
+        </button>
+      </div>
+
+      <div className="navbar-center">
+        <div className="search-wrap topbar-search">
+          <input
+            className="search-input"
+            placeholder="Search people, tasks, reports, help"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search ? (
+            <button
+              type="button"
+              className="search-btn"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              title="Clear"
+            >
+              Clear
+            </button>
+          ) : null}
+          {(results.length > 0 || searching) && (
+            <div className="search-results">
+              {searching ? (
+                <div className="search-result">
+                  <span className="result-title">Searching...</span>
+                </div>
+              ) : null}
+              {results.map((item) => (
+                <button
+                  type="button"
+                  key={`${item.path}-${item.label}`}
+                  className="search-result"
+                  onClick={() => {
+                    navigate(item.path);
+                    setSearch("");
+                  }}
+                >
+                  <span className="result-title">{item.label}</span>
+                  <span className="result-path">{item.path}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="icon-btn ghost topbar-ad-btn"
+          onClick={() => navigate(adsPath)}
+          title={canManageAds ? "Recruitment ads" : "Careers"}
+        >
+          <Icon name="megaphone" />
+          {canManageAds ? "Ads" : "Careers"}
         </button>
       </div>
 
@@ -429,9 +566,6 @@ export default function Navbar({ onToggleSidebar }) {
               </button>
               <button type="button" onClick={() => navigate("/profile")}>
                 Preferences
-              </button>
-              <button type="button" onClick={() => navigate("/notifications")}>
-                Notifications
               </button>
               <button type="button" onClick={() => navigate("/ai/chatbot")}>
                 Messages
