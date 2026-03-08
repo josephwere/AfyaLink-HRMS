@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const PaymentSettingsSchema = new mongoose.Schema({
+  key: { type: String, default: 'GLOBAL', index: true },
   stripe: { type: Object, default: {} },
   mpesa: { type: Object, default: {} },
   flutterwave: { type: Object, default: {} },

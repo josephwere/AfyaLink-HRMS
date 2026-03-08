@@ -1,9 +1,9 @@
-import SystemSettings from "../models/SystemSettings.js";
 import AuditLog from "../models/AuditLog.js";
+import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 
 export const index = async (_req, res) => {
   try {
-    const settings = await SystemSettings.findOne().lean();
+    const settings = await getSystemSettingsDoc({ lean: true });
     const ai = settings?.ai || {};
 
     res.json({

@@ -1,8 +1,8 @@
-import PaymentSettings from '../models/PaymentSettings.js';
 import { encrypt, decrypt, deriveKeyFromPassword } from '../services/cryptoService.js';
 import Audit from '../models/Audit.js';
 import otpStore from '../services/otpStore.js';
 import notifService from '../services/notificationService.js';
+import { getPaymentSettingsDoc } from '../utils/paymentSettingsStore.js';
 
 /**
  * saveSettings(req): save encrypted settings (requires admin auth & adminPassword)
@@ -49,16 +49,11 @@ export async function saveSettings(req, res) {
       delete payload.card.vaultRef;
     }
 
-    let doc = await PaymentSettings.findOne();
-
-    if (!doc) {
-      doc = await PaymentSettings.create({ ...payload, updatedBy: req.user?._id });
-    } else {
-      Object.assign(doc, payload);
-      doc.updatedBy = req.user?._id;
-      doc.updatedAt = new Date();
-      await doc.save();
-    }
+    const doc = await getPaymentSettingsDoc();
+    Object.assign(doc, payload);
+    doc.updatedBy = req.user?._id;
+    doc.updatedAt = new Date();
+    await doc.save();
 
     await Audit.create({
       actor: req.user?._id,
@@ -88,7 +83,7 @@ export async function saveSettings(req, res) {
  */
 export async function getSettings(req, res) {
   try {
-    const doc = await PaymentSettings.findOne().lean();
+    const doc = await getPaymentSettingsDoc({ lean: true, createIfMissing: false });
     if (!doc) return res.json({});
 
     const safe = {
@@ -184,7 +179,7 @@ export async function verifyReveal2FA(req, res) {
 
     await otpStore.delOtp(`reveal:${String(user._id)}`);
 
-    const doc = await PaymentSettings.findOne().lean();
+    const doc = await getPaymentSettingsDoc({ lean: true, createIfMissing: false });
     if (!doc) return res.status(404).json({ error: 'no settings found' });
 
     const key = deriveKeyFromPassword(adminPassword);
@@ -258,7 +253,7 @@ export async function rotateAdminPassword(req, res) {
         .status(400)
         .json({ error: 'oldPassword and newPassword required' });
 
-    const doc = await PaymentSettings.findOne();
+    const doc = await getPaymentSettingsDoc({ createIfMissing: false });
     if (!doc) return res.status(404).json({ error: 'no settings found' });
 
     const oldKey = deriveKeyFromPassword(oldPassword);

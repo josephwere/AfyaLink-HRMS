@@ -6,7 +6,7 @@ import Notification from "../models/Notification.js";
 import AuditLog from "../models/AuditLog.js";
 import DoctorAvailability from "../models/DoctorAvailability.js";
 import CallSession from "../models/CallSession.js";
-import SystemSettings from "../models/SystemSettings.js";
+import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 import { getIO } from "../utils/socket.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
@@ -51,7 +51,7 @@ function normalizeConsultationMode(input) {
 }
 
 async function getConsultationSettings() {
-  const settings = await SystemSettings.findOne().select("communications").lean();
+  const settings = await getSystemSettingsDoc({ lean: true });
   return settings?.communications || {
     callsEnabled: true,
     videoCallsEnabled: true,

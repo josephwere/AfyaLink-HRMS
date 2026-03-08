@@ -1,7 +1,7 @@
 import Hospital from "../models/Hospital.js";
-import SystemSettings from "../models/SystemSettings.js";
 import { denyAudit } from "./denyAudit.js";
 import { isBreakGlassActive } from "./breakGlassGuard.js";
+import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 
 /**
  * PLAN + LIMIT + FEATURE ENFORCEMENT
@@ -35,7 +35,7 @@ export const planGuard =
         _id: hospitalId,
         active: true,
       }).lean(),
-        SystemSettings.findOne().select("monetization").lean(),
+        getSystemSettingsDoc({ lean: true }),
       ]);
 
       if (!hospital) {

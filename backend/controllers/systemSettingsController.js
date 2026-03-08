@@ -1,18 +1,12 @@
-import SystemSettings from "../models/SystemSettings.js";
+import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 
 export const getSystemSettings = async (_req, res) => {
-  let doc = await SystemSettings.findOne().lean();
-  if (!doc) {
-    doc = await SystemSettings.create({});
-  }
+  const doc = await getSystemSettingsDoc({ lean: true });
   res.json(doc);
 };
 
 export const getPublicBranding = async (_req, res) => {
-  let doc = await SystemSettings.findOne().lean();
-  if (!doc) {
-    doc = await SystemSettings.create({});
-  }
+  const doc = await getSystemSettingsDoc({ lean: true });
 
   return res.json({
     branding: doc?.branding || {},
@@ -21,8 +15,7 @@ export const getPublicBranding = async (_req, res) => {
 
 export const updateSystemSettings = async (req, res) => {
   const { branding, ai, monetization, communications } = req.body || {};
-  let doc = await SystemSettings.findOne();
-  if (!doc) doc = await SystemSettings.create({});
+  const doc = await getSystemSettingsDoc();
 
   if (branding) {
     if (branding.sidebarIcons) {

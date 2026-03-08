@@ -4,6 +4,7 @@ const { Schema, model } = mongoose;
 
 const systemSettingsSchema = new Schema(
   {
+    key: { type: String, default: "GLOBAL", index: true },
     branding: {
       appIcon: String,
       favicon: String,

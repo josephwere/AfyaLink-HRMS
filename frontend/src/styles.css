@@ -2502,22 +2502,30 @@ body.auth-route {
 }
 
 .password-input-wrap input {
-  padding-right: 84px;
+  padding-right: 46px;
 }
 
 .password-toggle-btn {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #0f172a;
+  border: none;
+  background: transparent;
+  color: var(--app-muted);
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+}
+
+.password-toggle-btn:hover {
+  color: var(--app-text);
+  background: color-mix(in oklab, var(--app-surface) 80%, #cbd5e1 20%);
 }
 
 .password-toggle-btn:disabled {
@@ -2987,9 +2995,8 @@ body.auth-route {
 }
 
 [data-theme="dark"] .password-toggle-btn {
-  background: var(--app-surface-2);
-  color: var(--app-text);
-  border-color: var(--app-border);
+  background: transparent;
+  color: var(--app-muted);
 }
 
 [data-theme="dark"] .download-menu-list {
