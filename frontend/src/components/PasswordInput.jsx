@@ -2,47 +2,61 @@ import React, { useState } from "react";
 
 export default function PasswordInput({
   label = "Password",
+  id,
+  name,
   value,
   onChange,
   placeholder = "••••••••",
-  showStrength = false
+  showStrength = false,
+  required = false,
+  autoComplete = "current-password",
+  className = "",
+  inputClassName = "",
+  disabled = false,
+  helperText = "",
 }) {
   const [show, setShow] = useState(false);
 
-  const strength = value.length >= 12
+  const safeValue = String(value || "");
+  const strength = safeValue.length >= 12
     ? "strong"
-    : value.length >= 8
+    : safeValue.length >= 8
     ? "medium"
-    : value.length > 0
+    : safeValue.length > 0
     ? "weak"
     : "";
 
   return (
-    <div>
-      <label>{label}</label>
-      <div style={{ position: "relative" }}>
+    <div className={className}>
+      {label ? <label htmlFor={id}>{label}</label> : null}
+      <div className="password-input-wrap">
         <input
+          id={id}
+          name={name}
+          className={inputClassName}
           type={show ? "text" : "password"}
-          value={value}
+          value={safeValue}
           placeholder={placeholder}
           onChange={onChange}
-          required
+          required={required}
+          autoComplete={autoComplete}
+          disabled={disabled}
         />
-        <span
-          onClick={() => setShow(!show)}
-          style={{
-            position: "absolute",
-            right: 14,
-            top: 12,
-            cursor: "pointer",
-            userSelect: "none"
-          }}
+        <button
+          type="button"
+          className="password-toggle-btn"
+          onClick={() => setShow((prev) => !prev)}
+          aria-label={show ? "Hide password" : "Show password"}
+          title={show ? "Hide password" : "Show password"}
+          disabled={disabled}
         >
-          {show ? "🙈" : "👁️"}
-        </span>
+          {show ? "Hide" : "Show"}
+        </button>
       </div>
 
-      {showStrength && value && (
+      {helperText ? <div className="muted">{helperText}</div> : null}
+
+      {showStrength && safeValue && (
         <div className={`pw-strength ${strength}`}>
           Password strength: <b>{strength}</b>
         </div>

@@ -127,11 +127,57 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const authenticateOptional = async (req, _res, next) => {
+  try {
+    let token;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+    );
+
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) return next();
+
+    const actualRole = user.role;
+    let effectiveRole = resolveEffectiveRole(req, actualRole);
+    if (
+      effectiveRole !== actualRole &&
+      HOSPITAL_SCOPED_ROLES.includes(String(effectiveRole || "").toUpperCase()) &&
+      !user.hospital &&
+      !req.headers["x-hospital"]
+    ) {
+      effectiveRole = actualRole;
+    }
+
+    user.actualRole = actualRole;
+    user.effectiveRole = effectiveRole;
+    user.role = effectiveRole;
+    user.hospitalId = user.hospital;
+    req.user = user;
+    req.tokenPayload = decoded;
+    return next();
+  } catch {
+    return next();
+  }
+};
+
 /* ======================================================
    EXPORTS
 ====================================================== */
 export const protect = authenticate;
 export const requireAuth = protect; // ✅ alias for legacy routes
+export const protectOptional = authenticateOptional;
 
 /* ======================================================
    ROLE-BASED AUTHORIZATION (WITH HIERARCHY)

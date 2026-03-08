@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 import DismissibleCardSection from "../../components/DismissibleCardSection";
+import PasswordInput from "../../components/PasswordInput";
 
 export default function PaymentSettings() {
   const [meta, setMeta] = useState({});
@@ -214,12 +215,12 @@ export default function PaymentSettings() {
             <option value="live">Live</option>
           </select>
 
-          <label>Admin Encryption Password</label>
-          <input
-            type="password"
+          <PasswordInput
+            label="Admin Encryption Password"
             value={form.adminPassword}
+            autoComplete="current-password"
+            helperText="Required to save or reveal encrypted secrets."
             onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))}
-            placeholder="Required to save/reveal encrypted secrets"
           />
 
           <div className="welcome-actions">

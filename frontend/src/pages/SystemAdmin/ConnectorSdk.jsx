@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import DownloadMenu from "../../components/DownloadMenu";
 import {
   getConnectorRuntime,
   getConnectorSdkManifest,
   listConnectorSdkTargets,
   updateConnectorRuntime,
 } from "../../services/systemAdminApi";
+import { exportRichTextDocument } from "../../utils/fileExport";
 
 function samplePayloadFor(connector) {
   const profile = String(connector?.profile || "").toUpperCase();
@@ -204,18 +206,15 @@ export default function ConnectorSdk() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    const ext = format === "md" ? "md" : "txt";
-    const filename = `${safeName || "connector"}-sdk-snippets.${ext}`;
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setMsg(`Downloaded ${filename}`);
+    exportRichTextDocument({
+      filenameBase: `${safeName || "connector"}-sdk-snippets`,
+      format,
+      plainText: text,
+      markdownText: text,
+      htmlBody: `<pre>${text}</pre>`,
+      title: `${selectedConnector?.name || "Connector"} SDK Snippets`,
+    });
+    setMsg(format === "pdf" ? "PDF export opened." : `Downloaded ${safeName || "connector"} SDK snippets as .${format}.`);
   };
 
   return (
@@ -353,22 +352,17 @@ export default function ConnectorSdk() {
           <div className="welcome-actions" style={{ justifyContent: "space-between" }}>
             <h3>Copy-Paste Snippets</h3>
             <div className="welcome-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => downloadSnippets("txt")}
+              <DownloadMenu
+                label="Download"
                 disabled={!snippets}
-              >
-                Download .txt
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => downloadSnippets("md")}
-                disabled={!snippets}
-              >
-                Download .md
-              </button>
+                options={[
+                  { value: "txt", label: "Download .txt", onClick: () => downloadSnippets("txt") },
+                  { value: "md", label: "Download .md", onClick: () => downloadSnippets("md") },
+                  { value: "doc", label: "Download .doc (Word)", onClick: () => downloadSnippets("doc") },
+                  { value: "html", label: "Download .html", onClick: () => downloadSnippets("html") },
+                  { value: "pdf", label: "Export PDF", onClick: () => downloadSnippets("pdf") },
+                ]}
+              />
             </div>
           </div>
           {!snippets ? (

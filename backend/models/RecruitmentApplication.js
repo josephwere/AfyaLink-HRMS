@@ -31,6 +31,14 @@ const recruitmentApplicationSchema = new Schema(
     phone: { type: String, trim: true },
     coverLetter: { type: String, trim: true },
     resumeUrl: { type: String, trim: true },
+    resumeFile: {
+      originalName: { type: String, trim: true },
+      mimeType: { type: String, trim: true },
+      sizeBytes: Number,
+      storagePath: { type: String, trim: true },
+      publicUrl: { type: String, trim: true },
+      uploadedAt: Date,
+    },
     experienceSummary: { type: String, trim: true },
     status: {
       type: String,

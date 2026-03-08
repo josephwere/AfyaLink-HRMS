@@ -210,6 +210,11 @@ export default function Login() {
           <span>Don’t have an account?</span>
           <Link to="/register">Create account</Link>
         </div>
+
+        <div className="auth-footer">
+          <span>Looking for hospital jobs?</span>
+          <Link to="/careers?src=LOGIN_PAGE">View careers</Link>
+        </div>
       </form>
     </div>
   );

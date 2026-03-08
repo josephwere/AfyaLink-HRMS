@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
+import PasswordInput from "../../components/PasswordInput";
 
 export default function RegisterStaff() {
   const { user } = useAuth();
@@ -93,11 +94,12 @@ export default function RegisterStaff() {
           required
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
-        <input
-          placeholder="Temporary password"
-          type="password"
+        <PasswordInput
+          label=""
           value={form.password}
           required
+          placeholder="Temporary password"
+          autoComplete="new-password"
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
         <select

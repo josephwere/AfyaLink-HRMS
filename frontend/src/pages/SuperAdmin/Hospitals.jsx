@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
+import PasswordInput from "../../components/PasswordInput";
 import { createHospital, updateHospital, searchGovernmentHospitals } from "../../services/hospitalApi";
 import {
   createBranch,
@@ -777,10 +778,11 @@ export default function SuperAdminHospitals() {
             }
             required
           />
-          <input
-            placeholder="Temporary password"
-            type="password"
+          <PasswordInput
+            label=""
             value={adminForm.password}
+            placeholder="Temporary password"
+            autoComplete="new-password"
             onChange={(e) =>
               setAdminForm({ ...adminForm, password: e.target.value })
             }
@@ -999,10 +1001,11 @@ export default function SuperAdminHospitals() {
               }
               required
             />
-            <input
-              placeholder="Temporary password"
-              type="password"
+            <PasswordInput
+              label=""
               value={systemAdminForm.password}
+              placeholder="Temporary password"
+              autoComplete="new-password"
               onChange={(e) =>
                 setSystemAdminForm({
                   ...systemAdminForm,
@@ -1045,10 +1048,11 @@ export default function SuperAdminHospitals() {
               }
               required
             />
-            <input
-              placeholder="Temporary password"
-              type="password"
+            <PasswordInput
+              label=""
               value={developerForm.password}
+              placeholder="Temporary password"
+              autoComplete="new-password"
               onChange={(e) =>
                 setDeveloperForm({
                   ...developerForm,

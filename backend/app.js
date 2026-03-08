@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
@@ -192,6 +193,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
 app.use(metricsMiddleware);
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 /* ======================================================
    🚦 TRAFFIC GUARDS (SCALE HARDENING)

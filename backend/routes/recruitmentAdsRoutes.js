@@ -1,5 +1,6 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import multer from "multer";
+import { protect, protectOptional } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
 import {
@@ -7,53 +8,52 @@ import {
   listRecruitmentAds,
   updateRecruitmentAd,
   applyToRecruitmentAd,
+  trackRecruitmentAdEvent,
   listRecruitmentApplications,
   updateRecruitmentApplicationStatus,
 } from "../controllers/recruitmentAdsController.js";
 
 const router = express.Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024, files: 7 },
+});
 
-router.use(protect);
-
-// Viewing is free for all authenticated roles.
+// Public careers listing supports guest access; role-scoped write/apply routes remain protected.
 router.get(
   "/",
-  requireRole(
-    "PATIENT",
-    "GUEST",
-    "DOCTOR",
-    "NURSE",
-    "LAB_TECH",
-    "PHARMACIST",
-    "HOSPITAL_ADMIN",
-    "SECURITY_ADMIN",
-    "SECURITY_OFFICER",
-    "HR_MANAGER",
-    "PAYROLL_OFFICER",
-    "SYSTEM_ADMIN",
-    "SUPER_ADMIN",
-    "DEVELOPER"
-  ),
+  protectOptional,
   listRecruitmentAds
 );
 
 // Posting/updating is premium gated.
 router.post(
   "/",
+  protect,
   requireRole("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
   planGuard({ feature: "recruitmentAds" }),
+  upload.fields([
+    { name: "coverImage", maxCount: 1 },
+    { name: "galleryImages", maxCount: 6 },
+  ]),
   createRecruitmentAd
 );
 
 router.patch(
   "/:id",
+  protect,
   requireRole("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
   planGuard({ feature: "recruitmentAds" }),
+  upload.fields([
+    { name: "coverImage", maxCount: 1 },
+    { name: "galleryImages", maxCount: 6 },
+  ]),
   updateRecruitmentAd
 );
 
 router.post(
   "/:id/apply",
+  protect,
   requireRole(
     "PATIENT",
     "GUEST",
@@ -70,11 +70,19 @@ router.post(
     "SUPER_ADMIN",
     "DEVELOPER"
   ),
+  upload.fields([{ name: "resumeFile", maxCount: 1 }]),
   applyToRecruitmentAd
+);
+
+router.post(
+  "/:id/track",
+  protectOptional,
+  trackRecruitmentAdEvent
 );
 
 router.get(
   "/applications",
+  protect,
   requireRole(
     "PATIENT",
     "GUEST",
@@ -96,6 +104,7 @@ router.get(
 
 router.patch(
   "/applications/:applicationId/status",
+  protect,
   requireRole("HOSPITAL_ADMIN", "HR_MANAGER", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
   updateRecruitmentApplicationStatus
 );

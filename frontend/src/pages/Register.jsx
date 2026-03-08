@@ -233,6 +233,11 @@ export default function Register() {
           <span>Already have an account?</span>
           <Link to="/login">Login</Link>
         </div>
+
+        <div className="auth-footer">
+          <span>Browse open hospital roles first?</span>
+          <Link to="/careers?src=REGISTER_PAGE">View careers</Link>
+        </div>
       </form>
     </div>
   );

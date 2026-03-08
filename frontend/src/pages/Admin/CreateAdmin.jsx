@@ -7,6 +7,7 @@ import {
 } from "../../services/superAdminApi";
 import { useAuth } from "../../utils/auth";
 import DismissibleCardSection from "../../components/DismissibleCardSection";
+import PasswordInput from "../../components/PasswordInput";
 
 export default function CreateAdmin() {
   const { user } = useAuth();
@@ -160,11 +161,12 @@ export default function CreateAdmin() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
 
-          <input
-            placeholder="Temporary password"
-            type="password"
+          <PasswordInput
+            label=""
             value={form.password}
             required
+            placeholder="Temporary password"
+            autoComplete="new-password"
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
 

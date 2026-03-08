@@ -5,7 +5,10 @@ import apiFetch from "../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
+import PasswordInput from "../components/PasswordInput";
+import DownloadMenu from "../components/DownloadMenu";
 import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes";
+import { exportRichTextDocument } from "../utils/fileExport";
 import {
   applyAccessibilityPrefs,
   getDefaultAccessibilityPrefs,
@@ -1283,18 +1286,18 @@ export default function Profile() {
     }
   };
 
-  const downloadTrainingNotes = () => {
+  const exportTrainingNotes = (format) => {
     try {
-      const blob = new Blob([buildTrainingLines().join("\n")], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `afyalink-training-${String(resolvedTrainingRole || "role").toLowerCase()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setTrainingMsg("Training notes downloaded.");
+      const plainText = buildTrainingLines().join("\n");
+      exportRichTextDocument({
+        filenameBase: `afyalink-training-${String(resolvedTrainingRole || "role").toLowerCase()}`,
+        format,
+        plainText,
+        markdownText: plainText,
+        htmlBody: `<pre>${plainText}</pre>`,
+        title: `AfyaLink Training - ${resolvedTrainingRole}`,
+      });
+      setTrainingMsg(format === "pdf" ? "PDF export opened." : `Training notes downloaded as .${format}.`);
     } catch {
       setTrainingMsg("Failed to download notes.");
     }
@@ -1309,20 +1312,18 @@ export default function Profile() {
     }
   };
 
-  const downloadMasterTrainingNotes = () => {
+  const exportMasterTrainingNotes = (format) => {
     try {
-      const blob = new Blob([buildMasterTrainingLines().join("\n")], {
-        type: "text/plain;charset=utf-8",
+      const plainText = buildMasterTrainingLines().join("\n");
+      exportRichTextDocument({
+        filenameBase: "afyalink-role-training-playbook",
+        format,
+        plainText,
+        markdownText: plainText,
+        htmlBody: `<pre>${plainText}</pre>`,
+        title: "AfyaLink Role Training Playbook",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "afyalink-role-training-playbook.txt";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setTrainingMsg("Full role playbook downloaded.");
+      setTrainingMsg(format === "pdf" ? "PDF export opened." : `Full role playbook downloaded as .${format}.`);
     } catch {
       setTrainingMsg("Failed to download full playbook.");
     }
@@ -2109,9 +2110,15 @@ export default function Profile() {
           <button type="button" className="secondary" onClick={copyTrainingNotes}>
             Copy Training Notes
           </button>
-          <button type="button" className="secondary" onClick={downloadTrainingNotes}>
-            Download Notes
-          </button>
+          <DownloadMenu
+            label="Download Notes"
+            options={[
+              { value: "txt", label: "Download .txt", onClick: () => exportTrainingNotes("txt") },
+              { value: "doc", label: "Download .doc (Word)", onClick: () => exportTrainingNotes("doc") },
+              { value: "html", label: "Download .html", onClick: () => exportTrainingNotes("html") },
+              { value: "pdf", label: "Export PDF", onClick: () => exportTrainingNotes("pdf") },
+            ]}
+          />
           <button type="button" className="secondary" onClick={printTrainingNotes}>
             Print Notes
           </button>
@@ -2120,9 +2127,15 @@ export default function Profile() {
           <button type="button" className="secondary" onClick={copyMasterTrainingNotes}>
             Copy Full Playbook
           </button>
-          <button type="button" className="secondary" onClick={downloadMasterTrainingNotes}>
-            Download Full Playbook
-          </button>
+          <DownloadMenu
+            label="Download Full Playbook"
+            options={[
+              { value: "txt", label: "Download .txt", onClick: () => exportMasterTrainingNotes("txt") },
+              { value: "doc", label: "Download .doc (Word)", onClick: () => exportMasterTrainingNotes("doc") },
+              { value: "html", label: "Download .html", onClick: () => exportMasterTrainingNotes("html") },
+              { value: "pdf", label: "Export PDF", onClick: () => exportMasterTrainingNotes("pdf") },
+            ]}
+          />
           <button type="button" className="secondary" onClick={printMasterTrainingNotes}>
             Print Full Playbook
           </button>
@@ -2267,28 +2280,29 @@ export default function Profile() {
         {pwMessage && <div className="auth-success">{pwMessage}</div>}
 
         <form className="form" onSubmit={handlePasswordChange}>
-          <label>Current password</label>
-          <input
-            type="password"
+          <PasswordInput
+            label="Current password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
 
-          <label>New password</label>
-          <input
-            type="password"
+          <PasswordInput
+            label="New password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
+            autoComplete="new-password"
+            showStrength
           />
 
-          <label>Confirm new password</label>
-          <input
-            type="password"
+          <PasswordInput
+            label="Confirm new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            autoComplete="new-password"
           />
 
           <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>

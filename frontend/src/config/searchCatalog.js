@@ -220,6 +220,7 @@ const ROLE_ITEMS = {
     { label: "Notifications", path: "/notifications" },
     { label: "Hospitals", path: "/patient/hospitals" },
     { label: "Vacancy Feed", path: "/patient/ads" },
+    { label: "Careers", path: "/careers" },
     { label: "My Appointments", path: "/patient/appointments" },
     { label: "Medical Records", path: "/patient/medical-records" },
     { label: "Prescriptions", path: "/patient/prescriptions" },

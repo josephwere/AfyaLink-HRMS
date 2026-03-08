@@ -1541,6 +1541,168 @@ body.auth-route {
   border-color: color-mix(in oklab, var(--app-border) 70%, #a855f7 30%);
 }
 
+.recruitment-cover-preview,
+.recruitment-card-cover {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+}
+
+.recruitment-gallery-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recruitment-gallery-preview img {
+  width: 100%;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+}
+
+.recruitment-card {
+  display: grid;
+  gap: 12px;
+}
+
+.recruitment-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.recruitment-card-head h4 {
+  margin: 0;
+}
+
+.recruitment-card-head p {
+  margin: 4px 0 0;
+}
+
+.recruitment-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recruitment-meta-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--app-surface) 92%, #ffffff 8%);
+}
+
+.recruitment-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recruitment-analytics-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.recruitment-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.recruitment-source-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 92%, #0ea5e9 8%);
+}
+
+.recruitment-source-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.recruitment-source-top h4 {
+  margin: 0;
+}
+
+.recruitment-source-top p {
+  margin: 4px 0 0;
+}
+
+.recruitment-source-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recruitment-source-metrics div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 88%, #ffffff 12%);
+}
+
+.recruitment-source-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.recruitment-source-bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.recruitment-source-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--app-surface) 80%, #cbd5e1 20%);
+}
+
+.recruitment-source-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.recruitment-source-bar-intent {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.recruitment-source-bar-convert {
+  background: linear-gradient(90deg, #0ea5e9, #22c55e);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 88%, #0ea5e9 12%);
+  font-size: 12px;
+}
+
 /* =========================
    DASHBOARD LAYOUT
 ========================= */
@@ -2335,6 +2497,63 @@ body.auth-route {
   min-height: 46px;
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  padding-right: 84px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.download-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.download-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  min-width: 170px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.download-menu-list button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.download-menu-copy {
+  font-size: 12px;
+}
+
 .card textarea,
 .card select {
   width: 100%;
@@ -2767,6 +2986,17 @@ body.auth-route {
   border-color: var(--app-border);
 }
 
+[data-theme="dark"] .password-toggle-btn {
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .download-menu-list {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
 [data-theme="dark"] .table.lite th,
 [data-theme="dark"] .table.lite td,
 [data-theme="dark"] .doctor-table th,
@@ -3063,4 +3293,16 @@ body.auth-route {
 [data-theme="dark"] .pill.success {
   background: #0f2e1a;
   color: #86efac;
+}
+
+@media (max-width: 820px) {
+  .recruitment-analytics-head,
+  .recruitment-source-top {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .recruitment-source-metrics {
+    grid-template-columns: 1fr;
+  }
 }

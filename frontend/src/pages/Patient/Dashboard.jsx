@@ -49,7 +49,7 @@ export default function Dashboard() {
         <div className="welcome-actions">
           <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>Billing</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>Profile</button>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function Dashboard() {
             <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>Prescriptions</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>Lab Results</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>Insurance</button>
-            <button className="action-link" type="button" onClick={() => navigate("/patient/ads")}>Vacancy Feed</button>
+            <button className="action-link" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">

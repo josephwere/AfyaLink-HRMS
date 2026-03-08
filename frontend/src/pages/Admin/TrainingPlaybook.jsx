@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import playbookRaw from "../../../docs/role-training-playbook.md?raw";
+import DownloadMenu from "../../components/DownloadMenu";
+import { exportRichTextDocument } from "../../utils/fileExport";
 
 const ROLE_HEADERS = [
   "SUPER_ADMIN",
@@ -70,21 +72,27 @@ export default function TrainingPlaybook() {
     }
   };
 
-  const download = () => {
+  const exportPlaybook = (format) => {
     try {
-      const blob = new Blob([filteredText], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download =
-        roleFilter === "ALL"
-          ? "afyalink-role-training-playbook.md"
-          : `afyalink-training-${roleFilter.toLowerCase()}.md`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setMsg("Playbook downloaded.");
+      const html = filteredText
+        .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+        .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+        .replace(/^# (.*)$/gm, "<h1>$1</h1>")
+        .replace(/^- (.*)$/gm, "<li>$1</li>")
+        .replace(/(<li>.*<\/li>)/gms, "<ul>$1</ul>")
+        .replace(/\n\n/g, "<br/>");
+      exportRichTextDocument({
+        filenameBase:
+          roleFilter === "ALL"
+            ? "afyalink-role-training-playbook"
+            : `afyalink-training-${roleFilter.toLowerCase()}`,
+        format,
+        plainText: filteredText,
+        markdownText: filteredText,
+        htmlBody: html,
+        title: "AfyaLink Training Playbook",
+      });
+      setMsg(format === "pdf" ? "PDF export opened." : `Playbook downloaded as .${format}.`);
     } catch {
       setMsg("Failed to download playbook.");
     }
@@ -144,9 +152,16 @@ export default function TrainingPlaybook() {
             <button type="button" className="secondary" onClick={copy}>
               Copy
             </button>
-            <button type="button" className="secondary" onClick={download}>
-              Download
-            </button>
+            <DownloadMenu
+              label="Download"
+              options={[
+                { value: "txt", label: "Download .txt", onClick: () => exportPlaybook("txt") },
+                { value: "md", label: "Download .md", onClick: () => exportPlaybook("md") },
+                { value: "doc", label: "Download .doc (Word)", onClick: () => exportPlaybook("doc") },
+                { value: "html", label: "Download .html", onClick: () => exportPlaybook("html") },
+                { value: "pdf", label: "Export PDF", onClick: () => exportPlaybook("pdf") },
+              ]}
+            />
             <button type="button" className="secondary" onClick={print}>
               Print
             </button>

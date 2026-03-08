@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import apiFetch from '../../utils/apiFetch';
+import PasswordInput from "../../components/PasswordInput";
 
 export default function Integrations(){
   const [list,setList]=useState([]);
@@ -40,7 +41,7 @@ export default function Integrations(){
         <input placeholder='url' value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))} />
         <select value={form.authType} onChange={e=>setForm(f=>({...f,authType:e.target.value}))}><option value='none'>None</option><option value='apikey'>API Key</option><option value='basic'>Basic</option></select>
         {form.authType==='apikey' && (<input placeholder='apiKey' value={form.apiKey} onChange={e=>setForm(f=>({...f,apiKey:e.target.value}))} />)}
-        {form.authType==='basic' && (<><input placeholder='username' value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} /><input placeholder='password' value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} /></>)}
+        {form.authType==='basic' && (<><input placeholder='username' value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} /><PasswordInput label="" placeholder="password" value={form.password} autoComplete="current-password" onChange={e=>setForm(f=>({...f,password:e.target.value}))} /></>)}
         <div><h4>Retry Policy</h4>
           <label>Attempts</label><input type='number' value={form.retryPolicy.attempts} onChange={e=>setForm(f=>({...f,retryPolicy:{...f.retryPolicy,attempts: Number(e.target.value)}}))} />
           <label>Backoff Type</label><select value={form.retryPolicy.backoffType} onChange={e=>setForm(f=>({...f,retryPolicy:{...f.retryPolicy,backoffType: e.target.value}}))}><option value='exponential'>Exponential</option><option value='fixed'>Fixed</option></select>
