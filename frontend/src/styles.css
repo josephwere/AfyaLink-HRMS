@@ -1329,20 +1329,13 @@ body.auth-route {
   opacity: 0.8;
 }
 
-.ai-panel-backdrop {
-  position: fixed;
-  inset: 0;
-  border: none;
-  background: rgba(15, 23, 42, 0.45);
-  z-index: 39;
-}
-
 .ai-panel {
   position: fixed;
   right: 16px;
   bottom: 88px;
   width: min(520px, calc(100vw - 24px));
   max-height: min(760px, calc(100dvh - 112px));
+  min-height: 320px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: 14px;
@@ -1374,6 +1367,20 @@ body.auth-route {
   z-index: 2;
 }
 
+.ai-header-main {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .ai-panel-head h3 {
   margin: 0;
   font-size: 16px;
@@ -1392,6 +1399,8 @@ body.auth-route {
   flex: 1 1 auto;
   min-height: 0;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .ai-status-card {
@@ -1413,6 +1422,45 @@ body.auth-route {
   align-content: start;
 }
 
+.ai-kpi small {
+  color: var(--app-text-muted);
+}
+
+.ai-kpi-ok {
+  border-color: color-mix(in oklab, var(--app-border) 62%, #10b981 38%);
+}
+
+.ai-kpi-caution {
+  border-color: color-mix(in oklab, var(--app-border) 62%, #f59e0b 38%);
+}
+
+.ai-kpi-risk {
+  border-color: color-mix(in oklab, var(--app-border) 62%, #ef4444 38%);
+}
+
+.ai-progress {
+  width: 100%;
+  height: 8px;
+  background: color-mix(in oklab, var(--app-surface-2, #e5e7eb) 82%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ai-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+}
+
+.ai-kpi-caution .ai-progress span {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.ai-kpi-risk .ai-progress span {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
 .ai-kpi strong {
   font-size: 14px;
   line-height: 1.35;
@@ -1425,8 +1473,72 @@ body.auth-route {
   margin-top: 8px;
 }
 
+.ai-compact-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-compact {
+  padding: 8px 10px;
+  font-size: 12px;
+  min-height: auto;
+}
+
 .ai-response-card {
   border-color: color-mix(in oklab, var(--app-border) 72%, #0ea5e9 28%);
+}
+
+.ai-tip-card p {
+  margin: 6px 0 0;
+}
+
+.ai-history-card {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-history-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ai-history-item {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: color-mix(in oklab, var(--app-surface) 88%, #ffffff 12%);
+}
+
+.ai-history-item strong,
+.ai-history-item p,
+.ai-history-item small {
+  display: block;
+}
+
+.ai-history-item p {
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+
+.ai-history-item small {
+  color: var(--app-text-muted);
+}
+
+.ai-history-summary {
+  border-color: color-mix(in oklab, var(--app-border) 70%, #0ea5e9 30%);
+}
+
+.ai-history-advice {
+  border-color: color-mix(in oklab, var(--app-border) 70%, #10b981 30%);
+}
+
+.ai-history-chat {
+  border-color: color-mix(in oklab, var(--app-border) 70%, #a855f7 30%);
 }
 
 /* =========================
@@ -1773,16 +1885,23 @@ body.auth-route {
     width: auto;
     bottom: max(10px, env(safe-area-inset-bottom));
     top: 64px;
-    max-height: none;
-    height: auto;
+    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 74px - env(safe-area-inset-bottom));
     border-radius: 12px;
   }
   .ai-panel-head {
     padding: 10px 12px;
   }
+  .ai-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .ai-panel-body {
     padding: 10px;
     gap: 8px;
+  }
+  .ai-compact-actions {
+    align-items: stretch;
   }
   .ai-health-grid {
     grid-template-columns: 1fr;

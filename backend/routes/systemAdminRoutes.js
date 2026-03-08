@@ -14,6 +14,12 @@ import {
   deleteAbacTestCase,
   runAbacTestCase,
   runAllAbacTestCases,
+  listGovernmentHospitalRegistry,
+  createGovernmentHospitalRegistryEntry,
+  importGovernmentHospitalRegistry,
+  getHospitalVerificationReviewQueue,
+  reviewHospitalVerification,
+  streamHospitalVerificationDocument,
 } from "../controllers/systemAdminController.js";
 
 const router = express.Router();
@@ -114,6 +120,48 @@ router.post(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
   runAllAbacTestCases
+);
+
+router.get(
+  "/government-hospitals",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  listGovernmentHospitalRegistry
+);
+
+router.post(
+  "/government-hospitals",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  createGovernmentHospitalRegistryEntry
+);
+
+router.post(
+  "/government-hospitals/import",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  importGovernmentHospitalRegistry
+);
+
+router.get(
+  "/hospital-verification/review-queue",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getHospitalVerificationReviewQueue
+);
+
+router.patch(
+  "/hospital-verification/:id/review",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  reviewHospitalVerification
+);
+
+router.get(
+  "/hospital-verification/:id/documents/:documentType",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  streamHospitalVerificationDocument
 );
 
 export default router;

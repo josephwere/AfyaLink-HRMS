@@ -5,6 +5,14 @@ const hospitalSchema = new mongoose.Schema(
     /* ================= CORE ================= */
     name: { type: String, required: true },
     code: { type: String, unique: true, index: true },
+    address: { type: String, trim: true, default: "" },
+    contact: { type: String, trim: true, default: "" },
+    type: {
+      type: String,
+      enum: ["PRIVATE", "PUBLIC", "NGO"],
+      default: "PRIVATE",
+      index: true,
+    },
 
     /* ================= PLAN ================= */
     plan: {
@@ -87,6 +95,106 @@ const hospitalSchema = new mongoose.Schema(
 
     /* ================= SOFT DELETE ================= */
     active: { type: Boolean, default: true },
+
+    verification: {
+      status: {
+        type: String,
+        enum: ["UNVERIFIED", "REVIEW_REQUIRED", "VERIFIED", "REJECTED", "EXPIRED"],
+        default: "UNVERIFIED",
+        index: true,
+      },
+      registryHospital: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "GovernmentHospitalRegistry",
+        default: null,
+      },
+      registrationNumber: {
+        type: String,
+        trim: true,
+        default: "",
+        index: true,
+      },
+      approvalDate: Date,
+      verifiedAt: Date,
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      expiresAt: Date,
+      nextReverificationAt: Date,
+      source: {
+        type: String,
+        trim: true,
+        default: "GOVERNMENT_REGISTRY",
+      },
+      badgeLabel: {
+        type: String,
+        trim: true,
+        default: "Government Approved",
+      },
+      publicVisible: { type: Boolean, default: false, index: true },
+      lastRegistryCheckAt: Date,
+      lastRegistryCheckResult: { type: String, trim: true, default: "" },
+      suspiciousSignals: { type: [String], default: [] },
+      reviewNotes: { type: String, trim: true, default: "" },
+    },
+
+    verificationDocuments: {
+      registrationCertificate: {
+        originalName: { type: String, trim: true, default: "" },
+        mimeType: { type: String, trim: true, default: "" },
+        sizeBytes: { type: Number, default: 0 },
+        sha256: { type: String, trim: true, default: "" },
+        storagePath: { type: String, trim: true, default: "" },
+        uploadedAt: Date,
+        validationStatus: {
+          type: String,
+          enum: ["MISSING", "AUTO_VALID", "REVIEW_REQUIRED"],
+          default: "MISSING",
+        },
+      },
+      taxRegistration: {
+        originalName: { type: String, trim: true, default: "" },
+        mimeType: { type: String, trim: true, default: "" },
+        sizeBytes: { type: Number, default: 0 },
+        sha256: { type: String, trim: true, default: "" },
+        storagePath: { type: String, trim: true, default: "" },
+        uploadedAt: Date,
+        validationStatus: {
+          type: String,
+          enum: ["MISSING", "AUTO_VALID", "REVIEW_REQUIRED"],
+          default: "MISSING",
+        },
+      },
+      proofOfAddress: {
+        originalName: { type: String, trim: true, default: "" },
+        mimeType: { type: String, trim: true, default: "" },
+        sizeBytes: { type: Number, default: 0 },
+        sha256: { type: String, trim: true, default: "" },
+        storagePath: { type: String, trim: true, default: "" },
+        uploadedAt: Date,
+        validationStatus: {
+          type: String,
+          enum: ["MISSING", "AUTO_VALID", "REVIEW_REQUIRED"],
+          default: "MISSING",
+        },
+      },
+      representativeId: {
+        originalName: { type: String, trim: true, default: "" },
+        mimeType: { type: String, trim: true, default: "" },
+        sizeBytes: { type: Number, default: 0 },
+        sha256: { type: String, trim: true, default: "" },
+        storagePath: { type: String, trim: true, default: "" },
+        uploadedAt: Date,
+        validationStatus: {
+          type: String,
+          enum: ["MISSING", "AUTO_VALID", "REVIEW_REQUIRED"],
+          default: "MISSING",
+        },
+      },
+    },
+
+    securityControls: {
+      requireTwoFactorForAdmins: { type: Boolean, default: true },
+      suspiciousRegistrationScore: { type: Number, default: 0 },
+    },
 
     /* ================= LOCATION (PATIENT DISCOVERY) ================= */
     location: {
@@ -180,6 +288,8 @@ const hospitalSchema = new mongoose.Schema(
 hospitalSchema.index({ active: 1, createdAt: -1 });
 hospitalSchema.index({ name: 1 });
 hospitalSchema.index({ "location.lat": 1, "location.lng": 1 });
+hospitalSchema.index({ "verification.registrationNumber": 1 }, { unique: true, sparse: true });
+hospitalSchema.index({ "verification.status": 1, active: 1, createdAt: -1 });
 
 /* ======================================================
    🧠 HOSPITAL ONBOARDING DEFAULTS (PLAN-BASED, SAFE)

@@ -16,6 +16,11 @@ export const registerHospitalAdmin = async (req, res) => {
 
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) return res.status(404).json({ msg: "Hospital not found" });
+    if (hospital.verification?.status !== "VERIFIED") {
+      return res.status(400).json({
+        msg: "Hospital must be government verified before a hospital admin can be assigned.",
+      });
+    }
 
     // Create hospital admin
     const admin = await User.create({
@@ -138,6 +143,7 @@ export const getHospitals = async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const q = String(req.query.q || "").trim();
     const withoutAdmin = String(req.query.withoutAdmin || "").toLowerCase() === "true";
+    const verified = String(req.query.verified || "").toLowerCase();
 
     const filter = {};
     if (q) {
@@ -158,6 +164,8 @@ export const getHospitals = async (req, res) => {
         filter.$or = noAdminsClauses;
       }
     }
+    if (verified === "true") filter["verification.status"] = "VERIFIED";
+    if (verified === "false") filter["verification.status"] = { $ne: "VERIFIED" };
 
     const [rows, total] = await Promise.all([
       Hospital.find(filter)
@@ -178,6 +186,14 @@ export const getHospitals = async (req, res) => {
       const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
       return {
         ...h,
+        verificationSummary: {
+          status: h?.verification?.status || "UNVERIFIED",
+          registrationNumber: h?.verification?.registrationNumber || "",
+          approvalDate: h?.verification?.approvalDate || null,
+          expiresAt: h?.verification?.expiresAt || null,
+          publicVisible: Boolean(h?.verification?.publicVisible),
+          badgeLabel: h?.verification?.badgeLabel || "Government Approved",
+        },
         subscriptionState: {
           status,
           trialEndsAt,

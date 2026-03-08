@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { useAuth } from "../utils/auth";
 import {
   getAssistantAdvice,
   getAssistantContext,
@@ -22,10 +24,12 @@ function parseNumber(value) {
 }
 
 export default function FloatingAI() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { settings } = useSystemSettings();
   const ai = settings?.ai;
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [context, setContext] = useState(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [adviceBusy, setAdviceBusy] = useState(false);
@@ -42,16 +46,20 @@ export default function FloatingAI() {
   const [notes, setNotes] = useState("");
   const [chatPrompt, setChatPrompt] = useState("");
   const [chatAnswer, setChatAnswer] = useState("");
-  const [heightCm, setHeightCm] = useState("");
-  const [weightKg, setWeightKg] = useState("");
+  const [heightCm, setHeightCm] = useState("170");
+  const [weightKg, setWeightKg] = useState("70");
   const [dictationField, setDictationField] = useState("");
   const [isDictating, setIsDictating] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [chatExpanded, setChatExpanded] = useState(false);
 
   const recognitionRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
-  const greeting = ai?.greeting || "Ask AI";
+  const greeting = ai?.greeting || "Assistant";
+
+  const role = String(user?.role || "").toUpperCase();
 
   useEffect(() => {
     if (!open) return;
@@ -97,6 +105,63 @@ export default function FloatingAI() {
     const liters = Math.max(1.5, Math.min(4.5, (w * 0.033))).toFixed(1);
     return `Suggested water target: ~${liters} L/day`;
   }, [weightKg]);
+
+  const hydrationLiters = useMemo(() => {
+    const w = parseNumber(weightKg);
+    if (!w || w <= 0) return null;
+    return Number(Math.max(1.5, Math.min(4.5, w * 0.033)).toFixed(1));
+  }, [weightKg]);
+
+  const bmiStatus = useMemo(() => {
+    if (!bmi) return { label: "—", tone: "neutral", percent: 0, tip: "BMI will appear after height and weight are filled." };
+    if (bmi < 18.5) return { label: "Low", tone: "caution", percent: 35, tip: "BMI is below the normal range." };
+    if (bmi <= 24.9) return { label: "Normal", tone: "ok", percent: 68, tip: "BMI is in the normal range." };
+    if (bmi <= 29.9) return { label: "High", tone: "caution", percent: 82, tip: "BMI is above the normal range." };
+    return { label: "Critical", tone: "risk", percent: 100, tip: "BMI is well above the normal range." };
+  }, [bmi]);
+
+  const vitalsRisk = useMemo(() => {
+    const t = parseNumber(temperatureC);
+    const o = parseNumber(spo2);
+    if ((o && o < 92) || (t && t >= 39)) {
+      return { label: "Critical", tone: "risk", percent: 100, tip: "Low oxygen or high fever needs urgent review." };
+    }
+    if ((o && o < 95) || (t && t >= 37.8)) {
+      return { label: "Caution", tone: "caution", percent: 68, tip: "Vitals are outside the normal range." };
+    }
+    return { label: "Stable", tone: "ok", percent: 36, tip: "Current vitals look stable." };
+  }, [temperatureC, spo2]);
+
+  const hydrationStatus = useMemo(() => {
+    if (!hydrationLiters) {
+      return { label: "—", tone: "neutral", percent: 0, tip: "Add weight to estimate daily water intake." };
+    }
+    const percent = Math.min(100, Math.round((hydrationLiters / 4.5) * 100));
+    return { label: `${hydrationLiters} L/day`, tone: "ok", percent, tip: "Daily water estimate based on body weight." };
+  }, [hydrationLiters]);
+
+  const contextTip = useMemo(() => {
+    if (!bmi) return "Enter your height and weight to unlock BMI and hydration guidance.";
+    if (vitalsRisk.label === "Critical") return "Your vitals suggest urgent attention. Contact a clinician now.";
+    if (bmiStatus.label === "Normal") return "Your BMI is in normal range. Maintain your current weight and hydration.";
+    if (bmiStatus.label === "Low") return "Your BMI is below normal. Consider a clinician review if weight loss is unplanned.";
+    if (bmiStatus.label === "High") return "Your BMI is above normal. Review nutrition, activity, and follow-up advice.";
+    return "Use symptoms, vitals, and profile details together for better AI guidance.";
+  }, [bmi, bmiStatus.label, vitalsRisk.label]);
+
+  const appointmentPath = useMemo(() => {
+    if (role === "PATIENT") return "/patient/appointments";
+    if (role === "DOCTOR") return "/doctor/appointments";
+    if (role === "RECEPTIONIST") return "/receptionist/booking-desk";
+    return "/notifications";
+  }, [role]);
+
+  const calendarPath = useMemo(() => {
+    if (role === "PATIENT") return "/patient";
+    if (role === "DOCTOR") return "/doctor/schedule";
+    if (role === "RECEPTIONIST") return "/receptionist/booking-desk";
+    return "/profile";
+  }, [role]);
 
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -179,6 +244,15 @@ export default function FloatingAI() {
     setSpeakerOn(false);
   };
 
+  const pushHistory = (kind, title, content) => {
+    const text = String(content || "").trim();
+    if (!text) return;
+    setHistory((prev) => [
+      { id: `${kind}-${Date.now()}`, kind, title, content: text, createdAt: new Date().toISOString() },
+      ...prev,
+    ].slice(0, 12));
+  };
+
   const runAdvice = async () => {
     setAdviceBusy(true);
     setMsg("");
@@ -192,6 +266,17 @@ export default function FloatingAI() {
       };
       const out = await getAssistantAdvice(payload);
       setAdvice(out?.advice || null);
+      pushHistory(
+        "advice",
+        "Personal Advice",
+        [
+          ...(out?.advice?.alerts || []),
+          ...(out?.advice?.recommendations || []),
+          out?.advice?.disclaimer || "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
     } catch (err) {
       setMsg(err?.message || "Unable to get assistant advice");
     } finally {
@@ -230,6 +315,7 @@ export default function FloatingAI() {
         pageContext,
       });
       setChatAnswer(out?.answer || "");
+      pushHistory("chat", chatPrompt || "Ask AI", out?.answer || "");
     } catch (err) {
       setMsg(err?.message || "Failed to get assistant answer");
     } finally {
@@ -244,6 +330,7 @@ export default function FloatingAI() {
       const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
       const out = await summarizeAssistantPage({ pageContext });
       setChatAnswer(out?.summary || "");
+      pushHistory("summary", "Page Summary", out?.summary || "");
     } catch (err) {
       setMsg(err?.message || "Failed to summarize page");
     } finally {
@@ -253,26 +340,93 @@ export default function FloatingAI() {
 
   const busy = loadingContext || adviceBusy || chatBusy || summaryBusy || saveBusy;
 
+  const exportHealthReport = () => {
+    if (typeof window === "undefined") return;
+    const report = `
+${aiName} Personal Assistant
+Status: ${reminderText}
+
+BMI: ${bmi || "—"}
+Hydration: ${hydrationStatus.label}
+Vitals Risk: ${vitalsRisk.label}
+
+Symptoms: ${symptoms || "—"}
+Temperature: ${temperatureC || "—"}
+SpO2: ${spo2 || "—"}
+Height: ${heightCm || "170"}
+Weight: ${weightKg || "70"}
+
+Conditions: ${conditionsInput || "—"}
+Medications: ${medicationsInput || "—"}
+Notes: ${notes || "—"}
+
+Latest Output:
+${chatAnswer || advice?.recommendations?.join("; ") || "—"}
+`.trim();
+    const popup = window.open("", "_blank", "width=900,height=700");
+    if (!popup) {
+      setMsg("Pop-up blocked. Allow pop-ups to export the report as PDF.");
+      return;
+    }
+    popup.document.write(`<pre style="font:14px/1.6 system-ui;padding:24px;white-space:pre-wrap;">${report}</pre>`);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  };
+
+  const copySummary = async () => {
+    const text = chatAnswer || history[0]?.content || advice?.recommendations?.join("\n") || "";
+    if (!text) {
+      setMsg("Nothing to copy yet.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setMsg("Summary copied.");
+    } catch {
+      setMsg("Could not copy summary.");
+    }
+  };
+
   return (
     <>
       <button
         type="button"
         className="ai-float"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((prev) => !prev)}
         title={aiName}
       >
         <span className="ai-float-badge">{aiName}</span>
-        <span className="ai-float-sub">{greeting}</span>
+        <span className="ai-float-sub">{open ? "Hide" : greeting}</span>
       </button>
 
       {open && (
         <>
-          <button type="button" className="ai-panel-backdrop" onClick={() => setOpen(false)} />
           <aside className="ai-panel premium" role="dialog" aria-label={`${aiName} assistant`}>
             <div className="ai-panel-head">
-              <div>
-                <h3>{aiName} Personal Assistant</h3>
-                <p className="muted">{reminderText}</p>
+              <div className="ai-header-main">
+                <div>
+                  <h3>{aiName} Personal Assistant</h3>
+                  <p className="muted">{reminderText}</p>
+                </div>
+                <div className="ai-header-actions">
+                  <button type="button" className="btn-secondary" onClick={() => navigate(appointmentPath)}>
+                    Add Appointment
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => navigate(calendarPath)}>
+                    View Calendar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => setChatExpanded((prev) => !prev)}
+                  >
+                    {chatExpanded ? "Hide Ask" : "Ask"}
+                  </button>
+                  <button type="button" className="icon-btn" onClick={() => navigate("/profile")} aria-label="Assistant settings">
+                    ⚙
+                  </button>
+                </div>
               </div>
               <button type="button" className="icon-btn" onClick={() => setOpen(false)} aria-label="Close assistant">
                 ×
@@ -300,26 +454,29 @@ export default function FloatingAI() {
               )}
 
               <div className="ai-health-grid">
-                <div className="card ai-kpi">
-                  <span className="muted">BMI</span>
+                <div className={`card ai-kpi ai-kpi-${bmiStatus.tone}`} title={bmiStatus.tip}>
+                  <span className="muted">⚖ BMI</span>
                   <strong>{bmi || "—"}</strong>
+                  <small>{bmiStatus.label}</small>
+                  <div className="ai-progress"><span style={{ width: `${bmiStatus.percent}%` }} /></div>
                 </div>
-                <div className="card ai-kpi">
-                  <span className="muted">Hydration</span>
-                  <strong>{hydrationHint}</strong>
+                <div className={`card ai-kpi ai-kpi-${hydrationStatus.tone}`} title={hydrationStatus.tip}>
+                  <span className="muted">💧 Hydration</span>
+                  <strong>{hydrationStatus.label}</strong>
+                  <small>{hydrationHint}</small>
+                  <div className="ai-progress"><span style={{ width: `${hydrationStatus.percent}%` }} /></div>
                 </div>
-                <div className="card ai-kpi">
-                  <span className="muted">Vitals Risk</span>
-                  <strong>
-                    {(() => {
-                      const t = parseNumber(temperatureC);
-                      const o = parseNumber(spo2);
-                      if ((o && o < 92) || (t && t >= 39)) return "High";
-                      if ((o && o < 95) || (t && t >= 37.8)) return "Watch";
-                      return "Stable";
-                    })()}
-                  </strong>
+                <div className={`card ai-kpi ai-kpi-${vitalsRisk.tone}`} title={vitalsRisk.tip}>
+                  <span className="muted">❤ Vitals Risk</span>
+                  <strong>{vitalsRisk.label}</strong>
+                  <small>{vitalsRisk.tip}</small>
+                  <div className="ai-progress"><span style={{ width: `${vitalsRisk.percent}%` }} /></div>
                 </div>
+              </div>
+
+              <div className="card ai-tip-card">
+                <strong>AI Tip</strong>
+                <p className="muted">{contextTip}</p>
               </div>
 
               <div className="card form">
@@ -328,29 +485,30 @@ export default function FloatingAI() {
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   placeholder="fever, cough, headache"
+                  title="Use commas to separate symptoms or use voice input."
                 />
                 <div className="ai-inline-actions">
                   <button type="button" className="btn-secondary" onClick={() => startDictation("symptoms")} disabled={!supportsRecognition || busy}>
-                    Mic: Fill Symptoms
+                    🎤 Fill Symptoms
                   </button>
                 </div>
                 <div className="row-actions">
                   <div>
-                    <label>Temperature (C)</label>
-                    <input value={temperatureC} onChange={(e) => setTemperatureC(e.target.value)} />
+                    <label title="Normal adult temperature is about 36.1°C to 37.2°C.">Temperature (°C)</label>
+                    <input value={temperatureC} onChange={(e) => setTemperatureC(e.target.value)} placeholder="36.8" />
                   </div>
                   <div>
-                    <label>SpO2 (%)</label>
-                    <input value={spo2} onChange={(e) => setSpo2(e.target.value)} />
+                    <label title="Normal SpO2 is usually 95% to 100%.">SpO2 (%)</label>
+                    <input value={spo2} onChange={(e) => setSpo2(e.target.value)} placeholder="98" />
                   </div>
                 </div>
                 <div className="row-actions">
                   <div>
-                    <label>Height (cm)</label>
+                    <label title="Used for BMI calculation.">Height (cm)</label>
                     <input value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="170" />
                   </div>
                   <div>
-                    <label>Weight (kg)</label>
+                    <label title="Used for BMI and hydration guidance.">Weight (kg)</label>
                     <input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="70" />
                   </div>
                 </div>
@@ -384,27 +542,48 @@ export default function FloatingAI() {
               )}
 
               <div className="card form">
-                <h4>Ask AI</h4>
-                <label>Question</label>
-                <textarea
-                  rows={3}
-                  value={chatPrompt}
-                  onChange={(e) => setChatPrompt(e.target.value)}
-                  placeholder="Ask anything about this page or your workflow..."
-                />
-                <div className="ai-inline-actions">
-                  <button type="button" className="btn-secondary" onClick={() => startDictation("question")} disabled={!supportsRecognition || busy}>
-                    Mic: Fill Question
+                <div className="ai-compact-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => setChatExpanded((prev) => !prev)}
+                  >
+                    {chatExpanded ? "Hide Ask" : "Ask"}
+                  </button>
+                  <button type="button" className="btn-secondary btn-compact" onClick={summarizePage} disabled={busy}>
+                    {summaryBusy ? "..." : "Summary"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={copySummary}
+                    disabled={!chatAnswer && !history.length && !advice}
+                  >
+                    Copy
+                  </button>
+                  <button type="button" className="btn-secondary btn-compact" onClick={exportHealthReport}>
+                    PDF
                   </button>
                 </div>
-                <div className="row-actions">
-                  <button type="button" className="btn-primary" onClick={askAssistant} disabled={busy || !chatPrompt.trim()}>
-                    {chatBusy ? "Thinking..." : "Ask AI"}
-                  </button>
-                  <button type="button" className="btn-secondary" onClick={summarizePage} disabled={busy}>
-                    {summaryBusy ? "Summarizing..." : "Summarize This Page"}
-                  </button>
-                </div>
+                {chatExpanded ? (
+                  <>
+                    <label>Question</label>
+                    <textarea
+                      rows={3}
+                      value={chatPrompt}
+                      onChange={(e) => setChatPrompt(e.target.value)}
+                      placeholder="Ask anything about your health or this page..."
+                    />
+                    <div className="ai-inline-actions">
+                      <button type="button" className="btn-secondary btn-compact" onClick={() => startDictation("question")} disabled={!supportsRecognition || busy}>
+                        🎤 Fill Question
+                      </button>
+                      <button type="button" className="btn-primary btn-compact" onClick={askAssistant} disabled={busy || !chatPrompt.trim()}>
+                        {chatBusy ? "Thinking..." : "Send"}
+                      </button>
+                    </div>
+                  </>
+                ) : null}
                 {chatAnswer && (
                   <div className="card ai-response-card">
                     <h4>Assistant Response</h4>
@@ -416,6 +595,19 @@ export default function FloatingAI() {
                     </div>
                   </div>
                 )}
+                <div className="card ai-history-card">
+                  <h4>Recent AI Interactions</h4>
+                  <div className="ai-history-list">
+                    {history.map((entry) => (
+                      <div key={entry.id} className={`ai-history-item ai-history-${entry.kind}`}>
+                        <strong>{entry.title}</strong>
+                        <p>{entry.content}</p>
+                        <small>{new Date(entry.createdAt).toLocaleTimeString()}</small>
+                      </div>
+                    ))}
+                    {!history.length ? <p className="muted">Recent questions, summaries, and advice will appear here.</p> : null}
+                  </div>
+                </div>
               </div>
 
               <div className="card form">

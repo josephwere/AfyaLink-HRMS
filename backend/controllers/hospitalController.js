@@ -1,9 +1,28 @@
 import Hospital from "../models/Hospital.js";
+import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
 import Notification from "../models/Notification.js";
 import { v4 as uuidv4 } from "uuid";
 import { cacheDel } from "../utils/cache.js";
 import { diffObjects } from "../utils/diff.js";
 import { audit } from "../utils/audit.js";
+import crypto from "crypto";
+import fs from "fs/promises";
+import path from "path";
+
+const HOSPITAL_DOC_FIELDS = [
+  "registrationCertificate",
+  "taxRegistration",
+  "proofOfAddress",
+  "representativeId",
+];
+const MAX_HOSPITAL_DOC_BYTES = 8 * 1024 * 1024;
+const ALLOWED_DOC_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
+const hospitalUploadsRoot = path.resolve(process.cwd(), "uploads", "hospital-verification");
 
 const toNumberOrNull = (value) => {
   if (value === undefined || value === null || value === "") return null;
@@ -23,6 +42,132 @@ const haversineKm = (lat1, lng1, lat2, lng2) => {
   return 6371 * c;
 };
 
+const normalizeRegistryText = (value) => String(value || "").trim().toLowerCase();
+
+const coerceBoolean = (value) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return ["1", "true", "yes"].includes(value.toLowerCase());
+  return Boolean(value);
+};
+
+const buildHospitalVerificationSummary = (hospital) => ({
+  status: hospital?.verification?.status || "UNVERIFIED",
+  registrationNumber: hospital?.verification?.registrationNumber || "",
+  approvalDate: hospital?.verification?.approvalDate || null,
+  verifiedAt: hospital?.verification?.verifiedAt || null,
+  expiresAt: hospital?.verification?.expiresAt || null,
+  nextReverificationAt: hospital?.verification?.nextReverificationAt || null,
+  publicVisible: Boolean(hospital?.verification?.publicVisible),
+  badgeLabel: hospital?.verification?.badgeLabel || "Government Approved",
+  suspiciousSignals: hospital?.verification?.suspiciousSignals || [],
+  registryHospital: hospital?.verification?.registryHospital || null,
+});
+
+async function ensureUploadRoot() {
+  await fs.mkdir(hospitalUploadsRoot, { recursive: true });
+}
+
+function assessDocumentRisk(file, registrationNumber, hospitalName) {
+  const signals = [];
+  if (!ALLOWED_DOC_MIME_TYPES.has(file.mimetype)) {
+    signals.push("unsupported-format");
+  }
+  if (file.size > MAX_HOSPITAL_DOC_BYTES) {
+    signals.push("oversized-document");
+  }
+  if (file.size < 20 * 1024) {
+    signals.push("document-too-small");
+  }
+
+  const name = normalizeRegistryText(file.originalname);
+  if (registrationNumber && !name.includes(normalizeRegistryText(registrationNumber).replace(/\s+/g, ""))) {
+    signals.push("registration-number-not-in-file-name");
+  }
+  if (hospitalName) {
+    const hospitalSlug = normalizeRegistryText(hospitalName).split(/\s+/).filter(Boolean).slice(0, 2).join("-");
+    if (hospitalSlug && !name.includes(hospitalSlug.replace(/\s+/g, "-"))) {
+      signals.push("hospital-name-not-in-file-name");
+    }
+  }
+
+  return {
+    validationStatus: signals.length ? "REVIEW_REQUIRED" : "AUTO_VALID",
+    signals,
+  };
+}
+
+async function persistHospitalDocument({ file, hospitalCode, fieldName, registrationNumber, hospitalName }) {
+  const folder = path.join(hospitalUploadsRoot, hospitalCode);
+  await fs.mkdir(folder, { recursive: true });
+  const ext = path.extname(file.originalname || "").toLowerCase() || ".bin";
+  const sha256 = crypto.createHash("sha256").update(file.buffer).digest("hex");
+  const filename = `${fieldName}-${sha256.slice(0, 16)}${ext}`;
+  const storagePath = path.join(folder, filename);
+  await fs.writeFile(storagePath, file.buffer);
+
+  const risk = assessDocumentRisk(file, registrationNumber, hospitalName);
+
+  return {
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    sizeBytes: file.size,
+    sha256,
+    storagePath,
+    uploadedAt: new Date(),
+    validationStatus: risk.validationStatus,
+    suspiciousSignals: risk.signals,
+  };
+}
+
+function collectMissingDocumentFields(files = {}) {
+  return HOSPITAL_DOC_FIELDS.filter((field) => !files?.[field]?.[0]);
+}
+
+async function resolveRegistryHospital({ registryHospitalId, registrationNumber, name, type, country, region, city }) {
+  const registrationKey = String(registrationNumber || "").trim();
+  const query = registryHospitalId
+    ? { _id: registryHospitalId }
+    : { registrationNumber: registrationKey };
+
+  const registryHospital = await GovernmentHospitalRegistry.findOne(query).lean();
+  if (!registryHospital) {
+    return { error: "Registration number is not present in the approved government registry." };
+  }
+
+  if (registryHospital.status !== "ACTIVE") {
+    return { error: "Government registry entry is not active. Registration is blocked." };
+  }
+
+  if (registryHospital.validUntil && new Date(registryHospital.validUntil) < new Date()) {
+    return { error: "Government registry license has expired. Registration is blocked." };
+  }
+
+  const requestedName = normalizeRegistryText(name);
+  const candidateNames = [registryHospital.officialName, ...(registryHospital.aliases || [])]
+    .map(normalizeRegistryText)
+    .filter(Boolean);
+  const nameMatched = !requestedName || candidateNames.some((candidate) => candidate.includes(requestedName) || requestedName.includes(candidate));
+  if (!nameMatched) {
+    return { error: "Hospital name does not match the government registry entry." };
+  }
+
+  if (type && String(type).toUpperCase() !== registryHospital.hospitalType) {
+    return { error: "Hospital type does not match the government registry entry." };
+  }
+
+  if (country && normalizeRegistryText(country) !== normalizeRegistryText(registryHospital.location?.country)) {
+    return { error: "Country does not match the government registry entry." };
+  }
+  if (region && normalizeRegistryText(region) !== normalizeRegistryText(registryHospital.location?.region)) {
+    return { error: "Region does not match the government registry entry." };
+  }
+  if (city && normalizeRegistryText(city) !== normalizeRegistryText(registryHospital.location?.city)) {
+    return { error: "City does not match the government registry entry." };
+  }
+
+  return { registryHospital };
+}
+
 /* ================= CREATE HOSPITAL ================= */
 
 export const createHospital = async (req, res, next) => {
@@ -31,7 +176,12 @@ export const createHospital = async (req, res, next) => {
       name,
       address,
       contact,
+      type,
+      email,
+      phone,
       code,
+      registrationNumber,
+      registryHospitalId,
       country,
       region,
       city,
@@ -40,17 +190,118 @@ export const createHospital = async (req, res, next) => {
       location,
     } = req.body;
 
+    const normalizedName = String(name || "").trim();
+    const normalizedType = String(type || "PRIVATE").trim().toUpperCase();
+    const normalizedRegistrationNumber = String(registrationNumber || "").trim().toUpperCase();
+    const resolvedCountry = String(location?.country || country || "").trim();
+    const resolvedRegion = String(location?.region || region || "").trim();
+    const resolvedCity = String(location?.city || city || "").trim();
+    const missingDocumentFields = collectMissingDocumentFields(req.files || {});
+
+    if (!normalizedName || !normalizedRegistrationNumber || !resolvedCountry || !resolvedRegion || !resolvedCity) {
+      return res.status(400).json({
+        message: "Name, registration number, country, region, and city are required.",
+      });
+    }
+
+    if (missingDocumentFields.length) {
+      return res.status(400).json({
+        message: "All mandatory verification documents must be uploaded.",
+        missingDocuments: missingDocumentFields,
+      });
+    }
+
+    const existingLicense = await Hospital.findOne({
+      "verification.registrationNumber": normalizedRegistrationNumber,
+    })
+      .select("_id name")
+      .lean();
+    if (existingLicense) {
+      return res.status(409).json({
+        message: "A hospital with this registration number already exists.",
+        existingHospital: { _id: existingLicense._id, name: existingLicense.name },
+      });
+    }
+
+    const { registryHospital, error } = await resolveRegistryHospital({
+      registryHospitalId,
+      registrationNumber: normalizedRegistrationNumber,
+      name: normalizedName,
+      type: normalizedType,
+      country: resolvedCountry,
+      region: resolvedRegion,
+      city: resolvedCity,
+    });
+
+    if (error) {
+      return res.status(422).json({ message: error, code: "REGISTRY_VERIFICATION_FAILED" });
+    }
+
+    const hospitalCode = String(code || `H-${uuidv4().slice(0, 8)}`).trim();
+    await ensureUploadRoot();
+
+    const storedDocuments = {};
+    const suspiciousSignals = [];
+    for (const fieldName of HOSPITAL_DOC_FIELDS) {
+      const file = req.files?.[fieldName]?.[0];
+      const stored = await persistHospitalDocument({
+        file,
+        hospitalCode,
+        fieldName,
+        registrationNumber: normalizedRegistrationNumber,
+        hospitalName: normalizedName,
+      });
+      storedDocuments[fieldName] = stored;
+      suspiciousSignals.push(...(stored.suspiciousSignals || []).map((signal) => `${fieldName}:${signal}`));
+    }
+
+    const verificationStatus = suspiciousSignals.length ? "REVIEW_REQUIRED" : "VERIFIED";
+    const now = new Date();
+    const expiryDate = registryHospital.validUntil ? new Date(registryHospital.validUntil) : null;
+    const nextReverificationAt = expiryDate || new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
     const hospital = await Hospital.create({
-      name,
-      address,
-      contact,
-      code: code || "H-" + uuidv4().slice(0, 8),
+      name: normalizedName,
+      address: String(address || registryHospital.location?.address || "").trim(),
+      contact: String(contact || phone || email || registryHospital.contact?.phone || registryHospital.contact?.email || "").trim(),
+      type: normalizedType,
+      code: hospitalCode,
       location: {
-        country: String(location?.country || country || "").trim(),
-        region: String(location?.region || region || "").trim(),
-        city: String(location?.city || city || "").trim(),
+        country: resolvedCountry,
+        region: resolvedRegion,
+        city: resolvedCity,
         lat: toNumberOrNull(location?.lat ?? lat),
         lng: toNumberOrNull(location?.lng ?? lng),
+      },
+      verification: {
+        status: verificationStatus,
+        registryHospital: registryHospital._id,
+        registrationNumber: normalizedRegistrationNumber,
+        approvalDate: verificationStatus === "VERIFIED" ? now : null,
+        verifiedAt: verificationStatus === "VERIFIED" ? now : null,
+        verifiedBy: verificationStatus === "VERIFIED" ? req.user?._id || null : null,
+        expiresAt: expiryDate,
+        nextReverificationAt,
+        source: registryHospital.source?.name || "GOVERNMENT_REGISTRY",
+        badgeLabel: "Government Approved",
+        publicVisible: verificationStatus === "VERIFIED",
+        lastRegistryCheckAt: now,
+        lastRegistryCheckResult: "MATCHED",
+        suspiciousSignals,
+        reviewNotes:
+          verificationStatus === "REVIEW_REQUIRED"
+            ? "Automated document validation flagged this registration for manual compliance review."
+            : "",
+      },
+      verificationDocuments: {
+        registrationCertificate: storedDocuments.registrationCertificate,
+        taxRegistration: storedDocuments.taxRegistration,
+        proofOfAddress: storedDocuments.proofOfAddress,
+        representativeId: storedDocuments.representativeId,
+      },
+      securityControls: {
+        requireTwoFactorForAdmins: true,
+        suspiciousRegistrationScore: suspiciousSignals.length,
       },
       subscription: {
         paid: false,
@@ -79,20 +330,90 @@ export const createHospital = async (req, res, next) => {
     });
 
     if (req.user?._id) {
-      await Notification.create({
-        title: "Free Trial Started",
-        body: `${hospital.name} has started a 3-month free trial. Premium features are active now.`,
-        user: req.user._id,
-        hospital: hospital._id,
-        category: "SUBSCRIPTION",
-        meta: {
-          type: "TRIAL_STARTED",
-          trialEndsAt: hospital.subscription?.trialEndsAt,
+      await Notification.insertMany([
+        {
+          title: "Hospital Registration Submitted",
+          body:
+            verificationStatus === "VERIFIED"
+              ? `${hospital.name} is now verified against the government registry.`
+              : `${hospital.name} matched the registry but needs manual review before it can go live.`,
+          user: req.user._id,
+          hospital: hospital._id,
+          category: "SYSTEM",
+          meta: {
+            type: "HOSPITAL_REGISTRATION_STATUS",
+            status: verificationStatus,
+            registrationNumber: normalizedRegistrationNumber,
+          },
         },
-      });
+        {
+          title: "Free Trial Started",
+          body: `${hospital.name} has started a 3-month free trial. Premium features are active now.`,
+          user: req.user._id,
+          hospital: hospital._id,
+          category: "SUBSCRIPTION",
+          meta: {
+            type: "TRIAL_STARTED",
+            trialEndsAt: hospital.subscription?.trialEndsAt,
+          },
+        },
+      ]);
     }
 
-    res.json(hospital);
+    await audit({
+      req,
+      action: "CREATE_HOSPITAL",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      metadata: {
+        verificationStatus,
+        registrationNumber: normalizedRegistrationNumber,
+        suspiciousSignals,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      hospital,
+      verification: buildHospitalVerificationSummary(hospital),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const searchGovernmentHospitals = async (req, res, next) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const country = String(req.query.country || "").trim();
+    const region = String(req.query.region || "").trim();
+    const city = String(req.query.city || "").trim();
+    const filter = { status: "ACTIVE" };
+
+    if (country) filter["location.country"] = { $regex: `^${country}$`, $options: "i" };
+    if (region) filter["location.region"] = { $regex: `^${region}$`, $options: "i" };
+    if (city) filter["location.city"] = { $regex: `^${city}$`, $options: "i" };
+    if (q) {
+      filter.$text = { $search: q };
+    }
+
+    const rows = await GovernmentHospitalRegistry.find(filter)
+      .sort(q ? { score: { $meta: "textScore" }, officialName: 1 } : { officialName: 1 })
+      .limit(20)
+      .lean();
+
+    res.json({
+      items: rows.map((row) => ({
+        _id: row._id,
+        officialName: row.officialName,
+        registrationNumber: row.registrationNumber,
+        hospitalType: row.hospitalType,
+        location: row.location || {},
+        contact: row.contact || {},
+        validUntil: row.validUntil || null,
+        source: row.source || {},
+      })),
+    });
   } catch (err) {
     next(err);
   }
@@ -106,6 +427,8 @@ export const listHospitals = async (req, res, next) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const q = (req.query.q || "").trim();
     const active = req.query.active;
+    const verified = req.query.verified;
+    const withoutAdmin = coerceBoolean(req.query.withoutAdmin);
 
     const filter = {};
     if (q) {
@@ -113,10 +436,18 @@ export const listHospitals = async (req, res, next) => {
         { name: { $regex: q, $options: "i" } },
         { code: { $regex: q, $options: "i" } },
         { contact: { $regex: q, $options: "i" } },
+        { "verification.registrationNumber": { $regex: q, $options: "i" } },
       ];
     }
     if (active === "true") filter.active = true;
     if (active === "false") filter.active = false;
+    if (verified === "true") filter["verification.status"] = "VERIFIED";
+    if (verified === "false") {
+      filter["verification.status"] = { $ne: "VERIFIED" };
+    }
+    if (withoutAdmin) {
+      filter.$and = [...(filter.$and || []), { $or: [{ admins: { $exists: false } }, { admins: { $size: 0 } }] }];
+    }
 
     const [rows, total] = await Promise.all([
       Hospital.find(filter)
@@ -136,6 +467,7 @@ export const listHospitals = async (req, res, next) => {
       const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
       return {
         ...h,
+        verificationSummary: buildHospitalVerificationSummary(h),
         subscriptionState: {
           status,
           trialEndsAt,
@@ -229,10 +561,12 @@ export const updateHospital = async (req, res, next) => {
       name,
       address,
       contact,
+      type,
       code,
       active,
       plan,
       subscription,
+      verification,
       country,
       region,
       city,
@@ -251,6 +585,7 @@ export const updateHospital = async (req, res, next) => {
     if (name !== undefined) hospital.name = String(name).trim();
     if (address !== undefined) hospital.address = String(address).trim();
     if (contact !== undefined) hospital.contact = String(contact).trim();
+    if (type !== undefined) hospital.type = String(type).trim().toUpperCase();
     if (code !== undefined) hospital.code = String(code).trim();
 
     if (location || country !== undefined || region !== undefined || city !== undefined || lat !== undefined || lng !== undefined) {
@@ -273,6 +608,31 @@ export const updateHospital = async (req, res, next) => {
     }
     if (active !== undefined) hospital.active = Boolean(active);
     if (plan !== undefined) hospital.plan = plan;
+    if (verification && typeof verification === "object") {
+      hospital.verification = hospital.verification || {};
+      if (verification.status !== undefined) {
+        hospital.verification.status = String(verification.status).trim().toUpperCase();
+      }
+      if (verification.expiresAt !== undefined) {
+        hospital.verification.expiresAt = verification.expiresAt ? new Date(verification.expiresAt) : null;
+      }
+      if (verification.nextReverificationAt !== undefined) {
+        hospital.verification.nextReverificationAt = verification.nextReverificationAt
+          ? new Date(verification.nextReverificationAt)
+          : null;
+      }
+      if (verification.reviewNotes !== undefined) {
+        hospital.verification.reviewNotes = String(verification.reviewNotes || "").trim();
+      }
+      if (verification.publicVisible !== undefined) {
+        hospital.verification.publicVisible = Boolean(verification.publicVisible);
+      }
+      if (verification.status === "VERIFIED") {
+        hospital.verification.verifiedAt = hospital.verification.verifiedAt || new Date();
+        hospital.verification.verifiedBy = req.user?._id || hospital.verification.verifiedBy || null;
+        hospital.verification.approvalDate = hospital.verification.approvalDate || new Date();
+      }
+    }
     if (subscription && typeof subscription === "object") {
       hospital.subscription = hospital.subscription || {};
       if (subscription.status !== undefined) {
@@ -377,7 +737,11 @@ export const listMarketplaceHospitals = async (req, res, next) => {
     const lng = toNumberOrNull(req.query.lng);
     const radiusKm = Math.max(Number(req.query.radiusKm || 100), 1);
 
-    const filter = { active: true };
+    const filter = {
+      active: true,
+      "verification.status": "VERIFIED",
+      "verification.publicVisible": true,
+    };
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
@@ -391,7 +755,7 @@ export const listMarketplaceHospitals = async (req, res, next) => {
     const enableDistanceSort = lat !== null && lng !== null;
 
     const rows = await Hospital.find(filter)
-      .select("name code address contact insuranceProviders patientPaymentMethods subscription location")
+        .select("name code address contact type insuranceProviders patientPaymentMethods subscription location verification")
       .sort(enableDistanceSort ? { createdAt: -1 } : { name: 1 })
       .lean();
 
@@ -417,8 +781,14 @@ export const listMarketplaceHospitals = async (req, res, next) => {
           code: h.code,
           address: h.address,
           contact: h.contact,
+          type: h.type,
           location: h.location || {},
           distanceKm,
+          verification: {
+            registrationNumber: h?.verification?.registrationNumber || "",
+            approvalDate: h?.verification?.approvalDate || null,
+            badgeLabel: h?.verification?.badgeLabel || "Government Approved",
+          },
           subscriptionState: {
             status,
             trialEndsAt,

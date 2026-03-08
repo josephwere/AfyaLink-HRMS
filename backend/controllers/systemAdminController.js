@@ -1,4 +1,5 @@
 import Hospital from "../models/Hospital.js";
+import Branch from "../models/Branch.js";
 import User from "../models/User.js";
 import LeaveRequest from "../models/LeaveRequest.js";
 import OvertimeRequest from "../models/OvertimeRequest.js";
@@ -8,6 +9,9 @@ import AbacPolicyTestCase from "../models/AbacPolicyTestCase.js";
 import { evaluateAbac } from "../utils/abacEngine.js";
 import { getRiskPolicy, upsertRiskPolicy } from "../utils/riskPolicy.js";
 import { logAudit } from "../services/auditService.js";
+import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
+import Notification from "../models/Notification.js";
+import fs from "fs/promises";
 
 export const getSystemAdminMetrics = async (_req, res) => {
   try {
@@ -35,6 +39,201 @@ export const getSystemAdminMetrics = async (_req, res) => {
   } catch (err) {
     console.error("System admin metrics error:", err);
     res.status(500).json({ message: "Failed to load system metrics" });
+  }
+};
+
+export const listGovernmentHospitalRegistry = async (req, res) => {
+  try {
+    const q = String(req.query?.q || "").trim();
+    const status = String(req.query?.status || "").trim().toUpperCase();
+    const filter = {};
+    if (status) filter.status = status;
+    if (q) filter.$text = { $search: q };
+    const items = await GovernmentHospitalRegistry.find(filter)
+      .sort(q ? { score: { $meta: "textScore" }, officialName: 1 } : { createdAt: -1 })
+      .limit(500)
+      .lean();
+    return res.json({ items });
+  } catch (err) {
+    console.error("Government registry list error:", err);
+    return res.status(500).json({ message: "Failed to load government registry" });
+  }
+};
+
+export const createGovernmentHospitalRegistryEntry = async (req, res) => {
+  try {
+    const payload = {
+      officialName: String(req.body?.officialName || "").trim(),
+      registrationNumber: String(req.body?.registrationNumber || "").trim().toUpperCase(),
+      hospitalType: String(req.body?.hospitalType || "PRIVATE").trim().toUpperCase(),
+      status: String(req.body?.status || "ACTIVE").trim().toUpperCase(),
+      aliases: Array.isArray(req.body?.aliases)
+        ? req.body.aliases.map((v) => String(v).trim()).filter(Boolean)
+        : String(req.body?.aliases || "")
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean),
+      location: {
+        country: String(req.body?.location?.country || req.body?.country || "").trim(),
+        region: String(req.body?.location?.region || req.body?.region || "").trim(),
+        city: String(req.body?.location?.city || req.body?.city || "").trim(),
+        address: String(req.body?.location?.address || req.body?.address || "").trim(),
+      },
+      contact: {
+        email: String(req.body?.contact?.email || req.body?.email || "").trim(),
+        phone: String(req.body?.contact?.phone || req.body?.phone || "").trim(),
+      },
+      approvedAt: req.body?.approvedAt ? new Date(req.body.approvedAt) : new Date(),
+      validUntil: req.body?.validUntil ? new Date(req.body.validUntil) : null,
+      source: {
+        name: String(req.body?.source?.name || "Ministry of Health").trim(),
+        referenceUrl: String(req.body?.source?.referenceUrl || "").trim(),
+      },
+      metadata: req.body?.metadata || {},
+    };
+
+    if (!payload.officialName || !payload.registrationNumber || !payload.location.country) {
+      return res.status(400).json({ message: "officialName, registrationNumber and country are required" });
+    }
+
+    const row = await GovernmentHospitalRegistry.create(payload);
+    return res.status(201).json(row);
+  } catch (err) {
+    console.error("Government registry create error:", err);
+    return res.status(500).json({ message: "Failed to create government registry entry" });
+  }
+};
+
+export const importGovernmentHospitalRegistry = async (req, res) => {
+  try {
+    const raw = String(req.body?.bulk || "").trim();
+    if (!raw) return res.status(400).json({ message: "bulk payload is required" });
+
+    let rows = [];
+    if (raw.startsWith("[")) {
+      rows = JSON.parse(raw);
+    } else {
+      rows = raw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [officialName, registrationNumber, hospitalType, country, region, city, validUntil] = line.split(",").map((v) => v.trim());
+          return { officialName, registrationNumber, hospitalType, country, region, city, validUntil };
+        });
+    }
+
+    const created = [];
+    const skipped = [];
+    for (const row of rows) {
+      try {
+        const entry = await GovernmentHospitalRegistry.create({
+          officialName: String(row.officialName || "").trim(),
+          registrationNumber: String(row.registrationNumber || "").trim().toUpperCase(),
+          hospitalType: String(row.hospitalType || "PRIVATE").trim().toUpperCase(),
+          location: {
+            country: String(row.country || row.location?.country || "").trim(),
+            region: String(row.region || row.location?.region || "").trim(),
+            city: String(row.city || row.location?.city || "").trim(),
+            address: String(row.address || row.location?.address || "").trim(),
+          },
+          status: "ACTIVE",
+          validUntil: row.validUntil ? new Date(row.validUntil) : null,
+        });
+        created.push({ _id: entry._id, registrationNumber: entry.registrationNumber });
+      } catch (err) {
+        skipped.push({
+          registrationNumber: row.registrationNumber || "",
+          reason: err.message,
+        });
+      }
+    }
+
+    return res.json({ created, skipped });
+  } catch (err) {
+    console.error("Government registry import error:", err);
+    return res.status(500).json({ message: "Failed to import government registry" });
+  }
+};
+
+export const getHospitalVerificationReviewQueue = async (_req, res) => {
+  try {
+    const [hospitals, branches] = await Promise.all([
+      Hospital.find({ "verification.status": "REVIEW_REQUIRED" })
+        .select("name code location verification verificationDocuments createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+      Branch.find({ "verification.status": "REVIEW_REQUIRED" })
+        .select("name parentHospitalName location verification createdAt hospital")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+    return res.json({ hospitals, branches });
+  } catch (err) {
+    console.error("Verification review queue error:", err);
+    return res.status(500).json({ message: "Failed to load review queue" });
+  }
+};
+
+export const reviewHospitalVerification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const decision = String(req.body?.decision || "").trim().toUpperCase();
+    const reviewNotes = String(req.body?.reviewNotes || "").trim();
+    if (!["APPROVE", "REJECT"].includes(decision)) {
+      return res.status(400).json({ message: "decision must be APPROVE or REJECT" });
+    }
+    const hospital = await Hospital.findById(id);
+    if (!hospital) return res.status(404).json({ message: "Hospital not found" });
+
+    hospital.verification.status = decision === "APPROVE" ? "VERIFIED" : "REJECTED";
+    hospital.verification.reviewNotes = reviewNotes;
+    hospital.verification.publicVisible = decision === "APPROVE";
+    hospital.verification.verifiedAt = decision === "APPROVE" ? new Date() : null;
+    hospital.verification.verifiedBy = decision === "APPROVE" ? req.user?._id || null : null;
+    hospital.verification.approvalDate = decision === "APPROVE" ? new Date() : null;
+    await hospital.save();
+
+    if (hospital.admins?.length) {
+      await Notification.insertMany(
+        hospital.admins.map((adminId) => ({
+          title: decision === "APPROVE" ? "Hospital Verified" : "Hospital Verification Rejected",
+          body:
+            decision === "APPROVE"
+              ? `${hospital.name} is now government approved on AfyaLink.`
+              : `${hospital.name} verification was rejected. Review notes were attached.`,
+          category: "SYSTEM",
+          user: adminId,
+          hospital: hospital._id,
+          meta: {
+            type: "HOSPITAL_REVIEW_DECISION",
+            decision,
+          },
+        }))
+      );
+    }
+
+    return res.json({ success: true, hospital });
+  } catch (err) {
+    console.error("Hospital review error:", err);
+    return res.status(500).json({ message: "Failed to review hospital verification" });
+  }
+};
+
+export const streamHospitalVerificationDocument = async (req, res) => {
+  try {
+    const { id, documentType } = req.params;
+    const hospital = await Hospital.findById(id).lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital not found" });
+    const doc = hospital?.verificationDocuments?.[documentType];
+    if (!doc?.storagePath) return res.status(404).json({ message: "Document not found" });
+    await fs.access(doc.storagePath);
+    res.setHeader("Content-Type", doc.mimeType || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename="${doc.originalName || `${documentType}.bin`}"`);
+    return res.sendFile(doc.storagePath);
+  } catch (err) {
+    console.error("Hospital document stream error:", err);
+    return res.status(500).json({ message: "Failed to open verification document" });
   }
 };
 

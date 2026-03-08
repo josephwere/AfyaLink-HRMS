@@ -118,3 +118,37 @@ export const updateConnectorRuntime = async (connectorId, payload) => {
     body: payload,
   });
 };
+
+export const listGovernmentHospitalRegistry = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.q) query.set("q", params.q);
+  if (params.status) query.set("status", params.status);
+  const qs = query.toString();
+  const res = await apiFetch(`/api/system-admin/government-hospitals${qs ? `?${qs}` : ""}`);
+  return res?.items || [];
+};
+
+export const createGovernmentHospitalRegistryEntry = async (payload) => {
+  return apiFetch("/api/system-admin/government-hospitals", {
+    method: "POST",
+    body: payload,
+  });
+};
+
+export const importGovernmentHospitalRegistry = async (bulk) => {
+  return apiFetch("/api/system-admin/government-hospitals/import", {
+    method: "POST",
+    body: { bulk },
+  });
+};
+
+export const getHospitalVerificationReviewQueue = async () => {
+  return apiFetch("/api/system-admin/hospital-verification/review-queue");
+};
+
+export const reviewHospitalVerification = async (id, payload) => {
+  return apiFetch(`/api/system-admin/hospital-verification/${id}/review`, {
+    method: "PATCH",
+    body: payload,
+  });
+};

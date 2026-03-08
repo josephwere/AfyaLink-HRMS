@@ -211,6 +211,8 @@ export default function SystemAdminDashboard() {
           <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
             {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
           </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/government-hospital-registry")}>Gov Hospital Registry</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/hospital-verification-review")}>Hospital Review Queue</button>
           <button type="button" className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>

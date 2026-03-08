@@ -31,6 +31,7 @@ const shouldLoadBackgroundJobs =
 
 if (shouldLoadBackgroundJobs) {
   await import("./jobs/emergencyCleanup.js");
+  await import("./jobs/hospitalVerificationRecheck.js");
   await import("./workers/notificationWorker.js");
   await import("./workers/workflowSlaWorker.js");
 }

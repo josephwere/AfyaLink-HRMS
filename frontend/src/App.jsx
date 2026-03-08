@@ -147,6 +147,8 @@ import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
 import SystemMigrations from "./pages/SystemAdmin/Migrations";
 import ConnectorSdk from "./pages/SystemAdmin/ConnectorSdk";
 import PharmacyAccessAudit from "./pages/SystemAdmin/PharmacyAccessAudit";
+import GovernmentHospitalRegistryPage from "./pages/SystemAdmin/GovernmentHospitalRegistry";
+import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -1230,6 +1232,22 @@ export default function App() {
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <PharmacyAccessAudit />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/government-hospital-registry"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <GovernmentHospitalRegistryPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/hospital-verification-review"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalVerificationReview />
               </RequireRole>
             }
           />

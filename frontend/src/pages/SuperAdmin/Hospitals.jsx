@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
-import { createHospital, updateHospital } from "../../services/hospitalApi";
+import { createHospital, updateHospital, searchGovernmentHospitals } from "../../services/hospitalApi";
 import {
   createBranch,
   listBranches,
@@ -39,10 +39,26 @@ export default function SuperAdminHospitals() {
 
   const [hospitalForm, setHospitalForm] = useState({
     name: "",
+    type: "PRIVATE",
+    registrationNumber: "",
+    registryHospitalId: "",
     address: "",
-    contact: "",
+    email: "",
+    phone: "",
+    country: "",
+    region: "",
+    city: "",
     code: "",
   });
+  const [hospitalDocs, setHospitalDocs] = useState({
+    registrationCertificate: null,
+    taxRegistration: null,
+    proofOfAddress: null,
+    representativeId: null,
+  });
+  const [registryQuery, setRegistryQuery] = useState("");
+  const [registryMatches, setRegistryMatches] = useState([]);
+  const [registryLoading, setRegistryLoading] = useState(false);
 
   const [adminForm, setAdminForm] = useState({
     name: "",
@@ -114,6 +130,36 @@ export default function SuperAdminHospitals() {
   useEffect(() => {
     loadHospitals();
   }, [query]);
+
+  useEffect(() => {
+    let active = true;
+    const trimmed = registryQuery.trim();
+    if (!trimmed && !hospitalForm.country && !hospitalForm.region && !hospitalForm.city) {
+      setRegistryMatches([]);
+      return undefined;
+    }
+    setRegistryLoading(true);
+    searchGovernmentHospitals({
+      q: trimmed || undefined,
+      country: hospitalForm.country || undefined,
+      region: hospitalForm.region || undefined,
+      city: hospitalForm.city || undefined,
+    })
+      .then((data) => {
+        if (!active) return;
+        setRegistryMatches(coerceList(data));
+      })
+      .catch(() => {
+        if (!active) return;
+        setRegistryMatches([]);
+      })
+      .finally(() => {
+        if (active) setRegistryLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [registryQuery, hospitalForm.country, hospitalForm.region, hospitalForm.city]);
 
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
@@ -208,14 +254,42 @@ export default function SuperAdminHospitals() {
     setLoading(true);
     setMsg(null);
     try {
-      await createHospital(hospitalForm);
-      setMsg("✅ Hospital created");
+      const formData = new FormData();
+      Object.entries(hospitalForm).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && String(value) !== "") {
+          formData.append(key, value);
+        }
+      });
+      Object.entries(hospitalDocs).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+      });
+      const created = await createHospital(formData);
+      setMsg(
+        created?.verification?.status === "VERIFIED"
+          ? "✅ Hospital verified and created"
+          : "⚠️ Hospital created but sent to manual compliance review"
+      );
       setHospitalForm({
         name: "",
+        type: "PRIVATE",
+        registrationNumber: "",
+        registryHospitalId: "",
         address: "",
-        contact: "",
+        email: "",
+        phone: "",
+        country: "",
+        region: "",
+        city: "",
         code: "",
       });
+      setHospitalDocs({
+        registrationCertificate: null,
+        taxRegistration: null,
+        proofOfAddress: null,
+        representativeId: null,
+      });
+      setRegistryQuery("");
+      setRegistryMatches([]);
       await loadHospitals();
     } catch (err) {
       setMsg(err?.message || "Failed to create hospital");
@@ -516,10 +590,64 @@ export default function SuperAdminHospitals() {
         <h3>Create Hospital</h3>
         <form className="card form" onSubmit={submitHospital}>
           <input
+            placeholder="Search approved government registry"
+            value={registryQuery}
+            onChange={(e) => setRegistryQuery(e.target.value)}
+          />
+          {registryLoading ? <p className="muted">Checking approved registry...</p> : null}
+          {registryMatches.length ? (
+            <div className="card" style={{ padding: 12 }}>
+              <strong>Approved Registry Matches</strong>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {registryMatches.map((item) => (
+                  <button
+                    type="button"
+                    key={item._id}
+                    className="btn-secondary"
+                    onClick={() => {
+                      setHospitalForm((prev) => ({
+                        ...prev,
+                        name: item.officialName || prev.name,
+                        type: item.hospitalType || prev.type,
+                        registrationNumber: item.registrationNumber || prev.registrationNumber,
+                        registryHospitalId: item._id,
+                        address: item?.location?.address || prev.address,
+                        country: item?.location?.country || prev.country,
+                        region: item?.location?.region || prev.region,
+                        city: item?.location?.city || prev.city,
+                        email: item?.contact?.email || prev.email,
+                        phone: item?.contact?.phone || prev.phone,
+                      }));
+                    }}
+                  >
+                    {item.officialName} • {item.registrationNumber} • {item.hospitalType}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <input
             placeholder="Hospital name"
             value={hospitalForm.name}
             onChange={(e) =>
               setHospitalForm({ ...hospitalForm, name: e.target.value })
+            }
+            required
+          />
+          <select
+            value={hospitalForm.type}
+            onChange={(e) => setHospitalForm({ ...hospitalForm, type: e.target.value })}
+            required
+          >
+            <option value="PRIVATE">Private</option>
+            <option value="PUBLIC">Public</option>
+            <option value="NGO">NGO</option>
+          </select>
+          <input
+            placeholder="Government registration number"
+            value={hospitalForm.registrationNumber}
+            onChange={(e) =>
+              setHospitalForm({ ...hospitalForm, registrationNumber: e.target.value.toUpperCase() })
             }
             required
           />
@@ -531,11 +659,43 @@ export default function SuperAdminHospitals() {
             }
           />
           <input
-            placeholder="Contact"
-            value={hospitalForm.contact}
+            placeholder="Contact email"
+            type="email"
+            value={hospitalForm.email}
             onChange={(e) =>
-              setHospitalForm({ ...hospitalForm, contact: e.target.value })
+              setHospitalForm({ ...hospitalForm, email: e.target.value })
             }
+          />
+          <input
+            placeholder="Contact phone"
+            value={hospitalForm.phone}
+            onChange={(e) =>
+              setHospitalForm({ ...hospitalForm, phone: e.target.value })
+            }
+          />
+          <input
+            placeholder="Country"
+            value={hospitalForm.country}
+            onChange={(e) =>
+              setHospitalForm({ ...hospitalForm, country: e.target.value })
+            }
+            required
+          />
+          <input
+            placeholder="County / Region"
+            value={hospitalForm.region}
+            onChange={(e) =>
+              setHospitalForm({ ...hospitalForm, region: e.target.value })
+            }
+            required
+          />
+          <input
+            placeholder="City"
+            value={hospitalForm.city}
+            onChange={(e) =>
+              setHospitalForm({ ...hospitalForm, city: e.target.value })
+            }
+            required
           />
           <input
             placeholder="Optional code"
@@ -544,6 +704,53 @@ export default function SuperAdminHospitals() {
               setHospitalForm({ ...hospitalForm, code: e.target.value })
             }
           />
+          <label>
+            Registration Certificate
+            <input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={(e) =>
+                setHospitalDocs({ ...hospitalDocs, registrationCertificate: e.target.files?.[0] || null })
+              }
+              required
+            />
+          </label>
+          <label>
+            Tax Registration / Business License
+            <input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={(e) =>
+                setHospitalDocs({ ...hospitalDocs, taxRegistration: e.target.files?.[0] || null })
+              }
+              required
+            />
+          </label>
+          <label>
+            Proof of Address
+            <input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={(e) =>
+                setHospitalDocs({ ...hospitalDocs, proofOfAddress: e.target.files?.[0] || null })
+              }
+              required
+            />
+          </label>
+          <label>
+            Authorized Representative ID
+            <input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={(e) =>
+                setHospitalDocs({ ...hospitalDocs, representativeId: e.target.files?.[0] || null })
+              }
+              required
+            />
+          </label>
+          <p className="muted">
+            Only hospitals found in the approved government registry can be created. All four verification documents are mandatory.
+          </p>
           <button type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Hospital"}
           </button>
@@ -588,8 +795,12 @@ export default function SuperAdminHospitals() {
           >
             <option value="">Select hospital</option>
             {hospitals.map((h) => (
-              <option key={h._id} value={h._id}>
-                {h.name}
+              <option
+                key={h._id}
+                value={h._id}
+                disabled={h?.verificationSummary?.status !== "VERIFIED"}
+              >
+                {h.name} {h?.verificationSummary?.status === "VERIFIED" ? "• Verified" : "• Not verified"}
               </option>
             ))}
           </select>
@@ -875,6 +1086,7 @@ export default function SuperAdminHospitals() {
                 <th>Address</th>
                 <th>Admins</th>
                 <th>Status</th>
+                <th>Verification</th>
                 <th>Subscription</th>
                 <th>Actions</th>
               </tr>
@@ -958,6 +1170,22 @@ export default function SuperAdminHospitals() {
                       ) : (
                         "Active"
                       )}
+                    </td>
+                    <td>
+                      <div>{h?.verificationSummary?.status || "UNVERIFIED"}</div>
+                      <div className="muted">
+                        {h?.verificationSummary?.registrationNumber || "No registration number"}
+                      </div>
+                      {h?.verificationSummary?.approvalDate ? (
+                        <div className="muted">
+                          Approved: {String(h.verificationSummary.approvalDate).slice(0, 10)}
+                        </div>
+                      ) : null}
+                      {h?.verificationSummary?.status === "REVIEW_REQUIRED" ? (
+                        <div className="muted" style={{ color: "var(--app-warning)" }}>
+                          Manual review required
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       {isEditing ? (
