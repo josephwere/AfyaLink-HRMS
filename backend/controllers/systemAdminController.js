@@ -27,6 +27,7 @@ import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js"
 import Notification from "../models/Notification.js";
 import fs from "fs/promises";
 import { getPaymentSettingsDoc } from "../utils/paymentSettingsStore.js";
+import FREE_API_CATALOG from "../config/freeApiCatalog.js";
 
 const INTEGRATION_HUB_MODULES = [
   {
@@ -339,7 +340,7 @@ export const getIntegrationHubSummary = async (_req, res) => {
       missingModules: modules.filter((row) => row.status === "MISSING").length,
     };
 
-    return res.json({ totals, modules, connectors });
+    return res.json({ totals, modules, connectors, freeApis: FREE_API_CATALOG });
   } catch (err) {
     console.error("Integration hub summary error:", err);
     return res.status(500).json({ message: "Failed to load integration hub summary" });

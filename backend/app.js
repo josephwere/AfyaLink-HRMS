@@ -138,6 +138,7 @@ import pilotOpsRoutes from "./routes/pilotOpsRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import customizationRequestRoutes from "./routes/customizationRequestRoutes.js";
 import staffTransferRoutes from "./routes/staffTransferRoutes.js";
+import geoRoutes from "./routes/geoRoutes.js";
 
 
 
@@ -282,6 +283,7 @@ app.use("/api/patients", patientRoutes);
 app.use("/api/encounters", encounterRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/appointments_admin", appointmentsAdminRoutes);
+app.use("/api/geo", geoRoutes);
 app.use("/api/labs", labRoutes);
 app.use("/api/pharmacy", pharmacyRoutes);
 app.use("/api/beds", bedsRoutes);

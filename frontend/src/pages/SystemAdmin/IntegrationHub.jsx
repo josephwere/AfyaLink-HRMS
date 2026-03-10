@@ -37,6 +37,7 @@ export default function IntegrationHub() {
 
   const modules = Array.isArray(data?.modules) ? data.modules : [];
   const connectors = Array.isArray(data?.connectors) ? data.connectors : [];
+  const freeApis = Array.isArray(data?.freeApis) ? data.freeApis : [];
 
   const topActions = useMemo(
     () => [
@@ -168,6 +169,41 @@ export default function IntegrationHub() {
                 {!connectors.length ? (
                   <tr>
                     <td colSpan={6}>No connectors configured</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Free & Sandbox APIs (Required)</h3>
+        <div className="card">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Provider</th>
+                  <th>Base URL</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {freeApis.flatMap((group) =>
+                  (group.providers || []).map((provider) => (
+                    <tr key={`${group.key}-${provider.name}`}>
+                      <td>{group.label}</td>
+                      <td>{provider.name}</td>
+                      <td className="mono">{provider.baseUrl || "—"}</td>
+                      <td className="muted">{provider.note || "—"}</td>
+                    </tr>
+                  ))
+                )}
+                {!freeApis.length ? (
+                  <tr>
+                    <td colSpan={4}>No free API catalog configured.</td>
                   </tr>
                 ) : null}
               </tbody>
