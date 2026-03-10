@@ -652,6 +652,22 @@ body.auth-route {
   white-space: nowrap;
 }
 
+.transfer-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.transfer-filter select {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 13px;
+}
+
 .search-input {
   flex: 1;
   padding: 8px 12px;
@@ -3301,6 +3317,30 @@ body.auth-route {
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   align-items: end;
+}
+
+.pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .pill-chip {
+  background: var(--app-surface-2);
 }
 
 .pill {

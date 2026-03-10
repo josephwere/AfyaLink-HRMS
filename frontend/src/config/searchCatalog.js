@@ -103,6 +103,7 @@ const ROLE_ITEMS = {
     { label: "Prescriptions", path: "/doctor/prescriptions" },
     { label: "Medical Records", path: "/doctor/medical-records" },
     { label: "Referrals", path: "/doctor/referrals" },
+    { label: "Transfers", path: "/doctor/transfers" },
     { label: "Performance", path: "/doctor/performance" },
     { label: "CME & Certifications", path: "/doctor/cme" },
     { label: "Leave Requests", path: "/doctor/leave" },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { useSearchParams } from "react-router-dom";
@@ -15,35 +15,62 @@ import RequireVerified from "../../components/RequireVerified";
 export default function PaymentsPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const selectedHospitalId =
+  const initialHospitalId =
     searchParams.get("hospitalId") ||
     localStorage.getItem("afyalink_patient_hospital_id") ||
     "";
+  const [hospitalId, setHospitalId] = useState(initialHospitalId);
+  const [hospitalOptions, setHospitalOptions] = useState([]);
 
   const [transactions, setTransactions] = useState([]);
   const [hospitalInfo, setHospitalInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [activeTx, setActiveTx] = useState(null);
+  const [methodMsg, setMethodMsg] = useState("");
+  const [bankInvoice, setBankInvoice] = useState(null);
+  const [processing, setProcessing] = useState(false);
+
+  const isPrivileged =
+    ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(
+      String(user?.role || "")
+    );
 
   useEffect(() => {
     if (user) loadTransactions();
-  }, [user, selectedHospitalId]);
+  }, [user, hospitalId]);
+
+  useEffect(() => {
+    if (!user || !isPrivileged) return;
+    apiFetch("/api/hospitals/marketplace?limit=200")
+      .then((data) => {
+        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        setHospitalOptions(items);
+      })
+      .catch(() => setHospitalOptions([]));
+  }, [user, isPrivileged]);
+
+  useEffect(() => {
+    if (hospitalId) {
+      localStorage.setItem("afyalink_patient_hospital_id", hospitalId);
+    }
+  }, [hospitalId]);
 
   async function loadTransactions() {
     try {
-      const qs = selectedHospitalId
-        ? `?hospitalId=${encodeURIComponent(selectedHospitalId)}`
+      const qs = hospitalId
+        ? `?hospitalId=${encodeURIComponent(hospitalId)}`
         : "";
       const [data, market] = await Promise.all([
         apiFetch(`/api/billing/list${qs}`),
-        selectedHospitalId
+        hospitalId
           ? apiFetch(`/api/hospitals/marketplace?limit=100`)
           : Promise.resolve(null),
       ]);
       const rows = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
       setTransactions(rows);
-      if (selectedHospitalId && Array.isArray(market?.items)) {
-        const byId = market.items.find((h) => String(h._id) === String(selectedHospitalId)) || null;
+      if (hospitalId && Array.isArray(market?.items)) {
+        const byId = market.items.find((h) => String(h._id) === String(hospitalId)) || null;
         setHospitalInfo(byId);
       } else {
         setHospitalInfo(null);
@@ -54,80 +81,119 @@ export default function PaymentsPage() {
   }
 
   /* ===============================
-     STRIPE — CREATE INTENT
+     PAYMENT ROUTER
   =============================== */
-  async function payStripe(tx) {
-    const canPay =
-      tx.workflow?.allowedTransitions?.includes("PAID");
-
+  async function routePayment(method, tx) {
+    const canPay = tx.workflow?.allowedTransitions?.includes("PAID");
     if (!canPay) {
-      setMsg("Payment not allowed at this stage");
+      setMethodMsg("Payment not allowed at this stage");
       return;
     }
-
-    setLoading(true);
-    setMsg("");
-
+    setProcessing(true);
+    setMethodMsg("");
+    setBankInvoice(null);
     try {
-      const data = await apiFetch(
-        "/api/payments/stripe/create-intent",
-        {
-          method: "POST",
-          body: {
-            amount: tx.amount,
-            transactionId: tx._id, // 🔒 hard bind
-          },
+      const payload = {
+        method,
+        amount: tx.amount,
+        currency: tx.currency || "KES",
+        transactionId: tx._id,
+        phone: tx.phone || user?.phone || "",
+        email: user?.email || "",
+        name: user?.name || "",
+        hospitalId: hospitalId || undefined,
+      };
+      const data = await apiFetch("/api/payments/route", {
+        method: "POST",
+        body: payload,
+      });
+      if (method === "stripe") {
+        setMethodMsg(
+          "Stripe Payment Intent created.\nClient Secret:\n" +
+            (data?.data?.clientSecret || data?.clientSecret || "")
+        );
+      } else if (method === "mpesa") {
+        setMethodMsg("M-Pesa STK Push sent. Await confirmation.");
+      } else if (method === "flutterwave" || method === "airtel") {
+        const link = data?.data?.paymentLink || data?.paymentLink;
+        setMethodMsg(link ? `Flutterwave checkout link:\n${link}` : "Flutterwave payment initiated.");
+      } else if (method === "paypal") {
+        const link = data?.data?.approvalLink || data?.approvalLink;
+        setMethodMsg(link ? `PayPal approval link:\n${link}` : "PayPal order created.");
+      } else if (method === "crypto") {
+        const link = data?.data?.hostedUrl || data?.hostedUrl;
+        setMethodMsg(link ? `Crypto checkout link:\n${link}` : "Crypto charge created.");
+      } else if (method === "bank") {
+        const details = data?.data?.details || data?.details || {};
+        const invoice = data?.data?.invoice || data?.invoice || null;
+        const lines = [
+          "Bank transfer instructions:",
+          details.bankName ? `Bank: ${details.bankName}` : null,
+          details.accountName ? `Account Name: ${details.accountName}` : null,
+          details.accountNumber ? `Account No: ${details.accountNumber}` : null,
+          details.branch ? `Branch: ${details.branch}` : null,
+          details.swiftCode ? `Swift: ${details.swiftCode}` : null,
+          details.instructions ? details.instructions : null,
+        ].filter(Boolean);
+        setMethodMsg(lines.join("\n") || "Bank transfer initiated.");
+        if (invoice?.text) {
+          setBankInvoice(invoice);
         }
-      );
-
-      setMsg(
-        "Stripe Payment Intent created.\nClient Secret:\n" +
-          (data?.data?.clientSecret || data?.clientSecret || "")
-      );
+      } else {
+        setMethodMsg("Payment initiated.");
+      }
+      await loadTransactions();
     } catch (err) {
-      setMsg(err.message);
+      setMethodMsg(err.message || "Payment failed.");
     } finally {
-      setLoading(false);
+      setProcessing(false);
     }
   }
 
-  /* ===============================
-     M-PESA — STK PUSH
-  =============================== */
-  async function payMpesa(tx) {
-    const canPay =
-      tx.workflow?.allowedTransitions?.includes("PAID");
+  const methodOptions = useMemo(() => {
+    const phone = String(user?.phone || "");
+    const isKenya = user?.country === "KE" || phone.startsWith("254") || phone.startsWith("+254");
+    const base = [
+      { key: "mpesa", label: "M-Pesa", emoji: "📱", recommended: isKenya },
+      { key: "airtel", label: "Airtel Money", emoji: "📲", recommended: isKenya },
+      { key: "stripe", label: "Card (Stripe)", emoji: "💳" },
+      { key: "bank", label: "Bank Transfer", emoji: "🏦" },
+      { key: "flutterwave", label: "Flutterwave", emoji: "🌍" },
+      { key: "paypal", label: "PayPal", emoji: "🌍", disabled: true },
+      { key: "crypto", label: "Crypto", emoji: "💰", disabled: true },
+    ];
 
-    if (!canPay) {
-      setMsg("Payment not allowed at this stage");
-      return;
+    if (hospitalInfo && !hospitalInfo?.patientPaymentMethods?.length) {
+      return [];
+    }
+    if (!hospitalInfo?.patientPaymentMethods?.length) {
+      return base;
     }
 
-    if (!tx.phone) {
-      setMsg("Missing phone number on transaction");
-      return;
-    }
-
-    setLoading(true);
-    setMsg("");
-
-    try {
-      const data = await apiFetch("/api/payments/mpesa/stk", {
-        method: "POST",
-        body: {
-          amount: tx.amount,
-          phone: tx.phone,
-          transactionId: tx._id, // 🔒 hard bind
-        },
+    const mapped = hospitalInfo.patientPaymentMethods
+      .filter((m) => m.enabled !== false)
+      .map((m) => {
+        const type = String(m.type || "").toLowerCase();
+        const key =
+          type.includes("mpesa") ? "mpesa" :
+          type.includes("stripe") ? "stripe" :
+          type.includes("flutter") ? "flutterwave" :
+          type.includes("card") ? "stripe" :
+          type.includes("bank") ? "bank" :
+          type.includes("paypal") ? "paypal" :
+          type.includes("crypto") ? "crypto" :
+          type.includes("airtel") ? "airtel" : type || "bank";
+        return {
+          key,
+          label: m.label || base.find((b) => b.key === key)?.label || m.type,
+          emoji: base.find((b) => b.key === key)?.emoji || "💳",
+          details: m,
+          recommended: isKenya && ["mpesa", "airtel"].includes(key),
+        };
       });
 
-      setMsg("M-Pesa STK Push sent. Await confirmation.");
-    } catch (err) {
-      setMsg(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+    return mapped.length ? mapped : base;
+  }, [hospitalInfo, user]);
 
   if (!user) return <div>Please log in</div>;
 
@@ -137,9 +203,9 @@ export default function PaymentsPage() {
   return (
     <div className="card premium-card">
       <h2>Payments</h2>
-      {selectedHospitalId && (
+      {hospitalId && (
         <p className="muted">
-          Hospital context: {hospitalInfo?.name || selectedHospitalId}
+          Hospital context: {hospitalInfo?.name || hospitalId}
         </p>
       )}
       {hospitalInfo && (
@@ -158,6 +224,23 @@ export default function PaymentsPage() {
         >
           {msg}
         </pre>
+      )}
+
+      {isPrivileged && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <label>Hospital</label>
+          <select
+            value={hospitalId}
+            onChange={(e) => setHospitalId(e.target.value)}
+          >
+            <option value="">All hospitals</option>
+            {hospitalOptions.map((h) => (
+              <option key={h._id} value={h._id}>
+                {h.name || h.code || h._id}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       <table className="table premium-table">
@@ -196,18 +279,9 @@ export default function PaymentsPage() {
                     <button
                       type="button"
                       disabled={loading || !canPay}
-                      onClick={() => payStripe(tx)}
+                      onClick={() => setActiveTx(tx)}
                     >
-                      Stripe
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={loading || !canPay}
-                      onClick={() => payMpesa(tx)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      M-Pesa
+                      Choose Method
                     </button>
                   </td>
 
@@ -231,6 +305,71 @@ export default function PaymentsPage() {
           )}
         </tbody>
       </table>
+
+      {activeTx && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header-actions">
+            <div>
+              <h3>Choose Payment Method</h3>
+              <p className="muted">Select how you want to pay for this transaction.</p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setActiveTx(null);
+                setMethodMsg("");
+              }}
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid info-grid" style={{ marginTop: 12 }}>
+            {methodOptions.length === 0 ? (
+              <div className="muted">No payment methods enabled for this hospital.</div>
+            ) : (
+              methodOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={`card ${opt.recommended ? "action-pill" : ""}`}
+                  disabled={processing || opt.disabled}
+                  onClick={() => routePayment(opt.key, activeTx)}
+                  style={{ textAlign: "left" }}
+                >
+                  <div style={{ fontWeight: 700 }}>{opt.emoji} {opt.label}</div>
+                  <div className="muted">
+                    {opt.disabled ? "Coming soon" : opt.recommended ? "Recommended" : "Available"}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+          {methodMsg && (
+            <pre style={{ background: "#f3f4f6", padding: 12, whiteSpace: "pre-wrap", marginTop: 12 }}>
+              {methodMsg}
+            </pre>
+          )}
+          {bankInvoice?.text && (
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ marginTop: 8 }}
+              onClick={() => {
+                const blob = new Blob([bankInvoice.text], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = bankInvoice.filename || "bank-transfer-invoice.txt";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Download Bank Invoice
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

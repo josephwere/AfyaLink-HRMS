@@ -46,6 +46,7 @@ import Chatbot from "./pages/AI/Chatbot";
 import NeuroEdgeExtract from "./pages/AI/NeuroEdgeExtract";
 import AIChatWS from "./components/AIChatWS";
 import DoctorAppointments from "./pages/Doctor/Appointments";
+import DoctorTransfers from "./pages/Doctor/Transfers";
 import MySchedule from "./pages/Doctor/MySchedule";
 import MyPatients from "./pages/Doctor/MyPatients";
 import OPDWorkspace from "./pages/Doctor/OPDWorkspace";
@@ -86,6 +87,7 @@ import PatientPrescriptions from "./pages/Patient/Prescriptions";
 import PatientLabResults from "./pages/Patient/LabResults";
 import PatientBilling from "./pages/Patient/Billing";
 import PatientInsurance from "./pages/Patient/Insurance";
+import PatientTransfers from "./pages/Patient/Transfers";
 import PatientFeedback from "./pages/Patient/Feedback";
 import PatientHospitals from "./pages/Patient/Hospitals";
 import PatientAdsFeed from "./pages/Patient/AdsFeed";
@@ -791,6 +793,14 @@ export default function App() {
             element={
               <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
                 <PatientInsurance />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/patient/transfers"
+            element={
+              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PatientTransfers />
               </RequireRole>
             }
           />
@@ -1786,6 +1796,14 @@ export default function App() {
             element={
               <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorAppointments />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/doctor/transfers"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
+                <DoctorTransfers />
               </RequireRole>
             }
           />

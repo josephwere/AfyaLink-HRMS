@@ -17,6 +17,7 @@ import {
   recordChwFieldVisit,
 } from "../../services/chwApi";
 import apiFetch from "../../utils/apiFetch";
+import { listTransfers } from "../../services/transferApi";
 import {
   enqueueOfflineAction,
   listOfflineActions,
@@ -32,6 +33,8 @@ export default function CommunityHealthWorkerDashboard() {
   const [visits, setVisits] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [performance, setPerformance] = useState([]);
+  const [transferAlerts, setTransferAlerts] = useState([]);
+  const [transferError, setTransferError] = useState("");
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -120,18 +123,22 @@ export default function CommunityHealthWorkerDashboard() {
   ], [dash]);
 
   const load = async () => {
-    const [d, h, v, r, p] = await Promise.all([
+    const [d, h, v, r, p, t] = await Promise.all([
       getChwDashboard().catch(() => null),
       listChwHouseholds(q).catch(() => ({ items: [] })),
       listChwFieldVisits().catch(() => ({ items: [] })),
       listChwReferrals().catch(() => ({ items: [] })),
       listChwPerformance().catch(() => ({ items: [] })),
+      listTransfers({ limit: 6, scope: "facility" }).catch((err) => ({ items: [], error: err })),
     ]);
     setDash(d);
     setHouseholds(h?.items || []);
     setVisits(v?.items || []);
     setReferrals(r?.items || []);
     setPerformance(p?.items || []);
+    const tItems = Array.isArray(t?.items) ? t.items : [];
+    setTransferAlerts(tItems);
+    setTransferError(t?.error?.message || "");
     setPendingOffline(listOfflineActions().length);
   };
 
@@ -626,6 +633,35 @@ export default function CommunityHealthWorkerDashboard() {
               </div>
             ))}
             {!performance.length ? <div className="alert-item">No performance data</div> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Recent transfers and handoff status.</p>
+            </div>
+            <div className="action-pill">Pending: {transferAlerts.filter((t) => t.status === "Pending").length}</div>
+          </div>
+          {transferError ? <div className="muted">{transferError}</div> : null}
+          <div className="alert-stack" style={{ marginTop: 12 }}>
+            {transferAlerts.map((t) => (
+              <div key={t._id} className="alert-item">
+                {t?.patient?.firstName || ""} {t?.patient?.lastName || ""} • {t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"} • {t.status}
+              </div>
+            ))}
+            {!transferAlerts.length ? <div className="alert-item">No transfer alerts yet.</div> : null}
+          </div>
+        </div>
+        <div className="card">
+          <h3>CHW Continuity Checklist</h3>
+          <div className="alert-stack">
+            <div className="alert-item">Confirm household contact details before referral or transfer.</div>
+            <div className="alert-item">Capture GPS location for transfer follow-up visits.</div>
+            <div className="alert-item">Log any missed follow-ups during facility change.</div>
           </div>
         </div>
       </section>

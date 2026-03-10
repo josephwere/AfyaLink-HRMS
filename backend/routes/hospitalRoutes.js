@@ -60,7 +60,17 @@ router.get(
 router.get(
   "/marketplace",
   protect,
-  requireRole("PATIENT", "GUEST", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  requireRole(
+    "PATIENT",
+    "GUEST",
+    "DOCTOR",
+    "NURSE",
+    "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "DEVELOPER"
+  ),
   listMarketplaceHospitals
 );
 

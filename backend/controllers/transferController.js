@@ -1,5 +1,6 @@
 import Transfer from "../models/Transfer.js";
 import Patient from "../models/Patient.js";
+import User from "../models/User.js";
 import TransferConsent from "../models/TransferConsent.js";
 import Encounter from "../models/Encounter.js";
 import LabOrder from "../models/LabOrder.js";
@@ -35,6 +36,26 @@ function isActiveConsent(consent) {
   if (!consent || consent.status !== "GRANTED") return false;
   if (consent.expiresAt && new Date(consent.expiresAt) < new Date()) return false;
   return true;
+}
+
+async function resolvePatientIdsForUser(userId, hospitalId = null) {
+  const user = await User.findById(userId).select("name phone nationalIdNumber");
+  if (!user) return [];
+
+  const filters = [];
+  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
+  if (user.phone) filters.push({ contact: user.phone });
+  filters.push({ "metadata.userId": userId });
+  if (!filters.length) return [];
+
+  const where = {
+    active: true,
+    $or: filters,
+  };
+  if (hospitalId) where.hospital = hospitalId;
+
+  const rows = await Patient.find(where).select("_id");
+  return rows.map((p) => String(p._id));
 }
 
 async function requireConsentForCrossHospitalRead(req, transfer) {
@@ -250,18 +271,38 @@ async function buildTransferHandoverPackage(transfer, consent) {
 
 export const listTransfers = async (req, res, next) => {
   try {
-    const hospital = resolveHospital(req);
     const role = normalizeRole(req.user?.role || "");
+    const hospital = resolveHospital(req);
 
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const cursor = req.query.cursor || null;
     const status = req.query.status;
+    const scope = String(req.query.scope || "").toLowerCase();
+    const requestedHospital = req.query.hospitalId;
 
     const filter = {};
     if (status) filter.status = status;
-    if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) {
-      filter.$or = [{ fromHospital: hospital }, { toHospital: hospital }];
+    if (scope === "mine") {
+      filter.requestedBy = req.user?._id;
+    }
+
+    const isPrivileged = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
+    const effectiveHospital = isPrivileged ? (requestedHospital || null) : hospital;
+    if (!isPrivileged && !effectiveHospital) {
+      return res.status(400).json({ message: "Hospital scope required" });
+    }
+
+    if (scope === "from" || scope === "outbound") {
+      if (!effectiveHospital) return res.status(400).json({ message: "Hospital scope required" });
+      filter.fromHospital = effectiveHospital;
+    } else if (scope === "to" || scope === "inbound") {
+      if (!effectiveHospital) return res.status(400).json({ message: "Hospital scope required" });
+      filter.toHospital = effectiveHospital;
+    } else if (!isPrivileged) {
+      filter.$or = [{ fromHospital: effectiveHospital }, { toHospital: effectiveHospital }];
+    } else if (effectiveHospital) {
+      filter.$or = [{ fromHospital: effectiveHospital }, { toHospital: effectiveHospital }];
     }
 
     if (cursor) {
@@ -282,6 +323,7 @@ export const listTransfers = async (req, res, next) => {
         .sort({ createdAt: -1, _id: -1 })
         .limit(limit + 1)
         .populate("fromHospital toHospital requestedBy approvedBy")
+        .populate("patient", "firstName lastName nationalId countryId")
         .lean();
       const hasMore = rows.length > limit;
       const items = hasMore ? rows.slice(0, limit) : rows;
@@ -313,6 +355,7 @@ export const listTransfers = async (req, res, next) => {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate("fromHospital toHospital requestedBy approvedBy")
+        .populate("patient", "firstName lastName nationalId countryId")
         .lean(),
       Transfer.countDocuments(filter),
     ]);
@@ -331,6 +374,48 @@ export const listTransfers = async (req, res, next) => {
     }));
 
     res.json({ items: safeItems, total, page, limit });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listTransfersForPatient = async (req, res, next) => {
+  try {
+    const patientIds = await resolvePatientIdsForUser(req.user.id || req.user._id, null);
+    if (!patientIds.length) {
+      return res.json({ items: [], total: 0, page: 1, limit: 25 });
+    }
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
+    const status = String(req.query.status || "").trim();
+    const filter = { patient: { $in: patientIds } };
+    if (status) filter.status = status;
+
+    const [items, total] = await Promise.all([
+      Transfer.find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("fromHospital", "name code city")
+        .populate("toHospital", "name code city")
+        .lean(),
+      Transfer.countDocuments(filter),
+    ]);
+
+    const transferIds = items.map((it) => it._id);
+    const consents = await TransferConsent.find({ transfer: { $in: transferIds } })
+      .select("transfer status scopes expiresAt updatedAt")
+      .lean();
+    const consentByTransfer = new Map(
+      consents.map((c) => [String(c.transfer), { status: c.status, scopes: c.scopes, expiresAt: c.expiresAt, updatedAt: c.updatedAt }])
+    );
+
+    const safeItems = items.map((item) => ({
+      ...item,
+      consent: consentByTransfer.get(String(item._id)) || { status: "PENDING", scopes: [] },
+    }));
+
+    return res.json({ items: safeItems, total, page, limit });
   } catch (err) {
     next(err);
   }
@@ -702,6 +787,101 @@ export const getTransferConsent = async (req, res, next) => {
 
     const consent = await TransferConsent.findOne({ transfer: transfer._id }).lean();
     return res.json(consent || null);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const patientGrantTransferConsent = async (req, res, next) => {
+  try {
+    const transfer = await Transfer.findById(req.params.id);
+    if (!transfer) return res.status(404).json({ message: "Transfer not found" });
+
+    const patientIds = await resolvePatientIdsForUser(req.user.id || req.user._id, null);
+    if (!patientIds.includes(String(transfer.patient))) {
+      return res.status(403).json({ message: "You can only consent to your own transfers" });
+    }
+
+    const allowedScopes = Array.isArray(req.body?.scopes)
+      ? req.body.scopes.map((s) => String(s)).filter(Boolean)
+      : undefined;
+    const expiresAt = req.body?.expiresAt || undefined;
+
+    const consent = await TransferConsent.findOneAndUpdate(
+      { transfer: transfer._id },
+      {
+        status: "GRANTED",
+        grantedBy: req.user._id,
+        scopes: allowedScopes || undefined,
+        expiresAt,
+      },
+      { new: true, upsert: true }
+    );
+
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "TRANSFER_CONSENT_GRANTED",
+      resource: "TransferConsent",
+      resourceId: consent._id,
+      hospital: transfer.fromHospital,
+      metadata: { transfer: transfer._id, scopes: consent.scopes, expiresAt: consent.expiresAt, actorType: "PATIENT" },
+      success: true,
+    });
+    await appendComplianceLedger({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "TRANSFER_CONSENT_GRANTED",
+      resource: "TransferConsent",
+      resourceId: consent._id,
+      hospital: transfer.fromHospital,
+      metadata: { transfer: transfer._id, scopes: consent.scopes, expiresAt: consent.expiresAt, actorType: "PATIENT" },
+    });
+
+    return res.json(consent);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const patientRevokeTransferConsent = async (req, res, next) => {
+  try {
+    const transfer = await Transfer.findById(req.params.id);
+    if (!transfer) return res.status(404).json({ message: "Transfer not found" });
+
+    const patientIds = await resolvePatientIdsForUser(req.user.id || req.user._id, null);
+    if (!patientIds.includes(String(transfer.patient))) {
+      return res.status(403).json({ message: "You can only revoke your own transfer consent" });
+    }
+
+    const consent = await TransferConsent.findOneAndUpdate(
+      { transfer: transfer._id },
+      { status: "REVOKED", revokedBy: req.user._id, revokedAt: new Date() },
+      { new: true }
+    );
+    if (!consent) return res.status(404).json({ message: "Transfer consent not found" });
+
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "TRANSFER_CONSENT_REVOKED",
+      resource: "TransferConsent",
+      resourceId: consent._id,
+      hospital: transfer.fromHospital,
+      metadata: { transfer: transfer._id, actorType: "PATIENT" },
+      success: true,
+    });
+    await appendComplianceLedger({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "TRANSFER_CONSENT_REVOKED",
+      resource: "TransferConsent",
+      resourceId: consent._id,
+      hospital: transfer.fromHospital,
+      metadata: { transfer: transfer._id, actorType: "PATIENT" },
+    });
+
+    return res.json(consent);
   } catch (err) {
     next(err);
   }

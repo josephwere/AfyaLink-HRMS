@@ -27,6 +27,20 @@ export default function GuestDashboard() {
           <div className="panel">Pre-Registration</div>
         </div>
       </section>
+
+      <section className="section">
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Sign in to view hospital transfer status and continuity updates.</p>
+            </div>
+          </div>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/login")}>
+            Sign In to View
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

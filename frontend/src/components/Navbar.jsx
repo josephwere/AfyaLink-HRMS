@@ -155,6 +155,12 @@ export default function Navbar({ onToggleSidebar }) {
   const [search, setSearch] = useState("");
   const [remoteResults, setRemoteResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [transferStatus, setTransferStatus] = useState(
+    localStorage.getItem("afyalink_transfer_status") || ""
+  );
+  const [transferScope, setTransferScope] = useState(
+    localStorage.getItem("afyalink_transfer_scope") || ""
+  );
   const refreshIntervalMs = 15000;
   const logo = settings?.branding?.logo;
   const profileRef = useRef(null);
@@ -305,6 +311,14 @@ export default function Navbar({ onToggleSidebar }) {
   }, [location.pathname]);
 
   useEffect(() => {
+    localStorage.setItem("afyalink_transfer_status", transferStatus);
+  }, [transferStatus]);
+
+  useEffect(() => {
+    localStorage.setItem("afyalink_transfer_scope", transferScope);
+  }, [transferScope]);
+
+  useEffect(() => {
     const onClick = (e) => {
       if (!profileOpen) return;
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -392,6 +406,31 @@ export default function Navbar({ onToggleSidebar }) {
           <Icon name="megaphone" />
           {canManageAds ? "Ads" : "Careers"}
         </button>
+
+        <div className="transfer-filter">
+          <select
+            value={transferStatus}
+            onChange={(e) => setTransferStatus(e.target.value)}
+            aria-label="Transfer status filter"
+          >
+            <option value="">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Completed">Completed</option>
+          </select>
+          <select
+            value={transferScope}
+            onChange={(e) => setTransferScope(e.target.value)}
+            aria-label="Transfer scope filter"
+          >
+            <option value="">Facility scope</option>
+            <option value="from">Outbound</option>
+            <option value="to">Inbound</option>
+            <option value="mine">My requests</option>
+            <option value="global">Global</option>
+          </select>
+        </div>
       </div>
 
       <div className="navbar-right">

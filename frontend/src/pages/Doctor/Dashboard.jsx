@@ -5,6 +5,7 @@ import { useAuth } from "../../utils/auth";
 import { getDoctorDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { runBurnoutScore } from "../../services/mlApi";
+import { listTransfers } from "../../services/transferApi";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -17,6 +18,8 @@ export default function Dashboard() {
   const [burnout, setBurnout] = useState(null);
   const [burnoutTrend, setBurnoutTrend] = useState([]);
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
+  const [transfers, setTransfers] = useState([]);
+  const [transferError, setTransferError] = useState("");
 
   const burnoutStatus = (score) => {
     const n = Number(score || 0);
@@ -90,6 +93,17 @@ export default function Dashboard() {
       })
       .catch(() => setAlerts([]));
 
+    listTransfers({ limit: 6, scope: "facility" })
+      .then((res) => {
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setTransfers(items);
+        setTransferError("");
+      })
+      .catch((err) => {
+        setTransfers([]);
+        setTransferError(err?.message || "Failed to load transfers.");
+      });
+
     if (user?.id) {
       apiFetch(`/api/appointments/doctors/${user.id}/availability`)
         .then((res) => setAvailability(Array.isArray(res?.items) ? res.items : []))
@@ -141,6 +155,13 @@ export default function Dashboard() {
     if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
     return encounter.escalationSummary.unreadMine > 0 ? "Nurse escalation" : "Escalation open";
   };
+
+  const transferStats = useMemo(() => {
+    const pending = transfers.filter((t) => t.status === "Pending").length;
+    const approved = transfers.filter((t) => t.status === "Approved").length;
+    const completed = transfers.filter((t) => t.status === "Completed").length;
+    return { pending, approved, completed, total: transfers.length };
+  }, [transfers]);
 
   const resolveEscalation = async (encounter, patientKey) => {
     if (!encounter?._id) return;
@@ -302,6 +323,68 @@ export default function Dashboard() {
               </button>
             ))}
             {alerts.length === 0 && <div className="muted">No alerts</div>}
+          </div>
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Recent transfers and handoff status.</p>
+            </div>
+            <div className="action-pill">Pending: {transferStats.pending}</div>
+          </div>
+          {transferError ? <div className="muted">{transferError}</div> : null}
+          <div className="grid info-grid" style={{ marginTop: 12 }}>
+            <StatCard title="Total" value={transferStats.total || "—"} />
+            <StatCard title="Approved" value={transferStats.approved || 0} />
+            <StatCard title="Completed" value={transferStats.completed || 0} />
+          </div>
+          <div className="table-wrap" style={{ marginTop: 12 }}>
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Route</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((t) => (
+                  <tr key={t._id} style={{ cursor: "pointer" }} onClick={() => navigate("/doctor/transfers")}>
+                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
+                    <td>{t.status}</td>
+                  </tr>
+                ))}
+                {transfers.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="muted">No transfers yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+          <div className="doctor-actions-row" style={{ marginTop: 12 }}>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/transfers")}>
+              Open Transfers
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
+              Transfer Command Center
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>
+              Create Transfer
+            </button>
+          </div>
+        </div>
+        <div className="card doctor-alerts-card">
+          <h3>Continuity Tips</h3>
+          <div className="alert-stack">
+            <div className="alert-item">Confirm consent scope before sharing labs or reports.</div>
+            <div className="alert-item">Use the handover summary to reduce repeat diagnostics.</div>
+            <div className="alert-item">If a transfer is pending over 24h, escalate in the command center.</div>
           </div>
         </div>
       </section>

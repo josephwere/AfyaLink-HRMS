@@ -12,7 +12,7 @@ export default function ProvenanceVerify() {
 
   const loadTransfers = async () => {
     try {
-      const data = await listTransfers({ limit: 50 });
+      const data = await listTransfers({ limit: 50, scope: "global" });
       const items = Array.isArray(data?.items) ? data.items : [];
       setTransfers(items);
       if (!transferId && items[0]?._id) setTransferId(items[0]._id);

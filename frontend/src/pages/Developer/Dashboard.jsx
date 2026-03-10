@@ -6,6 +6,7 @@ import {
   getTrustStatus,
   runWorkflowSlaScan,
 } from "../../services/developerApi";
+import { listTransfers } from "../../services/transferApi";
 
 export default function DeveloperDashboard() {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function DeveloperDashboard() {
   const [trust, setTrust] = useState(null);
   const [runningSla, setRunningSla] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [transfers, setTransfers] = useState([]);
+  const [transferError, setTransferError] = useState("");
 
   const load = async () => {
     try {
@@ -25,6 +28,15 @@ export default function DeveloperDashboard() {
     } catch {
       setData(null);
       setTrust(null);
+    }
+    try {
+      const res = await listTransfers({ limit: 10, scope: "global" });
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setTransfers(items);
+      setTransferError("");
+    } catch (err) {
+      setTransfers([]);
+      setTransferError(err?.message || "Failed to load transfers.");
     }
   };
 
@@ -104,6 +116,60 @@ export default function DeveloperDashboard() {
           <StatCard title="Consent Denials (24h)" value={trust?.consentDenials24h ?? "—"} />
           <StatCard title="Risk Step-Ups (24h)" value={trust?.highRiskStepUps24h ?? "—"} />
           <StatCard title="Active Consents" value={trust?.activeConsents ?? "—"} />
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Verify handover, consent, and provenance signals.</p>
+            </div>
+            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+          </div>
+          {transferError ? <div className="muted">{transferError}</div> : null}
+          <div className="table-wrap" style={{ marginTop: 12 }}>
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Route</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((t) => (
+                  <tr key={t._id}>
+                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
+                    <td>{t.status}</td>
+                  </tr>
+                ))}
+                {transfers.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="muted">No transfers yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+          <div className="doctor-actions-row" style={{ marginTop: 12 }}>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/provenance-verify")}>
+              Provenance Verify
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
+              Transfer Command Center
+            </button>
+          </div>
+        </div>
+        <div className="card doctor-alerts-card">
+          <h3>Continuity Actions</h3>
+          <div className="alert-stack">
+            <div className="alert-item">Investigate consent denials for transfer exports.</div>
+            <div className="alert-item">Validate provenance signatures after HL7/FHIR export.</div>
+            <div className="alert-item">Surface 24h pending transfers to county command center.</div>
+          </div>
         </div>
       </section>
 

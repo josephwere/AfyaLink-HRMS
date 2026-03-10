@@ -10,6 +10,7 @@ import {
   getLiveOccupancy,
   verifyAccessCode,
 } from "../../services/securityAccessApi";
+import { listTransfers } from "../../services/transferApi";
 
 export default function SecurityOfficerDashboard() {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function SecurityOfficerDashboard() {
   });
   const [code, setCode] = useState("");
   const [verifyResult, setVerifyResult] = useState(null);
+  const [transfers, setTransfers] = useState([]);
+  const [transferError, setTransferError] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -38,6 +41,16 @@ export default function SecurityOfficerDashboard() {
       setLogs(logRes?.items || []);
       setInside(live?.peopleInside || []);
     });
+    listTransfers({ limit: 8, scope: "facility" })
+      .then((res) => {
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setTransfers(items);
+        setTransferError("");
+      })
+      .catch((err) => {
+        setTransfers([]);
+        setTransferError(err?.message || "Failed to load transfers.");
+      });
   }, []);
 
   const accessCode = useMemo(() => (verifyResult?.person ? code : ""), [verifyResult, code]);
@@ -228,6 +241,52 @@ export default function SecurityOfficerDashboard() {
               </div>
             ))}
             {!logs?.length ? <div className="alert-item">No logs</div> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Security watchlist for transfer handover periods.</p>
+            </div>
+            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+          </div>
+          {transferError ? <div className="muted">{transferError}</div> : null}
+          <div className="table-wrap" style={{ marginTop: 12 }}>
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Route</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((t) => (
+                  <tr key={t._id}>
+                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
+                    <td>{t.status}</td>
+                  </tr>
+                ))}
+                {transfers.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="muted">No transfers yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="card doctor-alerts-card">
+          <h3>Continuity Actions</h3>
+          <div className="alert-stack">
+            <div className="alert-item">Check visitor logs during transfer windows.</div>
+            <div className="alert-item">Flag unknown entries during transfer handoff.</div>
+            <div className="alert-item">Report incidents tied to transfer movement.</div>
           </div>
         </div>
       </section>

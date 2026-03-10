@@ -1,13 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import apiFetch from '../../utils/apiFetch';
 import { LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from 'recharts';
+import { listTransfers } from "../../services/transferApi";
 
 export default function TransactionsDashboard(){
   const [rows,setRows]=useState([]);
   const [summary,setSummary]=useState([]);
   const [filters,setFilters]=useState({ provider:'', status:'', min:'', max:'', start:'', end:'', search:'' });
   const [chartData,setChartData]=useState([]);
+  const [transfers, setTransfers] = useState([]);
+  const [transferError, setTransferError] = useState("");
   useEffect(()=>{ fetchData(); },[]);
+  useEffect(()=>{ loadTransfers(); },[]);
 
   async function fetchData(exportCsv=false){
     const qs = new URLSearchParams({...filters, limit:500});
@@ -28,6 +32,18 @@ export default function TransactionsDashboard(){
     // prepare chart data: revenue per day
     const rp = await apiFetch('/api/analytics/revenue/daily');
     setChartData(Array.isArray(rp) ? rp : Array.isArray(rp?.items) ? rp.items : []);
+  }
+
+  async function loadTransfers() {
+    try {
+      const data = await listTransfers({ limit: 6, scope: "global" });
+      const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+      setTransfers(items);
+      setTransferError("");
+    } catch (err) {
+      setTransfers([]);
+      setTransferError(err?.message || "Unable to load transfers.");
+    }
   }
 
   const COLORS = ['#0088FE','#00C49F','#FFBB28','#FF8042'];
@@ -58,6 +74,46 @@ export default function TransactionsDashboard(){
     <div className="card" style={{height:300}}>
       <ResponsiveContainer><LineChart data={chartData}><XAxis dataKey='_id'/><YAxis/><Tooltip/><Line type='monotone' dataKey='total' stroke='#8884d8' /></LineChart></ResponsiveContainer>
     </div>
+
+    <section className="section">
+      <div className="card">
+        <div className="card-header-actions">
+          <div>
+            <h3>Transfer Continuity</h3>
+            <p className="muted">Recent transfers and handoff status.</p>
+          </div>
+          <div className="action-pill">
+            Pending: {transfers.filter((t) => t.status === "Pending").length}
+          </div>
+        </div>
+        {transferError ? <div className="muted">{transferError}</div> : null}
+        <div className="table-wrap" style={{ marginTop: 12 }}>
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Route</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t._id}>
+                  <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                  <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
+                  <td>{t.status}</td>
+                </tr>
+              ))}
+              {transfers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="muted">No transfers yet.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
     <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 280px), 1fr))"}}>
       <div className="card" style={{height:300}}>

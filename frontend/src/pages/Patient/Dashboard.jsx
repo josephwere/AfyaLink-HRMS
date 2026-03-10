@@ -125,6 +125,7 @@ export default function Dashboard() {
             <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>Prescriptions</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>Lab Results</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>Insurance</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/transfers")}>Transfer Consents</button>
             <button className="action-link" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
           </div>
         </div>

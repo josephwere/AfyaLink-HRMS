@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   listTransfers,
+  listTransfersForPatient,
   requestTransfer,
   approveTransfer,
   rejectTransfer,
@@ -8,6 +9,8 @@ import {
   getTransferConsent,
   grantTransferConsent,
   revokeTransferConsent,
+  patientGrantTransferConsent,
+  patientRevokeTransferConsent,
   exportTransferFHIR,
   exportTransferHL7,
   verifyTransferProvenance,
@@ -50,7 +53,32 @@ function attachTransferAbacContext({ requiredScopes = [] } = {}) {
   };
 }
 
-router.get("/", protect, permit("DOCTOR", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"), listTransfers);
+router.get(
+  "/",
+  protect,
+  permit(
+    "DOCTOR",
+    "NURSE",
+    "SURGEON",
+    "THERAPIST",
+    "RADIOLOGIST",
+    "LAB_TECH",
+    "PHARMACIST",
+    "RECEPTIONIST",
+    "COMMUNITY_HEALTH_WORKER",
+    "SECURITY_OFFICER",
+    "SECURITY_ADMIN",
+    "HR_MANAGER",
+    "PAYROLL_OFFICER",
+    "HOSPITAL_ADMIN",
+    "HOSPITAL_ADMIN_ASSISTANT",
+    "SYSTEM_ADMIN",
+    "SUPER_ADMIN",
+    "DEVELOPER"
+  ),
+  listTransfers
+);
+router.get("/mine", protect, permit("PATIENT"), listTransfersForPatient);
 router.get(
   "/command-center/overview",
   protect,
@@ -64,10 +92,12 @@ router.post('/:id/complete', protect, permit('HOSPITAL_ADMIN', 'SYSTEM_ADMIN', '
 router.get(
   "/:id/consent",
   protect,
-  permit("DOCTOR", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  permit("PATIENT", "DOCTOR", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
   requireTransferConsent({ writeBypass: true }),
   getTransferConsent
 );
+router.post("/:id/consent/patient-grant", protect, permit("PATIENT"), patientGrantTransferConsent);
+router.post("/:id/consent/patient-revoke", protect, permit("PATIENT"), patientRevokeTransferConsent);
 router.post("/:id/consent/grant", protect, permit("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"), grantTransferConsent);
 router.post("/:id/consent/revoke", protect, permit("HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"), revokeTransferConsent);
 router.get(

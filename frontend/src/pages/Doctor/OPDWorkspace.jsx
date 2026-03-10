@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import { requestTransfer } from "../../services/transferApi";
 
 const INITIAL_FORM = {
   diagnosis: "",
@@ -12,6 +13,9 @@ const INITIAL_FORM = {
   labTests: "",
   billingItems: "",
 };
+
+const CONSENT_SCOPES = ["demographics", "encounters", "labs", "prescriptions", "reports"];
+const DEFAULT_SCOPES = ["demographics", "encounters", "labs", "prescriptions"];
 
 export default function OPDWorkspace() {
   const navigate = useNavigate();
@@ -27,6 +31,14 @@ export default function OPDWorkspace() {
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [resolvingEscalation, setResolvingEscalation] = useState(false);
+  const [transferHospitals, setTransferHospitals] = useState([]);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferForm, setTransferForm] = useState({
+    toHospitalId: "",
+    reasons: "",
+    handoverSummary: "",
+    scopes: DEFAULT_SCOPES,
+  });
 
   const closeoutStatus = {
     visit: encounter?._id ? "READY" : "MISSING",
@@ -98,8 +110,62 @@ export default function OPDWorkspace() {
       .catch(() => setForm(INITIAL_FORM));
   }, [patientId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadHospitals = async () => {
+      try {
+        const res = await apiFetch("/api/hospitals/marketplace?limit=1000");
+        if (cancelled) return;
+        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
+        setTransferHospitals(items);
+      } catch {
+        if (!cancelled) setTransferHospitals([]);
+      }
+    };
+    loadHospitals();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleTransferScope(scope, enabled) {
+    setTransferForm((prev) => {
+      const set = new Set(prev.scopes || []);
+      if (enabled) set.add(scope);
+      else set.delete(scope);
+      return { ...prev, scopes: Array.from(set) };
+    });
+  }
+
+  async function submitTransferRequest() {
+    if (!patientId) {
+      setMsg("Select a patient first.");
+      return;
+    }
+    if (!transferForm.toHospitalId) {
+      setMsg("Pick a destination hospital for the transfer.");
+      return;
+    }
+    try {
+      setTransferLoading(true);
+      await requestTransfer({
+        patient: patientId,
+        toHospital: transferForm.toHospitalId,
+        reasons: transferForm.reasons,
+        scopes: transferForm.scopes,
+        metadata: transferForm.handoverSummary ? { handoverSummary: transferForm.handoverSummary } : undefined,
+      });
+      setMsg("Transfer request sent.");
+      setTransferForm((prev) => ({ ...prev, reasons: "", handoverSummary: "" }));
+    } catch (e) {
+      setMsg(e?.message || "Failed to send transfer request.");
+    } finally {
+      setTransferLoading(false);
+    }
   }
 
   async function saveDraft() {
@@ -400,6 +466,84 @@ export default function OPDWorkspace() {
 
         <div className="card doctor-alerts-card">
           <h3>Consultation Actions</h3>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <div className="card-header-actions">
+              <div>
+                <strong>Transfer to another hospital</strong>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  Share a handover summary and pick consent scopes for the receiving facility.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => navigate("/hospital-admin/transfer-command-center")}
+              >
+                Transfer Center
+              </button>
+            </div>
+            <div className="form-row" style={{ marginTop: 12 }}>
+              <div>
+                <label className="input-label">Destination hospital</label>
+                <select
+                  value={transferForm.toHospitalId}
+                  onChange={(e) => setTransferForm((prev) => ({ ...prev, toHospitalId: e.target.value }))}
+                >
+                  <option value="">Select hospital</option>
+                  {transferHospitals.map((h) => (
+                    <option key={h._id} value={h._id}>
+                      {h.name || h.code || "Hospital"} {h.city ? `• ${h.city}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="input-label">Reason</label>
+                <textarea
+                  rows={2}
+                  value={transferForm.reasons}
+                  onChange={(e) => setTransferForm((prev) => ({ ...prev, reasons: e.target.value }))}
+                  placeholder="Short reason for transfer"
+                />
+              </div>
+            </div>
+            <div className="form-row" style={{ marginTop: 10 }}>
+              <div>
+                <label className="input-label">Handover summary</label>
+                <textarea
+                  rows={3}
+                  value={transferForm.handoverSummary}
+                  onChange={(e) => setTransferForm((prev) => ({ ...prev, handoverSummary: e.target.value }))}
+                  placeholder="Key clinical notes for receiving team"
+                />
+              </div>
+              <div>
+                <label className="input-label">Consent scopes</label>
+                <div className="pill-row">
+                  {CONSENT_SCOPES.map((scope) => (
+                    <label key={scope} className="pill-chip">
+                      <input
+                        type="checkbox"
+                        checked={transferForm.scopes.includes(scope)}
+                        onChange={(e) => toggleTransferScope(scope, e.target.checked)}
+                      />
+                      <span>{scope}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="card-actions" style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={submitTransferRequest}
+                disabled={transferLoading}
+              >
+                {transferLoading ? "Sending..." : "Send Transfer Request"}
+              </button>
+            </div>
+          </div>
           {resolvedPolicy ? (
             <div className="card" style={{ marginBottom: 12 }}>
               <div className="card-header-actions">

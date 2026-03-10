@@ -9,6 +9,7 @@ import {
   getSecurityAlerts,
   searchUsersForAccess,
 } from "../../services/securityAccessApi";
+import { listTransfers } from "../../services/transferApi";
 
 export default function SecurityAdminDashboard() {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export default function SecurityAdminDashboard() {
   const [selectedStaff, setSelectedStaff] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [transfers, setTransfers] = useState([]);
+  const [transferError, setTransferError] = useState("");
   const [internalForm, setInternalForm] = useState({
     personType: "CONTRACTOR",
     purpose: "",
@@ -39,6 +42,16 @@ export default function SecurityAdminDashboard() {
       setOverstays(o?.overstayed || []);
       setLogs(l?.items || []);
     });
+    listTransfers({ limit: 8, scope: "facility" })
+      .then((res) => {
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setTransfers(items);
+        setTransferError("");
+      })
+      .catch((err) => {
+        setTransfers([]);
+        setTransferError(err?.message || "Failed to load transfers.");
+      });
   }, []);
 
   useEffect(() => {
@@ -180,6 +193,59 @@ export default function SecurityAdminDashboard() {
               </div>
             ))}
             {!logs?.length ? <div className="alert-item">No access logs</div> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Transfer Continuity</h3>
+              <p className="muted">Security follow-up for transfer-related access and handover paths.</p>
+            </div>
+            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+          </div>
+          {transferError ? <div className="muted">{transferError}</div> : null}
+          <div className="table-wrap" style={{ marginTop: 12 }}>
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Route</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((t) => (
+                  <tr key={t._id}>
+                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
+                    <td>{t.status}</td>
+                  </tr>
+                ))}
+                {transfers.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="muted">No transfers yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+          <div className="doctor-actions-row" style={{ marginTop: 12 }}>
+            <button type="button" className="btn-secondary" onClick={() => window.location.assign("/hospital-admin/transfer-command-center")}>
+              Transfer Command Center
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => window.location.assign("/security-admin")}
+            >Security Incidents</button>
+          </div>
+        </div>
+        <div className="card doctor-alerts-card">
+          <h3>Continuity Actions</h3>
+          <div className="alert-stack">
+            <div className="alert-item">Validate access logs for transfer-related entries.</div>
+            <div className="alert-item">Review any incidents tied to transfer handover.</div>
+            <div className="alert-item">Escalate suspicious access during transfer windows.</div>
           </div>
         </div>
       </section>
