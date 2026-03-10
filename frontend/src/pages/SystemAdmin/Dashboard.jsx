@@ -2,7 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
-import { getSystemAdminMetrics, getRiskPolicy, updateRiskPolicy } from "../../services/systemAdminApi";
+import {
+  getSystemAdminMetrics,
+  getRiskPolicy,
+  updateRiskPolicy,
+  getIntegrationControlPlane,
+  getCountyCommandCenterSummary,
+} from "../../services/systemAdminApi";
 import { getDeveloperOverview, getTrustStatus, runWorkflowSlaScan } from "../../services/developerApi";
 import { runStaffingForecast, runDigitalTwin } from "../../services/mlApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
@@ -34,6 +40,8 @@ export default function SystemAdminDashboard() {
     trainingCompletion: [],
   });
   const [unlinkedPharmacists, setUnlinkedPharmacists] = useState(0);
+  const [controlPlane, setControlPlane] = useState(null);
+  const [county, setCounty] = useState(null);
 
   const appendTrend = (key, value) => {
     setAiTrend((prev) => ({
@@ -158,6 +166,12 @@ export default function SystemAdminDashboard() {
         setUnlinkedPharmacists(rows.length);
       })
       .catch(() => setUnlinkedPharmacists(0));
+    getIntegrationControlPlane()
+      .then((res) => setControlPlane(res || null))
+      .catch(() => setControlPlane(null));
+    getCountyCommandCenterSummary()
+      .then((res) => setCounty(res || null))
+      .catch(() => setCounty(null));
     const timer = setInterval(loadAi, 45000);
     return () => clearInterval(timer);
   }, []);
@@ -213,6 +227,9 @@ export default function SystemAdminDashboard() {
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/government-hospital-registry")}>Gov Hospital Registry</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/hospital-verification-review")}>Hospital Review Queue</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-hub")}>Gov Integration Hub</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-control-plane")}>Control Plane</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>County Command</button>
           <button type="button" className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>
@@ -249,6 +266,18 @@ export default function SystemAdminDashboard() {
             subtitle={`${training.completed}/${training.total} completed`}
             onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
           />
+          <StatCard
+            title="Ready Control Modules"
+            value={controlPlane?.controlPlanes?.filter((row) => row.readiness === "READY").length ?? "—"}
+            subtitle={`${controlPlane?.summary?.paymentEnabledHospitals ?? 0} hospitals with payments`}
+            onClick={() => navigate("/system-admin/integration-control-plane")}
+          />
+          <StatCard
+            title="Regions At Risk"
+            value={county?.summary?.regionsAtRisk ?? "—"}
+            subtitle={`${county?.summary?.totalRegions ?? 0} regions tracked`}
+            onClick={() => navigate("/system-admin/county-command-center")}
+          />
         </div>
       </section>
 
@@ -274,6 +303,9 @@ export default function SystemAdminDashboard() {
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/abac")}>ABAC Policies</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/mapping-studio")}>Mapping Studio</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/pharmacy-access-audit")}>Pharmacy Access Audit</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/integration-hub")}>Gov Integration Hub</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/integration-control-plane")}>Integration Control Plane</button>
+          <button type="button" className="action-link" onClick={() => navigate("/system-admin/county-command-center")}>County Command Center</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/connector-sdk")}>Connector SDK</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/nlp-analytics")}>NLP Analytics</button>
           <button type="button" className="action-link" onClick={() => navigate("/system-admin/clinical-intelligence")}>Clinical Intelligence</button>

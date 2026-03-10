@@ -6,6 +6,8 @@ import User from "../models/User.js";
 import Hospital from "../models/Hospital.js";
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import Notification from "../models/Notification.js";
+import Bed from "../models/Bed.js";
+import AuditLog from "../models/AuditLog.js";
 
 let teardown;
 let hospitalAdminToken;
@@ -35,7 +37,6 @@ beforeAll(async () => {
     hospital: hospitalA._id,
     active: true,
   });
-
   const superAdmin = await User.create({
     name: "Global Coverage Admin",
     email: "global-coverage-admin@afya.test",
@@ -98,6 +99,29 @@ beforeAll(async () => {
       path: "/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist",
     },
   });
+
+  const [bedA, bedB] = await Bed.create([
+    { hospital: hospitalA._id, ward: "Ward A", number: "A-01", occupied: false },
+    { hospital: hospitalA._id, ward: "Ward B", number: "B-01", occupied: false },
+  ]);
+
+  await AuditLog.create({
+    actorId: hospitalAdmin._id,
+    actorRole: "HOSPITAL_ADMIN",
+    action: "BED_TRANSFER",
+    resource: "Bed",
+    resourceId: bedB._id,
+    hospital: hospitalA._id,
+    metadata: {
+      sourceBedId: String(bedA._id),
+      targetBedId: String(bedB._id),
+      fromWard: "Ward A",
+      fromNumber: "A-01",
+      toWard: "Ward B",
+      toNumber: "B-01",
+      patient: "demo-patient",
+    },
+  });
 });
 
 afterAll(async () => {
@@ -118,6 +142,11 @@ describe("Dashboard pharmacy coverage warnings", () => {
     expect(res.body.unreadPharmacyRiskNotifications).toBe(1);
     expect(res.body.pharmacyCoverageRisk).toBe(true);
     expect(res.body.pharmacyLinkageWarning).toBe(true);
+    expect(Array.isArray(res.body.recentBedEvents)).toBe(true);
+    expect(res.body.recentBedEvents.length).toBeGreaterThan(0);
+    expect(res.body.recentBedEvents[0].action).toBe("BED_TRANSFER");
+    expect(res.body.recentBedEvents[0].actor.name).toBe("Coverage Admin");
+    expect(res.body.recentBedEvents[0].metadata.sourceBedId).toBeDefined();
   });
 
   test("super admin dashboard aggregates pharmacist linkage counts", async () => {

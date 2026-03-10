@@ -46,6 +46,7 @@ class WorkflowService {
       Object.assign(appointment, updates);
     }
 
+    appointment.$locals = { ...(appointment.$locals || {}), viaWorkflow: true };
     await appointment.save();
 
     return {
@@ -76,6 +77,7 @@ class WorkflowService {
       encounter.closedAt = new Date();
     }
 
+    encounter.$locals = { ...(encounter.$locals || {}), viaWorkflow: true };
     await encounter.save();
     return encounter;
   }

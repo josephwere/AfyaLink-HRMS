@@ -36,6 +36,14 @@ const DEFAULT_FORM = {
     showReports: true,
     showAnalytics: true,
   },
+  clinical: {
+    closeoutPolicy: {
+      enabled: false,
+      requireDiagnosisBeforeClose: null,
+      requireBillingHandoffWhenPaymentsEnabled: null,
+      requirePrescriptionWhenPharmacyEnabled: null,
+    },
+  },
 };
 
 export default function HospitalCustomization() {
@@ -74,6 +82,14 @@ export default function HospitalCustomization() {
         modules: {
           ...DEFAULT_FORM.modules,
           ...(data?.customization?.modules || {}),
+        },
+        clinical: {
+          ...DEFAULT_FORM.clinical,
+          ...(data?.customization?.clinical || {}),
+          closeoutPolicy: {
+            ...(DEFAULT_FORM.clinical.closeoutPolicy || {}),
+            ...(data?.customization?.clinical?.closeoutPolicy || {}),
+          },
         },
       });
       const reqData = await listCustomizationRequests();
@@ -117,6 +133,7 @@ export default function HospitalCustomization() {
       branding: { branding: form.branding },
       theme: { theme: form.theme },
       modules: { modules: form.modules },
+      clinical: { clinical: form.clinical },
     };
     if (!patchMap[key]) return;
     setSavingCard(key);
@@ -372,6 +389,102 @@ export default function HospitalCustomization() {
             disabled={saving || savingCard === "modules"}
           >
             {savingCard === "modules" ? "Saving..." : "Save Module Visibility"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Clinical Workflow Overrides</h3>
+        <div className="card form">
+          <p className="muted">
+            Override the global visit-close rules for this hospital only. Leave the override disabled to inherit the system-wide policy.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical?.closeoutPolicy?.enabled)}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  clinical: {
+                    ...(prev.clinical || {}),
+                    closeoutPolicy: {
+                      ...(prev.clinical?.closeoutPolicy || {}),
+                      enabled: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Enable hospital-specific closeout policy
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical?.closeoutPolicy?.requireDiagnosisBeforeClose)}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  clinical: {
+                    ...(prev.clinical || {}),
+                    closeoutPolicy: {
+                      ...(prev.clinical?.closeoutPolicy || {}),
+                      requireDiagnosisBeforeClose: e.target.checked,
+                    },
+                  },
+                }))
+              }
+              disabled={!form.clinical?.closeoutPolicy?.enabled}
+            />
+            Require diagnosis before visit close
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical?.closeoutPolicy?.requireBillingHandoffWhenPaymentsEnabled)}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  clinical: {
+                    ...(prev.clinical || {}),
+                    closeoutPolicy: {
+                      ...(prev.clinical?.closeoutPolicy || {}),
+                      requireBillingHandoffWhenPaymentsEnabled: e.target.checked,
+                    },
+                  },
+                }))
+              }
+              disabled={!form.clinical?.closeoutPolicy?.enabled}
+            />
+            Require billing handoff when payments are enabled
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical?.closeoutPolicy?.requirePrescriptionWhenPharmacyEnabled)}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  clinical: {
+                    ...(prev.clinical || {}),
+                    closeoutPolicy: {
+                      ...(prev.clinical?.closeoutPolicy || {}),
+                      requirePrescriptionWhenPharmacyEnabled: e.target.checked,
+                    },
+                  },
+                }))
+              }
+              disabled={!form.clinical?.closeoutPolicy?.enabled}
+            />
+            Require prescription handoff when pharmacy is enabled
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("clinical")}
+            disabled={saving || savingCard === "clinical"}
+          >
+            {savingCard === "clinical" ? "Saving..." : "Save Clinical Overrides"}
           </button>
         </div>
       </section>

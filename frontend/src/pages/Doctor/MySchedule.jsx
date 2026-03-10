@@ -6,9 +6,35 @@ export default function MySchedule() {
   const [appointments, setAppointments] = useState([]);
   const [calls, setCalls] = useState([]);
   const [availability, setAvailability] = useState([]);
+  const [encounterByPatient, setEncounterByPatient] = useState({});
   const [activeCall, setActiveCall] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resolvingEncounterId, setResolvingEncounterId] = useState("");
+
+  const fetchEncounterSnapshots = async (appointmentRows) => {
+    const patientIds = [...new Set(
+      (Array.isArray(appointmentRows) ? appointmentRows : [])
+        .map((item) => String(item?.patient?._id || item?.patient || ""))
+        .filter(Boolean)
+    )];
+    if (!patientIds.length) {
+      setEncounterByPatient({});
+      return;
+    }
+    const pairs = await Promise.all(
+      patientIds.map(async (patientId) => {
+        try {
+          const rows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
+          const items = Array.isArray(rows) ? rows : [];
+          return [patientId, items[0] || null];
+        } catch {
+          return [patientId, null];
+        }
+      })
+    );
+    setEncounterByPatient(Object.fromEntries(pairs));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -20,8 +46,10 @@ export default function MySchedule() {
         apiFetch("/api/profile"),
       ]);
       const doctorId = profileRes?._id || profileRes?.id;
-      setAppointments(Array.isArray(appointmentsRes?.items) ? appointmentsRes.items : []);
+      const appointmentRows = Array.isArray(appointmentsRes?.items) ? appointmentsRes.items : [];
+      setAppointments(appointmentRows);
       setCalls(Array.isArray(callsRes?.items) ? callsRes.items : []);
+      await fetchEncounterSnapshots(appointmentRows);
       if (doctorId) {
         const availabilityRes = await apiFetch(`/api/appointments/doctors/${doctorId}/availability`);
         setAvailability(Array.isArray(availabilityRes?.items) ? availabilityRes.items : []);
@@ -63,6 +91,26 @@ export default function MySchedule() {
     [availability]
   );
 
+  const closeoutLabel = (encounter) => {
+    if (!encounter?._id) return "No visit";
+    if (encounter?.closeout?.canClose) return "Ready to close";
+    const missing = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements.join(", ")
+      : "";
+    return missing ? `Pending: ${missing}` : "Requirements pending";
+  };
+  const escalationLabel = (encounter) => {
+    if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
+    if (encounter.escalationSummary.unreadMine > 0) return "Nurse escalation";
+    return "Escalation open";
+  };
+  const firstMissingRequirement = (encounter) => {
+    const items = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements
+      : [];
+    return items[0] || "";
+  };
+
   const runCallAction = async (callId, action) => {
     try {
       setMsg("");
@@ -79,6 +127,28 @@ export default function MySchedule() {
       await load();
     } catch (err) {
       setMsg(err?.message || "Call action failed.");
+    }
+  };
+
+  const resolveEscalation = async (encounter, patientKey) => {
+    if (!encounter?._id) return;
+    try {
+      setResolvingEncounterId(String(encounter._id));
+      setMsg("");
+      await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
+        method: "POST",
+        body: { note: "Clinician reviewed ward escalation and resumed visit workflow." },
+      });
+      await load();
+      window.location.assign(
+        `/doctor/opd?patientId=${encodeURIComponent(patientKey)}${
+          firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""
+        }`
+      );
+    } catch (err) {
+      setMsg(err?.message || "Failed to resolve escalation.");
+    } finally {
+      setResolvingEncounterId("");
     }
   };
 
@@ -171,6 +241,38 @@ export default function MySchedule() {
                           Dx: {item.metadata.consultationSummary.diagnosis}
                         </div>
                       ) : null}
+                      {(() => {
+                        const patientKey = String(item?.patient?._id || item?.patient || "");
+                        const encounter = encounterByPatient[patientKey];
+                        if (!encounter) return null;
+                        const missing = firstMissingRequirement(encounter);
+                        return (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                            <button
+                              type="button"
+                              className="action-pill"
+                              style={{ cursor: "pointer" }}
+                              onClick={() =>
+                                window.location.assign(
+                                  `/doctor/opd?patientId=${encodeURIComponent(patientKey)}${missing ? `&focus=${encodeURIComponent(missing)}` : ""}`
+                                )
+                              }
+                            >
+                              {closeoutLabel(encounter)}
+                            </button>
+                            {escalationLabel(encounter) ? (
+                              <button
+                                type="button"
+                                className="action-pill warning"
+                                style={{ cursor: "pointer" }}
+                                onClick={() => resolveEscalation(encounter, patientKey)}
+                              >
+                                {resolvingEncounterId === String(encounter._id) ? "Resolving..." : escalationLabel(encounter)}
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}

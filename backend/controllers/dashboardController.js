@@ -12,6 +12,8 @@ import SecurityIncident from "../models/SecurityIncident.js";
 import Notification from "../models/Notification.js";
 import CallSession from "../models/CallSession.js";
 import Hospital from "../models/Hospital.js";
+import Bed from "../models/Bed.js";
+import AuditLog from "../models/AuditLog.js";
 import Household from "../models/Household.js";
 import FieldVisit from "../models/FieldVisit.js";
 import VaccinationRecord from "../models/VaccinationRecord.js";
@@ -94,6 +96,42 @@ function hospitalFilter(req) {
   return hospital ? { hospital } : {};
 }
 
+async function buildEscalationSummary({ hospitalId = null, userId = null, limit = 6 } = {}) {
+  const match = {
+    ...(hospitalId ? { hospital: hospitalId } : {}),
+    ...(userId ? { user: userId } : {}),
+    "meta.type": "NURSE_ESCALATION",
+  };
+  const notifications = await Notification.find(match)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .lean();
+  const patientIds = [...new Set(notifications.map((row) => String(row?.meta?.patientId || "")).filter(Boolean))];
+  const patients = patientIds.length
+    ? await Patient.find({ _id: { $in: patientIds } }).select("firstName lastName").lean()
+    : [];
+  const patientById = new Map(
+    patients.map((row) => [String(row._id), [row.firstName, row.lastName].filter(Boolean).join(" ").trim() || "Patient"])
+  );
+  const items = notifications.map((row) => ({
+    id: row._id,
+    title: row.title || "",
+    body: row.body || "",
+    createdAt: row.createdAt,
+    read: Boolean(row.read),
+    patientId: row?.meta?.patientId || null,
+    patientName: patientById.get(String(row?.meta?.patientId || "")) || "Patient",
+    path: row?.meta?.path || "",
+    resolvedAt: row?.meta?.resolvedAt || null,
+    missingRequirements: Array.isArray(row?.meta?.missingRequirements) ? row.meta.missingRequirements : [],
+  }));
+  return {
+    openCount: items.filter((row) => !row.resolvedAt).length,
+    unreadCount: items.filter((row) => !row.read).length,
+    items,
+  };
+}
+
 export async function doctorDashboard(req, res) {
   try {
     const hospital = hospitalFilter(req);
@@ -111,6 +149,7 @@ export async function doctorDashboard(req, res) {
       leavePending,
       overtimePending,
       shiftPending,
+      escalationSummary,
     ] = await Promise.all([
       Appointment.countDocuments({
         ...hospital,
@@ -142,6 +181,7 @@ export async function doctorDashboard(req, res) {
       LeaveRequest.countDocuments({ requester: doctor, status: "PENDING" }),
       OvertimeRequest.countDocuments({ requester: doctor, status: "PENDING" }),
       ShiftRequest.countDocuments({ requester: doctor, status: "PENDING" }),
+      buildEscalationSummary({ hospitalId: hospital.hospital, userId: doctor }),
     ]);
 
     const expiry = req.user?.licenseExpiry ? new Date(req.user.licenseExpiry) : null;
@@ -163,6 +203,7 @@ export async function doctorDashboard(req, res) {
         shift: shiftPending,
         total: leavePending + overtimePending + shiftPending,
       },
+      escalationSummary,
     });
   } catch (err) {
     console.error("Doctor dashboard error:", err);
@@ -184,6 +225,7 @@ export async function nurseDashboard(req, res) {
       leavePending,
       overtimePending,
       shiftPending,
+      escalationSummary,
     ] = await Promise.all([
       Patient.countDocuments(hospital),
       Appointment.countDocuments({
@@ -195,6 +237,7 @@ export async function nurseDashboard(req, res) {
       LeaveRequest.countDocuments({ requester: userId, status: "PENDING" }),
       OvertimeRequest.countDocuments({ requester: userId, status: "PENDING" }),
       ShiftRequest.countDocuments({ requester: userId, status: "PENDING" }),
+      buildEscalationSummary({ hospitalId: hospital.hospital }),
     ]);
 
     res.json({
@@ -207,6 +250,7 @@ export async function nurseDashboard(req, res) {
         shift: shiftPending,
         total: leavePending + overtimePending + shiftPending,
       },
+      escalationSummary,
     });
   } catch (err) {
     console.error("Nurse dashboard error:", err);
@@ -1010,7 +1054,10 @@ export async function hospitalAdminDashboard(req, res) {
       linkedPharmacists,
       unlinkedPharmacists,
       unreadPharmacyRiskNotifications,
+      escalationSummary,
       hospitalRecord,
+      beds,
+      recentBedEvents,
     ] = await Promise.all([
       User.countDocuments({
         ...hospital,
@@ -1089,12 +1136,39 @@ export async function hospitalAdminDashboard(req, res) {
         read: false,
         "meta.type": "PHARMACY_COVERAGE_RISK",
       }),
+      buildEscalationSummary({ hospitalId }),
       hospitalId ? Hospital.findById(hospitalId).select("features").lean() : null,
+      Bed.find(hospital).select("ward occupied").lean(),
+      AuditLog.find({
+        ...hospital,
+        action: { $in: ["BED_ASSIGN", "BED_RELEASE", "BED_TRANSFER", "BED_DISCHARGE"] },
+      })
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(8)
+        .populate("actorId", "name email role")
+        .lean(),
     ]);
 
     const pharmacyFeatureEnabled = Boolean(hospitalRecord?.features?.pharmacy);
     const pharmacyCoverageRisk = pharmacyFeatureEnabled && pharmacists > 0 && linkedPharmacists === 0;
     const pharmacyLinkageWarning = pharmacyFeatureEnabled && unlinkedPharmacists > 0;
+    const wardOccupancyMap = new Map();
+    for (const bed of beds) {
+      const key = bed.ward || "Unassigned";
+      const current = wardOccupancyMap.get(key) || { ward: key, total: 0, occupied: 0 };
+      current.total += 1;
+      if (bed.occupied) current.occupied += 1;
+      wardOccupancyMap.set(key, current);
+    }
+    const wardOccupancy = Array.from(wardOccupancyMap.values())
+      .map((row) => ({
+        ...row,
+        available: Math.max(0, row.total - row.occupied),
+        occupancyRate: row.total ? Math.round((row.occupied / row.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.occupancyRate - a.occupancyRate || a.ward.localeCompare(b.ward))
+      .slice(0, 6);
+    const occupiedBeds = beds.filter((row) => row.occupied).length;
 
     res.json({
       totalStaff,
@@ -1113,9 +1187,31 @@ export async function hospitalAdminDashboard(req, res) {
       linkedPharmacists,
       unlinkedPharmacists,
       unreadPharmacyRiskNotifications,
+      escalationSummary,
       pharmacyFeatureEnabled,
       pharmacyCoverageRisk,
       pharmacyLinkageWarning,
+      totalBeds: beds.length,
+      occupiedBeds,
+      bedOccupancyRate: beds.length ? Math.round((occupiedBeds / beds.length) * 100) : 0,
+      wardOccupancy,
+      recentBedEvents: recentBedEvents.map((row) => ({
+        _id: row._id,
+        action: row.action,
+        createdAt: row.createdAt,
+        actor: row.actorId
+          ? {
+              _id: row.actorId._id,
+              name: row.actorId.name || row.actorId.email || "Unknown",
+              role: row.actorId.role || row.actorRole || "",
+            }
+          : {
+              _id: null,
+              name: row.actorRole || "System",
+              role: row.actorRole || "",
+            },
+        metadata: row.metadata || {},
+      })),
       invoicesThisMonth: invoicesTotal[0]?.total || 0,
       overduePayroll,
     });

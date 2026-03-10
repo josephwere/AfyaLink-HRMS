@@ -268,6 +268,14 @@ const hospitalSchema = new mongoose.Schema(
         showReports: { type: Boolean, default: true },
         showAnalytics: { type: Boolean, default: true },
       },
+      clinical: {
+        closeoutPolicy: {
+          enabled: { type: Boolean, default: false },
+          requireDiagnosisBeforeClose: { type: Boolean, default: null },
+          requireBillingHandoffWhenPaymentsEnabled: { type: Boolean, default: null },
+          requirePrescriptionWhenPharmacyEnabled: { type: Boolean, default: null },
+        },
+      },
       machineAlerts: {
         autoEscalationHighMinutes: { type: Number, default: 15 },
         autoEscalationMediumMinutes: { type: Number, default: 60 },

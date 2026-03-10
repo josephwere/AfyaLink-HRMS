@@ -3,6 +3,9 @@ import { protect } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 import {
   getSystemAdminMetrics,
+  getIntegrationHubSummary,
+  getPaymentsControlPlaneSummary,
+  getCountyCommandCenterSummary,
   getAdaptiveRiskPolicy,
   updateAdaptiveRiskPolicy,
   getAbacPolicies,
@@ -29,6 +32,27 @@ router.get(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   getSystemAdminMetrics
+);
+
+router.get(
+  "/integration-hub",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getIntegrationHubSummary
+);
+
+router.get(
+  "/integration-control-plane",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getPaymentsControlPlaneSummary
+);
+
+router.get(
+  "/county-command-center",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getCountyCommandCenterSummary
 );
 
 router.get(

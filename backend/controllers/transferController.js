@@ -336,6 +336,92 @@ export const listTransfers = async (req, res, next) => {
   }
 };
 
+export const transferCommandCenterOverview = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    const role = normalizeRole(req.user?.role || "");
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "40", 10), 1), 100);
+    const status = String(req.query.status || "").trim();
+
+    const filter = {};
+    if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) {
+      filter.$or = [{ fromHospital: hospital }, { toHospital: hospital }];
+    }
+    if (status) filter.status = status;
+
+    const transfers = await Transfer.find(filter)
+      .populate("patient", "firstName lastName nationalId countryId")
+      .populate("fromHospital", "name code")
+      .populate("toHospital", "name code")
+      .populate("requestedBy", "name role")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const transferIds = transfers.map((row) => row._id);
+    const consents = await TransferConsent.find({ transfer: { $in: transferIds } })
+      .select("transfer status scopes expiresAt updatedAt")
+      .lean();
+    const consentMap = new Map(consents.map((row) => [String(row.transfer), row]));
+
+    const items = transfers.map((row) => {
+      const consent = consentMap.get(String(row._id)) || null;
+      const completionScore = Number(row?.metadata?.handoverCompletionScore ?? 0);
+      const missing = Array.isArray(row?.metadata?.handoverMissing) ? row.metadata.handoverMissing : [];
+      const ageHours = Math.round((Date.now() - new Date(row.createdAt).getTime()) / (60 * 60 * 1000));
+      const overdue =
+        (row.status === "Pending" && ageHours >= 24) ||
+        (row.status === "Approved" && ageHours >= 24);
+
+      return {
+        _id: row._id,
+        status: row.status,
+        reasons: row.reasons || "",
+        patientName:
+          `${row?.patient?.firstName || ""} ${row?.patient?.lastName || ""}`.trim() || "Unknown patient",
+        patientIdentifier: row?.patient?.nationalId || row?.patient?.countryId || "",
+        fromHospitalName: row?.fromHospital?.name || row?.fromHospital?.code || "—",
+        toHospitalName: row?.toHospital?.name || row?.toHospital?.code || "—",
+        requestedByName: row?.requestedBy?.name || "—",
+        requestedByRole: row?.requestedBy?.role || "—",
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        ageHours,
+        overdue,
+        consentStatus: consent?.status || "PENDING",
+        consentScopes: consent?.scopes || [],
+        consentExpiresAt: consent?.expiresAt || null,
+        handoverCompletionScore: completionScore,
+        handoverMissingCount: missing.length,
+        handoverMissing: missing,
+        completedWithOverride: Boolean(row?.metadata?.completedWithOverride),
+      };
+    });
+
+    const summary = {
+      total: items.length,
+      pending: items.filter((row) => row.status === "Pending").length,
+      approved: items.filter((row) => row.status === "Approved").length,
+      completed: items.filter((row) => row.status === "Completed").length,
+      rejected: items.filter((row) => row.status === "Rejected").length,
+      consentPending: items.filter((row) => row.consentStatus === "PENDING").length,
+      overdue: items.filter((row) => row.overdue).length,
+      lowContinuity: items.filter(
+        (row) =>
+          row.status !== "Rejected" &&
+          row.status !== "Completed" &&
+          row.handoverCompletionScore > 0 &&
+          row.handoverCompletionScore < 100
+      ).length,
+      overrideCompletions: items.filter((row) => row.completedWithOverride).length,
+    };
+
+    return res.json({ summary, items });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const requestTransfer = async (req, res, next) => {
   try {
     const hospital = resolveHospital(req);

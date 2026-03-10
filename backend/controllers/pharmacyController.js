@@ -126,8 +126,8 @@ export async function createPrescription(req, res) {
         consultationSummary: {
           ...(appointment.metadata?.consultationSummary || {}),
           prescriptionSummary: String(summary || "").trim(),
-          carePlan:
-            String(advice || "").trim() || appointment.metadata?.consultationSummary?.carePlan || "",
+          prescriptionAdvice: String(advice || "").trim(),
+          carePlan: appointment.metadata?.consultationSummary?.carePlan || "",
         },
       };
       await appointment.save();

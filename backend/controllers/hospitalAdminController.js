@@ -323,6 +323,14 @@ export const updateHospitalCustomization = async (req, res) => {
         ...(current.modules || {}),
         ...(payload.modules || {}),
       },
+      clinical: {
+        ...(current.clinical || {}),
+        ...(payload.clinical || {}),
+        closeoutPolicy: {
+          ...(current.clinical?.closeoutPolicy || {}),
+          ...(payload.clinical?.closeoutPolicy || {}),
+        },
+      },
       updatedBy: req.user._id,
       updatedAt: new Date(),
     };

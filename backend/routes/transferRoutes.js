@@ -13,6 +13,7 @@ import {
   verifyTransferProvenance,
   transferAuditTrail,
   transferHandoverPackage,
+  transferCommandCenterOverview,
 } from "../controllers/transferController.js";
 import { protect } from '../middleware/authMiddleware.js';
 import { permit } from '../middleware/roleMiddleware.js';
@@ -50,6 +51,12 @@ function attachTransferAbacContext({ requiredScopes = [] } = {}) {
 }
 
 router.get("/", protect, permit("DOCTOR", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"), listTransfers);
+router.get(
+  "/command-center/overview",
+  protect,
+  permit("DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  transferCommandCenterOverview
+);
 router.post('/', protect, permit('DOCTOR', 'HOSPITAL_ADMIN', 'SYSTEM_ADMIN', 'SUPER_ADMIN'), requestTransfer);
 router.post('/:id/approve', protect, permit('HOSPITAL_ADMIN', 'SYSTEM_ADMIN', 'SUPER_ADMIN'), approveTransfer);
 router.post('/:id/reject', protect, permit('HOSPITAL_ADMIN', 'SYSTEM_ADMIN', 'SUPER_ADMIN'), rejectTransfer);

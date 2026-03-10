@@ -32,6 +32,13 @@ const systemSettingsSchema = new Schema(
       videoCallsEnabled: { type: Boolean, default: true },
       voiceCallsEnabled: { type: Boolean, default: true },
     },
+    clinical: {
+      closeoutPolicy: {
+        requireDiagnosisBeforeClose: { type: Boolean, default: true },
+        requireBillingHandoffWhenPaymentsEnabled: { type: Boolean, default: true },
+        requirePrescriptionWhenPharmacyEnabled: { type: Boolean, default: false },
+      },
+    },
     monetization: {
       strategy: { type: String, default: "CORE_FREE_PREMIUM_ADDONS" },
       enforceUsageLimits: { type: Boolean, default: false },

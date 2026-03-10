@@ -4,6 +4,15 @@ import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 
+function resolveScopedHospitalId(req) {
+  const actorRole = String(req.user?.role || "").toUpperCase();
+  const actorHospitalId = req.user?.hospitalId || req.user?.hospital;
+  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
+    return req.query?.hospitalId || actorHospitalId || null;
+  }
+  return actorHospitalId;
+}
+
 /**
  * CREATE PATIENT
  * ✔ Hospital enforced from logged-in user
@@ -68,7 +77,10 @@ export const createPatient = async (req, res, next) => {
  */
 export const listPatients = async (req, res, next) => {
   try {
-    const hospitalId = req.user.hospitalId;
+    const hospitalId = resolveScopedHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "Hospital is required" });
+    }
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const cursor = req.query.cursor || null;
@@ -176,6 +188,7 @@ export const getPatient = async (req, res, next) => {
 export const searchPatients = async (req, res, next) => {
   try {
     const q = req.query.q || "";
+    const hospitalId = resolveScopedHospitalId(req);
 
     // 🚫 Detect hospital override attempt
     if (req.query.hospital) {
@@ -189,9 +202,12 @@ export const searchPatients = async (req, res, next) => {
         message: "Access denied",
       });
     }
+    if (!hospitalId) {
+      return res.status(400).json({ message: "Hospital is required" });
+    }
 
     const patients = await Patient.find({
-      hospital: req.user.hospitalId, // 🔐 tenant scoped
+      hospital: hospitalId, // 🔐 tenant scoped
       active: true, // 🔒 SOFT-DELETE FILTER
       $or: [
         { firstName: new RegExp(q, "i") },

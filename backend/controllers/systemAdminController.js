@@ -1,9 +1,23 @@
 import Hospital from "../models/Hospital.js";
 import Branch from "../models/Branch.js";
 import User from "../models/User.js";
+import Connector from "../models/Connector.js";
+import ConnectorSlaEvent from "../models/ConnectorSlaEvent.js";
+import Transaction from "../models/Transaction.js";
+import Invoice from "../models/Invoice.js";
+import Financial from "../models/Financial.js";
+import InsuranceAuthorization from "../models/InsuranceAuthorization.js";
+import OfflineClientMetric from "../models/OfflineClientMetric.js";
+import Transfer from "../models/Transfer.js";
+import Appointment from "../models/Appointment.js";
+import MachineDevice from "../models/MachineDevice.js";
+import PharmacyItem from "../models/PharmacyItem.js";
+import Bed from "../models/Bed.js";
+import TrainingTracker from "../models/TrainingTracker.js";
 import LeaveRequest from "../models/LeaveRequest.js";
 import OvertimeRequest from "../models/OvertimeRequest.js";
 import ShiftRequest from "../models/ShiftRequest.js";
+import SreIncident from "../models/SreIncident.js";
 import AbacPolicy from "../models/AbacPolicy.js";
 import AbacPolicyTestCase from "../models/AbacPolicyTestCase.js";
 import { evaluateAbac } from "../utils/abacEngine.js";
@@ -12,6 +26,203 @@ import { logAudit } from "../services/auditService.js";
 import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
 import Notification from "../models/Notification.js";
 import fs from "fs/promises";
+import { getPaymentSettingsDoc } from "../utils/paymentSettingsStore.js";
+
+const INTEGRATION_HUB_MODULES = [
+  {
+    key: "SHA_HIE",
+    label: "SHA HIE",
+    description: "National eligibility, claims, and continuity exchange.",
+    match: (connector) =>
+      /sha|nhif|hie|social health/i.test(
+        [
+          connector?.name,
+          connector?.url,
+          connector?.config?.partner,
+          connector?.config?.vendor,
+          connector?.config?.description,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      ),
+  },
+  {
+    key: "KRA_ETIMS",
+    label: "KRA eTIMS",
+    description: "Tax-compliant invoicing and fiscal receipt evidence.",
+    match: (connector) =>
+      /kra|etims|tax/i.test(
+        [
+          connector?.name,
+          connector?.url,
+          connector?.config?.partner,
+          connector?.config?.vendor,
+          connector?.config?.description,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      ),
+  },
+  {
+    key: "MPESA",
+    label: "M-PESA",
+    description: "Collections, reconciliation, and mobile-money settlement.",
+    match: (connector) => /mpesa/i.test(JSON.stringify(connector || {})),
+  },
+  {
+    key: "FHIR",
+    label: "FHIR Gateway",
+    description: "Standards-based care exchange and migration APIs.",
+    match: (connector) =>
+      String(connector?.profile || "").toUpperCase().includes("FHIR") ||
+      String(connector?.type || "").toLowerCase() === "fhir",
+  },
+  {
+    key: "HL7",
+    label: "HL7 Gateway",
+    description: "Legacy ADT, LIS, and machine message flow.",
+    match: (connector) =>
+      String(connector?.profile || "").toUpperCase().includes("HL7") ||
+      String(connector?.type || "").toLowerCase() === "hl7",
+  },
+  {
+    key: "DICOM",
+    label: "DICOM Imaging",
+    description: "Radiology/PACS study routing and imaging continuity.",
+    match: (connector) =>
+      String(connector?.profile || "").toUpperCase().includes("DICOM") ||
+      String(connector?.type || "").toLowerCase() === "dicom",
+  },
+  {
+    key: "INSURANCE",
+    label: "Insurance APIs",
+    description: "Eligibility, claims, pre-auth, and denial recovery.",
+    match: (connector) =>
+      /insurance|claim|payer|preauth/i.test(
+        [
+          connector?.name,
+          connector?.url,
+          connector?.config?.partner,
+          connector?.config?.vendor,
+          connector?.config?.description,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      ),
+  },
+];
+
+function deriveIntegrationStatus(connectors = []) {
+  if (!connectors.length) return "MISSING";
+  const active = connectors.filter((row) => row.isActive !== false);
+  if (!active.length) return "DISABLED";
+  const healthy = active.filter((row) => {
+    const lastSuccessAt = row.runtime?.lastSuccessAt || row.lastSync || null;
+    const lastErrorAt = row.runtime?.lastErrorAt || null;
+    if (!lastSuccessAt) return false;
+    if (!lastErrorAt) return true;
+    return new Date(lastSuccessAt) >= new Date(lastErrorAt);
+  });
+  if (healthy.length === active.length) return "READY";
+  if (healthy.length > 0) return "AT_RISK";
+  return "DEGRADED";
+}
+
+function startOfLast30Days() {
+  return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+}
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function regionKeyForHospital(hospital) {
+  const country = String(hospital?.location?.country || "").trim();
+  const region = String(hospital?.location?.region || "").trim();
+  const city = String(hospital?.location?.city || "").trim();
+  return region || city || country || "Unassigned";
+}
+
+function buildControlPlaneActionPanel(key, context = {}) {
+  if (key === "SHA") {
+    return [
+      {
+        label: "Connector runtime",
+        state: context.connectors > 0 ? "ready" : "missing",
+        note: context.connectors > 0 ? "SHA connector is provisioned." : "Create and baseline the SHA connector.",
+      },
+      {
+        label: "Hospital rollout",
+        state: context.hospitalCoverage > 0 ? "ready" : "watch",
+        note:
+          context.hospitalCoverage > 0
+            ? `${context.hospitalCoverage} hospitals have SHA enabled.`
+            : "No hospital has SHA enabled in commerce config.",
+      },
+      {
+        label: "Pre-auth approval flow",
+        state: (context.approvedPreauth || 0) > 0 ? "ready" : "watch",
+        note:
+          (context.approvedPreauth || 0) > 0
+            ? `${context.approvedPreauth}/${context.preauthRequests || 0} pre-auth requests approved.`
+            : "No approved SHA pre-auth requests yet.",
+      },
+    ];
+  }
+
+  if (key === "ETIMS") {
+    return [
+      {
+        label: "Connector runtime",
+        state: context.connectors > 0 ? "ready" : "missing",
+        note: context.connectors > 0 ? "eTIMS connector is available." : "Provision the eTIMS connector.",
+      },
+      {
+        label: "Invoice export trail",
+        state: (context.overdueInvoices || 0) > 0 ? "watch" : "ready",
+        note:
+          (context.overdueInvoices || 0) > 0
+            ? `${context.overdueInvoices} overdue unpaid invoices need fiscal review.`
+            : "No overdue invoice pressure blocking rollout.",
+      },
+      {
+        label: "Hospital rollout",
+        state: context.hospitalCoverage > 0 ? "ready" : "watch",
+        note:
+          context.hospitalCoverage > 0
+            ? `${context.hospitalCoverage} hospitals are payment-enabled for fiscal sync.`
+            : "Enable payments for at least one hospital before cutover.",
+      },
+    ];
+  }
+
+  if (key === "MPESA") {
+    return [
+      {
+        label: "Global secrets",
+        state: context.configured ? "ready" : "missing",
+        note: context.configured ? "Consumer key, secret, and shortcode are set." : "Complete global M-PESA secret setup.",
+      },
+      {
+        label: "Connector runtime",
+        state: context.connectors > 0 ? "ready" : "watch",
+        note: context.connectors > 0 ? "M-PESA connector is live." : "Provision and probe the M-PESA rail.",
+      },
+      {
+        label: "Collection quality",
+        state: (context.failedCollections30d || 0) > 0 ? "watch" : "ready",
+        note:
+          (context.failedCollections30d || 0) > 0
+            ? `${context.failedCollections30d} failed collections in the last 30 days.`
+            : "No failed collections in the last 30 days.",
+      },
+    ];
+  }
+
+  return [];
+}
 
 export const getSystemAdminMetrics = async (_req, res) => {
   try {
@@ -39,6 +250,486 @@ export const getSystemAdminMetrics = async (_req, res) => {
   } catch (err) {
     console.error("System admin metrics error:", err);
     res.status(500).json({ message: "Failed to load system metrics" });
+  }
+};
+
+export const getIntegrationHubSummary = async (_req, res) => {
+  try {
+    const [connectors, recentEvents] = await Promise.all([
+      Connector.find({})
+        .select("name type profile runtime lastSync isActive hospitalId url")
+        .sort({ createdAt: -1, _id: -1 })
+        .lean(),
+      ConnectorSlaEvent.find({})
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean(),
+    ]);
+
+    const connectorIds = new Set(connectors.map((row) => String(row._id)));
+    const latestEventByConnector = new Map();
+    for (const event of recentEvents) {
+      const connectorId = String(event.connectorId || "");
+      if (!connectorIds.has(connectorId) || latestEventByConnector.has(connectorId)) continue;
+      latestEventByConnector.set(connectorId, event);
+    }
+
+    const modules = INTEGRATION_HUB_MODULES.map((module) => {
+      const rows = connectors.filter((connector) => module.match(connector));
+      const activeRows = rows.filter((row) => row.isActive !== false);
+      const latestSuccessAt = activeRows
+        .map((row) => row.runtime?.lastSuccessAt || row.lastSync || null)
+        .filter(Boolean)
+        .sort()
+        .slice(-1)[0] || null;
+      const latestErrorAt = activeRows
+        .map((row) => row.runtime?.lastErrorAt || null)
+        .filter(Boolean)
+        .sort()
+        .slice(-1)[0] || null;
+
+      const latestProbe = activeRows
+        .map((row) => latestEventByConnector.get(String(row._id)))
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+
+      const status = deriveIntegrationStatus(activeRows);
+      const runtimeModes = [...new Set(activeRows.map((row) => row.runtime?.mode).filter(Boolean))];
+      const profiles = [...new Set(activeRows.map((row) => row.profile).filter(Boolean))];
+
+      return {
+        key: module.key,
+        label: module.label,
+        description: module.description,
+        status,
+        connectorCount: rows.length,
+        activeConnectorCount: activeRows.length,
+        healthyConnectorCount: activeRows.filter((row) => deriveIntegrationStatus([row]) === "READY").length,
+        runtimeModes,
+        profiles,
+        latestSuccessAt,
+        latestErrorAt,
+        latestProbe: latestProbe
+          ? {
+              ok: Boolean(latestProbe.ok),
+              operation: latestProbe.operation,
+              createdAt: latestProbe.createdAt,
+              latencyMs: latestProbe.latencyMs || null,
+              breach: Boolean(latestProbe.breach),
+            }
+          : null,
+        nextAction:
+          status === "MISSING"
+            ? "Create connector and baseline runtime."
+            : status === "DISABLED"
+              ? "Re-enable connector and run probe."
+              : status === "DEGRADED"
+                ? "Repair failing connector and inspect SLA events."
+                : status === "AT_RISK"
+                  ? "Stabilize active errors before cutover."
+                  : "Advance migration mode or onboard more hospitals.",
+      };
+    });
+
+    const totals = {
+      totalConnectors: connectors.length,
+      readyModules: modules.filter((row) => row.status === "READY").length,
+      atRiskModules: modules.filter((row) => row.status === "AT_RISK").length,
+      degradedModules: modules.filter((row) => row.status === "DEGRADED").length,
+      missingModules: modules.filter((row) => row.status === "MISSING").length,
+    };
+
+    return res.json({ totals, modules, connectors });
+  } catch (err) {
+    console.error("Integration hub summary error:", err);
+    return res.status(500).json({ message: "Failed to load integration hub summary" });
+  }
+};
+
+export const getPaymentsControlPlaneSummary = async (_req, res) => {
+  try {
+    const since = startOfLast30Days();
+    const [paymentSettings, hospitals, connectors, transactions, overdueInvoices, claimRows] = await Promise.all([
+      getPaymentSettingsDoc({ lean: true, createIfMissing: false }),
+      Hospital.find({})
+        .select("name features insuranceProviders patientPaymentMethods active")
+        .lean(),
+      Connector.find({})
+        .select("name type profile runtime isActive url config")
+        .lean(),
+      Transaction.find({ createdAt: { $gte: since } })
+        .select("provider status amount currency createdAt hospital")
+        .lean(),
+      Invoice.countDocuments({
+        status: "Unpaid",
+        createdAt: { $lte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+      }),
+      Financial.find({ "insuranceClaim.claimId": { $exists: true, $ne: "" } })
+        .select("hospital insuranceClaim createdAt total")
+        .lean(),
+    ]);
+
+    const paymentEnabledHospitals = hospitals.filter((row) => row?.features?.payments);
+    const shaCoverageHospitals = hospitals.filter((row) =>
+      Array.isArray(row?.insuranceProviders) &&
+      row.insuranceProviders.some((provider) => /sha|nhif/i.test(`${provider?.code || ""} ${provider?.name || ""}`) && provider?.enabled !== false)
+    );
+    const mpesaCoverageHospitals = hospitals.filter((row) =>
+      Array.isArray(row?.patientPaymentMethods) &&
+      row.patientPaymentMethods.some((method) => /mpesa/i.test(method?.type || "") && method?.enabled !== false)
+    );
+
+    const shaConnectors = connectors.filter((row) => INTEGRATION_HUB_MODULES.find((m) => m.key === "SHA_HIE")?.match(row));
+    const etimsConnectors = connectors.filter((row) => INTEGRATION_HUB_MODULES.find((m) => m.key === "KRA_ETIMS")?.match(row));
+    const mpesaConnectors = connectors.filter((row) => INTEGRATION_HUB_MODULES.find((m) => m.key === "MPESA")?.match(row));
+
+    const providerSummary = ["mpesa", "stripe", "flutterwave"].map((provider) => {
+      const rows = transactions.filter((row) => String(row.provider || "").toLowerCase() === provider);
+      const successful = rows.filter((row) => String(row.status || "").toLowerCase() === "succeeded" || String(row.status || "").toLowerCase() === "success");
+      const pending = rows.filter((row) => String(row.status || "").toLowerCase() === "pending");
+      const failed = rows.length - successful.length - pending.length;
+      const totalAmount = successful.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+      return {
+        provider: provider.toUpperCase(),
+        totalTransactions: rows.length,
+        successful: successful.length,
+        pending: pending.length,
+        failed,
+        totalAmount,
+      };
+    });
+
+    const shaPreauthRequests = await InsuranceAuthorization.countDocuments({ provider: "SHA" });
+    const shaApprovedPreauth = await InsuranceAuthorization.countDocuments({ provider: "SHA", status: "APPROVED" });
+
+    const controlPlanes = [
+      {
+        key: "SHA",
+        label: "SHA Claims Control",
+        readiness:
+          shaConnectors.length && shaCoverageHospitals.length
+            ? deriveIntegrationStatus(shaConnectors)
+            : shaCoverageHospitals.length
+              ? "AT_RISK"
+              : "MISSING",
+        connectors: shaConnectors.length,
+        hospitalCoverage: shaCoverageHospitals.length,
+        preauthRequests: shaPreauthRequests,
+        approvedPreauth: shaApprovedPreauth,
+        deniedClaims: claimRows.filter((row) => String(row?.insuranceClaim?.status || "").toUpperCase() === "REJECTED").length,
+        nextAction:
+          shaConnectors.length
+            ? "Expand SHA-linked hospitals and reduce rejected claims."
+            : "Provision SHA connector and enable SHA on hospital commerce config.",
+        actionPanel: buildControlPlaneActionPanel("SHA", {
+          connectors: shaConnectors.length,
+          hospitalCoverage: shaCoverageHospitals.length,
+          preauthRequests: shaPreauthRequests,
+          approvedPreauth: shaApprovedPreauth,
+        }),
+      },
+      {
+        key: "ETIMS",
+        label: "KRA eTIMS Control",
+        readiness: etimsConnectors.length ? deriveIntegrationStatus(etimsConnectors) : "MISSING",
+        connectors: etimsConnectors.length,
+        hospitalCoverage: paymentEnabledHospitals.length,
+        preauthRequests: 0,
+        approvedPreauth: 0,
+        deniedClaims: 0,
+        nextAction: etimsConnectors.length
+          ? "Validate fiscal receipt flow and reconcile billing exports."
+          : "Provision eTIMS connector and bind invoice export trail.",
+        actionPanel: buildControlPlaneActionPanel("ETIMS", {
+          connectors: etimsConnectors.length,
+          hospitalCoverage: paymentEnabledHospitals.length,
+          overdueInvoices,
+        }),
+      },
+      {
+        key: "MPESA",
+        label: "M-PESA Collections",
+        readiness:
+          paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode
+            ? (mpesaConnectors.length ? deriveIntegrationStatus(mpesaConnectors) : "AT_RISK")
+            : "MISSING",
+        connectors: mpesaConnectors.length,
+        hospitalCoverage: mpesaCoverageHospitals.length,
+        transactions30d: providerSummary.find((row) => row.provider === "MPESA")?.totalTransactions || 0,
+        successfulCollections30d: providerSummary.find((row) => row.provider === "MPESA")?.successful || 0,
+        failedCollections30d: providerSummary.find((row) => row.provider === "MPESA")?.failed || 0,
+        nextAction:
+          paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc
+            ? "Drive hospital rollout and watch failed collection spikes."
+            : "Complete global M-PESA secrets and shortcode setup.",
+        actionPanel: buildControlPlaneActionPanel("MPESA", {
+          configured: Boolean(paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode),
+          connectors: mpesaConnectors.length,
+          failedCollections30d: providerSummary.find((row) => row.provider === "MPESA")?.failed || 0,
+        }),
+      },
+    ];
+
+    return res.json({
+      summary: {
+        paymentEnabledHospitals: paymentEnabledHospitals.length,
+        shaCoverageHospitals: shaCoverageHospitals.length,
+        mpesaCoverageHospitals: mpesaCoverageHospitals.length,
+        overdueInvoices,
+        totalTransactions30d: transactions.length,
+        succeededTransactions30d: providerSummary.reduce((sum, row) => sum + row.successful, 0),
+      },
+      providers: providerSummary,
+      controlPlanes,
+      paymentConfig: {
+        mode: paymentSettings?.mode || "FREE",
+        stripeConfigured: Boolean(paymentSettings?.stripe?.publishable && paymentSettings?.stripe?._enc),
+        mpesaConfigured: Boolean(paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode),
+        flutterwaveConfigured: Boolean(paymentSettings?.flutterwave?._enc),
+      },
+    });
+  } catch (err) {
+    console.error("Payments control plane summary error:", err);
+    return res.status(500).json({ message: "Failed to load payments control plane" });
+  }
+};
+
+export const getCountyCommandCenterSummary = async (req, res) => {
+  try {
+    const regionFilter = String(req.query?.region || "").trim();
+    const hospitals = await Hospital.find({ active: { $ne: false } })
+      .select("name code active location")
+      .lean();
+
+    const scopedHospitals = regionFilter
+      ? hospitals.filter((row) => regionKeyForHospital(row) === regionFilter)
+      : hospitals;
+    const hospitalIds = scopedHospitals.map((row) => row._id);
+
+    const [
+      users,
+      transfers,
+      offlineMetrics,
+      machineDevices,
+      trackers,
+      stockItems,
+      sreIncidents,
+      beds,
+      leavePending,
+      overtimePending,
+      shiftPending,
+      appointmentsToday,
+    ] = await Promise.all([
+      User.find({ hospital: { $in: hospitalIds }, active: { $ne: false } })
+        .select("hospital role active")
+        .lean(),
+      Transfer.find({
+        $or: [{ fromHospital: { $in: hospitalIds } }, { toHospital: { $in: hospitalIds } }],
+      })
+        .select("fromHospital toHospital status metadata createdAt")
+        .lean(),
+      OfflineClientMetric.find({ hospital: { $in: hospitalIds } })
+        .select("hospital queueLength failedTotal online clientUpdatedAt")
+        .lean(),
+      MachineDevice.find({ hospital: { $in: hospitalIds }, active: true })
+        .select("hospital status")
+        .lean(),
+      TrainingTracker.find({ hospital: { $in: hospitalIds } })
+        .select("hospital status progressPercent")
+        .lean(),
+      PharmacyItem.find({ hospital: { $in: hospitalIds } })
+        .select("hospital totalQuantity minStock")
+        .lean(),
+      SreIncident.find({
+        hospital: { $in: hospitalIds },
+        status: { $in: ["OPEN", "ACKED", "MITIGATED"] },
+      })
+        .select("hospital severity status")
+        .lean(),
+      Bed.find({ hospital: { $in: hospitalIds } }).select("hospital occupied").lean(),
+      LeaveRequest.countDocuments({ hospital: { $in: hospitalIds }, status: "PENDING" }),
+      OvertimeRequest.countDocuments({ hospital: { $in: hospitalIds }, status: "PENDING" }),
+      ShiftRequest.countDocuments({ hospital: { $in: hospitalIds }, status: "PENDING" }),
+      Appointment.find({
+        hospital: { $in: hospitalIds },
+        scheduledAt: { $gte: startOfToday() },
+        status: { $nin: ["Cancelled", "Completed"] },
+      })
+        .select("hospital")
+        .lean(),
+    ]);
+
+    const rowsByRegion = new Map();
+    for (const hospital of scopedHospitals) {
+      const key = regionKeyForHospital(hospital);
+      if (!rowsByRegion.has(key)) {
+        rowsByRegion.set(key, {
+          region: key,
+          hospitals: 0,
+          staff: 0,
+          doctors: 0,
+          nurses: 0,
+          pendingTransfers: 0,
+          overdueTransfers: 0,
+          offlineQueue: 0,
+          offlineFailures: 0,
+          offlineClients: 0,
+          offlineClientsOffline: 0,
+          machineOffline: 0,
+          machineError: 0,
+          totalBeds: 0,
+          occupiedBeds: 0,
+          lowStockItems: 0,
+          criticalStockItems: 0,
+          openOutages: 0,
+          criticalOutages: 0,
+          trainingCompletionRate: 0,
+          appointmentPressure: 0,
+        });
+      }
+      rowsByRegion.get(key).hospitals += 1;
+    }
+
+    const hospitalToRegion = new Map(scopedHospitals.map((row) => [String(row._id), regionKeyForHospital(row)]));
+
+    for (const user of users) {
+      const region = hospitalToRegion.get(String(user.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      bucket.staff += 1;
+      if (String(user.role || "").toUpperCase() === "DOCTOR") bucket.doctors += 1;
+      if (String(user.role || "").toUpperCase() === "NURSE") bucket.nurses += 1;
+    }
+
+    for (const transfer of transfers) {
+      const score = Number(transfer?.metadata?.handoverCompletionScore ?? 100);
+      const relatedRegions = [
+        hospitalToRegion.get(String(transfer.fromHospital)),
+        hospitalToRegion.get(String(transfer.toHospital)),
+      ].filter(Boolean);
+      const uniqueRegions = [...new Set(relatedRegions)];
+      for (const region of uniqueRegions) {
+        const bucket = rowsByRegion.get(region);
+        if (!bucket) continue;
+        if (transfer.status !== "Completed" && transfer.status !== "Rejected") {
+          bucket.pendingTransfers += 1;
+        }
+        if (transfer.status !== "Completed" && transfer.status !== "Rejected" && score < 100) {
+          bucket.overdueTransfers += 1;
+        }
+      }
+    }
+
+    for (const metric of offlineMetrics) {
+      const region = hospitalToRegion.get(String(metric.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      bucket.offlineQueue += Number(metric.queueLength || 0);
+      bucket.offlineFailures += Number(metric.failedTotal || 0);
+      bucket.offlineClients += 1;
+      if (metric.online === false) bucket.offlineClientsOffline += 1;
+    }
+
+    for (const device of machineDevices) {
+      const region = hospitalToRegion.get(String(device.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      if (device.status === "OFFLINE") bucket.machineOffline += 1;
+      if (device.status === "ERROR") bucket.machineError += 1;
+    }
+
+    for (const bed of beds) {
+      const region = hospitalToRegion.get(String(bed.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      bucket.totalBeds += 1;
+      if (bed.occupied) bucket.occupiedBeds += 1;
+    }
+
+    for (const item of stockItems) {
+      const region = hospitalToRegion.get(String(item.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      const totalQuantity = Number(item.totalQuantity || 0);
+      const minStock = Number(item.minStock || 0);
+      if (totalQuantity <= minStock) bucket.lowStockItems += 1;
+      if (totalQuantity <= Math.max(0, Math.floor(minStock / 2))) bucket.criticalStockItems += 1;
+    }
+
+    for (const incident of sreIncidents) {
+      const region = hospitalToRegion.get(String(incident.hospital));
+      if (!region) continue;
+      const bucket = rowsByRegion.get(region);
+      bucket.openOutages += 1;
+      if (String(incident.severity || "").toUpperCase() === "SEV1") bucket.criticalOutages += 1;
+    }
+
+    for (const appointment of appointmentsToday) {
+      const region = hospitalToRegion.get(String(appointment.hospital));
+      if (!region) continue;
+      rowsByRegion.get(region).appointmentPressure += 1;
+    }
+
+    const trainingByRegion = new Map();
+    for (const tracker of trackers) {
+      const region = hospitalToRegion.get(String(tracker.hospital));
+      if (!region) continue;
+      const current = trainingByRegion.get(region) || { total: 0, sum: 0 };
+      current.total += 1;
+      current.sum += Number(tracker.progressPercent || 0);
+      trainingByRegion.set(region, current);
+    }
+
+    const regions = Array.from(rowsByRegion.values()).map((row) => {
+      const training = trainingByRegion.get(row.region);
+      return {
+        ...row,
+        trainingCompletionRate: training?.total ? Math.round(training.sum / training.total) : 0,
+        bedOccupancyRate: row.totalBeds ? Math.round((row.occupiedBeds / row.totalBeds) * 100) : 0,
+      };
+    });
+    const allRegions = [...new Set(hospitals.map((row) => regionKeyForHospital(row)).filter(Boolean))].sort();
+    const bedsTotal = beds.length;
+    const bedsOccupied = beds.filter((row) => row.occupied).length;
+    const lowStockItems = stockItems.filter((item) => Number(item.totalQuantity || 0) <= Number(item.minStock || 0)).length;
+    const criticalStockItems = stockItems.filter(
+      (item) => Number(item.totalQuantity || 0) <= Math.max(0, Math.floor(Number(item.minStock || 0) / 2))
+    ).length;
+    const openOutages = sreIncidents.length;
+    const sev1Outages = sreIncidents.filter((row) => String(row.severity || "").toUpperCase() === "SEV1").length;
+
+    const totalHospitals = regions.reduce((sum, row) => sum + row.hospitals, 0);
+
+    return res.json({
+      summary: {
+        totalRegions: regions.length,
+        totalHospitals,
+        pendingApprovals: leavePending + overtimePending + shiftPending,
+        appointmentsToday: appointmentsToday.length,
+        regionsAtRisk: regions.filter(
+          (row) => row.offlineFailures > 0 || row.machineError > 0 || row.pendingTransfers > 5 || row.openOutages > 0
+        ).length,
+        bedState: {
+          total: bedsTotal,
+          occupied: bedsOccupied,
+          available: Math.max(0, bedsTotal - bedsOccupied),
+          occupancyRate: bedsTotal ? Math.round((bedsOccupied / bedsTotal) * 100) : 0,
+        },
+        stockRisk: {
+          lowStockItems,
+          criticalStockItems,
+        },
+        outages: {
+          open: openOutages,
+          sev1: sev1Outages,
+        },
+      },
+      allRegions,
+      regions: regions.sort((a, b) => b.pendingTransfers + b.offlineQueue - (a.pendingTransfers + a.offlineQueue)),
+    });
+  } catch (err) {
+    console.error("County command center summary error:", err);
+    return res.status(500).json({ message: "Failed to load county command center" });
   }
 };
 

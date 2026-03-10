@@ -14,7 +14,7 @@ export const getPublicBranding = async (_req, res) => {
 };
 
 export const updateSystemSettings = async (req, res) => {
-  const { branding, ai, monetization, communications } = req.body || {};
+  const { branding, ai, monetization, communications, clinical } = req.body || {};
   const doc = await getSystemSettingsDoc();
 
   if (branding) {
@@ -51,6 +51,16 @@ export const updateSystemSettings = async (req, res) => {
   }
   if (communications) {
     doc.communications = { ...doc.communications, ...communications };
+  }
+  if (clinical) {
+    doc.clinical = {
+      ...doc.clinical,
+      ...clinical,
+      closeoutPolicy: {
+        ...(doc.clinical?.closeoutPolicy || {}),
+        ...(clinical.closeoutPolicy || {}),
+      },
+    };
   }
 
   await doc.save();

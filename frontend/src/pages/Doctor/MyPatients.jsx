@@ -8,6 +8,8 @@ export default function MyPatients() {
   const [risk, setRisk] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [rows, setRows] = useState([]);
+  const [encounterByPatient, setEncounterByPatient] = useState({});
+  const [resolvingEncounterId, setResolvingEncounterId] = useState("");
 
   useEffect(() => {
     const q = search.trim();
@@ -16,8 +18,28 @@ export default function MyPatients() {
       .then((res) => {
         const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
         setRows(items);
+        return Promise.all(
+          items
+            .map((item) => String(item?._id || ""))
+            .filter(Boolean)
+            .map(async (patientId) => {
+              try {
+                const encounterRows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
+                const encounterItems = Array.isArray(encounterRows) ? encounterRows : [];
+                return [patientId, encounterItems[0] || null];
+              } catch {
+                return [patientId, null];
+              }
+            })
+        );
       })
-      .catch(() => setRows([]));
+      .then((pairs) => {
+        if (Array.isArray(pairs)) setEncounterByPatient(Object.fromEntries(pairs));
+      })
+      .catch(() => {
+        setRows([]);
+        setEncounterByPatient({});
+      });
   }, [search]);
 
   const filtered = useMemo(() => {
@@ -29,6 +51,44 @@ export default function MyPatients() {
       return statusOk && riskOk;
     });
   }, [rows, risk, status]);
+
+  const firstMissingRequirement = (encounter) => {
+    const items = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements
+      : [];
+    return items[0] || "";
+  };
+
+  const closeoutLabel = (encounter) => {
+    if (!encounter?._id) return "";
+    if (encounter?.closeout?.canClose) return "Ready to close";
+    const missing = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements.join(", ")
+      : "";
+    return missing ? `Pending: ${missing}` : "Requirements pending";
+  };
+  const escalationLabel = (encounter) => {
+    if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
+    return encounter.escalationSummary.unreadMine > 0 ? "Nurse escalation" : "Escalation open";
+  };
+
+  const resolveEscalation = async (encounter, patientId) => {
+    if (!encounter?._id) return;
+    try {
+      setResolvingEncounterId(String(encounter._id));
+      await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
+        method: "POST",
+        body: { note: "Clinician acknowledged patient-list escalation and resumed closeout workflow." },
+      });
+      navigate(
+        `/doctor/opd?patientId=${encodeURIComponent(String(patientId))}${
+          firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""
+        }`
+      );
+    } finally {
+      setResolvingEncounterId("");
+    }
+  };
 
   return (
     <div className="dashboard doctor-workspace">
@@ -89,6 +149,49 @@ export default function MyPatients() {
                   <td>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "-"}</td>
                   <td>
                     <div className="doctor-actions-row">
+                      {encounterByPatient[String(p._id)] ? (
+                        <>
+                          <button
+                            type="button"
+                            className="action-pill"
+                            onClick={() =>
+                              navigate(
+                                `/doctor/opd?patientId=${encodeURIComponent(String(p._id))}${
+                                  firstMissingRequirement(encounterByPatient[String(p._id)])
+                                    ? `&focus=${encodeURIComponent(firstMissingRequirement(encounterByPatient[String(p._id)]))}`
+                                    : ""
+                                }`
+                              )
+                            }
+                          >
+                            {closeoutLabel(encounterByPatient[String(p._id)])}
+                          </button>
+                          {escalationLabel(encounterByPatient[String(p._id)]) ? (
+                            <button
+                              type="button"
+                              className="action-pill warning"
+                              onClick={() => resolveEscalation(encounterByPatient[String(p._id)], p._id)}
+                            >
+                              {resolvingEncounterId === String(encounterByPatient[String(p._id)]?._id) ? "Resolving..." : escalationLabel(encounterByPatient[String(p._id)])}
+                            </button>
+                          ) : null}
+                        </>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() =>
+                          navigate(
+                            `/doctor/opd?patientId=${encodeURIComponent(String(p._id))}${
+                              firstMissingRequirement(encounterByPatient[String(p._id)])
+                                ? `&focus=${encodeURIComponent(firstMissingRequirement(encounterByPatient[String(p._id)]))}`
+                                : ""
+                            }`
+                          )
+                        }
+                      >
+                        Start Consultation
+                      </button>
                       <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/medical-records?patientId=${p._id}`)}>Open Record</button>
                       <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/reports-notes?patientId=${p._id}`)}>Add Note</button>
                       <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/prescriptions?patientId=${p._id}`)}>Prescribe</button>

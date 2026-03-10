@@ -5,16 +5,16 @@ export default function InpatientWard() {
   return (
     <DoctorModuleLayout
       title="Inpatient Ward"
-      subtitle="Bed assignments, daily progress, medication chart visibility and discharge workflow."
+      subtitle="Live ward occupancy, patient movement timeline, nursing visibility, and discharge context."
       actions={[
-        { label: "Open Ward List", variant: "primary", path: "/doctor/ward#list" },
-        { label: "Generate Discharge", path: "/doctor/ward#discharge" },
+        { label: "Open Live Ward Board", variant: "primary", path: "/doctor/ward-board" },
+        { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center" },
       ]}
       panels={[
-        { title: "Assigned Beds", body: "Current inpatient allocation by ward and risk level." },
-        { title: "Progress Notes", body: "Daily care progression and treatment milestones." },
-        { title: "Nursing Notes", body: "Cross-functional clinical visibility with nurse inputs." },
-        { title: "Mortality Review", body: "Outcome and review logs for governance." },
+        { title: "Assigned Beds", body: "See current inpatient allocation by ward, patient, and occupancy." },
+        { title: "Bed Timeline", body: "Review transfers, discharges, and release history before decisions." },
+        { title: "Nursing Notes", body: "Use the live board together with nurse ward actions and timeline context." },
+        { title: "Discharge Context", body: "Discharges stay linked to encounter closure and transfer continuity." },
       ]}
     />
   );

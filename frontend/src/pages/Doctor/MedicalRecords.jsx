@@ -1,21 +1,161 @@
-import React from "react";
-import DoctorModuleLayout from "./DoctorModuleLayout";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import apiFetch from "../../utils/apiFetch";
 
 export default function MedicalRecords() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const patientId = searchParams.get("patientId") || "";
+  const [patient, setPatient] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [encounters, setEncounters] = useState([]);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (!patientId) {
+      setPatient(null);
+      setAppointments([]);
+      return;
+    }
+    apiFetch(`/api/patients/${patientId}`)
+      .then(setPatient)
+      .catch(() => setPatient(null));
+
+    apiFetch("/api/appointments?limit=50&cursorMode=1")
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setAppointments(rows.filter((item) => String(item?.patient?._id || item?.patient) === String(patientId)));
+      })
+      .catch(() => setAppointments([]));
+    apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=25`)
+      .then((rows) => setEncounters(Array.isArray(rows) ? rows : []))
+      .catch(() => setEncounters([]));
+  }, [patientId]);
+
   return (
-    <DoctorModuleLayout
-      title="Medical Records"
-      subtitle="Longitudinal patient history across visits, surgeries, labs, radiology and attachments."
-      actions={[
-        { label: "Open Patient Timeline", variant: "primary", path: "/doctor/medical-records#timeline" },
-        { label: "Upload Attachment", path: "/doctor/medical-records#upload" },
-      ]}
-      panels={[
-        { title: "Visit History", body: "Past consultations and clinical notes timeline." },
-        { title: "Clinical History", body: "Surgeries, immunizations and chronic history." },
-        { title: "Diagnostics", body: "Lab and radiology history with trend support." },
-        { title: "Attachments", body: "Secure PDFs and imaging artifacts." },
-      ]}
-    />
+    <div className="dashboard doctor-workspace">
+      <div className="welcome-panel">
+        <div>
+          <h2>Medical Records</h2>
+          <p className="muted">Longitudinal patient history across visits, diagnostics, and attachments.</p>
+        </div>
+        <div className="welcome-actions">
+          {patientId ? (
+            <>
+              <button type="button" className="btn-primary" onClick={() => navigate(`/doctor/opd?patientId=${patientId}`)}>
+                Open Consultation
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => navigate(`/doctor/reports-notes?patientId=${patientId}`)}>
+                Add Note
+              </button>
+            </>
+          ) : null}
+          <button type="button" className="btn-secondary" onClick={() => window.print()}>
+            Print Summary
+          </button>
+        </div>
+      </div>
+
+      {!patientId ? (
+        <section className="section">
+          <div className="card muted">Open this page from a patient record, ward board, or doctor patient list.</div>
+        </section>
+      ) : null}
+
+      {patient ? (
+        <section className="section">
+          <div className="card">
+            <div className="card-header-actions">
+              <div>
+                <h3>Patient Timeline</h3>
+                <p className="muted">
+                  {[patient.firstName, patient.lastName].filter(Boolean).join(" ") || "Unnamed patient"}
+                  {patient.nationalId ? ` • ${patient.nationalId}` : ""}
+                </p>
+              </div>
+              <div className="action-pill">Ward: {patient.ward || "OPD"}</div>
+            </div>
+            <div className="grid info-grid">
+              <div className="card stat">
+                <div className="card-title">Status</div>
+                <div className="card-value">{patient.status || "ACTIVE"}</div>
+              </div>
+              <div className="card stat">
+                <div className="card-title">Risk</div>
+                <div className="card-value">{patient.riskLevel || "MEDIUM"}</div>
+              </div>
+              <div className="card stat">
+                <div className="card-title">Diagnosis</div>
+                <div className="card-value">{patient.primaryDiagnosis || "-"}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {msg ? (
+        <section className="section">
+          <div className="card">{msg}</div>
+        </section>
+      ) : null}
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <h3>Visit History</h3>
+          <div className="table-wrap">
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Doctor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map((item) => (
+                  <tr key={item._id}>
+                    <td>{item.scheduledAt ? new Date(item.scheduledAt).toLocaleString() : "-"}</td>
+                    <td>{item.type || item.serviceType || "Consultation"}</td>
+                    <td>{item.status || "-"}</td>
+                    <td>{item?.doctor?.name || item?.doctor?.email || "-"}</td>
+                  </tr>
+                ))}
+                {appointments.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="muted">No visit history found.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card doctor-alerts-card">
+          <h3>Clinical History</h3>
+          <div className="alert-stack">
+            {encounters.slice(0, 3).map((row) => (
+              <div key={row._id} className="card">
+                <strong>{row.diagnosis || "Encounter"}</strong>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  State: {row.state || "CREATED"}
+                  {row?.labSummary?.count ? ` • Labs: ${row.labSummary.count}` : " • No labs"}
+                  {row?.billing?.invoiceNumber ? ` • Invoice: ${row.billing.invoiceNumber} (${row.billing.status})` : " • No billing"}
+                  {row?.prescriptionSummary?.count
+                    ? ` • Prescriptions: ${row.prescriptionSummary.count} (${row.prescriptionSummary.latestStatus})`
+                    : " • No prescriptions"}
+                </p>
+                {row?.prescriptionSummary?.latestSummary ? (
+                  <p className="muted" style={{ marginTop: 6 }}>
+                    Latest prescription: {row.prescriptionSummary.latestSummary}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+            {!encounters.length ? <div className="action-pill">Labs, billing, prescriptions, and notes will appear after visit closeout.</div> : null}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

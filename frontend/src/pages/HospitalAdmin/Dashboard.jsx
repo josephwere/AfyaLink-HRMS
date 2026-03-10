@@ -145,11 +145,13 @@ export default function Dashboard() {
           <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointments")}>Appointment Ops</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/consultation-monitor")}>Consultation Monitor</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/escalations")}>Escalation Queue</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointment-analytics")}>Appointment Analytics</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>Leave Approvals</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Requests</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/recruitment-ads")}>Recruitment Ads</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/commerce-config")}>Insurance & Payments</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>Transfer Continuity</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/financials")}>Financials</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/machine-connectivity")}>Machine Connectivity</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>Branding & Customization</button>
@@ -162,11 +164,16 @@ export default function Dashboard() {
         <h3>Top Metrics</h3>
         <div className="grid info-grid">
           <StatCard title="Staff Count" value={data?.totalStaff ?? "—"} />
-          <StatCard title="Bed Occupancy" value={data?.patientsTotal ?? "—"} />
+          <StatCard
+            title="Bed Occupancy"
+            value={`${data?.bedOccupancyRate ?? "—"}%`}
+            subtitle={`${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied`}
+          />
           <StatCard title="Shift Coverage %" value={data?.openShifts ?? "—"} />
           <StatCard title="Department Alerts" value={data?.pendingRequests ?? "—"} />
           <StatCard title="Pending Doctor Assignments" value={data?.pendingAssignments ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
           <StatCard title="Active Consultation Calls" value={data?.activeConsultationCalls ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
+          <StatCard title="Open Ward Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/hospital-admin/consultation-monitor")} />
           <StatCard
             title="Unlinked Pharmacists"
             value={data?.unlinkedPharmacists ?? "—"}
@@ -229,6 +236,7 @@ export default function Dashboard() {
             <button type="button" className="action-link" onClick={() => navigate("/workforce/requests#shift")}>Shift Calendar</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/appointments")}>Appointment Queue</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/appointment-analytics")}>Demand Analytics</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/transfer-command-center")}>Transfer Command Center</button>
             <button type="button" className="action-link" onClick={() => navigate("/reports")}>Attendance Heatmap</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Staff Directory</button>
             <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist")}>Fix Pharmacy Links</button>
@@ -270,6 +278,119 @@ export default function Dashboard() {
               </button>
             ) : null}
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>Incident Reports</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Ward Escalations</h3>
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <p className="muted">Facility-level view of nurse-raised blockers that need clinician or admin follow-up.</p>
+            </div>
+            <div className="action-pill warning">Open: {data?.escalationSummary?.openCount ?? 0}</div>
+          </div>
+          <div className="alert-stack" style={{ marginTop: 12 }}>
+            {(data?.escalationSummary?.items || []).slice(0, 8).map((item) => (
+              <div key={item.id} className="card">
+                <div className="card-header-actions">
+                  <div>
+                    <strong>{item.patientName}</strong>
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      {item.resolvedAt ? "Resolved" : "Needs follow-up"}
+                      {item.missingRequirements?.length ? ` • Missing: ${item.missingRequirements.join(", ")}` : ""}
+                    </div>
+                  </div>
+                  <div className={`action-pill${item.resolvedAt ? "" : " warning"}`}>
+                    {item.resolvedAt ? "Resolved" : "Open"}
+                  </div>
+                </div>
+                <p className="muted" style={{ marginTop: 8 }}>{item.body || item.title}</p>
+                <div className="doctor-actions-row" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => navigate(item.path || "/hospital-admin/escalations")}
+                  >
+                    Open Workflow
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!(data?.escalationSummary?.items || []).length ? (
+              <div className="action-pill">No ward escalations in this hospital.</div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Ward Occupancy</h3>
+        <div className="grid info-grid">
+          {Array.isArray(data?.wardOccupancy) && data.wardOccupancy.length ? (
+            data.wardOccupancy.map((ward) => (
+              <StatCard
+                key={ward.ward}
+                title={ward.ward}
+                value={`${ward.occupancyRate}%`}
+                subtitle={`${ward.occupied}/${ward.total} occupied • ${ward.available} available`}
+                onClick={() => navigate("/hospital-admin/ward-board")}
+              />
+            ))
+          ) : (
+            <div className="card muted">No ward occupancy data yet.</div>
+          )}
+        </div>
+      </section>
+
+      <section className="section doctor-main-grid">
+        <div className="card doctor-alerts-card">
+          <h3>Recent Bed Activity</h3>
+          <div className="alert-stack">
+            {Array.isArray(data?.recentBedEvents) && data.recentBedEvents.length ? (
+              data.recentBedEvents.map((event) => {
+                const moveFrom = [event?.metadata?.fromWard, event?.metadata?.fromNumber].filter(Boolean).join(" - ");
+                const moveTo = [event?.metadata?.toWard, event?.metadata?.toNumber].filter(Boolean).join(" - ");
+                return (
+                  <div key={event._id} className="alert-item">
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <strong>{String(event.action || "").replaceAll("_", " ")}</strong>
+                      <span className="muted">{new Date(event.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div className="muted">
+                      By {event?.actor?.name || "System"}{event?.actor?.role ? ` • ${event.actor.role}` : ""}
+                    </div>
+                    {moveFrom || moveTo ? (
+                      <div className="muted">
+                        {moveFrom || "Unknown"} {" -> "} {moveTo || "Unknown"}
+                      </div>
+                    ) : null}
+                    {event?.metadata?.ward || event?.metadata?.number ? (
+                      <div className="muted">
+                        Bed: {[event?.metadata?.ward, event?.metadata?.number].filter(Boolean).join(" - ")}
+                      </div>
+                    ) : null}
+                    {event?.metadata?.note ? <div>{event.metadata.note}</div> : null}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="card muted">No bed movement events yet.</div>
+            )}
+            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/ward-board")}>
+              Open Bed Operations
+            </button>
+          </div>
+        </div>
+
+        <div className="card doctor-schedule-card">
+          <h3>Ward Actions</h3>
+          <div className="panel-grid">
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/ward-board")}>Assign Beds</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/ward-board")}>Transfer Patients</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/ward-board")}>Discharge Beds</button>
+            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/transfer-command-center")}>Transfer Continuity</button>
           </div>
         </div>
       </section>

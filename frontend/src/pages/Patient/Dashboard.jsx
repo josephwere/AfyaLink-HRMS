@@ -11,6 +11,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [latestVisit, setLatestVisit] = useState(null);
+  const [latestEncounter, setLatestEncounter] = useState(null);
   const [latestPrescription, setLatestPrescription] = useState(null);
   const [latestReferral, setLatestReferral] = useState(null);
 
@@ -25,6 +26,12 @@ export default function Dashboard() {
         setLatestVisit(latestCompleted || null);
       })
       .catch(() => setLatestVisit(null));
+    apiFetch("/api/encounters?limit=1")
+      .then((rows) => {
+        const items = Array.isArray(rows) ? rows : [];
+        setLatestEncounter(items[0] || null);
+      })
+      .catch(() => setLatestEncounter(null));
     apiFetch("/api/pharmacy/prescriptions")
       .then((res) => {
         const rows = Array.isArray(res?.items) ? res.items : [];
@@ -123,18 +130,39 @@ export default function Dashboard() {
         </div>
         <div className="card doctor-alerts-card">
           <h3>Latest Visit Summary</h3>
-          {latestVisit ? (
+          {latestVisit || latestEncounter ? (
             <div className="alert-stack">
               <div className="card">
-                <strong>{latestVisit?.metadata?.consultationSummary?.diagnosis || latestVisit?.serviceType || "Recent Visit"}</strong>
+                <strong>
+                  {latestEncounter?.diagnosis ||
+                    latestVisit?.metadata?.consultationSummary?.diagnosis ||
+                    latestVisit?.serviceType ||
+                    "Recent Visit"}
+                </strong>
                 <p className="muted" style={{ marginTop: 8 }}>
                   {latestVisit?.metadata?.consultationSummary?.carePlan ||
                     latestVisit?.notes ||
+                    latestEncounter?.consultationNotes ||
                     "No detailed summary yet."}
+                </p>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  {latestEncounter?.labSummary?.count
+                    ? `Labs: ${latestEncounter.labSummary.count}`
+                    : "No labs"}
+                  {latestEncounter?.billing?.invoiceNumber
+                    ? ` • Invoice: ${latestEncounter.billing.invoiceNumber} (${latestEncounter.billing.status})`
+                    : " • No billing"}
+                  {latestEncounter?.prescriptionSummary?.count
+                    ? ` • Prescriptions: ${latestEncounter.prescriptionSummary.count} (${latestEncounter.prescriptionSummary.latestStatus})`
+                    : " • No prescriptions"}
                 </p>
                 {latestVisit?.metadata?.consultationSummary?.followUpDate ? (
                   <div className="action-pill">
                     Follow-up: {new Date(latestVisit.metadata.consultationSummary.followUpDate).toLocaleDateString()}
+                  </div>
+                ) : latestEncounter?.closedAt ? (
+                  <div className="action-pill">
+                    Closed: {new Date(latestEncounter.closedAt).toLocaleDateString()}
                   </div>
                 ) : null}
                 <div className="doctor-actions-row" style={{ marginTop: 10 }}>
@@ -143,6 +171,9 @@ export default function Dashboard() {
                   </button>
                   <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
                     Prescriptions
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/medical-records")}>
+                    Medical Records
                   </button>
                 </div>
               </div>

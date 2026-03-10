@@ -71,6 +71,13 @@ export default function SystemSettings() {
       videoCallsEnabled: true,
       voiceCallsEnabled: true,
     },
+    clinical: {
+      closeoutPolicy: {
+        requireDiagnosisBeforeClose: true,
+        requireBillingHandoffWhenPaymentsEnabled: true,
+        requirePrescriptionWhenPharmacyEnabled: false,
+      },
+    },
     monetization: {
       strategy: "CORE_FREE_PREMIUM_ADDONS",
       enforceUsageLimits: false,
@@ -106,6 +113,14 @@ export default function SystemSettings() {
           branding: { ...form.branding, ...(data.branding || {}) },
           ai: { ...form.ai, ...(data.ai || {}) },
           communications: { ...form.communications, ...(data.communications || {}) },
+          clinical: {
+            ...form.clinical,
+            ...(data.clinical || {}),
+            closeoutPolicy: {
+              ...(form.clinical.closeoutPolicy || {}),
+              ...(data?.clinical?.closeoutPolicy || {}),
+            },
+          },
           monetization: {
             ...form.monetization,
             ...(data.monetization || {}),
@@ -170,6 +185,14 @@ export default function SystemSettings() {
           branding: { ...form.branding, ...(res.settings.branding || {}) },
           ai: { ...form.ai, ...(res.settings.ai || {}) },
           communications: { ...form.communications, ...(res.settings.communications || {}) },
+          clinical: {
+            ...form.clinical,
+            ...(res.settings.clinical || {}),
+            closeoutPolicy: {
+              ...(form.clinical.closeoutPolicy || {}),
+              ...(res.settings?.clinical?.closeoutPolicy || {}),
+            },
+          },
           monetization: {
             ...form.monetization,
             ...(res.settings.monetization || {}),
@@ -198,6 +221,7 @@ export default function SystemSettings() {
       monetization: { monetization: form.monetization },
       ai: { ai: form.ai },
       communications: { communications: form.communications },
+      clinical: { clinical: form.clinical },
     };
     if (!map[key]) return;
     setSavingCard(key);
@@ -519,6 +543,80 @@ export default function SystemSettings() {
             disabled={loading || savingCard === "communications"}
           >
             {savingCard === "communications" ? "Saving..." : "Save Consultation Controls"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Clinical Closeout Policy</h3>
+        <div className="card form">
+          <p className="muted">
+            Define what must be completed before a visit can be closed. Billing and prescription rules only apply when the hospital has those modules enabled.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical.closeoutPolicy.requireDiagnosisBeforeClose)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    closeoutPolicy: {
+                      ...(f.clinical?.closeoutPolicy || {}),
+                      requireDiagnosisBeforeClose: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Require diagnosis or consultation summary before visit close
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical.closeoutPolicy.requireBillingHandoffWhenPaymentsEnabled)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    closeoutPolicy: {
+                      ...(f.clinical?.closeoutPolicy || {}),
+                      requireBillingHandoffWhenPaymentsEnabled: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Require billing handoff when payments are enabled
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical.closeoutPolicy.requirePrescriptionWhenPharmacyEnabled)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    closeoutPolicy: {
+                      ...(f.clinical?.closeoutPolicy || {}),
+                      requirePrescriptionWhenPharmacyEnabled: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Require prescription handoff when pharmacy is enabled
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("clinical")}
+            disabled={loading || savingCard === "clinical"}
+          >
+            {savingCard === "clinical" ? "Saving..." : "Save Clinical Closeout Policy"}
           </button>
         </div>
       </section>
