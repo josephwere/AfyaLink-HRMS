@@ -11,10 +11,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [encounterByPatient, setEncounterByPatient] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [burnout, setBurnout] = useState(null);
   const [burnoutTrend, setBurnoutTrend] = useState([]);
+  const [resolvingEncounterId, setResolvingEncounterId] = useState("");
 
   const burnoutStatus = (score) => {
     const n = Number(score || 0);
@@ -42,13 +44,44 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    const loadEncounterSnapshots = async (appointmentRows) => {
+      const patientIds = [...new Set(
+        (Array.isArray(appointmentRows) ? appointmentRows : [])
+          .map((item) => String(item?.patient?._id || item?.patient || ""))
+          .filter(Boolean)
+      )];
+      if (!patientIds.length) {
+        setEncounterByPatient({});
+        return;
+      }
+      const pairs = await Promise.all(
+        patientIds.map(async (patientId) => {
+          try {
+            const rows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
+            const items = Array.isArray(rows) ? rows : [];
+            return [patientId, items[0] || null];
+          } catch {
+            return [patientId, null];
+          }
+        })
+      );
+      setEncounterByPatient(Object.fromEntries(pairs));
+    };
+
     getDoctorDashboard()
       .then((res) => setData(res))
       .catch(() => setData(null));
 
     apiFetch("/api/appointments?limit=8&cursorMode=1")
-      .then((res) => setAppointments(Array.isArray(res?.items) ? res.items : []))
-      .catch(() => setAppointments([]));
+      .then((res) => {
+        const rows = Array.isArray(res?.items) ? res.items : [];
+        setAppointments(rows);
+        loadEncounterSnapshots(rows);
+      })
+      .catch(() => {
+        setAppointments([]);
+        setEncounterByPatient({});
+      });
 
     apiFetch("/api/notifications?limit=8")
       .then((res) => {
@@ -89,6 +122,42 @@ export default function Dashboard() {
     [data, availability]
   );
 
+  const firstMissingRequirement = (encounter) => {
+    const items = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements
+      : [];
+    return items[0] || "";
+  };
+
+  const closeoutLabel = (encounter) => {
+    if (!encounter?._id) return "";
+    if (encounter?.closeout?.canClose) return "Ready to close";
+    const missing = Array.isArray(encounter?.closeout?.missingRequirements)
+      ? encounter.closeout.missingRequirements.join(", ")
+      : "";
+    return missing ? `Pending: ${missing}` : "Requirements pending";
+  };
+  const escalationLabel = (encounter) => {
+    if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
+    return encounter.escalationSummary.unreadMine > 0 ? "Nurse escalation" : "Escalation open";
+  };
+
+  const resolveEscalation = async (encounter, patientKey) => {
+    if (!encounter?._id) return;
+    try {
+      setResolvingEncounterId(String(encounter._id));
+      await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
+        method: "POST",
+        body: { note: "Clinician acknowledged dashboard escalation and resumed closeout workflow." },
+      });
+      navigate(
+        `/doctor/opd${patientKey ? `?patientId=${encodeURIComponent(patientKey)}${firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""}` : ""}`
+      );
+    } finally {
+      setResolvingEncounterId("");
+    }
+  };
+
   return (
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
@@ -100,6 +169,8 @@ export default function Dashboard() {
           <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Open Patients</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Write Notes</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>Complete Plan</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/ward-board")}>Ward Board</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/escalations")}>My Escalations</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/settings")}>My Availability</button>
         </div>
       </div>
@@ -110,6 +181,7 @@ export default function Dashboard() {
           {summary.map((s) => (
             <StatCard key={s.title} title={s.title} value={s.value} />
           ))}
+          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} />
         </div>
       </section>
 
@@ -159,8 +231,54 @@ export default function Dashboard() {
                     <td>{a.status || "Scheduled"}</td>
                     <td>
                       <div className="doctor-actions-row">
-                        <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/medical-records")}>Open Record</button>
-                        <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Start Consultation</button>
+                        {(() => {
+                          const patientKey = String(a.patient?._id || a.patient || "");
+                          const encounter = encounterByPatient[patientKey];
+                          if (!encounter) return null;
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                className="action-pill"
+                                onClick={() =>
+                                  navigate(
+                                    `/doctor/opd${patientKey ? `?patientId=${encodeURIComponent(patientKey)}${firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""}` : ""}`
+                                  )
+                                }
+                              >
+                                {closeoutLabel(encounter)}
+                              </button>
+                              {escalationLabel(encounter) ? (
+                                <button
+                                  type="button"
+                                  className="action-pill warning"
+                                  onClick={() => resolveEscalation(encounter, patientKey)}
+                                >
+                                  {resolvingEncounterId === String(encounter._id) ? "Resolving..." : escalationLabel(encounter)}
+                                </button>
+                              ) : null}
+                            </>
+                          );
+                        })()}
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => navigate(`/doctor/medical-records${a.patient?._id ? `?patientId=${a.patient._id}` : ""}`)}
+                        >
+                          Open Record
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            const patientKey = String(a.patient?._id || a.patient || "");
+                            const encounter = encounterByPatient[patientKey];
+                            const missing = firstMissingRequirement(encounter);
+                            navigate(`/doctor/opd${patientKey ? `?patientId=${encodeURIComponent(patientKey)}${missing ? `&focus=${encodeURIComponent(missing)}` : ""}` : ""}`);
+                          }}
+                        >
+                          Start Consultation
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -184,6 +302,49 @@ export default function Dashboard() {
               </button>
             ))}
             {alerts.length === 0 && <div className="muted">No alerts</div>}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Ward Escalations</h3>
+              <p className="muted">Nurse-raised blockers that still need clinician review.</p>
+            </div>
+            <div className="action-pill warning">Open: {data?.escalationSummary?.openCount ?? 0}</div>
+          </div>
+          <div className="alert-stack" style={{ marginTop: 12 }}>
+            {(data?.escalationSummary?.items || []).slice(0, 6).map((item) => (
+              <div key={item.id} className="card">
+                <div className="card-header-actions">
+                  <div>
+                    <strong>{item.patientName}</strong>
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      {item.resolvedAt ? "Resolved" : "Needs review"}
+                      {item.missingRequirements?.length ? ` • Missing: ${item.missingRequirements.join(", ")}` : ""}
+                    </div>
+                  </div>
+                  <div className={`action-pill${item.resolvedAt ? "" : " warning"}`}>
+                    {item.resolvedAt ? "Resolved" : "Open"}
+                  </div>
+                </div>
+                <p className="muted" style={{ marginTop: 8 }}>{item.body || item.title}</p>
+                <div className="doctor-actions-row" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => navigate(item.path || (item.patientId ? `/doctor/opd?patientId=${encodeURIComponent(item.patientId)}` : "/doctor/opd"))}
+                  >
+                    Open Visit
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!(data?.escalationSummary?.items || []).length ? (
+              <div className="action-pill">No nurse escalations right now.</div>
+            ) : null}
           </div>
         </div>
       </section>

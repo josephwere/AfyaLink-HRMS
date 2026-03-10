@@ -121,6 +121,7 @@ import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
 import HospitalAdminFinancials from "./pages/HospitalAdmin/Financials";
 import HospitalAdminAppointments from "./pages/HospitalAdmin/Appointments";
 import HospitalAdminConsultationMonitor from "./pages/HospitalAdmin/ConsultationMonitor";
+import HospitalAdminEscalationQueue from "./pages/HospitalAdmin/EscalationQueue";
 import HospitalAdminAppointmentAnalytics from "./pages/HospitalAdmin/AppointmentAnalytics";
 import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
 import HospitalCustomization from "./pages/HospitalAdmin/Customization";
@@ -128,6 +129,7 @@ import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConne
 import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
 import HospitalAdminPharmacyReferrals from "./pages/HospitalAdmin/PharmacyReferrals";
 import HospitalAdminStaffTransfers from "./pages/HospitalAdmin/StaffTransfers";
+import HospitalAdminTransferCommandCenter from "./pages/HospitalAdmin/TransferCommandCenter";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -147,6 +149,9 @@ import RegulatoryReports from "./pages/SystemAdmin/RegulatoryReports";
 import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
 import SystemMigrations from "./pages/SystemAdmin/Migrations";
 import ConnectorSdk from "./pages/SystemAdmin/ConnectorSdk";
+import IntegrationHub from "./pages/SystemAdmin/IntegrationHub";
+import IntegrationControlPlane from "./pages/SystemAdmin/IntegrationControlPlane";
+import CountyCommandCenter from "./pages/SystemAdmin/CountyCommandCenter";
 import PharmacyAccessAudit from "./pages/SystemAdmin/PharmacyAccessAudit";
 import GovernmentHospitalRegistryPage from "./pages/SystemAdmin/GovernmentHospitalRegistry";
 import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
@@ -175,6 +180,7 @@ import AuditLogs from "./pages/Admin/AuditLogs";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
 import TrainingTracker from "./pages/Admin/TrainingTracker";
 import TrainingPlaybook from "./pages/Admin/TrainingPlaybook";
+import Beds from "./pages/Admin/Beds";
 
 function RootEntry() {
   const { user, loading } = useAuth();
@@ -1225,6 +1231,30 @@ export default function App() {
             }
           />
           <Route
+            path="/system-admin/integration-hub"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <IntegrationHub />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/integration-control-plane"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <IntegrationControlPlane />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/county-command-center"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <CountyCommandCenter />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/system-admin/connector-sdk"
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
@@ -1301,6 +1331,38 @@ export default function App() {
             }
           />
           <Route
+            path="/hospital-admin/transfer-command-center"
+            element={
+              <RequireRole roles={["DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminTransferCommandCenter />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/ward-board"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <Beds />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/nurse/ward-board"
+            element={
+              <RequireRole roles={["NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <Beds />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/doctor/ward-board"
+            element={
+              <RequireRole roles={["DOCTOR", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <Beds />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/hospital-admin/appointments"
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
@@ -1313,6 +1375,22 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminConsultationMonitor />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/escalations"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminEscalationQueue />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/doctor/escalations"
+            element={
+              <RequireRole roles={["DOCTOR", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <HospitalAdminEscalationQueue viewer="doctor" />
               </RequireRole>
             }
           />
@@ -1437,6 +1515,7 @@ export default function App() {
           >
             <Route index element={<AdminDashboard />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="beds" element={<Beds />} />
             <Route path="realtime" element={<RealTimeIntegrations />} />
             <Route path="crdt-patients" element={<CRDTPatientEditor />} />
             <Route path="access-control" element={<AccessControl />} />
