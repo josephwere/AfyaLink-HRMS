@@ -3,6 +3,7 @@ const REQUIRED_IN_PROD = [
   "JWT_SECRET",
   "JWT_ACCESS_SECRET",
   "FRONTEND_URL",
+  "CLAIM_SECRET_KEY",
 ];
 
 const WEAK_VALUES = new Set([
@@ -42,6 +43,11 @@ export function validateRuntimeEnv({ mode = process.env.NODE_ENV } = {}) {
     errors.push("JWT_ACCESS_SECRET is weak/default. Use a long random secret.");
   }
 
+  const claimSecret = String(process.env.CLAIM_SECRET_KEY || "");
+  if (claimSecret && !/^[a-f0-9]{64}$/i.test(claimSecret)) {
+    warnings.push("CLAIM_SECRET_KEY should be a 64-hex char key (32 bytes) for AES-256-GCM.");
+  }
+
   const mongo = String(process.env.MONGO_URI || "");
   if (mongo.includes("127.0.0.1") || mongo.includes("localhost")) {
     warnings.push("MONGO_URI points to localhost in production mode.");
@@ -58,4 +64,3 @@ export function validateRuntimeEnv({ mode = process.env.NODE_ENV } = {}) {
 
   return { ok: errors.length === 0, errors, warnings, isProd };
 }
-

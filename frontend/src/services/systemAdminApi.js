@@ -157,6 +157,54 @@ export const importGovernmentHospitalRegistry = async (bulk) => {
   });
 };
 
+export const listPatientIdentityRegistry = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.q) query.set("q", params.q);
+  if (params.country) query.set("country", params.country);
+  if (params.status) query.set("status", params.status);
+  const qs = query.toString();
+  const res = await apiFetch(`/api/system-admin/patient-identity-registry${qs ? `?${qs}` : ""}`);
+  return res?.items || [];
+};
+
+export const createPatientIdentityRegistryEntry = async (payload) => {
+  return apiFetch("/api/system-admin/patient-identity-registry", {
+    method: "POST",
+    body: payload,
+  });
+};
+
+export const importPatientIdentityRegistry = async (bulk) => {
+  return apiFetch("/api/system-admin/patient-identity-registry/import", {
+    method: "POST",
+    body: { bulk },
+  });
+};
+
+export const listClaimRules = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.country) query.set("country", params.country);
+  if (params.ruleType) query.set("ruleType", params.ruleType);
+  if (params.enabled !== undefined) query.set("enabled", String(params.enabled));
+  const qs = query.toString();
+  const res = await apiFetch(`/api/system-admin/claim-rules${qs ? `?${qs}` : ""}`);
+  return res?.items || [];
+};
+
+export const createClaimRule = async (payload) => {
+  return apiFetch("/api/system-admin/claim-rules", {
+    method: "POST",
+    body: payload,
+  });
+};
+
+export const updateClaimRule = async (id, payload) => {
+  return apiFetch(`/api/system-admin/claim-rules/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+};
+
 export const getHospitalVerificationReviewQueue = async () => {
   return apiFetch("/api/system-admin/hospital-verification/review-queue");
 };

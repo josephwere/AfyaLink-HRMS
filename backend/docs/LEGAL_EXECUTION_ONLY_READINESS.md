@@ -17,6 +17,7 @@ npm --prefix backend run readiness:legal-only
   - `JWT_SECRET`
   - `JWT_ACCESS_SECRET`
   - `FRONTEND_URL`
+  - `CLAIM_SECRET_KEY`
   - `METRICS_TOKEN`
   - `FLW_SECRET_KEY`
   - `FLW_WEBHOOK_SECRET`

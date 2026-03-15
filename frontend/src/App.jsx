@@ -132,6 +132,7 @@ import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
 import HospitalAdminPharmacyReferrals from "./pages/HospitalAdmin/PharmacyReferrals";
 import HospitalAdminStaffTransfers from "./pages/HospitalAdmin/StaffTransfers";
 import HospitalAdminTransferCommandCenter from "./pages/HospitalAdmin/TransferCommandCenter";
+import ClaimsDashboard from "./pages/HospitalAdmin/ClaimsDashboard";
 import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
 import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
 import StaffDashboard from "./pages/Staff/Dashboard";
@@ -156,7 +157,10 @@ import IntegrationControlPlane from "./pages/SystemAdmin/IntegrationControlPlane
 import CountyCommandCenter from "./pages/SystemAdmin/CountyCommandCenter";
 import PharmacyAccessAudit from "./pages/SystemAdmin/PharmacyAccessAudit";
 import GovernmentHospitalRegistryPage from "./pages/SystemAdmin/GovernmentHospitalRegistry";
+import PatientIdentityRegistryPage from "./pages/SystemAdmin/PatientIdentityRegistry";
+import ClaimRules from "./pages/SystemAdmin/ClaimRules";
 import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
+import FraudGuard from "./pages/SystemAdmin/FraudGuard";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -1289,10 +1293,34 @@ export default function App() {
             }
           />
           <Route
+            path="/system-admin/patient-identity-registry"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PatientIdentityRegistryPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/claim-rules"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ClaimRules />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/system-admin/hospital-verification-review"
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalVerificationReview />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/fraud-guard"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN"]}>
+                <FraudGuard />
               </RequireRole>
             }
           />
@@ -1377,6 +1405,14 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <HospitalAdminAppointments />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/claims"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN"]}>
+                <ClaimsDashboard />
               </RequireRole>
             }
           />

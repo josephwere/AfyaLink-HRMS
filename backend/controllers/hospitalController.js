@@ -8,6 +8,7 @@ import { audit } from "../utils/audit.js";
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import { encrypt } from "../services/cryptoService.js";
 
 const HOSPITAL_DOC_FIELDS = [
   "registrationCertificate",
@@ -567,6 +568,8 @@ export const updateHospital = async (req, res, next) => {
       plan,
       subscription,
       verification,
+      accreditations,
+      claimsSecurity,
       country,
       region,
       city,
@@ -677,6 +680,24 @@ export const updateHospital = async (req, res, next) => {
       }
     }
 
+    if (Array.isArray(accreditations)) {
+      hospital.accreditations = accreditations.map((item) => ({
+        code: String(item?.code || "").trim(),
+        name: String(item?.name || "").trim(),
+        categories: Array.isArray(item?.categories) ? item.categories.map((c) => String(c || "").trim()) : [],
+        status: String(item?.status || "ACTIVE").trim().toUpperCase(),
+        validFrom: item?.validFrom ? new Date(item.validFrom) : null,
+        validTo: item?.validTo ? new Date(item.validTo) : null,
+      }));
+    }
+
+    if (claimsSecurity && typeof claimsSecurity === "object") {
+      hospital.claimsSecurity = hospital.claimsSecurity || {};
+      if (claimsSecurity.requireSignature !== undefined) {
+        hospital.claimsSecurity.requireSignature = Boolean(claimsSecurity.requireSignature);
+      }
+    }
+
     await hospital.save();
 
     await audit({
@@ -688,6 +709,51 @@ export const updateHospital = async (req, res, next) => {
     });
 
     res.json({ success: true, hospital });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const rotateHospitalClaimSecret = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const hospital = await Hospital.findById(id);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+    const actorHospital = req.user?.hospitalId || req.user?.hospital;
+    const actorRole = String(req.user?.role || "").toUpperCase();
+    if (["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(actorRole) && String(actorHospital) !== String(hospital._id)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const masterKey = process.env.CLAIM_SECRET_KEY;
+    if (!masterKey) {
+      return res.status(500).json({ message: "CLAIM_SECRET_KEY not configured" });
+    }
+
+    const rawSecret = crypto.randomBytes(32).toString("hex");
+    hospital.claimsSecurity = hospital.claimsSecurity || {};
+    hospital.claimsSecurity.hmacSecretEnc = encrypt(rawSecret, masterKey);
+    hospital.claimsSecurity.keyId = uuidv4();
+    hospital.claimsSecurity.lastRotatedAt = new Date();
+    hospital.claimsSecurity.requireSignature = true;
+    await hospital.save();
+
+    await audit({
+      req,
+      action: "ROTATE_HOSPITAL_CLAIM_SECRET",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      metadata: { keyId: hospital.claimsSecurity.keyId },
+    });
+
+    return res.json({
+      hospitalId: hospital._id,
+      keyId: hospital.claimsSecurity.keyId,
+      secret: rawSecret,
+      note: "Store this secret securely. It will not be shown again.",
+    });
   } catch (err) {
     next(err);
   }

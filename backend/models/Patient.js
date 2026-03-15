@@ -44,6 +44,15 @@ const patientSchema = new Schema(
       metadata: Object,
     },
 
+    identityVerification: {
+      status: { type: String, enum: ["UNVERIFIED", "VERIFIED", "REJECTED"], default: "UNVERIFIED", index: true },
+      method: { type: String, trim: true, default: "" }, // NATIONAL_ID, HEALTH_ID, BIOMETRIC
+      registryMatch: { type: Boolean, default: false },
+      lastCheckedAt: Date,
+      verifiedAt: Date,
+      immutable: { type: Boolean, default: false },
+    },
+
     metadata: Object,
 
     /* ================= SOFT DELETE ================= */

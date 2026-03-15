@@ -2430,6 +2430,96 @@ body.auth-route {
   color: var(--app-text);
 }
 
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  z-index: 1000;
+}
+
+.drawer-panel {
+  width: min(520px, 96vw);
+  background: var(--app-surface);
+  color: var(--app-text);
+  box-shadow: -12px 0 24px rgba(15, 23, 42, 0.2);
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drawer-header h3 {
+  margin: 0;
+}
+
+.drawer-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.drawer-meta strong {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+}
+
+.drawer-meta span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.audit-list {
+  display: grid;
+  gap: 12px;
+}
+
+.audit-item {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--app-surface);
+  display: grid;
+  gap: 8px;
+}
+
+.audit-item pre {
+  margin: 0;
+  background: var(--app-surface-2);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .drawer-panel {
+    width: 100%;
+    padding: 18px;
+  }
+
+  .drawer-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
 .card.form input[type="file"] {
   padding: 10px;
   border-style: dashed;

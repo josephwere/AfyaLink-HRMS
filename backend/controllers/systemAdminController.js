@@ -24,6 +24,8 @@ import { evaluateAbac } from "../utils/abacEngine.js";
 import { getRiskPolicy, upsertRiskPolicy } from "../utils/riskPolicy.js";
 import { logAudit } from "../services/auditService.js";
 import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
+import PatientIdentityRegistry from "../models/PatientIdentityRegistry.js";
+import ClaimRule from "../models/ClaimRule.js";
 import Notification from "../models/Notification.js";
 import fs from "fs/promises";
 import { getPaymentSettingsDoc } from "../utils/paymentSettingsStore.js";
@@ -845,6 +847,215 @@ export const importGovernmentHospitalRegistry = async (req, res) => {
   } catch (err) {
     console.error("Government registry import error:", err);
     return res.status(500).json({ message: "Failed to import government registry" });
+  }
+};
+
+export const listPatientIdentityRegistry = async (req, res) => {
+  try {
+    const q = String(req.query?.q || "").trim();
+    const country = String(req.query?.country || "").trim().toUpperCase();
+    const status = String(req.query?.status || "").trim().toUpperCase();
+    const filter = {};
+    if (country) filter.country = country;
+    if (status) filter.status = status;
+    if (q) {
+      filter.$or = [
+        { idNumber: { $regex: q, $options: "i" } },
+        { firstName: { $regex: q, $options: "i" } },
+        { lastName: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const items = await PatientIdentityRegistry.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .lean();
+    return res.json({ items });
+  } catch (err) {
+    console.error("Patient identity registry list error:", err);
+    return res.status(500).json({ message: "Failed to load patient identity registry" });
+  }
+};
+
+export const createPatientIdentityRegistryEntry = async (req, res) => {
+  try {
+    const payload = {
+      country: String(req.body?.country || "").trim().toUpperCase(),
+      idType: String(req.body?.idType || "NATIONAL_ID").trim().toUpperCase(),
+      idNumber: String(req.body?.idNumber || "").trim(),
+      firstName: String(req.body?.firstName || "").trim(),
+      lastName: String(req.body?.lastName || "").trim(),
+      dob: req.body?.dob ? new Date(req.body.dob) : null,
+      gender: String(req.body?.gender || "").trim().toUpperCase(),
+      status: String(req.body?.status || "ACTIVE").trim().toUpperCase(),
+      verifiedAt: req.body?.verifiedAt ? new Date(req.body.verifiedAt) : new Date(),
+      source: String(req.body?.source || "NATIONAL_REGISTRY").trim(),
+      metadata: req.body?.metadata || {},
+    };
+
+    if (!payload.country || !payload.idNumber) {
+      return res.status(400).json({ message: "country and idNumber are required" });
+    }
+
+    const row = await PatientIdentityRegistry.create(payload);
+    return res.status(201).json(row);
+  } catch (err) {
+    console.error("Patient identity registry create error:", err);
+    return res.status(500).json({ message: "Failed to create patient identity entry" });
+  }
+};
+
+export const importPatientIdentityRegistry = async (req, res) => {
+  try {
+    const raw = String(req.body?.bulk || "").trim();
+    if (!raw) return res.status(400).json({ message: "bulk payload is required" });
+
+    let rows = [];
+    if (raw.startsWith("[")) {
+      rows = JSON.parse(raw);
+    } else {
+      rows = raw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [country, idType, idNumber, firstName, lastName, dob, gender, status] = line.split(",").map((v) => v.trim());
+          return { country, idType, idNumber, firstName, lastName, dob, gender, status };
+        });
+    }
+
+    const created = [];
+    const skipped = [];
+    for (const row of rows) {
+      try {
+        const entry = await PatientIdentityRegistry.create({
+          country: String(row.country || "").trim().toUpperCase(),
+          idType: String(row.idType || "NATIONAL_ID").trim().toUpperCase(),
+          idNumber: String(row.idNumber || "").trim(),
+          firstName: String(row.firstName || "").trim(),
+          lastName: String(row.lastName || "").trim(),
+          dob: row.dob ? new Date(row.dob) : null,
+          gender: String(row.gender || "").trim().toUpperCase(),
+          status: String(row.status || "ACTIVE").trim().toUpperCase(),
+          verifiedAt: new Date(),
+        });
+        created.push({ _id: entry._id, idNumber: entry.idNumber });
+      } catch (err) {
+        skipped.push({
+          idNumber: row.idNumber || "",
+          reason: err.message,
+        });
+      }
+    }
+
+    return res.json({ created, skipped });
+  } catch (err) {
+    console.error("Patient identity registry import error:", err);
+    return res.status(500).json({ message: "Failed to import patient identity registry" });
+  }
+};
+
+export const listClaimRules = async (req, res) => {
+  try {
+    const country = String(req.query?.country || "").trim().toUpperCase();
+    const ruleType = String(req.query?.ruleType || "").trim().toUpperCase();
+    const enabled = req.query?.enabled;
+    const filter = {};
+    if (country) filter.country = country;
+    if (ruleType) filter.ruleType = ruleType;
+    if (enabled !== undefined) filter.enabled = enabled === "true" || enabled === "1";
+
+    const items = await ClaimRule.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    return res.json({ items });
+  } catch (err) {
+    console.error("Claim rule list error:", err);
+    return res.status(500).json({ message: "Failed to load claim rules" });
+  }
+};
+
+export const createClaimRule = async (req, res) => {
+  try {
+    const payload = {
+      country: String(req.body?.country || "").trim().toUpperCase(),
+      ruleType: String(req.body?.ruleType || "").trim().toUpperCase(),
+      procedureCode: String(req.body?.procedureCode || "").trim().toUpperCase(),
+      procedureCategory: String(req.body?.procedureCategory || "").trim().toUpperCase(),
+      maxPerWindow: req.body?.maxPerWindow ?? null,
+      windowDays: req.body?.windowDays ?? null,
+      minAge: req.body?.minAge ?? null,
+      maxAge: req.body?.maxAge ?? null,
+      allowedGenders: Array.isArray(req.body?.allowedGenders)
+        ? req.body.allowedGenders.map((g) => String(g).trim().toUpperCase())
+        : String(req.body?.allowedGenders || "")
+            .split(",")
+            .map((g) => g.trim().toUpperCase())
+            .filter(Boolean),
+      cooldownDays: req.body?.cooldownDays ?? null,
+      severity: String(req.body?.severity || "MEDIUM").trim().toUpperCase(),
+      enabled: req.body?.enabled !== undefined ? Boolean(req.body.enabled) : true,
+      notes: String(req.body?.notes || "").trim(),
+    };
+
+    if (!payload.ruleType) {
+      return res.status(400).json({ message: "ruleType is required" });
+    }
+    if (!payload.procedureCode && !payload.procedureCategory) {
+      return res.status(400).json({ message: "procedureCode or procedureCategory is required" });
+    }
+
+    const row = await ClaimRule.create(payload);
+    return res.status(201).json(row);
+  } catch (err) {
+    console.error("Claim rule create error:", err);
+    return res.status(500).json({ message: "Failed to create claim rule" });
+  }
+};
+
+export const updateClaimRule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = {};
+    const fields = [
+      "country",
+      "ruleType",
+      "procedureCode",
+      "procedureCategory",
+      "maxPerWindow",
+      "windowDays",
+      "minAge",
+      "maxAge",
+      "cooldownDays",
+      "severity",
+      "enabled",
+      "notes",
+      "allowedGenders",
+    ];
+    for (const key of fields) {
+      if (req.body?.[key] !== undefined) updates[key] = req.body[key];
+    }
+    if (updates.country !== undefined) updates.country = String(updates.country || "").trim().toUpperCase();
+    if (updates.ruleType !== undefined) updates.ruleType = String(updates.ruleType || "").trim().toUpperCase();
+    if (updates.procedureCode !== undefined) updates.procedureCode = String(updates.procedureCode || "").trim().toUpperCase();
+    if (updates.procedureCategory !== undefined) updates.procedureCategory = String(updates.procedureCategory || "").trim().toUpperCase();
+    if (updates.severity !== undefined) updates.severity = String(updates.severity || "MEDIUM").trim().toUpperCase();
+    if (updates.allowedGenders !== undefined) {
+      updates.allowedGenders = Array.isArray(updates.allowedGenders)
+        ? updates.allowedGenders.map((g) => String(g).trim().toUpperCase())
+        : String(updates.allowedGenders || "")
+            .split(",")
+            .map((g) => g.trim().toUpperCase())
+            .filter(Boolean);
+    }
+    if (updates.enabled !== undefined) {
+      updates.enabled = updates.enabled === true || updates.enabled === "true" || updates.enabled === 1 || updates.enabled === "1";
+    }
+
+    const row = await ClaimRule.findByIdAndUpdate(id, updates, { new: true });
+    if (!row) return res.status(404).json({ message: "Claim rule not found" });
+    return res.json(row);
+  } catch (err) {
+    console.error("Claim rule update error:", err);
+    return res.status(500).json({ message: "Failed to update claim rule" });
   }
 };
 

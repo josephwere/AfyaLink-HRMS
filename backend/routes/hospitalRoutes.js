@@ -8,6 +8,7 @@ import {
   getHospitalFeatures,
   updateHospitalFeatures,
   updateHospital,
+  rotateHospitalClaimSecret,
 } from "../controllers/hospitalController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
@@ -79,6 +80,13 @@ router.put(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   updateHospital
+);
+
+router.post(
+  "/:id/claims-secret/rotate",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"),
+  rotateHospitalClaimSecret
 );
 
 /**

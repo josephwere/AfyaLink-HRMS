@@ -20,6 +20,12 @@ import {
   listGovernmentHospitalRegistry,
   createGovernmentHospitalRegistryEntry,
   importGovernmentHospitalRegistry,
+  listPatientIdentityRegistry,
+  createPatientIdentityRegistryEntry,
+  importPatientIdentityRegistry,
+  listClaimRules,
+  createClaimRule,
+  updateClaimRule,
   getHospitalVerificationReviewQueue,
   reviewHospitalVerification,
   streamHospitalVerificationDocument,
@@ -165,6 +171,48 @@ router.post(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   importGovernmentHospitalRegistry
+);
+
+router.get(
+  "/patient-identity-registry",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  listPatientIdentityRegistry
+);
+
+router.post(
+  "/patient-identity-registry",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  createPatientIdentityRegistryEntry
+);
+
+router.post(
+  "/patient-identity-registry/import",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  importPatientIdentityRegistry
+);
+
+router.get(
+  "/claim-rules",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  listClaimRules
+);
+
+router.post(
+  "/claim-rules",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  createClaimRule
+);
+
+router.patch(
+  "/claim-rules/:id",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  updateClaimRule
 );
 
 router.get(

@@ -196,6 +196,24 @@ const hospitalSchema = new mongoose.Schema(
       suspiciousRegistrationScore: { type: Number, default: 0 },
     },
 
+    claimsSecurity: {
+      requireSignature: { type: Boolean, default: true },
+      keyId: { type: String, trim: true, default: "" },
+      hmacSecretEnc: { type: String, trim: true, default: "" },
+      lastRotatedAt: Date,
+    },
+
+    accreditations: [
+      {
+        code: { type: String, trim: true, default: "" }, // procedure/code
+        name: { type: String, trim: true, default: "" },
+        categories: { type: [String], default: [] },
+        status: { type: String, enum: ["ACTIVE", "SUSPENDED", "REVOKED"], default: "ACTIVE" },
+        validFrom: Date,
+        validTo: Date,
+      },
+    ],
+
     /* ================= LOCATION (PATIENT DISCOVERY) ================= */
     location: {
       country: { type: String, trim: true, default: "" },
