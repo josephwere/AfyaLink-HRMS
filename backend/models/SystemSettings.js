@@ -87,6 +87,11 @@ const systemSettingsSchema = new Schema(
         },
       },
     },
+    migrations: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true }
 );

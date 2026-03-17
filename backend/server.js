@@ -17,6 +17,7 @@ import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
 import { runWorkforceAutomationSweep } from "./workers/workforceAutomationSweep.js";
 import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWorker.js";
 import { runTrainingOverdueSweep } from "./workers/trainingOverdueWorker.js";
+import { runAiAssistantBootstrap } from "./utils/aiAssistantBootstrap.js";
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ const start = async () => {
 
     await connectDB();
     await seedSuperAdmin();
+    await runAiAssistantBootstrap();
 
     // ✅ CORS MUST BE FIRST
     app.use(
