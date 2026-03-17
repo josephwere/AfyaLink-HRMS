@@ -684,7 +684,6 @@ function AppLayout() {
         </main>
       </div>
       {user && <FirstLoginTour />}
-      {user && <FloatingAI />}
     </>
   );
 }
@@ -1980,6 +1979,7 @@ export default function App() {
         {/* ============ 404 ============ */}
         <Route path="*" element={<div>404 — Page not found</div>} />
         </Routes>
+        <FloatingAI />
       </AppErrorBoundary>
     </SocketProvider>
   );

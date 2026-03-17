@@ -27,7 +27,7 @@ function parseNumber(value) {
 
 export default function FloatingAI() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { settings } = useSystemSettings();
   const ai = settings?.ai;
 
@@ -66,14 +66,15 @@ export default function FloatingAI() {
   const aiIcon = ai?.icon || settings?.branding?.appIcon || "";
   const greeting = ai?.greeting || "Assistant";
 
-  const role = String(user?.role || "").toUpperCase();
+  const isAuthenticated = Boolean(user);
+  const role = String(user?.role || "GUEST").toUpperCase();
   const isPatient = role === "PATIENT";
   const isGuest = role === "GUEST";
   const aiAccess = settings?.monetization?.featureAccess?.ai || "FREE";
   const aiEnabled = ai?.enabled !== false;
   const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
   const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
-  const aiLocked = !canUseAI;
+  const aiLocked = !canUseAI || !isAuthenticated;
   const hasIcon = Boolean(aiIcon) && iconOk;
   // Open only when user clicks the floating button.
 
@@ -85,6 +86,11 @@ export default function FloatingAI() {
     if (!open) return;
     setLoadingContext(true);
     setMsg("");
+    if (!isAuthenticated) {
+      setLoadingContext(false);
+      setMsg("Sign in to use the assistant.");
+      return;
+    }
     getAssistantContext()
       .then((res) => {
         const ctx = res?.context || {};
@@ -111,7 +117,7 @@ export default function FloatingAI() {
       })
       .catch((err) => setMsg(err?.message || "Failed to load assistant context"))
       .finally(() => setLoadingContext(false));
-  }, [open]);
+  }, [open, isAuthenticated]);
 
   const reminderText = useMemo(() => {
     const appt = context?.nextAppointment?.scheduledAt;
@@ -181,18 +187,20 @@ export default function FloatingAI() {
   }, [bmi, bmiStatus.label, vitalsRisk.label]);
 
   const appointmentPath = useMemo(() => {
+    if (!isAuthenticated) return "/login";
     if (role === "PATIENT") return "/patient/appointments";
     if (role === "DOCTOR") return "/doctor/appointments";
     if (role === "RECEPTIONIST") return "/receptionist/booking-desk";
     return "/notifications";
-  }, [role]);
+  }, [role, isAuthenticated]);
 
   const calendarPath = useMemo(() => {
+    if (!isAuthenticated) return "/login";
     if (role === "PATIENT") return "/patient";
     if (role === "DOCTOR") return "/doctor/schedule";
     if (role === "RECEPTIONIST") return "/receptionist/booking-desk";
     return "/profile";
-  }, [role]);
+  }, [role, isAuthenticated]);
 
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -226,7 +234,7 @@ export default function FloatingAI() {
     return () => window.cancelAnimationFrame(raf);
   }, [chatExpanded]);
 
-  if (!user) return null;
+  if (loading) return null;
   if (typeof document === "undefined") return null;
 
   const setFieldValue = (field, value) => {
