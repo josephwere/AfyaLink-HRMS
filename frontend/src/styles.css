@@ -2775,6 +2775,52 @@ body.auth-route {
   cursor: not-allowed;
 }
 
+.connection-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-blink {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  animation: afyalink-blink 1.2s ease-in-out infinite;
+}
+
+.status-blink-green {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.status-blink-red {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.status-blink-amber {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+@keyframes afyalink-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+}
+
 .download-menu {
   position: relative;
   display: inline-block;

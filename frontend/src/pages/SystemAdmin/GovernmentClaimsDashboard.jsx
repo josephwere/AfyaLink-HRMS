@@ -691,12 +691,34 @@ export default function GovernmentClaimsDashboard() {
         </div>
       </div>
 
-      {msg ? <div className="card">{msg}</div> : null}
-      {!msg && missingApi ? (
-        <div className="card">
-          Government APIs are not available on this backend yet. Deploy the latest backend or set the correct API base URL to load live data.
+      <div className="card connection-banner">
+        <div className="connection-status">
+          <span
+            className={`status-blink ${
+              apiStatus.state === "ok"
+                ? "status-blink-green"
+                : apiStatus.state === "warn" || apiStatus.state === "risk"
+                  ? "status-blink-red"
+                  : "status-blink-amber"
+            }`}
+            aria-hidden="true"
+          />
+          <strong>
+            {apiStatus.state === "ok"
+              ? "Government API Connected"
+              : apiStatus.state === "warn"
+                ? "Government API Not Available"
+                : apiStatus.state === "risk"
+                  ? "Government API Offline"
+                  : "Government API Checking"}
+          </strong>
         </div>
-      ) : null}
+        <p className="muted" style={{ marginBottom: 0 }}>
+          {apiStatus.detail || "Waiting for the latest API status."}
+        </p>
+      </div>
+
+      {msg ? <div className="card">{msg}</div> : null}
 
       <section className="section">
         <div className="card">
