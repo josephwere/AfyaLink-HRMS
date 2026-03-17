@@ -54,7 +54,7 @@ export default function FloatingAI() {
   const [speakerOn, setSpeakerOn] = useState(false);
   const [history, setHistory] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
-  const [chatExpanded, setChatExpanded] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(true);
 
   const recognitionRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -64,6 +64,19 @@ export default function FloatingAI() {
   const greeting = ai?.greeting || "Assistant";
 
   const role = String(user?.role || "").toUpperCase();
+  const isPatient = role === "PATIENT";
+  const isGuest = role === "GUEST";
+  const aiAccess = settings?.monetization?.featureAccess?.ai || "FREE";
+  const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
+  const canUseAI = Boolean(ai?.enabled) && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
+  const autoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if ((isPatient || isGuest) && !autoOpenedRef.current) {
+      setOpen(true);
+      autoOpenedRef.current = true;
+    }
+  }, [isPatient, isGuest]);
 
   useEffect(() => {
     if (!open) return;
@@ -210,7 +223,7 @@ export default function FloatingAI() {
     return () => window.cancelAnimationFrame(raf);
   }, [chatExpanded]);
 
-  if (!ai?.enabled) return null;
+  if (!canUseAI) return null;
 
   const setFieldValue = (field, value) => {
     if (!value) return;
@@ -672,6 +685,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <>
                     <label>Question</label>
                     <textarea
+                      className="ai-chat-input"
                       ref={chatInputRef}
                       rows={3}
                       value={chatPrompt}

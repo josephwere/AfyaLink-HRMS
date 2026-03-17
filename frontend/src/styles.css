@@ -1615,6 +1615,11 @@ body.auth-route {
   margin-top: 8px;
 }
 
+.ai-chat-input {
+  cursor: text;
+  pointer-events: auto;
+}
+
 .ai-compact-actions {
   display: flex;
   gap: 8px;

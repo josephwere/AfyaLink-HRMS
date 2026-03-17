@@ -347,6 +347,8 @@ const userSchema = new Schema(
     uiPreferences: {
       showSecretsOnHover: { type: Boolean, default: false },
     },
+
+    metadata: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );
