@@ -220,6 +220,25 @@ export default function FloatingAI() {
     }
   };
 
+  const buildOfflineReply = ({ prompt }) => {
+    const tips = [];
+    const temp = parseNumber(temperatureC);
+    const oxygen = parseNumber(spo2);
+    if (symptoms) tips.push(`You reported: ${symptoms}.`);
+    if (Number.isFinite(temp) && temp >= 37.5) tips.push("Your temperature is elevated. Rest, hydrate, and monitor.");
+    if (Number.isFinite(oxygen) && oxygen < 95) tips.push("Your SpO2 is low. Seek clinical help if this persists.");
+    if (!tips.length) tips.push("Share symptoms, temperature, or SpO2 for more specific guidance.");
+    return [
+      "Assistant service is temporarily unavailable.",
+      "Here is quick guidance based on your inputs:",
+      ...tips.map((t) => `- ${t}`),
+      "If symptoms are severe (chest pain, severe shortness of breath, confusion), seek emergency care.",
+      prompt ? `You asked: "${prompt}"` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
   useEffect(() => {
     if (!chatExpanded) return;
     if (typeof window === "undefined") return;
@@ -410,6 +429,13 @@ export default function FloatingAI() {
     appendChatMessage("user", prompt);
     setChatBusy(true);
     setMsg("");
+    if (!isAuthenticated) {
+      const fallback = "Please sign in to receive personalized assistant responses.";
+      appendChatMessage("assistant", fallback);
+      setChatAnswer(fallback);
+      setChatBusy(false);
+      return;
+    }
     try {
       const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
       const contextHint = buildChatContext([...chatMessages, { role: "user", text: prompt }]);
@@ -422,11 +448,24 @@ export default function FloatingAI() {
       setChatAnswer(answer);
       appendChatMessage("assistant", answer);
       pushHistory("chat", prompt || "Ask AI", answer);
+      setChatPrompt("");
     } catch (err) {
-      setMsg(err?.message || "Failed to get assistant answer");
+      const fallback = buildOfflineReply({ prompt });
+      setMsg(err?.message || "Assistant is offline. Showing quick guidance.");
+      setChatAnswer(fallback);
+      appendChatMessage("assistant", fallback);
+      pushHistory("chat", prompt || "Ask AI", fallback);
     } finally {
       setChatBusy(false);
     }
+  };
+
+  const handleQuickAsk = () => {
+    if (chatPrompt.trim()) {
+      askAssistant();
+      return;
+    }
+    openChat();
   };
 
   const summarizePage = async () => {
@@ -556,7 +595,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <button
                     type="button"
                     className="btn-secondary btn-compact"
-                    onClick={openChat}
+                    onClick={handleQuickAsk}
                     disabled={aiLocked}
                   >
                     Ask
@@ -684,7 +723,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <button
                     type="button"
                     className="btn-secondary btn-compact"
-                    onClick={openChat}
+                    onClick={handleQuickAsk}
                   >
                     Ask
                   </button>
