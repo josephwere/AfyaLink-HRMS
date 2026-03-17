@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -114,6 +114,9 @@ export default function GovernmentClaimsDashboard() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [missingApi, setMissingApi] = useState(false);
+  const [apiStatus, setApiStatus] = useState({ state: "unknown", detail: "", lastChecked: null });
+  const retryDelayRef = useRef(5000);
+  const retryTimerRef = useRef(null);
 
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditClaim, setAuditClaim] = useState(null);
@@ -293,10 +296,12 @@ export default function GovernmentClaimsDashboard() {
     }
   };
 
-  const loadAll = async () => {
-    setLoading(true);
+  const loadAll = async (options = {}) => {
+    const silent = Boolean(options.silent);
+    if (!silent) setLoading(true);
     setMsg("");
     setMissingApi(false);
+    setApiStatus((prev) => ({ ...prev, state: "checking" }));
     try {
       const results = await Promise.allSettled([
         loadOverview(),
@@ -314,16 +319,66 @@ export default function GovernmentClaimsDashboard() {
       if (fatal) {
         setMsg(fatal.reason?.message || "Failed to load government dashboard.");
       }
+
+      const failures = results.filter((row) => row.status === "rejected");
+      const missing = failures.filter((row) => row.reason?.status === 404);
+      const network = failures.filter((row) => {
+        if (row.reason?.status && row.reason.status !== 0) return row.reason.status >= 500;
+        const message = String(row.reason?.message || "").toLowerCase();
+        return message.includes("network") || message.includes("fetch failed") || message.includes("timeout");
+      });
+
+      if (failures.length === 0) {
+        setApiStatus({ state: "ok", detail: "All government endpoints healthy.", lastChecked: new Date().toISOString() });
+      } else if (network.length > 0 || failures.some((row) => row.reason?.status && row.reason.status !== 404)) {
+        setApiStatus({
+          state: "risk",
+          detail: "Government endpoints unreachable. Retrying automatically.",
+          lastChecked: new Date().toISOString(),
+        });
+      } else {
+        setApiStatus({
+          state: "warn",
+          detail: "Government endpoints missing on this backend. Retrying automatically.",
+          lastChecked: new Date().toISOString(),
+        });
+      }
     } catch (err) {
       setMsg(err?.message || "Failed to load government dashboard.");
+      setApiStatus({
+        state: "risk",
+        detail: "Government endpoints unreachable. Retrying automatically.",
+        lastChecked: new Date().toISOString(),
+      });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (apiStatus.state === "ok" || apiStatus.state === "unknown" || apiStatus.state === "checking") {
+      retryDelayRef.current = 5000;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      return;
+    }
+
+    const delay = Math.min(retryDelayRef.current, 30000);
+    retryTimerRef.current = setTimeout(() => {
+      retryDelayRef.current = Math.min(Math.round(retryDelayRef.current * 1.6), 30000);
+      loadAll({ silent: true });
+    }, delay);
+
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [apiStatus.state]);
 
   useEffect(() => {
     if (hospitals.length && !inspectionForm.hospitalId) {
@@ -591,6 +646,22 @@ export default function GovernmentClaimsDashboard() {
     [hospitalMonitoring]
   );
 
+  const apiBadgeClass = useMemo(() => {
+    if (apiStatus.state === "ok") return "status-chip status-good";
+    if (apiStatus.state === "warn") return "status-chip status-warn";
+    if (apiStatus.state === "risk") return "status-chip status-risk";
+    if (apiStatus.state === "checking") return "status-chip status-warn";
+    return "status-chip status-muted";
+  }, [apiStatus.state]);
+
+  const apiBadgeLabel = useMemo(() => {
+    if (apiStatus.state === "ok") return "API Healthy";
+    if (apiStatus.state === "warn") return "API Partial";
+    if (apiStatus.state === "risk") return "API Down";
+    if (apiStatus.state === "checking") return "API Checking";
+    return "API Unknown";
+  }, [apiStatus.state]);
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -601,6 +672,9 @@ export default function GovernmentClaimsDashboard() {
           </p>
         </div>
         <div className="welcome-actions">
+          <span className={apiBadgeClass} title={apiStatus.detail || ""}>
+            {apiBadgeLabel}
+          </span>
           <button type="button" className="btn-secondary" onClick={loadAll} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>
