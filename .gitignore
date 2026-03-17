@@ -1,0 +1,7 @@
+frontend/dist/
+frontend/node_modules/
+backend/uploads/
+
+# OS / editor
+.DS_Store
+*.swp
