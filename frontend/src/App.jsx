@@ -230,7 +230,6 @@ function PublicOnly({ children }) {
 function AppLayout() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
-  const showAI = settings?.ai?.enabled !== false;
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
@@ -685,7 +684,7 @@ function AppLayout() {
         </main>
       </div>
       {user && <FirstLoginTour />}
-      {user && showAI && <FloatingAI />}
+      {user && <FloatingAI />}
     </>
   );
 }
