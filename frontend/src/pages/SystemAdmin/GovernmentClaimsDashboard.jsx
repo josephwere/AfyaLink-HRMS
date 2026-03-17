@@ -113,6 +113,7 @@ export default function GovernmentClaimsDashboard() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [missingApi, setMissingApi] = useState(false);
 
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditClaim, setAuditClaim] = useState(null);
@@ -147,70 +148,157 @@ export default function GovernmentClaimsDashboard() {
 
   const loadOverview = async () => {
     const qs = buildQuery(filters);
-    const res = await apiFetch(`/api/government/overview${qs ? `?${qs}` : ""}`);
-    setOverview({ ...emptyOverview, ...(res || {}) });
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/overview${qs ? `?${qs}` : ""}`);
+      setOverview({ ...emptyOverview, ...(res || {}) });
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        try {
+          const fallback = await apiFetch(`/api/claims/government/overview${qs ? `?${qs}` : ""}`);
+          setOverview({ ...emptyOverview, ...(fallback || {}) });
+          setMissingApi(true);
+          return fallback;
+        } catch (fallbackErr) {
+          if (fallbackErr?.status === 404) setMissingApi(true);
+        }
+      }
+      throw err;
+    }
   };
 
   const loadClaims = async () => {
     const qs = buildQuery({ ...filters, ...claimsFilters });
-    const res = await apiFetch(`/api/government/claims${qs ? `?${qs}` : ""}`);
-    setClaims(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/claims${qs ? `?${qs}` : ""}`);
+      setClaims(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setClaims([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadFraudAlerts = async () => {
     const qs = buildQuery({ hospitalId: filters.hospitalId, ...alertFilters });
-    const res = await apiFetch(`/api/claims/alerts${qs ? `?${qs}` : ""}`);
-    setFraudAlerts(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/claims/alerts${qs ? `?${qs}` : ""}`);
+      setFraudAlerts(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setFraudAlerts([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadHospitals = async () => {
     const qs = buildQuery({ country: filters.country });
-    const res = await apiFetch(`/api/government/hospitals${qs ? `?${qs}` : ""}`);
-    setHospitals(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/hospitals${qs ? `?${qs}` : ""}`);
+      setHospitals(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setHospitals([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadInspections = async () => {
     const qs = buildQuery({ country: filters.country, hospitalId: filters.hospitalId });
-    const res = await apiFetch(`/api/government/inspections${qs ? `?${qs}` : ""}`);
-    setInspections(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/inspections${qs ? `?${qs}` : ""}`);
+      setInspections(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setInspections([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadEnforcements = async () => {
     const qs = buildQuery({ country: filters.country, hospitalId: filters.hospitalId });
-    const res = await apiFetch(`/api/government/enforcement${qs ? `?${qs}` : ""}`);
-    setEnforcements(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/enforcement${qs ? `?${qs}` : ""}`);
+      setEnforcements(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setEnforcements([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadHealthFunds = async () => {
     const qs = buildQuery({ country: filters.country });
-    const res = await apiFetch(`/api/government/health-funds${qs ? `?${qs}` : ""}`);
-    setHealthFunds(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch(`/api/government/health-funds${qs ? `?${qs}` : ""}`);
+      setHealthFunds(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setHealthFunds([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadAuditLogs = async () => {
-    const res = await apiFetch("/api/government/audit-logs?limit=200");
-    setAuditLogs(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch("/api/government/audit-logs?limit=200");
+      setAuditLogs(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setAuditLogs([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadNotifications = async () => {
-    const res = await apiFetch("/api/government/notifications");
-    setNotifications(Array.isArray(res?.items) ? res.items : []);
-    return res;
+    try {
+      const res = await apiFetch("/api/government/notifications");
+      setNotifications(Array.isArray(res?.items) ? res.items : []);
+      return res;
+    } catch (err) {
+      if (err?.status === 404) {
+        setMissingApi(true);
+        setNotifications([]);
+        return null;
+      }
+      throw err;
+    }
   };
 
   const loadAll = async () => {
     setLoading(true);
     setMsg("");
+    setMissingApi(false);
     try {
-      await Promise.all([
+      const results = await Promise.allSettled([
         loadOverview(),
         loadClaims(),
         loadFraudAlerts(),
@@ -221,6 +309,11 @@ export default function GovernmentClaimsDashboard() {
         loadAuditLogs(),
         loadNotifications(),
       ]);
+
+      const fatal = results.find((row) => row.status === "rejected" && row.reason?.status !== 404);
+      if (fatal) {
+        setMsg(fatal.reason?.message || "Failed to load government dashboard.");
+      }
     } catch (err) {
       setMsg(err?.message || "Failed to load government dashboard.");
     } finally {
@@ -234,10 +327,10 @@ export default function GovernmentClaimsDashboard() {
 
   useEffect(() => {
     if (hospitals.length && !inspectionForm.hospitalId) {
-      setInspectionForm((prev) => ({ ...prev, hospitalId: hospitals[0].id }));
+      setInspectionForm((prev) => ({ ...prev, hospitalId: hospitals[0].id || hospitals[0]._id || "" }));
     }
     if (hospitals.length && !enforcementForm.hospitalId) {
-      setEnforcementForm((prev) => ({ ...prev, hospitalId: hospitals[0].id }));
+      setEnforcementForm((prev) => ({ ...prev, hospitalId: hospitals[0].id || hospitals[0]._id || "" }));
     }
   }, [hospitals]);
 
@@ -515,6 +608,11 @@ export default function GovernmentClaimsDashboard() {
       </div>
 
       {msg ? <div className="card">{msg}</div> : null}
+      {!msg && missingApi ? (
+        <div className="card">
+          Government APIs are not available on this backend yet. Deploy the latest backend or set the correct API base URL to load live data.
+        </div>
+      ) : null}
 
       <section className="section">
         <div className="card">
