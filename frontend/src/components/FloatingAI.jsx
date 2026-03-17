@@ -515,6 +515,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
         className={`ai-float${hasIcon ? " ai-float-icon-only" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
         title={aiName}
+        style={{ position: "fixed", right: 20, bottom: 20, zIndex: 2147483647 }}
       >
         {hasIcon ? (
           <span className="ai-float-icon" aria-hidden="true">
@@ -528,7 +529,12 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
 
       {open && (
         <>
-          <aside className="ai-panel premium" role="dialog" aria-label={`${aiName} assistant`}>
+          <aside
+            className="ai-panel premium"
+            role="dialog"
+            aria-label={`${aiName} assistant`}
+            style={{ position: "fixed", right: 16, bottom: 88, zIndex: 2147483646 }}
+          >
             <div className="ai-panel-head">
               <div className="ai-header-main">
                 <div>
