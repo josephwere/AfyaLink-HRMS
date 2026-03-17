@@ -130,6 +130,64 @@ function buildAdvice({ role, symptoms = [], vitals = {}, assistantProfile = {}, 
   };
 }
 
+const MAX_ASSISTANT_HISTORY = 30;
+const MAX_ASSISTANT_TEXT = 600;
+const RETENTION_DAYS = 14;
+
+function normalizeChatMessage(role, text) {
+  const clean = String(text || "").trim();
+  if (!clean) return null;
+  return {
+    role,
+    text: clean.slice(0, MAX_ASSISTANT_TEXT),
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function getRetentionCutoff() {
+  return new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+function normalizeHospitalKey(value) {
+  const key = String(value || "").trim();
+  return key || "GLOBAL";
+}
+
+async function appendAssistantMemory(user, hospitalKey, entries = []) {
+  if (!user) return [];
+  const metadata = user.metadata && typeof user.metadata === "object" ? user.metadata : {};
+  const legacy = metadata.aiAssistantMemory?.messages || [];
+  const map = metadata.aiAssistantMemoryByHospital || {};
+  if (!map.GLOBAL && legacy.length) {
+    map.GLOBAL = {
+      messages: legacy,
+      updatedAt: metadata.aiAssistantMemory?.updatedAt || new Date().toISOString(),
+    };
+  }
+  const key = normalizeHospitalKey(hospitalKey);
+  const existing = map[key]?.messages || (key === "GLOBAL" ? legacy : []);
+  const cutoff = getRetentionCutoff();
+  const filtered = existing.filter((entry) => {
+    const ts = entry?.createdAt ? new Date(entry.createdAt) : null;
+    return ts && !Number.isNaN(ts.getTime()) ? ts >= cutoff : true;
+  });
+
+  const next = [...filtered, ...entries.filter(Boolean)].slice(-MAX_ASSISTANT_HISTORY);
+  const updatedAt = new Date().toISOString();
+  map[key] = { messages: next, updatedAt };
+
+  user.metadata = {
+    ...metadata,
+    aiAssistantMemoryByHospital: map,
+    aiAssistantMemory: {
+      messages: map.GLOBAL?.messages || [],
+      updatedAt: map.GLOBAL?.updatedAt || updatedAt,
+    },
+  };
+  await user.save();
+  return next;
+}
+
 export const getAssistantContext = async (req, res, next) => {
   try {
     const role = normalizeRole(req.user?.role || "");
@@ -165,6 +223,15 @@ export const getAssistantContext = async (req, res, next) => {
     });
 
     const profile = req.user?.metadata?.aiAssistant || {};
+    const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+    const memoryMap = req.user?.metadata?.aiAssistantMemoryByHospital || {};
+    const legacy = req.user?.metadata?.aiAssistantMemory?.messages || [];
+    const rawHistory = memoryMap[hospitalKey]?.messages || (hospitalKey === "GLOBAL" ? legacy : []);
+    const cutoff = getRetentionCutoff();
+    const chatHistory = rawHistory.filter((entry) => {
+      const ts = entry?.createdAt ? new Date(entry.createdAt) : null;
+      return ts && !Number.isNaN(ts.getTime()) ? ts >= cutoff : true;
+    });
     return res.json({
       success: true,
       context: {
@@ -172,6 +239,8 @@ export const getAssistantContext = async (req, res, next) => {
         nextAppointment,
         activePrescriptions,
         assistantProfile: profile,
+        chatHistory,
+        retentionDays: RETENTION_DAYS,
       },
     });
   } catch (err) {
@@ -252,6 +321,7 @@ export const getAssistantChat = async (req, res, next) => {
     const role = normalizeRole(req.user?.role || "");
     const profile = req.user?.metadata?.aiAssistant || {};
     const message = String(req.body?.message || "").trim();
+    const userMessage = String(req.body?.userMessage || message).trim();
     const pageContext = String(req.body?.pageContext || "").trim();
     if (!message) {
       return res.status(400).json({ message: "message is required" });
@@ -264,9 +334,22 @@ export const getAssistantChat = async (req, res, next) => {
       healthProfile: profile,
     });
 
+    const answer = out?.text || out?.answer || "No response generated";
+    try {
+      const toAppend = [
+        normalizeChatMessage("user", userMessage),
+        normalizeChatMessage("assistant", answer),
+      ];
+      const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+      await appendAssistantMemory(req.user, hospitalKey, toAppend);
+    } catch (err) {
+      // Do not block response on memory persistence failures.
+      console.warn("Assistant memory save failed:", err?.message || err);
+    }
+
     return res.json({
       success: true,
-      answer: out?.text || out?.answer || "No response generated",
+      answer,
       provider: out?.provider || "unknown",
     });
   } catch (err) {
@@ -290,11 +373,42 @@ export const summarizeAssistantPage = async (req, res, next) => {
       healthProfile: req.user?.metadata?.aiAssistant || {},
     });
 
+    const summary = out?.text || out?.answer || "No summary generated";
+    try {
+      const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+      await appendAssistantMemory(req.user, hospitalKey, [normalizeChatMessage("assistant", summary)]);
+    } catch (err) {
+      console.warn("Assistant memory save failed:", err?.message || err);
+    }
+
     return res.json({
       success: true,
-      summary: out?.text || out?.answer || "No summary generated",
+      summary,
       provider: out?.provider || "unknown",
     });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const clearAssistantMemory = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const metadata = user.metadata && typeof user.metadata === "object" ? user.metadata : {};
+    const map = metadata.aiAssistantMemoryByHospital || {};
+    const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+    map[hospitalKey] = { messages: [], updatedAt: new Date().toISOString() };
+    user.metadata = {
+      ...metadata,
+      aiAssistantMemoryByHospital: map,
+      aiAssistantMemory: {
+        messages: map.GLOBAL?.messages || [],
+        updatedAt: map.GLOBAL?.updatedAt || new Date().toISOString(),
+      },
+    };
+    await user.save();
+    return res.json({ success: true });
   } catch (err) {
     return next(err);
   }

@@ -8,6 +8,7 @@ import {
   chatAssistant,
   summarizeAssistantPage,
   updateAssistantProfile,
+  clearAssistantMemory,
 } from "../services/assistantApi";
 
 function parseCsv(value) {
@@ -52,6 +53,7 @@ export default function FloatingAI() {
   const [isDictating, setIsDictating] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [history, setHistory] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatExpanded, setChatExpanded] = useState(false);
 
   const recognitionRef = useRef(null);
@@ -79,6 +81,17 @@ export default function FloatingAI() {
             .join(", ")
         );
         setNotes(profile.notes || "");
+        const memory = Array.isArray(ctx.chatHistory) ? ctx.chatHistory : [];
+        setChatMessages(
+          memory
+            .filter((entry) => entry?.text)
+            .map((entry) => ({
+              id: entry.id || `${entry.role || "assistant"}-${entry.createdAt || Date.now()}`,
+              role: entry.role === "user" ? "user" : "assistant",
+              text: entry.text,
+              createdAt: entry.createdAt || new Date().toISOString(),
+            }))
+        );
       })
       .catch((err) => setMsg(err?.message || "Failed to load assistant context"))
       .finally(() => setLoadingContext(false));
@@ -282,6 +295,38 @@ export default function FloatingAI() {
     ].slice(0, 12));
   };
 
+  const appendChatMessage = (role, text) => {
+    const clean = String(text || "").trim();
+    if (!clean) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { id: `${role}-${Date.now()}`, role, text: clean, createdAt: new Date().toISOString() },
+    ].slice(-30));
+  };
+
+  const buildChatContext = (messages) => {
+    const recent = (messages || []).slice(-6).map((entry) => {
+      const label = entry.role === "user" ? "User" : "Assistant";
+      return `${label}: ${entry.text}`;
+    });
+
+    const adviceLines = [
+      ...(advice?.alerts || []),
+      ...(advice?.recommendations || []),
+    ].filter(Boolean);
+
+    return [
+      "Use the following health context to answer the user's question.",
+      `Upcoming appointment: ${reminderText}`,
+      `Symptoms: ${symptoms || "none reported"}`,
+      `Vitals: Temp ${temperatureC || "—"}°C, SpO2 ${spo2 || "—"}%, BMI ${bmi ?? "—"}, Hydration target ${hydrationLiters ? `${hydrationLiters} L/day` : "—"}`,
+      adviceLines.length ? `Recent advice: ${adviceLines.join("; ")}` : "",
+      recent.length ? `Recent chat:\n${recent.join("\n")}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
   const runAdvice = async () => {
     setAdviceBusy(true);
     setMsg("");
@@ -335,16 +380,23 @@ export default function FloatingAI() {
   };
 
   const askAssistant = async () => {
+    const prompt = String(chatPrompt || "").trim();
+    if (!prompt) return;
+    appendChatMessage("user", prompt);
     setChatBusy(true);
     setMsg("");
     try {
       const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
+      const contextHint = buildChatContext([...chatMessages, { role: "user", text: prompt }]);
       const out = await chatAssistant({
-        message: chatPrompt,
+        message: `${contextHint}\n\nUser question: ${prompt}`,
+        userMessage: prompt,
         pageContext,
       });
-      setChatAnswer(out?.answer || "");
-      pushHistory("chat", chatPrompt || "Ask AI", out?.answer || "");
+      const answer = out?.answer || "";
+      setChatAnswer(answer);
+      appendChatMessage("assistant", answer);
+      pushHistory("chat", prompt || "Ask AI", answer);
     } catch (err) {
       setMsg(err?.message || "Failed to get assistant answer");
     } finally {
@@ -359,11 +411,25 @@ export default function FloatingAI() {
       const pageContext = String(document?.body?.innerText || "").slice(0, 8000);
       const out = await summarizeAssistantPage({ pageContext });
       setChatAnswer(out?.summary || "");
+      appendChatMessage("assistant", out?.summary || "");
       pushHistory("summary", "Page Summary", out?.summary || "");
     } catch (err) {
       setMsg(err?.message || "Failed to summarize page");
     } finally {
       setSummaryBusy(false);
+    }
+  };
+
+  const clearMemory = async () => {
+    setMsg("");
+    try {
+      await clearAssistantMemory();
+      setChatMessages([]);
+      setChatAnswer("");
+      setHistory([]);
+      setMsg("Assistant memory cleared for this hospital.");
+    } catch (err) {
+      setMsg(err?.message || "Failed to clear assistant memory.");
     }
   };
 
@@ -593,6 +659,14 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <button type="button" className="btn-secondary btn-compact" onClick={exportHealthReport}>
                     PDF
                   </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={clearMemory}
+                    disabled={!chatMessages.length}
+                  >
+                    Clear Memory
+                  </button>
                 </div>
                 {chatExpanded ? (
                   <>
@@ -626,16 +700,18 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   </div>
                 )}
                 <div className="card ai-history-card">
-                  <h4>Recent AI Interactions</h4>
+                  <h4>Chat History</h4>
                   <div className="ai-history-list">
-                    {history.map((entry) => (
-                      <div key={entry.id} className={`ai-history-item ai-history-${entry.kind}`}>
-                        <strong>{entry.title}</strong>
-                        <p>{entry.content}</p>
+                    {chatMessages.map((entry) => (
+                      <div key={entry.id} className="ai-history-item ai-history-chat">
+                        <strong>{entry.role === "user" ? "You" : "Assistant"}</strong>
+                        <p>{entry.text}</p>
                         <small>{new Date(entry.createdAt).toLocaleTimeString()}</small>
                       </div>
                     ))}
-                    {!history.length ? <p className="muted">Recent questions, summaries, and advice will appear here.</p> : null}
+                    {!chatMessages.length ? (
+                      <p className="muted">Your chat messages will appear here for this session.</p>
+                    ) : null}
                   </div>
                 </div>
               </div>

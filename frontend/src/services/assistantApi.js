@@ -25,3 +25,8 @@ export const summarizeAssistantPage = (payload) =>
     method: "POST",
     body: payload || {},
   });
+
+export const clearAssistantMemory = () =>
+  apiFetch("/api/ai/assistant/clear-memory", {
+    method: "POST",
+  });

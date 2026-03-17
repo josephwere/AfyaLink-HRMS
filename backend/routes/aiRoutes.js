@@ -11,6 +11,7 @@ import {
   getAssistantAdvice,
   getAssistantChat,
   summarizeAssistantPage,
+  clearAssistantMemory,
 } from "../controllers/aiController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
@@ -41,6 +42,7 @@ router.put("/assistant/profile", updateAssistantProfile);
 router.post("/assistant/advice", getAssistantAdvice);
 router.post("/assistant/chat", getAssistantChat);
 router.post("/assistant/summarize", summarizeAssistantPage);
+router.post("/assistant/clear-memory", clearAssistantMemory);
 router.use("/gateway", aiGatewayRoutes);
 
 export default router;
