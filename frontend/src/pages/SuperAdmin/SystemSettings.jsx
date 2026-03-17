@@ -61,7 +61,7 @@ export default function SystemSettings() {
       sidebarIcons: {},
     },
     ai: {
-      enabled: false,
+      enabled: true,
       name: "NeuroEdge",
       url: "",
       greeting: "Hi, how can I help?",
@@ -82,7 +82,7 @@ export default function SystemSettings() {
       strategy: "CORE_FREE_PREMIUM_ADDONS",
       enforceUsageLimits: false,
       featureAccess: {
-        ai: "PREMIUM",
+        ai: "FREE",
         payments: "FREE",
         pharmacy: "FREE",
         inventory: "FREE",

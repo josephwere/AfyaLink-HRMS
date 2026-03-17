@@ -3,32 +3,59 @@ import SystemSettings from "../models/SystemSettings.js";
 export const SYSTEM_SETTINGS_KEY = "GLOBAL";
 
 export async function getSystemSettingsDoc({ lean = false, createIfMissing = true } = {}) {
-  let query = SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY });
-  if (lean) query = query.lean();
-  let doc = await query;
-  if (doc) return doc;
+  let doc = await SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY });
+  if (!doc) {
+    doc = await SystemSettings.findOne();
+  }
 
-  let fallback = lean ? await SystemSettings.findOne().lean() : await SystemSettings.findOne();
-  if (fallback) {
-    if (!fallback.key) {
-      if (lean) {
-        await SystemSettings.updateOne({ _id: fallback._id }, { $set: { key: SYSTEM_SETTINGS_KEY } });
-        fallback = await SystemSettings.findById(fallback._id).lean();
-      } else {
-        fallback.key = SYSTEM_SETTINGS_KEY;
-        await fallback.save();
-      }
+  if (doc) {
+    if (!doc.key) {
+      doc.key = SYSTEM_SETTINGS_KEY;
     }
-    return fallback;
+    let changed = false;
+    const allowAutoEnable = !doc.ai?.disabledByAdmin;
+    if (!doc.ai || typeof doc.ai.enabled !== "boolean") {
+      doc.ai = { ...(doc.ai || {}), enabled: true, disabledByAdmin: false };
+      changed = true;
+    }
+    if (allowAutoEnable && doc.ai?.enabled === false) {
+      doc.ai.enabled = true;
+      changed = true;
+    }
+    if (!doc.monetization) {
+      doc.monetization = { featureAccess: { ai: "FREE" } };
+      changed = true;
+    } else if (!doc.monetization.featureAccess) {
+      doc.monetization.featureAccess = { ai: "FREE" };
+      changed = true;
+    } else if (doc.monetization.featureAccess.get?.("ai") === "PREMIUM") {
+      doc.monetization.featureAccess.set("ai", "FREE");
+      changed = true;
+    } else if (doc.monetization.featureAccess.ai === "PREMIUM") {
+      doc.monetization.featureAccess.ai = "FREE";
+      changed = true;
+    } else if (!doc.monetization.featureAccess.get?.("ai") && !doc.monetization.featureAccess.ai) {
+      if (doc.monetization.featureAccess.set) {
+        doc.monetization.featureAccess.set("ai", "FREE");
+      } else {
+        doc.monetization.featureAccess.ai = "FREE";
+      }
+      changed = true;
+    }
+    if (changed) {
+      await doc.save();
+    }
+    if (lean) {
+      return SystemSettings.findById(doc._id).lean();
+    }
+    return doc;
   }
 
   if (!createIfMissing) return null;
 
+  const created = await SystemSettings.create({ key: SYSTEM_SETTINGS_KEY });
   if (lean) {
-    await SystemSettings.create({ key: SYSTEM_SETTINGS_KEY });
-    return SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY }).lean();
+    return SystemSettings.findById(created._id).lean();
   }
-
-  return SystemSettings.create({ key: SYSTEM_SETTINGS_KEY });
+  return created;
 }
-

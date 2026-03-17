@@ -18,7 +18,8 @@ const systemSettingsSchema = new Schema(
       },
     },
     ai: {
-      enabled: { type: Boolean, default: false },
+      enabled: { type: Boolean, default: true },
+      disabledByAdmin: { type: Boolean, default: false },
       name: { type: String, default: "NeuroEdge" },
       url: { type: String, default: "" },
       provider: { type: String, default: "NeuroEdge" },
@@ -71,7 +72,7 @@ const systemSettingsSchema = new Schema(
           enum: ["FREE", "PREMIUM"],
         },
         default: {
-          ai: "PREMIUM",
+          ai: "FREE",
           payments: "FREE",
           pharmacy: "FREE",
           inventory: "FREE",

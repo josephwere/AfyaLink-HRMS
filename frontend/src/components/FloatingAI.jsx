@@ -67,8 +67,9 @@ export default function FloatingAI() {
   const isPatient = role === "PATIENT";
   const isGuest = role === "GUEST";
   const aiAccess = settings?.monetization?.featureAccess?.ai || "FREE";
+  const aiEnabled = ai?.enabled !== false;
   const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
-  const canUseAI = Boolean(ai?.enabled) && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
+  const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {

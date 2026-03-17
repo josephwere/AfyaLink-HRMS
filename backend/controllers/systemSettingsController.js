@@ -29,7 +29,11 @@ export const updateSystemSettings = async (req, res) => {
     doc.branding = { ...doc.branding, ...restBranding, sidebarIcons: doc.branding.sidebarIcons };
   }
   if (ai) {
-    doc.ai = { ...doc.ai, ...ai };
+    const nextAi = { ...doc.ai, ...ai };
+    if (Object.prototype.hasOwnProperty.call(ai, "enabled")) {
+      nextAi.disabledByAdmin = ai.enabled === false;
+    }
+    doc.ai = nextAi;
   }
   if (monetization) {
     if (monetization.featureAccess) {
