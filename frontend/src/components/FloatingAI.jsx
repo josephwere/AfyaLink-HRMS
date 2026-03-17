@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAuth } from "../utils/auth";
@@ -226,6 +227,7 @@ export default function FloatingAI() {
   }, [chatExpanded]);
 
   if (!user) return null;
+  if (typeof document === "undefined") return null;
 
   const setFieldValue = (field, value) => {
     if (!value) return;
@@ -498,7 +500,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
     }
   };
 
-  return (
+  const floatingUI = (
     <>
       <button
         type="button"
@@ -785,4 +787,6 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
       )}
     </>
   );
+
+  return createPortal(floatingUI, document.body);
 }
