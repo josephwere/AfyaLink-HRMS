@@ -58,6 +58,7 @@ export const updateProfile = async (req, res) => {
       financial,
       insuranceProfile,
       systemProfile,
+      uiPreferences,
     } = req.body;
     const user = await User.findById(req.user.id).select("+twoFactorSecret +twoFactorTempSecret");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -115,6 +116,13 @@ export const updateProfile = async (req, res) => {
       user.systemProfile = {
         ...user.systemProfile,
         ...systemProfile,
+      };
+    }
+
+    if (uiPreferences && typeof uiPreferences === "object") {
+      user.uiPreferences = {
+        ...user.uiPreferences,
+        ...uiPreferences,
       };
     }
 

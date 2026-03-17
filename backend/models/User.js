@@ -343,6 +343,10 @@ const userSchema = new Schema(
       lastRiskLevel: String,
       restrictedUntil: Date,
     },
+
+    uiPreferences: {
+      showSecretsOnHover: { type: Boolean, default: false },
+    },
   },
   { timestamps: true }
 );

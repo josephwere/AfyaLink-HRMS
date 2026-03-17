@@ -14,7 +14,7 @@ export const getPublicBranding = async (_req, res) => {
 };
 
 export const updateSystemSettings = async (req, res) => {
-  const { branding, ai, monetization, communications, clinical } = req.body || {};
+  const { branding, ai, monetization, communications, clinical, governmentApis } = req.body || {};
   const doc = await getSystemSettingsDoc();
 
   if (branding) {
@@ -59,6 +59,20 @@ export const updateSystemSettings = async (req, res) => {
       closeoutPolicy: {
         ...(doc.clinical?.closeoutPolicy || {}),
         ...(clinical.closeoutPolicy || {}),
+      },
+    };
+  }
+  if (governmentApis) {
+    const existing = doc.governmentApis || {};
+    doc.governmentApis = {
+      ...existing,
+      sha: {
+        ...(existing.sha || {}),
+        ...(governmentApis.sha || {}),
+      },
+      etims: {
+        ...(existing.etims || {}),
+        ...(governmentApis.etims || {}),
       },
     };
   }

@@ -114,9 +114,13 @@ export default function GovernmentClaimsDashboard() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [missingApi, setMissingApi] = useState(false);
-  const [apiStatus, setApiStatus] = useState({ state: "unknown", detail: "", lastChecked: null });
-  const retryDelayRef = useRef(5000);
-  const retryTimerRef = useRef(null);
+  const [apiStatus, setApiStatus] = useState({
+    state: "unknown",
+    detail: "",
+    lastChecked: null,
+    lastSuccessAt: null,
+  });
+  const loadInFlightRef = useRef(false);
 
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditClaim, setAuditClaim] = useState(null);
@@ -297,6 +301,8 @@ export default function GovernmentClaimsDashboard() {
   };
 
   const loadAll = async (options = {}) => {
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
     const silent = Boolean(options.silent);
     if (!silent) setLoading(true);
     setMsg("");
@@ -329,29 +335,42 @@ export default function GovernmentClaimsDashboard() {
       });
 
       if (failures.length === 0) {
-        setApiStatus({ state: "ok", detail: "All government endpoints healthy.", lastChecked: new Date().toISOString() });
+        const now = new Date().toISOString();
+        setApiStatus({
+          state: "ok",
+          detail: "All government endpoints healthy.",
+          lastChecked: now,
+          lastSuccessAt: now,
+        });
       } else if (network.length > 0 || failures.some((row) => row.reason?.status && row.reason.status !== 404)) {
-        setApiStatus({
+        const now = new Date().toISOString();
+        setApiStatus((prev) => ({
+          ...prev,
           state: "risk",
-          detail: "Government endpoints unreachable. Retrying automatically.",
-          lastChecked: new Date().toISOString(),
-        });
+          detail: "Government endpoints unreachable. Check connection and refresh.",
+          lastChecked: now,
+        }));
       } else {
-        setApiStatus({
+        const now = new Date().toISOString();
+        setApiStatus((prev) => ({
+          ...prev,
           state: "warn",
-          detail: "Government endpoints missing on this backend. Retrying automatically.",
-          lastChecked: new Date().toISOString(),
-        });
+          detail: "Government endpoints missing on this backend. Refresh after deployment.",
+          lastChecked: now,
+        }));
       }
     } catch (err) {
       setMsg(err?.message || "Failed to load government dashboard.");
-      setApiStatus({
+      const now = new Date().toISOString();
+      setApiStatus((prev) => ({
+        ...prev,
         state: "risk",
-        detail: "Government endpoints unreachable. Retrying automatically.",
-        lastChecked: new Date().toISOString(),
-      });
+        detail: "Government endpoints unreachable. Check connection and refresh.",
+        lastChecked: now,
+      }));
     } finally {
       if (!silent) setLoading(false);
+      loadInFlightRef.current = false;
     }
   };
 
@@ -359,26 +378,7 @@ export default function GovernmentClaimsDashboard() {
     loadAll();
   }, []);
 
-  useEffect(() => {
-    if (apiStatus.state === "ok" || apiStatus.state === "unknown" || apiStatus.state === "checking") {
-      retryDelayRef.current = 5000;
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-        retryTimerRef.current = null;
-      }
-      return;
-    }
-
-    const delay = Math.min(retryDelayRef.current, 30000);
-    retryTimerRef.current = setTimeout(() => {
-      retryDelayRef.current = Math.min(Math.round(retryDelayRef.current * 1.6), 30000);
-      loadAll({ silent: true });
-    }, delay);
-
-    return () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-    };
-  }, [apiStatus.state]);
+  // Auto-refresh disabled by request: manual refresh only.
 
   useEffect(() => {
     if (hospitals.length && !inspectionForm.hospitalId) {
@@ -662,6 +662,16 @@ export default function GovernmentClaimsDashboard() {
     return "API Unknown";
   }, [apiStatus.state]);
 
+  const apiBadgeTooltip = useMemo(() => {
+    const lastSuccess = apiStatus.lastSuccessAt
+      ? new Date(apiStatus.lastSuccessAt).toLocaleString()
+      : "Never";
+    const lastCheck = apiStatus.lastChecked
+      ? new Date(apiStatus.lastChecked).toLocaleString()
+      : "Not checked yet";
+    return `${apiStatus.detail || "Government API status."}\nLast success: ${lastSuccess}\nLast check: ${lastCheck}`;
+  }, [apiStatus.detail, apiStatus.lastChecked, apiStatus.lastSuccessAt]);
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -672,7 +682,7 @@ export default function GovernmentClaimsDashboard() {
           </p>
         </div>
         <div className="welcome-actions">
-          <span className={apiBadgeClass} title={apiStatus.detail || ""}>
+          <span className={apiBadgeClass} title={apiBadgeTooltip}>
             {apiBadgeLabel}
           </span>
           <button type="button" className="btn-secondary" onClick={loadAll} disabled={loading}>

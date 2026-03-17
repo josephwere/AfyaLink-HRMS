@@ -55,6 +55,8 @@ export default function FloatingAI() {
   const [chatExpanded, setChatExpanded] = useState(false);
 
   const recognitionRef = useRef(null);
+  const chatInputRef = useRef(null);
+  const chatSectionRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
   const greeting = ai?.greeting || "Assistant";
@@ -167,6 +169,33 @@ export default function FloatingAI() {
     if (typeof window === "undefined") return false;
     return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   }, []);
+
+  const openChat = () => {
+    if (!chatExpanded) {
+      setChatExpanded(true);
+      return;
+    }
+    if (chatSectionRef.current) {
+      chatSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (chatInputRef.current) {
+      chatInputRef.current.focus({ preventScroll: true });
+    }
+  };
+
+  useEffect(() => {
+    if (!chatExpanded) return;
+    if (typeof window === "undefined") return;
+    const raf = window.requestAnimationFrame(() => {
+      if (chatSectionRef.current) {
+        chatSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (chatInputRef.current) {
+        chatInputRef.current.focus({ preventScroll: true });
+      }
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [chatExpanded]);
 
   if (!ai?.enabled) return null;
 
@@ -419,9 +448,9 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <button
                     type="button"
                     className="btn-secondary btn-compact"
-                    onClick={() => setChatExpanded((prev) => !prev)}
+                    onClick={openChat}
                   >
-                    {chatExpanded ? "Hide Ask" : "Ask"}
+                    Ask
                   </button>
                   <button type="button" className="icon-btn" onClick={() => navigate("/profile")} aria-label="Assistant settings">
                     ⚙
@@ -541,14 +570,14 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                 </div>
               )}
 
-              <div className="card form">
+              <div className="card form" ref={chatSectionRef}>
                 <div className="ai-compact-actions">
                   <button
                     type="button"
                     className="btn-secondary btn-compact"
-                    onClick={() => setChatExpanded((prev) => !prev)}
+                    onClick={openChat}
                   >
-                    {chatExpanded ? "Hide Ask" : "Ask"}
+                    Ask
                   </button>
                   <button type="button" className="btn-secondary btn-compact" onClick={summarizePage} disabled={busy}>
                     {summaryBusy ? "..." : "Summary"}
@@ -569,6 +598,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <>
                     <label>Question</label>
                     <textarea
+                      ref={chatInputRef}
                       rows={3}
                       value={chatPrompt}
                       onChange={(e) => setChatPrompt(e.target.value)}

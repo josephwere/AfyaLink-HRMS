@@ -39,6 +39,28 @@ const systemSettingsSchema = new Schema(
         requirePrescriptionWhenPharmacyEnabled: { type: Boolean, default: false },
       },
     },
+    governmentApis: {
+      sha: {
+        baseUrl: { type: String, default: "" },
+        tokenUrl: { type: String, default: "" },
+        preauthUrl: { type: String, default: "" },
+        apiToken: { type: String, default: "" },
+        clientId: { type: String, default: "" },
+        clientSecret: { type: String, default: "" },
+        audience: { type: String, default: "" },
+        timeoutMs: { type: Number, default: 8000 },
+      },
+      etims: {
+        baseUrl: { type: String, default: "" },
+        tokenUrl: { type: String, default: "" },
+        invoiceUrl: { type: String, default: "" },
+        apiKey: { type: String, default: "" },
+        apiToken: { type: String, default: "" },
+        clientId: { type: String, default: "" },
+        clientSecret: { type: String, default: "" },
+        timeoutMs: { type: Number, default: 8000 },
+      },
+    },
     monetization: {
       strategy: { type: String, default: "CORE_FREE_PREMIUM_ADDONS" },
       enforceUsageLimits: { type: Boolean, default: false },

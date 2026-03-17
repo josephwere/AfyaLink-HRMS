@@ -31,13 +31,13 @@ function normalizeShaResponse(data = {}) {
 }
 
 async function getShaAccessToken(config) {
-  if (config?.hasApiToken) return process.env.SHA_API_TOKEN;
+  if (config?.hasApiToken) return config.apiToken;
   if (!config?.tokenUrl) throw new Error("SHA token URL missing");
 
   const payload = new URLSearchParams({ grant_type: "client_credentials" });
   if (config?.audience) payload.set("audience", config.audience);
 
-  const auth = Buffer.from(`${process.env.SHA_CLIENT_ID}:${process.env.SHA_CLIENT_SECRET}`).toString("base64");
+  const auth = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString("base64");
   const { data } = await axios.post(config.tokenUrl, payload.toString(), {
     headers: {
       Authorization: `Basic ${auth}`,
@@ -52,7 +52,7 @@ async function getShaAccessToken(config) {
 }
 
 export async function requestShaPreauth({ encounter, patient }) {
-  const config = getShaCredentials();
+  const config = await getShaCredentials();
 
   if (!config.configured) {
     if (isProd) {

@@ -43,6 +43,17 @@ export default function Profile() {
   const [viewRole, setViewRole] = useState("");
 
   const viewableRoles = ROLE_VIEW_OPTIONS;
+  const actualRole = user?.actualRole || user?.role;
+  const canManageGovPrefs = [
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "DEVELOPER",
+    "GOVERNMENT_ADMIN",
+    "GOVERNMENT_REGULATOR",
+    "GOVERNMENT_AUDITOR",
+    "GOVERNMENT_INSPECTOR",
+    "GOVERNMENT_ANALYST",
+  ].includes(actualRole);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -147,6 +158,9 @@ export default function Profile() {
   const [pwMessage, setPwMessage] = useState("");
   const [pwError, setPwError] = useState("");
   const [a11yPrefs, setA11yPrefs] = useState(getDefaultAccessibilityPrefs());
+  const [showSecretsOnHover, setShowSecretsOnHover] = useState(false);
+  const [uiPrefSaving, setUiPrefSaving] = useState(false);
+  const [uiPrefMsg, setUiPrefMsg] = useState("");
   const [openSections, setOpenSections] = useState({
     roleSwitcher: false,
     verificationStatus: false,
@@ -162,6 +176,7 @@ export default function Profile() {
     twoFactor: false,
     password: false,
     accessibility: false,
+    adminPreferences: false,
   });
   const [trainingRole, setTrainingRole] = useState("");
   const [trainingMsg, setTrainingMsg] = useState("");
@@ -300,6 +315,7 @@ export default function Profile() {
         currency: me?.insuranceProfile?.currency || "KES",
         status: me?.insuranceProfile?.status || "PENDING",
       });
+      setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
     } catch {
       setError("Unable to load security settings");
     } finally {
@@ -422,6 +438,25 @@ export default function Profile() {
     setA11yPrefs(next);
     saveAccessibilityPrefs(user, next);
     applyAccessibilityPrefs(next);
+  };
+
+  const updateShowSecretsPref = async (nextValue) => {
+    const prev = showSecretsOnHover;
+    setShowSecretsOnHover(nextValue);
+    setUiPrefSaving(true);
+    setUiPrefMsg("");
+    try {
+      await apiFetch("/api/profile", {
+        method: "PUT",
+        body: { uiPreferences: { showSecretsOnHover: nextValue } },
+      });
+      setUiPrefMsg("Preference saved.");
+    } catch (err) {
+      setShowSecretsOnHover(prev);
+      setUiPrefMsg(err?.message || "Failed to save preference.");
+    } finally {
+      setUiPrefSaving(false);
+    }
   };
 
   const resetA11yPrefs = () => {
@@ -1657,6 +1692,30 @@ export default function Profile() {
           </button>
         </div>
       </DismissibleSection>
+
+      {canManageGovPrefs ? (
+        <DismissibleSection
+          sectionKey="adminPreferences"
+          title="Admin Preferences"
+          open={openSections.adminPreferences}
+          onClose={closeSection}
+          onOpen={openSection}
+        >
+          <p className="muted">
+            Control admin-only UI behavior across the platform.
+          </p>
+          <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+            <input
+              type="checkbox"
+              checked={showSecretsOnHover}
+              onChange={(e) => updateShowSecretsPref(e.target.checked)}
+              disabled={uiPrefSaving}
+            />
+            Show sensitive tokens on hover (Integration Control Plane)
+          </label>
+          {uiPrefMsg ? <p style={{ marginTop: 8 }}>{uiPrefMsg}</p> : null}
+        </DismissibleSection>
+      ) : null}
 
       <DismissibleSection
         sectionKey="basicInfo"

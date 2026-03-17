@@ -378,10 +378,10 @@ export const getIntegrationHubSummary = async (_req, res) => {
 export const getPaymentsControlPlaneSummary = async (_req, res) => {
   try {
     const since = startOfLast30Days();
-    const shaCredentials = getShaCredentials();
-    const etimsCredentials = getEtimsCredentials();
-    const mpesaCredentials = getMpesaCredentials();
-    const [paymentSettings, hospitals, connectors, transactions, overdueInvoices, claimRows] = await Promise.all([
+    const [shaCredentials, etimsCredentials, mpesaCredentials, paymentSettings, hospitals, connectors, transactions, overdueInvoices, claimRows] = await Promise.all([
+      getShaCredentials(),
+      getEtimsCredentials(),
+      getMpesaCredentials(),
       getPaymentSettingsDoc({ lean: true, createIfMissing: false }),
       Hospital.find({})
         .select("name features insuranceProviders patientPaymentMethods active")

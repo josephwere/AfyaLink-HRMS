@@ -4,12 +4,12 @@ import { ensureConfigured, getEtimsCredentials } from "./integrationCredentials.
 const isProd = process.env.NODE_ENV === "production";
 
 async function getEtimsAccessToken(config) {
-  if (config?.hasApiToken) return process.env.ETIMS_API_TOKEN;
-  if (config?.hasApiKey) return process.env.ETIMS_API_KEY;
+  if (config?.hasApiToken) return config.apiToken;
+  if (config?.hasApiKey) return config.apiKey;
   if (!config?.tokenUrl) throw new Error("ETIMS token URL missing");
 
   const payload = new URLSearchParams({ grant_type: "client_credentials" });
-  const auth = Buffer.from(`${process.env.ETIMS_CLIENT_ID}:${process.env.ETIMS_CLIENT_SECRET}`).toString("base64");
+  const auth = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString("base64");
   const { data } = await axios.post(config.tokenUrl, payload.toString(), {
     headers: {
       Authorization: `Basic ${auth}`,
@@ -21,7 +21,7 @@ async function getEtimsAccessToken(config) {
 }
 
 export async function submitEtimsInvoice({ invoice, hospital }) {
-  const config = getEtimsCredentials();
+  const config = await getEtimsCredentials();
 
   if (!config.configured) {
     if (isProd) ensureConfigured(config, { allowInNonProd: false });
@@ -57,7 +57,7 @@ export async function submitEtimsInvoice({ invoice, hospital }) {
 }
 
 export async function testEtimsConnection() {
-  const config = getEtimsCredentials();
+  const config = await getEtimsCredentials();
   if (!config.configured) {
     if (isProd) ensureConfigured(config, { allowInNonProd: false });
     return { ok: false, reason: "eTIMS not configured" };
