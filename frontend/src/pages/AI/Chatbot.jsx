@@ -197,25 +197,47 @@ export default function Chatbot() {
           </div>
           <div className="ai-chat-input-wrap">
             <label>Message</label>
-            <textarea
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your question here..."
-            />
-            <div className="ai-chat-actions">
+            <div className="ai-chat-input-bar">
               <button
                 type="button"
-                className="btn-secondary"
+                className="ai-chat-icon"
                 onClick={startDictation}
                 disabled={!supportsRecognition}
+                aria-label={listening ? "Stop recording" : "Speak"}
+                title={listening ? "Stop recording" : "Speak"}
               >
-                {listening ? "Stop Recording" : "🎤 Speak"}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20h2v-2.08A7 7 0 0 0 19 11h-2z"
+                    fill="currentColor"
+                  />
+                </svg>
               </button>
-              <button type="button" className="btn-primary" onClick={submit} disabled={loading || !message.trim()}>
-                {loading ? "Thinking..." : "Send"}
+              <textarea
+                rows={2}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your question here..."
+              />
+              <button
+                type="button"
+                className="ai-chat-send"
+                onClick={submit}
+                disabled={loading || !message.trim()}
+                aria-label="Send"
+                title="Send"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 5l7 7-1.4 1.4L13 8.8V19h-2V8.8L6.4 13.4 5 12l7-7z"
+                    fill="currentColor"
+                  />
+                </svg>
               </button>
+            </div>
+            <div className="ai-chat-hint">
+              {listening ? "Listening..." : supportsRecognition ? "Tap the mic to speak" : "Voice input not supported"}
             </div>
             {status && <p className="muted">{status}</p>}
             {error && <p className="error-text">{error}</p>}
