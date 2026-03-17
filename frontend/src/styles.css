@@ -1642,7 +1642,7 @@ body.auth-route {
 
 .ai-chat-window {
   min-height: 320px;
-  max-height: min(60vh, 520px);
+  max-height: min(70vh, 620px);
   overflow-y: auto;
   display: grid;
   gap: 12px;
@@ -1695,25 +1695,30 @@ body.auth-route {
 }
 
 .ai-chat-input-bar {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  display: flex;
+  align-items: center;
   align-items: center;
   gap: 8px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-border);
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 999px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .ai-chat-input-bar textarea {
   border: none;
   background: transparent;
+  box-shadow: none;
   resize: none;
   outline: none;
   font: inherit;
   color: var(--app-text);
-  min-height: 28px;
+  flex: 1;
+  min-height: 34px;
+  max-height: 120px;
+  line-height: 1.4;
+  padding: 4px 0;
 }
 
 .ai-chat-icon,
@@ -1725,17 +1730,19 @@ body.auth-route {
   display: grid;
   place-items: center;
   cursor: pointer;
-  background: transparent;
+  background: #fff;
   color: var(--app-text);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .ai-chat-icon {
-  background: #f1f5f9;
+  background: #fff;
 }
 
 .ai-chat-send {
-  background: #0f172a;
+  background: #111827;
   color: #fff;
+  border: none;
 }
 
 .ai-chat-send:disabled {
@@ -1745,8 +1752,8 @@ body.auth-route {
 
 .ai-chat-icon svg,
 .ai-chat-send svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .ai-chat-hint {
@@ -1759,7 +1766,6 @@ body.auth-route {
     max-height: 50vh;
   }
   .ai-chat-input-bar {
-    grid-template-columns: 40px 1fr 40px;
     padding: 8px;
   }
 }

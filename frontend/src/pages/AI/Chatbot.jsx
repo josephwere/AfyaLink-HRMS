@@ -196,7 +196,7 @@ export default function Chatbot() {
             ))}
           </div>
           <div className="ai-chat-input-wrap">
-            <label>Message</label>
+            <label className="sr-only">Message</label>
             <div className="ai-chat-input-bar">
               <button
                 type="button"
@@ -214,7 +214,7 @@ export default function Chatbot() {
                 </svg>
               </button>
               <textarea
-                rows={2}
+                rows={1}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
