@@ -230,7 +230,7 @@ function PublicOnly({ children }) {
 function AppLayout() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
-  const showAI = settings?.hospitalCustomization?.modules?.showAI !== false;
+  const showAI = settings?.ai?.enabled !== false;
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
