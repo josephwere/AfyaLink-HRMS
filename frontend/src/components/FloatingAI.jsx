@@ -61,6 +61,8 @@ export default function FloatingAI() {
   const recognitionRef = useRef(null);
   const chatInputRef = useRef(null);
   const chatSectionRef = useRef(null);
+  const floatButtonRef = useRef(null);
+  const panelRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
   const aiIcon = ai?.icon || settings?.branding?.appIcon || "";
@@ -252,6 +254,18 @@ export default function FloatingAI() {
     });
     return () => window.cancelAnimationFrame(raf);
   }, [chatExpanded]);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return;
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      if (panelRef.current && panelRef.current.contains(target)) return;
+      if (floatButtonRef.current && floatButtonRef.current.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [open]);
 
   if (loading) return null;
   if (typeof document === "undefined") return null;
@@ -551,6 +565,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
         onClick={() => setOpen((prev) => !prev)}
         title={aiName}
         style={{ position: "fixed", right: 20, bottom: 20, zIndex: 2147483647 }}
+        ref={floatButtonRef}
       >
         {hasIcon ? (
           <span className="ai-float-icon" aria-hidden="true">
@@ -569,6 +584,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
             role="dialog"
             aria-label={`${aiName} assistant`}
             style={{ position: "fixed", right: 16, bottom: 88, zIndex: 2147483646 }}
+            ref={panelRef}
           >
             <div className="ai-panel-head">
               <div className="ai-header-main">

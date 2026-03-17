@@ -15,6 +15,7 @@ export default function Chatbot() {
   const [contextLoading, setContextLoading] = useState(false);
   const recognitionRef = useRef(null);
   const scrollerRef = useRef(null);
+  const inputRef = useRef(null);
 
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
@@ -50,6 +51,23 @@ export default function Chatbot() {
     if (!scrollerRef.current) return;
     scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (!inputRef.current) return;
+    inputRef.current.style.height = "auto";
+    const maxHeight = 160;
+    const nextHeight = Math.min(inputRef.current.scrollHeight, maxHeight);
+    inputRef.current.style.height = `${nextHeight}px`;
+    inputRef.current.style.overflowY = inputRef.current.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [message]);
+
+  const defaultHeight = 170;
+  const defaultWeight = 70;
+  const bmi = useMemo(() => {
+    const meters = defaultHeight / 100;
+    return meters ? Math.round((defaultWeight / (meters * meters)) * 10) / 10 : 0;
+  }, []);
+  const hydrationLiters = useMemo(() => Math.round(defaultWeight * 0.033 * 10) / 10, []);
 
   const appendMessage = (role, text) => {
     const clean = String(text || "").trim();
@@ -157,93 +175,108 @@ export default function Chatbot() {
 
   return (
     <div className="dashboard ai-chat-page">
-      <div className="welcome-panel">
+      <div className="ai-chat-topbar">
         <div className="ai-chat-head">
           {aiIcon ? <img src={aiIcon} alt="" className="ai-chat-logo" /> : null}
           <div>
-            <h2>{aiName} Chat</h2>
-            <p className="muted">
-              Ask anything about your health or workflow and get real-time answers.
-            </p>
+            <h2>{aiName} Assistant</h2>
+            <p className="muted">Ask anything about your health or workflow.</p>
           </div>
         </div>
-        <div className="welcome-actions">
-          {aiUrl && (
+        <div className="ai-chat-top-actions">
+          {aiUrl ? (
             <a className="btn-secondary" href={aiUrl} target="_blank" rel="noreferrer">
-              Open Full AI Workspace
+              Open Workspace
             </a>
-          )}
+          ) : null}
           <button type="button" className="btn-secondary" onClick={clearMemory}>
             Clear Memory
           </button>
         </div>
       </div>
 
-      <section className="section">
-        <div className="card ai-chat-shell">
-          <div className="ai-chat-window" ref={scrollerRef}>
-            {contextLoading && <p className="muted">Loading chat history...</p>}
-            {!contextLoading && !messages.length && (
-              <div className="ai-chat-empty">
-                Start a conversation. Your assistant will respond here.
+      <div className="ai-chat-body" ref={scrollerRef}>
+        {contextLoading && <p className="muted">Loading chat history...</p>}
+        {!contextLoading && !messages.length && (
+          <div className="ai-chat-welcome">
+            <h3>{aiName} Assistant</h3>
+            <div className="ai-chat-metrics">
+              <div className="ai-chat-metric">
+                <span className="ai-chat-metric-label">BMI</span>
+                <span className="ai-chat-metric-value">{bmi || "—"}</span>
               </div>
-            )}
-            {messages.map((entry) => (
-              <div key={entry.id} className={`ai-chat-bubble ${entry.role}`}>
-                <div className="ai-chat-role">{entry.role === "user" ? "You" : aiName}</div>
-                <div className="ai-chat-text">{entry.text}</div>
+              <div className="ai-chat-metric">
+                <span className="ai-chat-metric-label">Hydration</span>
+                <span className="ai-chat-metric-value">{hydrationLiters}L</span>
               </div>
-            ))}
+              <div className="ai-chat-metric">
+                <span className="ai-chat-metric-label">Vitals</span>
+                <span className="ai-chat-metric-value">Stable</span>
+              </div>
+            </div>
+            <p className="muted">Ask anything about your health to start the chat.</p>
           </div>
-          <div className="ai-chat-input-wrap">
-            <label className="sr-only">Message</label>
-            <div className="ai-chat-input-bar">
-              <button
-                type="button"
-                className="ai-chat-icon"
-                onClick={startDictation}
-                disabled={!supportsRecognition}
-                aria-label={listening ? "Stop recording" : "Speak"}
-                title={listening ? "Stop recording" : "Speak"}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20h2v-2.08A7 7 0 0 0 19 11h-2z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-              <textarea
-                rows={1}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your question here..."
+        )}
+        {messages.map((entry) => (
+          <div key={entry.id} className={`ai-chat-bubble ${entry.role}`}>
+            <div className="ai-chat-role">{entry.role === "user" ? "You" : aiName}</div>
+            <div className="ai-chat-text">{entry.text}</div>
+          </div>
+        ))}
+        {loading && (
+          <div className="ai-chat-typing">
+            {aiName} is typing...
+          </div>
+        )}
+      </div>
+
+      <div className="ai-chat-footer">
+        <div className={`ai-chat-input-bar ${message.trim() ? "has-text" : ""}`}>
+          <textarea
+            ref={inputRef}
+            rows={1}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything..."
+          />
+          <button
+            type="button"
+            className="ai-chat-icon"
+            onClick={startDictation}
+            disabled={!supportsRecognition}
+            aria-label={listening ? "Stop recording" : "Speak"}
+            title={listening ? "Stop recording" : "Speak"}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20h2v-2.08A7 7 0 0 0 19 11h-2z"
+                fill="currentColor"
               />
-              <button
-                type="button"
-                className="ai-chat-send"
-                onClick={submit}
-                disabled={loading || !message.trim()}
-                aria-label="Send"
-                title="Send"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M12 5l7 7-1.4 1.4L13 8.8V19h-2V8.8L6.4 13.4 5 12l7-7z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className="ai-chat-hint">
-              {listening ? "Listening..." : supportsRecognition ? "Tap the mic to speak" : "Voice input not supported"}
-            </div>
-            {status && <p className="muted">{status}</p>}
-            {error && <p className="error-text">{error}</p>}
-          </div>
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="ai-chat-send"
+            onClick={submit}
+            disabled={loading || !message.trim()}
+            aria-label="Send"
+            title="Send"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 5l7 7-1.4 1.4L13 8.8V19h-2V8.8L6.4 13.4 5 12l7-7z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
         </div>
-      </section>
+        <div className="ai-chat-hint">
+          {listening ? "Listening..." : supportsRecognition ? "Tap the mic to speak" : "Voice input not supported"}
+        </div>
+        {status && <p className="muted">{status}</p>}
+        {error && <p className="error-text">{error}</p>}
+      </div>
     </div>
   );
 }
