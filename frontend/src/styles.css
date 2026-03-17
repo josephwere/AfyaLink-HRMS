@@ -1617,6 +1617,106 @@ body.auth-route {
   overscroll-behavior: contain;
 }
 
+.ai-chat-page .welcome-panel {
+  align-items: center;
+}
+
+.ai-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-chat-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.ai-chat-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.ai-chat-window {
+  min-height: 320px;
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+}
+
+.ai-chat-empty {
+  color: var(--app-muted);
+  text-align: center;
+  padding: 24px;
+}
+
+.ai-chat-bubble {
+  max-width: min(720px, 100%);
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.ai-chat-bubble.user {
+  margin-left: auto;
+  background: #e0f2fe;
+}
+
+.ai-chat-bubble.assistant {
+  margin-right: auto;
+  background: #fff;
+}
+
+.ai-chat-role {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+  margin-bottom: 6px;
+}
+
+.ai-chat-text {
+  white-space: pre-wrap;
+}
+
+.ai-chat-input-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-chat-actions {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+  justify-items: start;
+}
+
+.ai-chat-actions .btn-primary {
+  min-width: 140px;
+}
+
+@media (max-width: 700px) {
+  .ai-chat-window {
+    max-height: 50vh;
+  }
+  .ai-chat-actions {
+    justify-items: stretch;
+  }
+  .ai-chat-actions .btn-primary {
+    width: 100%;
+  }
+}
+
 .ai-status-card {
   display: flex;
   align-items: center;

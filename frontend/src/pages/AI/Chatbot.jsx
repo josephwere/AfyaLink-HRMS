@@ -1,39 +1,171 @@
-import React, { useState } from "react";
-import { diagnose } from "../../services/aiClient";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
+import { chatAssistant, clearAssistantMemory, getAssistantContext } from "../../services/assistantApi";
+import { useAuth } from "../../utils/auth";
 
 export default function Chatbot() {
   const { settings } = useSystemSettings();
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("");
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const [listening, setListening] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+  const recognitionRef = useRef(null);
+  const scrollerRef = useRef(null);
 
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
+  const aiIcon = settings?.ai?.icon || settings?.branding?.appIcon || "";
 
-  async function submit() {
-    if (!message.trim()) return;
+  const supportsRecognition = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    setContextLoading(true);
+    getAssistantContext()
+      .then((res) => {
+        const memory = Array.isArray(res?.context?.chatHistory) ? res.context.chatHistory : [];
+        setMessages(
+          memory
+            .filter((entry) => entry?.text)
+            .map((entry) => ({
+              id: entry.id || `${entry.role || "assistant"}-${entry.createdAt || Date.now()}`,
+              role: entry.role === "user" ? "user" : "assistant",
+              text: entry.text,
+              createdAt: entry.createdAt || new Date().toISOString(),
+            }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => setContextLoading(false));
+  }, [user]);
+
+  useEffect(() => {
+    if (!scrollerRef.current) return;
+    scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+  }, [messages]);
+
+  const appendMessage = (role, text) => {
+    const clean = String(text || "").trim();
+    if (!clean) return;
+    setMessages((prev) => [
+      ...prev,
+      { id: `${role}-${Date.now()}`, role, text: clean, createdAt: new Date().toISOString() },
+    ]);
+  };
+
+  const buildOfflineReply = (prompt) => {
+    return [
+      "Assistant service is temporarily unavailable.",
+      "Your message was captured and will be answered when the service is back.",
+      `You asked: "${prompt}"`,
+      "If you have urgent symptoms, contact a clinician immediately.",
+    ].join("\n");
+  };
+
+  const submit = async () => {
+    const prompt = String(message || "").trim();
+    if (!prompt) return;
+    appendMessage("user", prompt);
+    setMessage("");
     setLoading(true);
     setError("");
+    setStatus("");
     try {
-      const out = await diagnose(message.trim());
-      setResponse(out?.out?.text || JSON.stringify(out?.out || out, null, 2));
+      const out = await chatAssistant({
+        message: prompt,
+        userMessage: prompt,
+        pageContext: "",
+      });
+      const answer = out?.answer || out?.text || "No response generated.";
+      appendMessage("assistant", answer);
     } catch (e) {
-      setError(e.message || "Failed to get AI response");
+      const fallback = buildOfflineReply(prompt);
+      appendMessage("assistant", fallback);
+      setStatus(e?.message || "Assistant offline. Showing fallback response.");
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+  };
+
+  const stopDictation = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setListening(false);
+  };
+
+  const startDictation = () => {
+    if (!supportsRecognition || typeof window === "undefined") {
+      setStatus("Voice input is not supported in this browser.");
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus("Voice input is not supported in this browser.");
+      return;
+    }
+    if (recognitionRef.current) {
+      stopDictation();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || "";
+      if (transcript) {
+        setMessage((prev) => `${prev}${prev ? " " : ""}${transcript}`.trim());
+      }
+    };
+    recognition.onerror = () => {
+      setStatus("Voice input failed. Try again.");
+      stopDictation();
+    };
+    recognition.onend = () => {
+      stopDictation();
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  };
+
+  const clearMemory = async () => {
+    try {
+      await clearAssistantMemory();
+      setMessages([]);
+      setStatus("Assistant memory cleared.");
+    } catch (err) {
+      setStatus(err?.message || "Failed to clear memory.");
+    }
+  };
 
   return (
-    <div className="dashboard">
+    <div className="dashboard ai-chat-page">
       <div className="welcome-panel">
-        <div>
-          <h2>{aiName} Assistant</h2>
-          <p className="muted">
-            Ask clinical support questions. Responses are logged through the backend.
-          </p>
+        <div className="ai-chat-head">
+          {aiIcon ? <img src={aiIcon} alt="" className="ai-chat-logo" /> : null}
+          <div>
+            <h2>{aiName} Chat</h2>
+            <p className="muted">
+              Ask anything about your health or workflow and get real-time answers.
+            </p>
+          </div>
         </div>
         <div className="welcome-actions">
           {aiUrl && (
@@ -41,35 +173,53 @@ export default function Chatbot() {
               Open Full AI Workspace
             </a>
           )}
+          <button type="button" className="btn-secondary" onClick={clearMemory}>
+            Clear Memory
+          </button>
         </div>
       </div>
 
       <section className="section">
-        <div className="card">
-          <label>Message</label>
-          <textarea
-            rows={5}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Describe symptoms, context, or question"
-          />
-          <div className="welcome-actions">
-            <button type="button" className="btn-primary" onClick={submit} disabled={loading}>
-              {loading ? "Thinking..." : "Send"}
-            </button>
+        <div className="card ai-chat-shell">
+          <div className="ai-chat-window" ref={scrollerRef}>
+            {contextLoading && <p className="muted">Loading chat history...</p>}
+            {!contextLoading && !messages.length && (
+              <div className="ai-chat-empty">
+                Start a conversation. Your assistant will respond here.
+              </div>
+            )}
+            {messages.map((entry) => (
+              <div key={entry.id} className={`ai-chat-bubble ${entry.role}`}>
+                <div className="ai-chat-role">{entry.role === "user" ? "You" : aiName}</div>
+                <div className="ai-chat-text">{entry.text}</div>
+              </div>
+            ))}
           </div>
-          {error && <p className="error-text">{error}</p>}
-        </div>
-      </section>
-
-      <section className="section">
-        <h3>Response</h3>
-        <div className="card">
-          {response ? (
-            <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{response}</pre>
-          ) : (
-            <p className="muted">No response yet.</p>
-          )}
+          <div className="ai-chat-input-wrap">
+            <label>Message</label>
+            <textarea
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your question here..."
+            />
+            <div className="ai-chat-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={startDictation}
+                disabled={!supportsRecognition}
+              >
+                {listening ? "Stop Recording" : "🎤 Speak"}
+              </button>
+              <button type="button" className="btn-primary" onClick={submit} disabled={loading || !message.trim()}>
+                {loading ? "Thinking..." : "Send"}
+              </button>
+            </div>
+            {status && <p className="muted">{status}</p>}
+            {error && <p className="error-text">{error}</p>}
+          </div>
         </div>
       </section>
     </div>

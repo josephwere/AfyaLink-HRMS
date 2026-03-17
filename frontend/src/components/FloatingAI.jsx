@@ -461,11 +461,7 @@ export default function FloatingAI() {
   };
 
   const handleQuickAsk = () => {
-    if (chatPrompt.trim()) {
-      askAssistant();
-      return;
-    }
-    openChat();
+    navigate("/ai/chatbot");
   };
 
   const summarizePage = async () => {
