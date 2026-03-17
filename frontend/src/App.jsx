@@ -16,7 +16,7 @@ import FirstLoginTour from "./components/FirstLoginTour";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
 import AppErrorBoundary from "./components/AppErrorBoundary";
-import { getOfflineMetricsSnapshot, startOfflineAutoSync } from "./utils/offlineQueue";
+import { refreshOfflineMetricsSnapshot, startOfflineAutoSync } from "./utils/offlineQueue";
 import { pushOfflineClientMetrics } from "./services/offlineOpsApi";
 
 /* =======================
@@ -161,6 +161,7 @@ import PatientIdentityRegistryPage from "./pages/SystemAdmin/PatientIdentityRegi
 import ClaimRules from "./pages/SystemAdmin/ClaimRules";
 import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
 import FraudGuard from "./pages/SystemAdmin/FraudGuard";
+import GovernmentClaimsDashboard from "./pages/SystemAdmin/GovernmentClaimsDashboard";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -301,7 +302,7 @@ function AppLayout() {
         await pushOfflineClientMetrics({
           deviceId: getOfflineDeviceId(),
           snapshot: {
-            ...(snapshot || getOfflineMetricsSnapshot()),
+            ...(snapshot || refreshOfflineMetricsSnapshot()),
             online: navigator.onLine,
           },
         });
@@ -1321,6 +1322,14 @@ export default function App() {
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN"]}>
                 <FraudGuard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/government-claims"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_REGULATOR", "GOVERNMENT_ADMIN", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}>
+                <GovernmentClaimsDashboard />
               </RequireRole>
             }
           />

@@ -17,6 +17,38 @@ export const PERMISSIONS = {
     audit: ["read"],
   },
 
+  GOVERNMENT_ADMIN: {
+    "*": ["*"],
+    audit: ["read"],
+  },
+  GOVERNMENT_REGULATOR: {
+    claims: ["read", "review", "verify"],
+    hospitals: ["read", "update"],
+    inspections: ["read", "write", "schedule"],
+    enforcement: ["read", "write"],
+    analytics: ["read"],
+    audit: ["read"],
+  },
+  GOVERNMENT_AUDITOR: {
+    claims: ["read", "review", "verify"],
+    hospitals: ["read"],
+    inspections: ["read"],
+    analytics: ["read"],
+    audit: ["read"],
+  },
+  GOVERNMENT_INSPECTOR: {
+    hospitals: ["read"],
+    inspections: ["read", "write", "schedule"],
+    enforcement: ["read"],
+    audit: ["read"],
+  },
+  GOVERNMENT_ANALYST: {
+    claims: ["read"],
+    hospitals: ["read"],
+    analytics: ["read"],
+    audit: ["read"],
+  },
+
   HOSPITAL_ADMIN: {
     admin: ["read", "write"],
     appointments: ["create", "read", "update", "delete"],

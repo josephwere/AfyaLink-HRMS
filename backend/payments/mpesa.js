@@ -28,6 +28,9 @@ function validateEnv() {
   if (!callbackURL) missing.push("MPESA_CALLBACK_URL");
 
   if (missing.length > 0) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`Missing M-Pesa ENV Vars: ${missing.join(", ")}`);
+    }
     console.warn("⚠️ Missing M-Pesa ENV Vars:", missing);
   }
 }
@@ -51,6 +54,7 @@ const MPESA_BASE_URL =
 */
 async function getAccessToken() {
   try {
+    validateEnv();
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
 
     const { data } = await axios.get(
@@ -108,6 +112,7 @@ function getTimestamp() {
 */
 async function initiateSTK(phone, amount) {
   try {
+    validateEnv();
     const token = await getAccessToken();
     const timestamp = getTimestamp();
     const password = Buffer.from(shortcode + passkey + timestamp).toString("base64");

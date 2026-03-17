@@ -53,6 +53,7 @@
     "pharmacy:link:backfill": "node scripts/pharmacy-link-backfill.mjs",
     "test:gateway:ci": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
     "test:gateway:ci:strict": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles tests/aiGatewayController.test.js tests/neuroedgeGatewayContract.test.js tests/aiGateway.integration.test.js tests/aiGateway.load.test.js",
+    "smoke:government-claims": "node scripts/government-claims-smoke.mjs",
     "perf:k6:smoke": "k6 run --summary-export backend/artifacts/perf/smoke-summary.json perf/k6/smoke.js",
     "perf:k6:kenya-peak": "k6 run --summary-export backend/artifacts/perf/kenya-peak-summary.json perf/k6/kenya-peak.js",
     "lint": "eslint . --ext .js,.jsx || true",

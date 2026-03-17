@@ -1,6 +1,5 @@
 // AfyaLink Offline SDK (browser / Node capable)
 // Depends on localforage for browser, and provides a simple protocol to store events and sync them.
-// Edge mesh placeholders included as comments for future mesh integration.
 import localforage from 'localforage';
 
 localforage.config({ name: 'AfyaLinkOfflineSDK' });
@@ -31,6 +30,3 @@ export async function syncAll(serverUrl, authFetchOptions = {}){
   }
   return { ok:false, status: r.status };
 }
-
-// Edge Mesh placeholder: implement mesh sync via local peer connectivity (WebRTC / WebTransport)
-// export async function meshSync(peers){ /* TODO: implement later */ }

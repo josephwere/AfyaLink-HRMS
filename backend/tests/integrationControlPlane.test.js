@@ -14,6 +14,17 @@ let systemAdminToken;
 
 beforeAll(async () => {
   teardown = await setup();
+  process.env.SHA_PREAUTH_URL = "https://sha.example.test/preauth";
+  process.env.SHA_TOKEN_URL = "https://sha.example.test/oauth/token";
+  process.env.SHA_CLIENT_ID = "sha-client-id";
+  process.env.SHA_CLIENT_SECRET = "sha-client-secret";
+  process.env.ETIMS_INVOICE_URL = "https://etims.example.test/invoices";
+  process.env.ETIMS_API_KEY = "etims-api-key";
+  process.env.MPESA_CONSUMER_KEY = "mpesa-key";
+  process.env.MPESA_CONSUMER_SECRET = "mpesa-secret";
+  process.env.MPESA_SHORTCODE = "123456";
+  process.env.MPESA_PASSKEY = "mpesa-passkey";
+  process.env.MPESA_CALLBACK_URL = "https://mpesa.example.test/callback";
 
   const systemAdmin = await User.create({
     name: "Control Plane Admin",
@@ -123,7 +134,7 @@ describe("Integration control plane", () => {
     expect(sha.preauthRequests).toBe(2);
     expect(sha.approvedPreauth).toBe(1);
     expect(Array.isArray(sha.actionPanel)).toBe(true);
-    expect(sha.actionPanel[0].label).toBe("Connector runtime");
+    expect(sha.actionPanel[0].label).toBe("Credentials");
     expect(etims.readiness).toBe("READY");
     expect(Array.isArray(etims.actionPanel)).toBe(true);
     expect(mpesa.readiness).toBe("READY");

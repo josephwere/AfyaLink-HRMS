@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getOfflineMetricsSnapshot } from "../../utils/offlineQueue";
+import { getOfflineMetricsSnapshot, refreshOfflineMetricsSnapshot } from "../../utils/offlineQueue";
 import { getOfflineOpsMetrics, getOfflineQueueStatus } from "../../services/offlineOpsApi";
 
 export default function OfflineOps() {
@@ -8,7 +8,7 @@ export default function OfflineOps() {
   const [q, setQ] = useState("");
   const [server, setServer] = useState(null);
   const [queueStatus, setQueueStatus] = useState(null);
-  const [local, setLocal] = useState(getOfflineMetricsSnapshot());
+  const [local, setLocal] = useState(() => getOfflineMetricsSnapshot());
   const [err, setErr] = useState("");
 
   const load = async () => {
@@ -21,7 +21,7 @@ export default function OfflineOps() {
       ]);
       setServer(metrics || null);
       setQueueStatus(status || null);
-      setLocal(getOfflineMetricsSnapshot());
+      setLocal(refreshOfflineMetricsSnapshot());
     } catch (e) {
       setErr(String(e?.message || "Failed to load offline metrics"));
     } finally {
@@ -151,4 +151,3 @@ export default function OfflineOps() {
     </div>
   );
 }
-

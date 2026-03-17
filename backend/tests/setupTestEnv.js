@@ -25,9 +25,11 @@ export default async function setup() {
   if (typeof jest !== "undefined" && typeof jest.setTimeout === "function") {
     jest.setTimeout(Number(process.env.TEST_TIMEOUT_MS || 30000));
   }
-  const externalUri = process.env.TEST_MONGO_URI || process.env.MONGO_URI;
+  const externalUri =
+    process.env.TEST_MONGO_URI ||
+    (process.env.USE_EXTERNAL_TEST_DB === "1" ? process.env.MONGO_URI : "");
   let uri = externalUri || "mongodb://127.0.0.1:27017/afyalink_test";
-  const port = Number(process.env.TEST_MONGO_PORT || 37017);
+  const port = Number(process.env.TEST_MONGO_PORT || 0);
   let testDbName = "";
   if (externalUri) {
     usingExternalMongo = true;

@@ -16,6 +16,11 @@ dotenv.config();
 const ROLE_PRIORITY = {
   SUPER_ADMIN: 100,
   SYSTEM_ADMIN: 90,
+  GOVERNMENT_ADMIN: 5,
+  GOVERNMENT_REGULATOR: 5,
+  GOVERNMENT_AUDITOR: 5,
+  GOVERNMENT_INSPECTOR: 5,
+  GOVERNMENT_ANALYST: 5,
   HOSPITAL_ADMIN: 80,
   HOSPITAL_ADMIN_ASSISTANT: 70,
   DOCTOR: 60,
@@ -85,7 +90,11 @@ const authenticate = async (req, res, next) => {
     const isAdmin =
       user.role === "SUPER_ADMIN" ||
       user.role === "SYSTEM_ADMIN" ||
-      user.role === "HOSPITAL_ADMIN";
+      user.role === "HOSPITAL_ADMIN" ||
+      user.role === "GOVERNMENT_ADMIN" ||
+      user.role === "GOVERNMENT_REGULATOR" ||
+      user.role === "GOVERNMENT_AUDITOR" ||
+      user.role === "GOVERNMENT_INSPECTOR";
 
     if (isAdmin && decoded.twoFactorVerified !== true) {
       return res.status(403).json({

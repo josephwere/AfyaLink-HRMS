@@ -98,6 +98,7 @@ export const MENU = [
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },
       { label: "Training Tracker", path: "/admin/training-tracker", icon: "analytics" },
+      { label: "Government Claims Dashboard", path: "/system-admin/government-claims", icon: "analytics" },
       { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit", icon: "shield" },
       { label: "Email/SMS Config", path: "/super-admin/settings", icon: "settings" },
       { label: "Backup & Restore", path: "/super-admin/settings", icon: "settings" },
@@ -130,6 +131,7 @@ export const MENU = [
       { label: "Claim Rules", path: "/system-admin/claim-rules", icon: "settings" },
       { label: "Hospital Review Queue", path: "/system-admin/hospital-verification-review", icon: "shield" },
       { label: "Fraud Guard", path: "/system-admin/fraud-guard", icon: "shield" },
+      { label: "Government Claims Dashboard", path: "/system-admin/government-claims", icon: "analytics" },
       { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit", icon: "shield" },
       { label: "Communication Center", path: "/communication", icon: "notifications" },
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
@@ -489,6 +491,23 @@ export const MENU = [
       { label: "Dialysis Ops", path: "/ops/dialysis", icon: "analytics" },
       { label: "Oncology Day-Care", path: "/ops/oncology-daycare", icon: "analytics" },
       { label: "My Requests", path: "/workforce/requests", icon: "requests" },
+    ],
+  },
+
+  {
+    section: "Government",
+    roles: [
+      "GOVERNMENT_ADMIN",
+      "GOVERNMENT_REGULATOR",
+      "GOVERNMENT_AUDITOR",
+      "GOVERNMENT_INSPECTOR",
+      "GOVERNMENT_ANALYST",
+    ],
+    items: [
+      { label: "Regulatory Dashboard", path: "/system-admin/government-claims", icon: "analytics" },
+      { label: "Fraud Guard", path: "/system-admin/fraud-guard", icon: "shield" },
+      { label: "Audit Logs", path: "/admin/audit-logs", icon: "reports" },
+      { label: "Notifications", path: "/notifications", icon: "notifications" },
     ],
   },
 

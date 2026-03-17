@@ -2,12 +2,33 @@ const STORAGE_KEY = "afyalink_offline_actions_v1";
 const METRICS_KEY = "afyalink_offline_metrics_v1";
 const MAX_ITEMS = 2000;
 
+const hasStorage = () =>
+  typeof window !== "undefined" &&
+  typeof window.localStorage !== "undefined";
+
+const defaultMetrics = () => ({
+  updatedAt: nowIso(),
+  queueLength: 0,
+  pendingByModule: {},
+  lifetime: { enqueued: 0, synced: 0, failed: 0 },
+  lastEnqueueAt: null,
+  lastSyncAt: null,
+  lastFailureAt: null,
+  lastSyncResult: { synced: 0, pending: 0, failed: 0 },
+});
+
+let memoryQueue = [];
+let memoryMetrics = null;
+
 function nowIso() {
   return new Date().toISOString();
 }
 
 function readQueue() {
   try {
+    if (!hasStorage()) {
+      return Array.isArray(memoryQueue) ? memoryQueue : [];
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
@@ -17,30 +38,30 @@ function readQueue() {
 }
 
 function writeQueue(items) {
+  if (!hasStorage()) {
+    memoryQueue = items.slice(-MAX_ITEMS);
+    return;
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(-MAX_ITEMS)));
 }
 
 function readMetrics() {
   try {
+    if (!hasStorage()) {
+      if (!memoryMetrics) memoryMetrics = defaultMetrics();
+      return memoryMetrics;
+    }
     const raw = localStorage.getItem(METRICS_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (parsed && typeof parsed === "object") return parsed;
   } catch {
     // ignore
   }
-  return {
-    updatedAt: nowIso(),
-    queueLength: 0,
-    pendingByModule: {},
-    lifetime: { enqueued: 0, synced: 0, failed: 0 },
-    lastEnqueueAt: null,
-    lastSyncAt: null,
-    lastFailureAt: null,
-    lastSyncResult: { synced: 0, pending: 0, failed: 0 },
-  };
+  return defaultMetrics();
 }
 
 function emitMetricsUpdated(metrics) {
+  if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") return;
   window.dispatchEvent(
     new CustomEvent("afyalink:offline-metrics-updated", {
       detail: metrics,
@@ -57,12 +78,18 @@ function countPendingByModule(queue) {
   return out;
 }
 
-function writeMetrics(metrics) {
-  localStorage.setItem(METRICS_KEY, JSON.stringify(metrics));
-  emitMetricsUpdated(metrics);
+function writeMetrics(metrics, options = {}) {
+  const { emit = true } = options;
+  if (!hasStorage()) {
+    memoryMetrics = metrics;
+  } else {
+    localStorage.setItem(METRICS_KEY, JSON.stringify(metrics));
+  }
+  if (emit) emitMetricsUpdated(metrics);
 }
 
-function refreshMetricsFromQueue(partial = {}) {
+function refreshMetricsFromQueue(partial = {}, options = {}) {
+  const { emit = true } = options;
   const queue = readQueue();
   const prev = readMetrics();
   const metrics = {
@@ -78,7 +105,7 @@ function refreshMetricsFromQueue(partial = {}) {
       ...(partial.lifetime || {}),
     },
   };
-  writeMetrics(metrics);
+  writeMetrics(metrics, { emit });
   return metrics;
 }
 
@@ -87,6 +114,10 @@ export function listOfflineActions() {
 }
 
 export function getOfflineMetricsSnapshot() {
+  return readMetrics();
+}
+
+export function refreshOfflineMetricsSnapshot() {
   return refreshMetricsFromQueue();
 }
 
@@ -164,7 +195,7 @@ export function startOfflineAutoSync(executor, opts = {}) {
     flushOfflineActions(executor, opts)
       .then((result) => {
         if (typeof opts.onMetrics === "function") {
-          opts.onMetrics(result?.metrics || getOfflineMetricsSnapshot(), result);
+          opts.onMetrics(result?.metrics || refreshOfflineMetricsSnapshot(), result);
         }
       })
       .catch(() => {});

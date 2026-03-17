@@ -122,13 +122,16 @@ export default function IntegrationControlPlane() {
 
         <div className="card doctor-alerts-card">
           <h3>Configuration State</h3>
-          <div className="alert-stack">
-            <div className="alert-item">Mode: {data?.paymentConfig?.mode || "FREE"}</div>
-            <div className="alert-item">M-PESA Configured: {data?.paymentConfig?.mpesaConfigured ? "Yes" : "No"}</div>
-            <div className="alert-item">Stripe Configured: {data?.paymentConfig?.stripeConfigured ? "Yes" : "No"}</div>
-            <div className="alert-item">Flutterwave Configured: {data?.paymentConfig?.flutterwaveConfigured ? "Yes" : "No"}</div>
-          </div>
+        <div className="alert-stack">
+          <div className="alert-item">Mode: {data?.paymentConfig?.mode || "FREE"}</div>
+          <div className="alert-item">SHA Credentials: {data?.paymentConfig?.shaConfigured ? "Yes" : "No"}</div>
+          <div className="alert-item">eTIMS Credentials: {data?.paymentConfig?.etimsConfigured ? "Yes" : "No"}</div>
+          <div className="alert-item">M-PESA Runtime Env: {data?.paymentConfig?.mpesaRuntimeConfigured ? "Yes" : "No"}</div>
+          <div className="alert-item">M-PESA Configured: {data?.paymentConfig?.mpesaConfigured ? "Yes" : "No"}</div>
+          <div className="alert-item">Stripe Configured: {data?.paymentConfig?.stripeConfigured ? "Yes" : "No"}</div>
+          <div className="alert-item">Flutterwave Configured: {data?.paymentConfig?.flutterwaveConfigured ? "Yes" : "No"}</div>
         </div>
+      </div>
       </section>
 
       <section className="section">

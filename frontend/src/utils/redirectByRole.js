@@ -16,6 +16,11 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   HR_MANAGER: "/hr-manager",
   PAYROLL_OFFICER: "/payroll-officer",
   COMMUNITY_HEALTH_WORKER: "/community-health-worker",
+  GOVERNMENT_REGULATOR: "/system-admin/government-claims",
+  GOVERNMENT_ADMIN: "/system-admin/government-claims",
+  GOVERNMENT_AUDITOR: "/system-admin/government-claims",
+  GOVERNMENT_INSPECTOR: "/system-admin/government-claims",
+  GOVERNMENT_ANALYST: "/system-admin/government-claims",
   DEVELOPER: "/developer",
 
   // 🩺 Clinical staff

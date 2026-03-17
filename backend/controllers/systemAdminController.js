@@ -23,6 +23,7 @@ import AbacPolicyTestCase from "../models/AbacPolicyTestCase.js";
 import { evaluateAbac } from "../utils/abacEngine.js";
 import { getRiskPolicy, upsertRiskPolicy } from "../utils/riskPolicy.js";
 import { logAudit } from "../services/auditService.js";
+import { getEtimsCredentials, getMpesaCredentials, getShaCredentials } from "../services/integrationCredentials.js";
 import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
 import PatientIdentityRegistry from "../models/PatientIdentityRegistry.js";
 import ClaimRule from "../models/ClaimRule.js";
@@ -149,8 +150,19 @@ function regionKeyForHospital(hospital) {
 }
 
 function buildControlPlaneActionPanel(key, context = {}) {
+  const missingText = Array.isArray(context?.credentials?.missing) && context.credentials.missing.length
+    ? `Missing: ${context.credentials.missing.join(", ")}`
+    : "Credentials loaded.";
+
   if (key === "SHA") {
     return [
+      {
+        label: "Credentials",
+        state: context.credentials?.configured ? "ready" : "missing",
+        note: context.credentials?.configured
+          ? "SHA credentials are loaded in the backend."
+          : missingText,
+      },
       {
         label: "Connector runtime",
         state: context.connectors > 0 ? "ready" : "missing",
@@ -178,6 +190,13 @@ function buildControlPlaneActionPanel(key, context = {}) {
   if (key === "ETIMS") {
     return [
       {
+        label: "Credentials",
+        state: context.credentials?.configured ? "ready" : "missing",
+        note: context.credentials?.configured
+          ? "eTIMS credentials are loaded in the backend."
+          : missingText,
+      },
+      {
         label: "Connector runtime",
         state: context.connectors > 0 ? "ready" : "missing",
         note: context.connectors > 0 ? "eTIMS connector is available." : "Provision the eTIMS connector.",
@@ -203,6 +222,13 @@ function buildControlPlaneActionPanel(key, context = {}) {
 
   if (key === "MPESA") {
     return [
+      {
+        label: "Runtime credentials",
+        state: context.credentials?.configured ? "ready" : "missing",
+        note: context.credentials?.configured
+          ? "M-PESA env credentials are loaded for runtime."
+          : missingText,
+      },
       {
         label: "Global secrets",
         state: context.configured ? "ready" : "missing",
@@ -352,6 +378,9 @@ export const getIntegrationHubSummary = async (_req, res) => {
 export const getPaymentsControlPlaneSummary = async (_req, res) => {
   try {
     const since = startOfLast30Days();
+    const shaCredentials = getShaCredentials();
+    const etimsCredentials = getEtimsCredentials();
+    const mpesaCredentials = getMpesaCredentials();
     const [paymentSettings, hospitals, connectors, transactions, overdueInvoices, claimRows] = await Promise.all([
       getPaymentSettingsDoc({ lean: true, createIfMissing: false }),
       Hospital.find({})
@@ -410,11 +439,13 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
         key: "SHA",
         label: "SHA Claims Control",
         readiness:
-          shaConnectors.length && shaCoverageHospitals.length
-            ? deriveIntegrationStatus(shaConnectors)
-            : shaCoverageHospitals.length
-              ? "AT_RISK"
-              : "MISSING",
+          shaCredentials.configured
+            ? (shaConnectors.length && shaCoverageHospitals.length
+                ? deriveIntegrationStatus(shaConnectors)
+                : shaCoverageHospitals.length
+                  ? "AT_RISK"
+                  : "MISSING")
+            : "MISSING",
         connectors: shaConnectors.length,
         hospitalCoverage: shaCoverageHospitals.length,
         preauthRequests: shaPreauthRequests,
@@ -425,6 +456,7 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
             ? "Expand SHA-linked hospitals and reduce rejected claims."
             : "Provision SHA connector and enable SHA on hospital commerce config.",
         actionPanel: buildControlPlaneActionPanel("SHA", {
+          credentials: shaCredentials,
           connectors: shaConnectors.length,
           hospitalCoverage: shaCoverageHospitals.length,
           preauthRequests: shaPreauthRequests,
@@ -434,7 +466,9 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
       {
         key: "ETIMS",
         label: "KRA eTIMS Control",
-        readiness: etimsConnectors.length ? deriveIntegrationStatus(etimsConnectors) : "MISSING",
+        readiness: etimsCredentials.configured
+          ? (etimsConnectors.length ? deriveIntegrationStatus(etimsConnectors) : "MISSING")
+          : "MISSING",
         connectors: etimsConnectors.length,
         hospitalCoverage: paymentEnabledHospitals.length,
         preauthRequests: 0,
@@ -444,6 +478,7 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
           ? "Validate fiscal receipt flow and reconcile billing exports."
           : "Provision eTIMS connector and bind invoice export trail.",
         actionPanel: buildControlPlaneActionPanel("ETIMS", {
+          credentials: etimsCredentials,
           connectors: etimsConnectors.length,
           hospitalCoverage: paymentEnabledHospitals.length,
           overdueInvoices,
@@ -453,8 +488,10 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
         key: "MPESA",
         label: "M-PESA Collections",
         readiness:
-          paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode
-            ? (mpesaConnectors.length ? deriveIntegrationStatus(mpesaConnectors) : "AT_RISK")
+          mpesaCredentials.configured
+            ? (paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode
+                ? (mpesaConnectors.length ? deriveIntegrationStatus(mpesaConnectors) : "AT_RISK")
+                : "MISSING")
             : "MISSING",
         connectors: mpesaConnectors.length,
         hospitalCoverage: mpesaCoverageHospitals.length,
@@ -466,6 +503,7 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
             ? "Drive hospital rollout and watch failed collection spikes."
             : "Complete global M-PESA secrets and shortcode setup.",
         actionPanel: buildControlPlaneActionPanel("MPESA", {
+          credentials: mpesaCredentials,
           configured: Boolean(paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode),
           connectors: mpesaConnectors.length,
           failedCollections30d: providerSummary.find((row) => row.provider === "MPESA")?.failed || 0,
@@ -489,6 +527,9 @@ export const getPaymentsControlPlaneSummary = async (_req, res) => {
         stripeConfigured: Boolean(paymentSettings?.stripe?.publishable && paymentSettings?.stripe?._enc),
         mpesaConfigured: Boolean(paymentSettings?.mpesa?.consumerKey && paymentSettings?.mpesa?._enc && paymentSettings?.mpesa?.shortcode),
         flutterwaveConfigured: Boolean(paymentSettings?.flutterwave?._enc),
+        shaConfigured: shaCredentials.configured,
+        etimsConfigured: etimsCredentials.configured,
+        mpesaRuntimeConfigured: mpesaCredentials.configured,
       },
     });
   } catch (err) {

@@ -666,7 +666,20 @@ async function gatewayCall(req, res, next, options) {
 
     if (ASYNC_ENDPOINTS.has(options.endpointName)) {
       const hospitalRef = toHospitalRef(hospitalId);
-      const localJobId = `aigw_${Date.now()}_${randomUUID().slice(0, 8)}`;
+      const localJobId = idempotencyKey
+        ? `aigw_${createHash("sha256")
+            .update(
+              [
+                options.endpointName,
+                tenantId || "",
+                hospitalId || "",
+                String(req.user?._id || ""),
+                String(idempotencyKey),
+              ].join("|")
+            )
+            .digest("hex")
+            .slice(0, 12)}`
+        : `aigw_${Date.now()}_${randomUUID().slice(0, 8)}`;
       let baseJob;
       if (idempotencyKey) {
         baseJob = await AIGatewayJob.findOneAndUpdate(

@@ -8,9 +8,23 @@ const FraudAlertSchema = new mongoose.Schema(
     severity: { type: String, enum: ["LOW", "MEDIUM", "HIGH"], default: "MEDIUM", index: true },
     signals: { type: [String], default: [] },
     status: { type: String, enum: ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"], default: "OPEN", index: true },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    assignedRole: { type: String, trim: true, default: "" },
+    assignedAt: Date,
     notes: { type: String, trim: true, default: "" },
     resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     resolvedAt: Date,
+    feedback: {
+      type: [
+        {
+          label: { type: String, trim: true, default: "" },
+          notes: { type: String, trim: true, default: "" },
+          actor: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+          createdAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
