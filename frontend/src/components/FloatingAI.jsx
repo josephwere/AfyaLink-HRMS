@@ -30,7 +30,7 @@ export default function FloatingAI() {
   const { settings } = useSystemSettings();
   const ai = settings?.ai;
 
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [context, setContext] = useState(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [adviceBusy, setAdviceBusy] = useState(false);
@@ -61,6 +61,7 @@ export default function FloatingAI() {
   const chatSectionRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
+  const aiIcon = ai?.icon || settings?.branding?.appIcon || "";
   const greeting = ai?.greeting || "Assistant";
 
   const role = String(user?.role || "").toUpperCase();
@@ -70,14 +71,7 @@ export default function FloatingAI() {
   const aiEnabled = ai?.enabled !== false;
   const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
   const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
-  const autoOpenedRef = useRef(false);
-
-  useEffect(() => {
-    if ((isPatient || isGuest) && !autoOpenedRef.current) {
-      setOpen(true);
-      autoOpenedRef.current = true;
-    }
-  }, [isPatient, isGuest]);
+  // Open only when user clicks the floating button.
 
   useEffect(() => {
     if (!open) return;
@@ -505,6 +499,11 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
         onClick={() => setOpen((prev) => !prev)}
         title={aiName}
       >
+        {aiIcon ? (
+          <span className="ai-float-icon" aria-hidden="true">
+            <img src={aiIcon} alt="" />
+          </span>
+        ) : null}
         <span className="ai-float-badge">{aiName}</span>
         <span className="ai-float-sub">{open ? "Hide" : greeting}</span>
       </button>

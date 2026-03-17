@@ -20,6 +20,7 @@ const systemSettingsSchema = new Schema(
     ai: {
       enabled: { type: Boolean, default: true },
       disabledByAdmin: { type: Boolean, default: false },
+      icon: { type: String, default: "" },
       name: { type: String, default: "NeuroEdge" },
       url: { type: String, default: "" },
       provider: { type: String, default: "NeuroEdge" },

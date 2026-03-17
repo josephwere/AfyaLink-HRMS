@@ -62,6 +62,7 @@ export default function SystemSettings() {
     },
     ai: {
       enabled: true,
+      icon: "",
       name: "NeuroEdge",
       url: "",
       greeting: "Hi, how can I help?",
@@ -450,6 +451,22 @@ export default function SystemSettings() {
 
       <section className="section">
         <h3>NeuroEdge AI</h3>
+        <div className="card ai-status-card" style={{ marginBottom: "12px" }}>
+          <div>
+            <strong>Migration status</strong>
+            <p className="muted" style={{ margin: "6px 0 0" }}>
+              {(() => {
+                const raw = settings?.migrations || {};
+                const entry = typeof raw?.get === "function" ? raw.get("ai_assistant_enable_v1") : raw.ai_assistant_enable_v1;
+                if (entry?.done) {
+                  const ranAt = entry.ranAt ? new Date(entry.ranAt).toLocaleString() : "unknown time";
+                  return `Completed on ${ranAt} — hospitals updated: ${entry.hospitalsModified ?? 0}.`;
+                }
+                return "Pending — migration will run on next backend start.";
+              })()}
+            </p>
+          </div>
+        </div>
         <div className="card form">
           <label>
             <input
@@ -467,6 +484,33 @@ export default function SystemSettings() {
             onChange={(e) =>
               setForm((f) => ({ ...f, ai: { ...f.ai, name: e.target.value } }))
             }
+          />
+          <label>AI Floating Icon</label>
+          {form.ai.icon ? (
+            <div className="row" style={{ alignItems: "center", gap: "10px" }}>
+              <img
+                src={form.ai.icon}
+                alt="AI icon"
+                style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setForm((f) => ({ ...f, ai: { ...f.ai, icon: "" } }))}
+              >
+                Remove Icon
+              </button>
+            </div>
+          ) : null}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const dataUrl = await optimizeImageDataUrl(file, { maxDimension: 320, targetBytes: 180 * 1024 });
+              setForm((f) => ({ ...f, ai: { ...f.ai, icon: dataUrl } }));
+            }}
           />
           <label>AI URL</label>
           <input

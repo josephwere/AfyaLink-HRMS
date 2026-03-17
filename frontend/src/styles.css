@@ -1461,6 +1461,22 @@ body.auth-route {
   z-index: 30;
 }
 
+.ai-float-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+
+.ai-float-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .ai-float-badge {
   font-weight: 700;
   font-size: 13px;
