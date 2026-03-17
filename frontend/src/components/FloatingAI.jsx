@@ -495,7 +495,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
     <>
       <button
         type="button"
-        className="ai-float"
+        className={`ai-float${aiIcon ? " ai-float-icon-only" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
         title={aiName}
       >
@@ -504,8 +504,9 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
             <img src={aiIcon} alt="" />
           </span>
         ) : null}
-        <span className="ai-float-badge">{aiName}</span>
-        <span className="ai-float-sub">{open ? "Hide" : greeting}</span>
+        {aiIcon ? <span className="sr-only">{aiName}</span> : null}
+        {!aiIcon ? <span className="ai-float-badge">{aiName}</span> : null}
+        {!aiIcon ? <span className="ai-float-sub">{open ? "Hide" : greeting}</span> : null}
       </button>
 
       {open && (
