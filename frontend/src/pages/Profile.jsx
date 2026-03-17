@@ -9,6 +9,7 @@ import PasswordInput from "../components/PasswordInput";
 import DownloadMenu from "../components/DownloadMenu";
 import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes";
 import { exportRichTextDocument } from "../utils/fileExport";
+import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import {
   applyAccessibilityPrefs,
   getDefaultAccessibilityPrefs,
@@ -41,28 +42,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [viewRole, setViewRole] = useState("");
 
-  const viewableRoles = [
-    "SUPER_ADMIN",
-    "SYSTEM_ADMIN",
-    "HOSPITAL_ADMIN",
-    "HOSPITAL_ADMIN_ASSISTANT",
-    "DEVELOPER",
-    "DOCTOR",
-    "SURGEON",
-    "NURSE",
-    "LAB_TECH",
-    "PHARMACIST",
-    "RADIOLOGIST",
-    "THERAPIST",
-    "RECEPTIONIST",
-    "SECURITY_OFFICER",
-    "SECURITY_ADMIN",
-    "HR_MANAGER",
-    "PAYROLL_OFFICER",
-    "COMMUNITY_HEALTH_WORKER",
-    "PATIENT",
-    "GUEST",
-  ];
+  const viewableRoles = ROLE_VIEW_OPTIONS;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

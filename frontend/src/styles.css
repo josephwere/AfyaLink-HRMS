@@ -847,6 +847,47 @@ body.auth-route {
   color: #dc2626;
 }
 
+.profile-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--app-border);
+}
+
+.profile-menu-subtitle {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--app-muted);
+  padding: 0 4px;
+}
+
+.profile-role-select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 12px;
+}
+
+.profile-role-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.profile-role-actions .btn-secondary {
+  width: 100%;
+  padding: 6px 8px;
+}
+
+.profile-switcher-check {
+  margin: 0;
+  font-size: 12px;
+}
+
 .notif-menu {
   position: absolute;
   right: 0;
