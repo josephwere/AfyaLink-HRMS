@@ -55,6 +55,7 @@ export default function FloatingAI() {
   const [history, setHistory] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatExpanded, setChatExpanded] = useState(true);
+  const [iconOk, setIconOk] = useState(true);
 
   const recognitionRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -71,7 +72,13 @@ export default function FloatingAI() {
   const aiEnabled = ai?.enabled !== false;
   const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
   const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
+  const aiLocked = !canUseAI;
+  const hasIcon = Boolean(aiIcon) && iconOk;
   // Open only when user clicks the floating button.
+
+  useEffect(() => {
+    setIconOk(true);
+  }, [aiIcon]);
 
   useEffect(() => {
     if (!open) return;
@@ -218,7 +225,7 @@ export default function FloatingAI() {
     return () => window.cancelAnimationFrame(raf);
   }, [chatExpanded]);
 
-  if (!canUseAI) return null;
+  if (!user) return null;
 
   const setFieldValue = (field, value) => {
     if (!value) return;
@@ -495,18 +502,18 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
     <>
       <button
         type="button"
-        className={`ai-float${aiIcon ? " ai-float-icon-only" : ""}`}
+        className={`ai-float${hasIcon ? " ai-float-icon-only" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
         title={aiName}
       >
-        {aiIcon ? (
+        {hasIcon ? (
           <span className="ai-float-icon" aria-hidden="true">
-            <img src={aiIcon} alt="" />
+            <img src={aiIcon} alt="" onError={() => setIconOk(false)} />
           </span>
         ) : null}
-        {aiIcon ? <span className="sr-only">{aiName}</span> : null}
-        {!aiIcon ? <span className="ai-float-badge">{aiName}</span> : null}
-        {!aiIcon ? <span className="ai-float-sub">{open ? "Hide" : greeting}</span> : null}
+        {hasIcon ? <span className="sr-only">{aiName}</span> : null}
+        {!hasIcon ? <span className="ai-float-badge">{aiName}</span> : null}
+        {!hasIcon ? <span className="ai-float-sub">{open ? "Hide" : greeting}</span> : null}
       </button>
 
       {open && (
@@ -517,18 +524,24 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                 <div>
                   <h3>{aiName} Personal Assistant</h3>
                   <p className="muted">{reminderText}</p>
+                  {aiLocked && (
+                    <p className="muted" style={{ color: "#f59e0b", fontWeight: 600 }}>
+                      AI is disabled by admin settings.
+                    </p>
+                  )}
                 </div>
                 <div className="ai-header-actions">
-                  <button type="button" className="btn-secondary" onClick={() => navigate(appointmentPath)}>
+                  <button type="button" className="btn-secondary" onClick={() => navigate(appointmentPath)} disabled={aiLocked}>
                     Add Appointment
                   </button>
-                  <button type="button" className="btn-secondary" onClick={() => navigate(calendarPath)}>
+                  <button type="button" className="btn-secondary" onClick={() => navigate(calendarPath)} disabled={aiLocked}>
                     View Calendar
                   </button>
                   <button
                     type="button"
                     className="btn-secondary btn-compact"
                     onClick={openChat}
+                    disabled={aiLocked}
                   >
                     Ask
                   </button>
