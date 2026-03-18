@@ -371,10 +371,17 @@ export const login = async (req, res) => {
       });
     }
 
-    if (user.authProvider === "google") {
+    if (user.authProvider === "google" && user.role !== "SUPER_ADMIN") {
       return res.status(400).json({
         success: false,
         msg: "Please sign in using Google",
+      });
+    }
+
+    if (user.authProvider === "google" && user.role === "SUPER_ADMIN" && !user.password) {
+      return res.status(400).json({
+        success: false,
+        msg: "Super admin password login is not configured yet. Please sign in using Google or set a password in Profile.",
       });
     }
 
