@@ -255,6 +255,13 @@ export default function Chatbot() {
               />
             </svg>
           </button>
+          {(listening || !supportsRecognition) && (
+            <span
+              className={`ai-chat-hint ai-chat-hint-badge${listening ? " is-listening" : ""}`}
+            >
+              {listening ? "Listening..." : "Voice input not supported"}
+            </span>
+          )}
           <button
             type="button"
             className="ai-chat-send"
@@ -270,9 +277,6 @@ export default function Chatbot() {
               />
             </svg>
           </button>
-        </div>
-        <div className="ai-chat-hint">
-          {listening ? "Listening..." : supportsRecognition ? "Tap the mic to speak" : "Voice input not supported"}
         </div>
         {status && <p className="muted">{status}</p>}
         {error && <p className="error-text">{error}</p>}
