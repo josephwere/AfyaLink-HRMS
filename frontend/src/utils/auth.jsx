@@ -39,7 +39,12 @@ const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
 const AUTH_API_BASE =
   import.meta.env.VITE_API_URL ||
   window.__ENV__?.API_URL ||
-  `${window.location.protocol}//${window.location.hostname}:5000`;
+  (() => {
+    const host = window.location.hostname;
+    const origin = window.location.origin;
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    return isLocal ? `${window.location.protocol}//${host}:5000` : origin;
+  })();
 
 function clearRoleOverrideState() {
   localStorage.removeItem(ROLE_OVERRIDE_KEY);

@@ -4,7 +4,12 @@ import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation
 
 const FALLBACK_API_BASE =
   typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:5000`
+    ? (() => {
+        const host = window.location.hostname;
+        const origin = window.location.origin;
+        const isLocal = host === "localhost" || host === "127.0.0.1";
+        return isLocal ? `${window.location.protocol}//${host}:5000` : origin;
+      })()
     : "http://localhost:5000";
 const API_BASE =
   import.meta.env.VITE_API_URL ||
