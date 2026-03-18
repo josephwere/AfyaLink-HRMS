@@ -10,10 +10,12 @@ import { getVerificationWarning } from "../services/verificationReminderService.
 // ==========================
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password -__v");
+    const user = await User.findById(req.user.id).select("+password -__v");
     if (!user) return res.status(404).json({ message: "User not found" });
     const verificationWarning = getVerificationWarning(user);
     const profile = user.toObject();
+    profile.hasPassword = Boolean(user.password);
+    delete profile.password;
     profile.systemProfile = profile.systemProfile || {};
     profile.systemProfile.lastActivityAt = user.updatedAt || user.createdAt;
     profile.systemProfile.deviceLogsCount = Array.isArray(user.trustedDevices)

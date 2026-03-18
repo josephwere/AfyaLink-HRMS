@@ -68,6 +68,7 @@ router.post(
         name,
         email,
         password,
+        passwordSetAt: new Date(),
         role,
         hospitalId,
         emailVerified: true,

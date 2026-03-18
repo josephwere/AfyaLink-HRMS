@@ -57,6 +57,8 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [authProvider, setAuthProvider] = useState("local");
+  const [hasPassword, setHasPassword] = useState(true);
 
   // 2FA
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -250,6 +252,8 @@ export default function Profile() {
       const me = await apiFetch("/api/profile");
       setEmailVerified(Boolean(me?.emailVerified));
       setPhoneVerified(Boolean(me?.phoneVerified));
+      setAuthProvider(me?.authProvider || "local");
+      setHasPassword(Boolean(me?.hasPassword ?? me?.password));
       const parsedPhone = splitDialAndLocal(me?.phone || "");
       setPhoneCountry(parsedPhone.countryCode || "");
       setPhoneLocal(parsedPhone.local || "");
@@ -702,14 +706,22 @@ export default function Profile() {
     }
 
     setPwLoading(true);
+    const needsCurrentPassword = !(
+      actualRole === "SUPER_ADMIN" &&
+      authProvider === "google" &&
+      !hasPassword
+    );
 
     try {
       const data = await apiFetch("/api/auth/change-password", {
         method: "POST",
-        body: { currentPassword, newPassword },
+        body: needsCurrentPassword
+          ? { currentPassword, newPassword }
+          : { newPassword },
       });
 
       setPwMessage("Password changed successfully");
+      setHasPassword(true);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -2317,18 +2329,31 @@ export default function Profile() {
 
         {pwError && <div className="auth-error">{pwError}</div>}
         {pwMessage && <div className="auth-success">{pwMessage}</div>}
+        {actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword && (
+          <div className="subtle-banner" style={{ marginBottom: 12 }}>
+            <strong>Set a password for backup login.</strong>
+            <div style={{ marginTop: 6 }}>
+              Your account is currently Google-only. Create a password here to enable
+              email/phone login as well.
+            </div>
+          </div>
+        )}
 
         <form className="form" onSubmit={handlePasswordChange}>
-          <PasswordInput
-            label="Current password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
+          {!(actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword) && (
+            <PasswordInput
+              label="Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          )}
 
           <PasswordInput
-            label="New password"
+            label={actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+              ? "Create password"
+              : "New password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
@@ -2345,7 +2370,9 @@ export default function Profile() {
           />
 
           <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>
-            {pwLoading ? "Updating..." : "Change password"}
+            {pwLoading ? "Updating..." : (actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+              ? "Set password"
+              : "Change password")}
           </button>
         </form>
       </DismissibleSection>

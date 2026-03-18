@@ -40,6 +40,23 @@ const userSchema = new Schema(
       },
       select: false,
     },
+    passwordSetAt: {
+      type: Date,
+      default: null,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
+    resetPasswordRequestedAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
 
     /* ======================================================
        🔐 ROLES (HAVSS + MEDICAL)

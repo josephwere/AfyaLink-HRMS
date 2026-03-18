@@ -10,6 +10,8 @@ import {
   resend2FA,
   verify2FAOtp,
   changePassword,
+  forgotPassword,
+  resetPassword,
   logout,
   adminVerifyUser,
   requestPhoneOtp,
@@ -35,6 +37,8 @@ router.post("/google", googleLogin);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", protect, logout);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 /* =========================
    CURRENT USER (BOOTSTRAP)

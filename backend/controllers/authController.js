@@ -176,6 +176,7 @@ export const register = async (req, res) => {
       email: normalizedEmail || undefined,
       phone: normalizedPhone || undefined,
       password,
+      passwordSetAt: new Date(),
       role: "PATIENT",
       emailVerified: false,
       phoneVerified: false,
@@ -237,6 +238,119 @@ export const register = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
+  }
+};
+
+/* ======================================================
+   FORGOT PASSWORD
+====================================================== */
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").toLowerCase().trim();
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ msg: "If the email exists, a reset link has been sent." });
+    }
+
+    if (user.authProvider === "google" && user.role !== "SUPER_ADMIN") {
+      return res.json({ msg: "If the email exists, a reset link has been sent." });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashed = crypto.createHash("sha256").update(rawToken).digest("hex");
+    user.resetPasswordToken = hashed;
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+    user.resetPasswordRequestedAt = new Date();
+    await user.save();
+
+    const frontendBase =
+      process.env.FRONTEND_URL || req.headers.origin || `${req.protocol}://${req.get("host")}`;
+    const resetLink = `${frontendBase}/reset-password?token=${rawToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your AfyaLink password",
+      html: emailTemplate(
+        "Reset Password",
+        `<p>Click the link below to reset your password. This link expires in 1 hour.</p>
+         <p><a href="${resetLink}">Reset Password</a></p>`
+      ),
+    });
+
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_REQUESTED",
+      resource: "User",
+      resourceId: user._id,
+    });
+    await appendComplianceLedger({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_REQUESTED",
+      resource: "User",
+      resourceId: user._id,
+      hospital: user.hospital || null,
+    });
+
+    return res.json({ msg: "If the email exists, a reset link has been sent." });
+  } catch {
+    return res.status(500).json({ msg: "Unable to process reset request" });
+  }
+};
+
+/* ======================================================
+   RESET PASSWORD
+====================================================== */
+export const resetPassword = async (req, res) => {
+  try {
+    const token = String(req.body?.token || "");
+    const password = String(req.body?.password || "");
+    if (!token || !password) {
+      return res.status(400).json({ msg: "Token and new password are required" });
+    }
+
+    const hashed = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      resetPasswordToken: hashed,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select("+password");
+
+    if (!user) {
+      return res.status(400).json({ msg: "Reset link expired or invalid" });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordSetAt = new Date();
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    user.resetPasswordRequestedAt = undefined;
+    user.refreshTokens = [];
+    await user.save();
+
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_COMPLETED",
+      resource: "User",
+      resourceId: user._id,
+    });
+    await appendComplianceLedger({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_COMPLETED",
+      resource: "User",
+      resourceId: user._id,
+      hospital: user.hospital || null,
+    });
+
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ msg: "Unable to reset password" });
   }
 };
 
@@ -1061,16 +1175,28 @@ export const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id).select("+password");
 
-    const match = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
+    if (!newPassword) {
+      return res.status(400).json({ msg: "New password is required" });
+    }
 
-    if (!match) {
-      return res.status(400).json({ msg: "Wrong password" });
+    const canSkipCurrent =
+      user.authProvider === "google" &&
+      user.role === "SUPER_ADMIN" &&
+      !currentPassword &&
+      !user.password;
+
+    if (user.password && !canSkipCurrent) {
+      if (!currentPassword) {
+        return res.status(400).json({ msg: "Current password is required" });
+      }
+      const match = await bcrypt.compare(currentPassword, user.password);
+      if (!match) {
+        return res.status(400).json({ msg: "Wrong password" });
+      }
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordSetAt = new Date();
     user.refreshTokens = [];
     await user.save();
 
