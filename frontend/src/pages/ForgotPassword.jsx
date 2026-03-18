@@ -14,6 +14,12 @@ export default function ForgotPassword() {
     setError("");
 
     try {
+      await apiFetch("/healthz", {
+        method: "GET",
+        timeoutMs: 4000,
+        _skipOfflineQueue: true,
+      });
+
       await apiFetch("/api/auth/forgot-password", {
         method: "POST",
         body: { email },
@@ -24,6 +30,10 @@ export default function ForgotPassword() {
       setMsg("If the email exists, a reset link has been sent.");
     } catch (err) {
       const message = err.message || "Something went wrong";
+      if (message.toLowerCase().includes("network error")) {
+        setError("Backend is unavailable right now. Please wait 20–30 seconds and try again.");
+        return;
+      }
       if (message.toLowerCase().includes("timed out")) {
         setError("Server is waking up. Please wait 20–30 seconds and try again.");
         return;
