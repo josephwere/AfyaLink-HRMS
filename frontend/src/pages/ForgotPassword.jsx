@@ -17,12 +17,18 @@ export default function ForgotPassword() {
       await apiFetch("/api/auth/forgot-password", {
         method: "POST",
         body: { email },
+        timeoutMs: 45000,
       });
 
       // ✅ Always generic (security best practice)
       setMsg("If the email exists, a reset link has been sent.");
     } catch (err) {
-      setError(err.message || "Something went wrong");
+      const message = err.message || "Something went wrong";
+      if (message.toLowerCase().includes("timed out")) {
+        setError("Server is waking up. Please wait 20–30 seconds and try again.");
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
