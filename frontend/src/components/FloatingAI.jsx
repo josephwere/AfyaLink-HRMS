@@ -1706,8 +1706,10 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                               onChange={(e) => setDraftSelection((prev) => ({ ...prev, [item.id]: e.target.checked }))}
                             />
                             <span>
+                              <span className={`ai-review-kind ${item.kind === "action" ? "action" : "field"}`}>
+                                {item.kind === "action" ? "Action" : "Field"}
+                              </span>
                               <strong>{item.fieldLabel}</strong>
-                              {item.kind === "action" ? <em>Action</em> : null}
                               <small>{String(item.value ?? "—")}</small>
                             </span>
                           </label>
@@ -2036,6 +2038,9 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                 <div className="ai-evidence-stat">
                   <span className={`ai-review-confidence ${selectedReviewItem.confidence.tone}`}>
                     {selectedReviewItem.confidence.label} {Math.round(selectedReviewItem.confidence.score * 100)}%
+                  </span>
+                  <span className={`ai-review-kind ${selectedReviewItem.kind === "action" ? "action" : "field"}`}>
+                    {selectedReviewItem.kind === "action" ? "Action" : "Field"}
                   </span>
                   <strong>{selectedReviewItem.kind === "action" ? "Suggested action" : "Suggested value"}</strong>
                   <p>{String(selectedReviewItem.value ?? "—")}</p>

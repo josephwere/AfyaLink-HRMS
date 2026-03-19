@@ -259,6 +259,10 @@ export default function ReceptionistBookingDesk() {
                 className="btn-primary"
                 style={{ marginTop: 12 }}
                 disabled={saving || !form.patient}
+                data-ai-action="book-front-desk-suggested-slot"
+                data-ai-label="Book Front Desk Suggested Slot"
+                data-ai-aliases="book this slot|confirm suggested booking|front desk slot booking"
+                data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || form.serviceType} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
                 onClick={() => bookSuggestion(item)}
               >
                 {saving ? "Booking..." : "Book This Slot"}

@@ -2200,6 +2200,30 @@ body.auth-route {
   gap: 4px;
 }
 
+.ai-review-kind {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in oklab, var(--app-surface-2, #e2e8f0) 84%, transparent);
+  color: var(--app-text-muted);
+}
+
+.ai-review-kind.field {
+  background: color-mix(in oklab, var(--app-accent) 14%, transparent);
+  color: color-mix(in oklab, var(--app-accent) 74%, var(--app-text) 26%);
+}
+
+.ai-review-kind.action {
+  background: color-mix(in oklab, #f59e0b 16%, transparent);
+  color: color-mix(in oklab, #d97706 76%, var(--app-text) 24%);
+}
+
 .ai-review-check small {
   color: var(--app-text-muted);
   word-break: break-word;

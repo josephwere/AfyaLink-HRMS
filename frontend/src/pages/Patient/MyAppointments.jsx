@@ -347,7 +347,16 @@ export default function MyAppointments() {
           </select>
 
           {locationMode === "gps" && (
-            <button type="button" className="btn-secondary" onClick={useCurrentLocation} disabled={locating}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={useCurrentLocation}
+              disabled={locating}
+              data-ai-action="use-current-location"
+              data-ai-label="Use Current Location"
+              data-ai-aliases="detect gps|capture location|find nearest hospital from gps"
+              data-ai-help="Detect the patient's current GPS location and refresh the nearest hospital options."
+            >
               {locating ? "Detecting..." : "Use Current Location"}
             </button>
           )}
@@ -527,6 +536,10 @@ export default function MyAppointments() {
                 type="button"
                 className="btn-secondary"
                 style={{ marginTop: 12 }}
+                data-ai-action="use-suggested-slot"
+                data-ai-label="Use Suggested Slot"
+                data-ai-aliases="use doctor slot|apply suggested slot|pick slot"
+                data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || "Consultation"} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
                 onClick={() => {
                   const slotDate = item.appointmentTime ? new Date(item.appointmentTime) : null;
                   const localValue =
@@ -549,6 +562,10 @@ export default function MyAppointments() {
                 className="btn-primary"
                 style={{ marginTop: 8 }}
                 disabled={saving}
+                data-ai-action="book-suggested-slot"
+                data-ai-label="Book Suggested Slot"
+                data-ai-aliases="book now|confirm slot booking|book doctor slot"
+                data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || "Consultation"} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
                 onClick={() => bookSuggestedSlot(item)}
               >
                 {saving ? "Booking..." : "Book Now"}
@@ -582,6 +599,10 @@ export default function MyAppointments() {
                 className="btn-secondary"
                 onClick={() => setForm((p) => ({ ...p, doctor: doctor._id }))}
                 style={{ marginTop: 12 }}
+                data-ai-action="prefer-doctor-card"
+                data-ai-label="Prefer Doctor"
+                data-ai-aliases="select doctor card|choose doctor|set preferred doctor"
+                data-ai-help={`${doctor.name || "Doctor"} | ${doctor.specialization || doctor?.employment?.department || "General Practice"} | ${doctor.availableToday ? "Available today" : "Busy today"}`}
               >
                 Prefer This Doctor
               </button>
@@ -614,6 +635,10 @@ export default function MyAppointments() {
                   type="button"
                   className="btn-secondary"
                   disabled={call.status !== "ACTIVE"}
+                  data-ai-action="join-consultation-room"
+                  data-ai-label="Join Consultation Room"
+                  data-ai-aliases="join room|open consultation room|enter voice or video room"
+                  data-ai-help={`${call.callType === "VIDEO" ? "Video" : "Voice"} consultation | ${call.doctor?.name || "Assigned doctor"} | ${call.status}`}
                   onClick={() => setActiveCall(call)}
                 >
                   {call.status === "ACTIVE" ? "Join Room" : "Waiting"}
@@ -679,6 +704,10 @@ export default function MyAppointments() {
                             type="button"
                             className="btn-secondary"
                             disabled={!a.doctor}
+                            data-ai-action="start-voice-consultation"
+                            data-ai-label="Start Voice Consultation"
+                            data-ai-aliases="voice call|start voice|request voice consultation"
+                            data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
                             onClick={() => startConsultation(a._id, "VOICE")}
                           >
                             Voice
@@ -687,6 +716,10 @@ export default function MyAppointments() {
                             type="button"
                             className="btn-secondary"
                             disabled={!a.doctor}
+                            data-ai-action="start-video-consultation"
+                            data-ai-label="Start Video Consultation"
+                            data-ai-aliases="video call|start video|request video consultation"
+                            data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
                             onClick={() => startConsultation(a._id, "VIDEO")}
                           >
                             Video
