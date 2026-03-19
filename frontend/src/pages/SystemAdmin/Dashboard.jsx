@@ -524,6 +524,7 @@ export default function SystemAdminDashboard() {
         <div className="action-list">
           <button type="button" className="action-link" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
           <button type="button" className="action-link" onClick={() => navigate("/admin/create-admin")}>Role Overrides</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/super-assistants")}>Super Assistants</button>
           <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
           <button type="button" className="action-link" onClick={() => navigate("/notifications")}>Alerts</button>
         </div>

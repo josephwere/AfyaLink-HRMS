@@ -101,6 +101,7 @@ export default function Dashboard() {
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/create-admin")}>Role Management</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/super-assistants")}>Super Assistants</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>Global Payroll</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/settings")}>System Settings</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/pharmacies")}>Registered Pharmacies</button>

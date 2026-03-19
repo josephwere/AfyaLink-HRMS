@@ -487,6 +487,9 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/create-admin" icon="admin" onSelect={onClose}>
                   Admin Access
                 </Item>
+                <Item to="/admin/super-assistants" icon="ai" onSelect={onClose}>
+                  Super Assistants
+                </Item>
                 <Item to="/admin/training-tracker" icon="analytics" onSelect={onClose}>
                   Training Tracker
                 </Item>
@@ -817,6 +820,7 @@ function getQuickActions(role) {
     SUPER_ADMIN: [
       { label: "Manage Hospitals", path: "/super-admin/hospitals" },
       { label: "Create Admin", path: "/admin/create-admin" },
+      { label: "Super Assistants", path: "/admin/super-assistants" },
       { label: "Audit Logs", path: "/admin/audit-logs" },
       { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
       { label: "SRE Incidents", path: "/admin/sre-incidents" },
@@ -827,6 +831,7 @@ function getQuickActions(role) {
     ],
     SYSTEM_ADMIN: [
       { label: "Manage Hospitals", path: "/super-admin/hospitals" },
+      { label: "Super Assistants", path: "/admin/super-assistants" },
       { label: "Audit Logs", path: "/admin/audit-logs" },
       { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
       { label: "SRE Incidents", path: "/admin/sre-incidents" },

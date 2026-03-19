@@ -5,9 +5,12 @@ import {
   registerHospitalAdmin,
   getHospitals,
   registerSystemAdmin,
+  registerSuperAssistant,
   registerDeveloper,
   listHospitalAdmins,
   updateHospitalAdmin,
+  listSuperAssistants,
+  updateSuperAssistant,
 } from "../controllers/superAdmin.js";
 
 const router = express.Router();
@@ -18,6 +21,11 @@ router.post(
   "/register-hospital-admin",
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   registerHospitalAdmin
+);
+router.post(
+  "/register-super-assistant",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  registerSuperAssistant
 );
 router.post(
   "/register-system-admin",
@@ -39,6 +47,16 @@ router.patch(
   "/hospital-admins/:id",
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   updateHospitalAdmin
+);
+router.get(
+  "/super-assistants",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  listSuperAssistants
+);
+router.patch(
+  "/super-assistants/:id",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  updateSuperAssistant
 );
 
 export default router;

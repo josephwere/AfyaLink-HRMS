@@ -2,6 +2,114 @@
 import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
 
+const createProtectedGlobalUser = async ({ name, email, password, role }) => {
+  if (await User.findOne({ email })) {
+    return { error: { status: 400, msg: "Email already exists" } };
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role,
+    emailVerified: true,
+    twoFactorEnabled: true,
+    protectedAccount: true,
+  });
+
+  return { user };
+};
+
+const buildProtectedGlobalUserFilter = ({ role, q = "", active, authProvider = "", status = "" }) => {
+  const filter = { role, protectedAccount: true };
+  const search = String(q || "").trim();
+  const provider = String(authProvider || "").trim().toLowerCase();
+  const systemStatus = String(status || "").trim().toUpperCase();
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (active === "true") filter.active = true;
+  if (active === "false") filter.active = false;
+  if (provider) filter.authProvider = provider;
+  if (systemStatus) filter["systemProfile.status"] = systemStatus;
+
+  return filter;
+};
+
+const listProtectedGlobalUsers = async ({ req, res, role }) => {
+  try {
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "20", 10), 1), 100);
+    const filter = buildProtectedGlobalUserFilter({
+      role,
+      q: req.query.q,
+      active: req.query.active,
+      authProvider: req.query.authProvider,
+      status: req.query.status,
+    });
+
+    const [items, total] = await Promise.all([
+      User.find(filter)
+        .select(
+          "name email phone role active authProvider protectedAccount createdAt systemProfile.status sessionSecurity.lastLoginAt"
+        )
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(filter),
+    ]);
+
+    return res.json({ items, total, page, limit });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
+const updateProtectedGlobalUser = async ({ req, res, role }) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, active, status } = req.body || {};
+
+    const user = await User.findOne({ _id: id, role, protectedAccount: true });
+    if (!user) {
+      return res.status(404).json({ msg: "Account not found" });
+    }
+
+    if (name !== undefined) user.name = String(name || "").trim();
+    if (email !== undefined) user.email = String(email || "").trim().toLowerCase();
+    if (phone !== undefined) user.phone = String(phone || "").trim() || undefined;
+    if (active !== undefined) user.active = Boolean(active);
+    if (status !== undefined) {
+      user.systemProfile = user.systemProfile || {};
+      user.systemProfile.status = String(status || "ACTIVE").trim().toUpperCase();
+    }
+
+    await user.save();
+
+    const out = await User.findById(user._id)
+      .select(
+        "name email phone role active authProvider protectedAccount createdAt systemProfile.status sessionSecurity.lastLoginAt"
+      )
+      .lean();
+
+    return res.json({ success: true, user: out });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(400).json({ msg: "Email or phone already exists" });
+    }
+    console.error(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
 // Create a Hospital Admin
 export const registerHospitalAdmin = async (req, res) => {
   const { name, email, password, hospitalId, branch } = req.body;
@@ -69,19 +177,17 @@ export const registerSystemAdmin = async (req, res) => {
   }
 
   try {
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ msg: "Email already exists" });
-    }
-
-    const admin = await User.create({
+    const result = await createProtectedGlobalUser({
       name,
       email,
       password,
       role: "SYSTEM_ADMIN",
-      emailVerified: true,
-      twoFactorEnabled: true,
-      protectedAccount: true,
     });
+
+    if (result.error) {
+      return res.status(result.error.status).json({ msg: result.error.msg });
+    }
+    const admin = result.user;
 
     res.status(201).json({
       success: true,
@@ -90,6 +196,42 @@ export const registerSystemAdmin = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// Create a human super assistant (SUPER_ASSISTANT)
+export const registerSuperAssistant = async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ msg: "All fields are required" });
+  }
+
+  try {
+    const result = await createProtectedGlobalUser({
+      name,
+      email,
+      password,
+      role: "SUPER_ASSISTANT",
+    });
+
+    if (result.error) {
+      return res.status(result.error.status).json({ msg: result.error.msg });
+    }
+    const assistant = result.user;
+
+    res.status(201).json({
+      success: true,
+      admin: {
+        id: assistant._id,
+        name: assistant.name,
+        email: assistant.email,
+        role: assistant.role,
       },
     });
   } catch (err) {
@@ -107,19 +249,17 @@ export const registerDeveloper = async (req, res) => {
   }
 
   try {
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ msg: "Email already exists" });
-    }
-
-    const dev = await User.create({
+    const result = await createProtectedGlobalUser({
       name,
       email,
       password,
       role: "DEVELOPER",
-      emailVerified: true,
-      twoFactorEnabled: true,
-      protectedAccount: true,
     });
+
+    if (result.error) {
+      return res.status(result.error.status).json({ msg: result.error.msg });
+    }
+    const dev = result.user;
 
     res.status(201).json({
       success: true,
@@ -284,3 +424,9 @@ export const updateHospitalAdmin = async (req, res) => {
     return res.status(500).json({ msg: "Server error" });
   }
 };
+
+export const listSuperAssistants = async (req, res) =>
+  listProtectedGlobalUsers({ req, res, role: "SUPER_ASSISTANT" });
+
+export const updateSuperAssistant = async (req, res) =>
+  updateProtectedGlobalUser({ req, res, role: "SUPER_ASSISTANT" });

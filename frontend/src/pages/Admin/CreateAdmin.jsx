@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   registerHospitalAdmin,
   registerSystemAdmin,
+  registerSuperAssistant,
   registerDeveloper,
   listHospitals,
 } from "../../services/superAdminApi";
@@ -29,6 +31,7 @@ export default function CreateAdmin() {
   const actorRole = String(user?.role || "").toUpperCase();
   const canCreateAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
   const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
+  const canCreateSuperAssistant = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
 
   if (!canCreateAdmins) {
     return <p>🚫 Access denied</p>;
@@ -102,6 +105,17 @@ export default function CreateAdmin() {
           password: form.password,
         });
         setMsg("✅ System admin created");
+      } else if (form.role === "SUPER_ASSISTANT") {
+        if (!canCreateSuperAssistant) {
+          setMsg("Only Super Admin or System Admin can create Super Assistant accounts.");
+          return;
+        }
+        await registerSuperAssistant({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        });
+        setMsg("✅ Super assistant created");
       } else if (form.role === "DEVELOPER") {
         if (!canCreateSystemLevel) {
           setMsg("Only Super Admin can create Developer accounts.");
@@ -143,6 +157,9 @@ export default function CreateAdmin() {
   return (
     <div className="card">
       <h2>👤 Create Admin</h2>
+      <div className="welcome-actions" style={{ marginBottom: 12 }}>
+        <Link to="/admin/super-assistants">Manage Super Assistants</Link>
+      </div>
 
       <form onSubmit={submit} className="form">
         <DismissibleCardSection title="Admin Identity">
@@ -175,6 +192,9 @@ export default function CreateAdmin() {
             onChange={(e) => setForm({ ...form, role: e.target.value })}
           >
             <option value="HOSPITAL_ADMIN">Hospital Admin</option>
+            {canCreateSuperAssistant && (
+              <option value="SUPER_ASSISTANT">Super Assistant (Human)</option>
+            )}
             {canCreateSystemLevel && <option value="SYSTEM_ADMIN">System Admin</option>}
             {canCreateSystemLevel && <option value="DEVELOPER">Developer</option>}
           </select>

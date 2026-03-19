@@ -26,6 +26,7 @@ export const MENU = [
     items: [
       { label: "All Employees", path: "/hospital-admin/staff", icon: "staff" },
       { label: "Role Management", path: "/admin/create-admin", icon: "admin" },
+      { label: "Super Assistants", path: "/admin/super-assistants", icon: "ai" },
       { label: "Permission Matrix", path: "/super-admin/settings", icon: "security" },
       { label: "Contract Management", path: "/hr-manager", icon: "hr" },
       { label: "Workforce Analytics", path: "/analytics", icon: "analytics" },
@@ -128,6 +129,7 @@ export const MENU = [
       { label: "Queue Monitor", path: "/developer/queue-replay", icon: "settings" },
       { label: "Database Health", path: "/system-admin", icon: "analytics" },
       { label: "Role Overrides", path: "/admin/create-admin", icon: "admin" },
+      { label: "Super Assistants", path: "/admin/super-assistants", icon: "ai" },
       { label: "Delegated Access", path: "/admin/access-control", icon: "security" },
       { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },
       { label: "Deployment Manager", path: "/developer", icon: "settings" },

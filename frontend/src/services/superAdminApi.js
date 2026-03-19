@@ -25,6 +25,13 @@ export const registerSystemAdmin = async (data) => {
   });
 };
 
+export const registerSuperAssistant = async (data) => {
+  return apiFetch("/api/super-admin/register-super-assistant", {
+    method: "POST",
+    body: data,
+  });
+};
+
 export const registerDeveloper = async (data) => {
   return apiFetch("/api/super-admin/register-developer", {
     method: "POST",
@@ -45,6 +52,24 @@ export const listHospitalAdmins = async (params = {}) => {
 
 export const updateHospitalAdmin = async (id, data) => {
   return apiFetch(`/api/super-admin/hospital-admins/${id}`, {
+    method: "PATCH",
+    body: data,
+  });
+};
+
+export const listSuperAssistants = async (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && String(v) !== "") {
+      qs.set(k, String(v));
+    }
+  });
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch(`/api/super-admin/super-assistants${query}`);
+};
+
+export const updateSuperAssistant = async (id, data) => {
+  return apiFetch(`/api/super-admin/super-assistants/${id}`, {
     method: "PATCH",
     body: data,
   });

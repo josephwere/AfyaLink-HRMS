@@ -30,6 +30,7 @@ export default function Dashboard() {
         <StatCard title="Audit Logs" value="Live" subtitle="Security events" />
         <StatCard title="AI Autofill Audit" value="Review" subtitle="Draft/apply trace" />
         <StatCard title="Admin Accounts" value="Manage" subtitle="Create and review" />
+        <StatCard title="Super Assistants" value="Manage" subtitle="Human assistant team" />
         <StatCard title="System Access" value="RBAC" subtitle="Role governance" />
       </div>
 
@@ -37,6 +38,7 @@ export default function Dashboard() {
         <Link to="/admin/audit-logs">Open Audit Logs</Link>
         <Link to="/admin/ai-autofill-audit">Open AI Autofill Audit</Link>
         <Link to="/admin/create-admin">Create Admin</Link>
+        <Link to="/admin/super-assistants">Super Assistants</Link>
       </div>
 
       <section className="section" style={{ marginTop: 24 }}>

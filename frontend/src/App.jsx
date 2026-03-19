@@ -187,6 +187,7 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AuditLogs from "./pages/Admin/AuditLogs";
 import AIAutofillAudit from "./pages/Admin/AIAutofillAudit";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
+import SuperAssistants from "./pages/Admin/SuperAssistants";
 import TrainingTracker from "./pages/Admin/TrainingTracker";
 import TrainingPlaybook from "./pages/Admin/TrainingPlaybook";
 import Beds from "./pages/Admin/Beds";
@@ -1603,6 +1604,14 @@ export default function App() {
               element={
                 <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN"]}>
                   <CreateAdmin />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="super-assistants"
+              element={
+                <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN"]}>
+                  <SuperAssistants />
                 </RequireRole>
               }
             />
