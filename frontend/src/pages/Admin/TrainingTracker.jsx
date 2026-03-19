@@ -242,6 +242,10 @@ export default function TrainingTracker() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search trainee name/email"
+            data-ai-label="Tracker Search"
+            data-ai-aliases="search trainee|filter search|training tracker search"
+            data-ai-intent="filter"
+            data-ai-priority="low"
           />
           <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
             <option value="">All roles</option>
@@ -262,6 +266,10 @@ export default function TrainingTracker() {
               value={hospitalFilter}
               onChange={(e) => setHospitalFilter(e.target.value)}
               placeholder="Hospital ID (global scope)"
+              data-ai-label="Hospital Filter"
+              data-ai-aliases="training hospital filter|global hospital scope"
+              data-ai-intent="filter"
+              data-ai-priority="low"
             />
           )}
           <button type="button" className="btn" onClick={loadItems} disabled={loading}>
@@ -311,6 +319,9 @@ export default function TrainingTracker() {
               value={traineeQuery}
               onChange={(e) => setTraineeQuery(e.target.value)}
               placeholder="Type name/email (2+ chars)"
+              data-ai-label="Search Registered Worker"
+              data-ai-aliases="trainee lookup|worker search|find trainee"
+              data-ai-widget="worker-search"
             />
           </label>
           <label>
@@ -322,6 +333,9 @@ export default function TrainingTracker() {
                 const picked = traineeResults.find((w) => String(w._id) === e.target.value);
                 if (picked?.role) setTraineeRole(picked.role);
               }}
+              data-ai-label="Search Results"
+              data-ai-aliases="selected trainee|worker result|choose trainee"
+              data-ai-widget="worker-picker"
             >
               <option value="">Manual entry</option>
               {traineeResults.map((w) => (
@@ -333,7 +347,12 @@ export default function TrainingTracker() {
           </label>
           <label>
             Trainee role
-            <select value={traineeRole} onChange={(e) => setTraineeRole(e.target.value)}>
+            <select
+              value={traineeRole}
+              onChange={(e) => setTraineeRole(e.target.value)}
+              data-ai-label="Trainee Role"
+              data-ai-aliases="worker role|onboarding role|staff role"
+            >
               {TRACKABLE_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {role}
@@ -347,6 +366,8 @@ export default function TrainingTracker() {
               value={manualName}
               onChange={(e) => setManualName(e.target.value)}
               placeholder="Use if not selecting a worker above"
+              data-ai-label="Manual Trainee Name"
+              data-ai-aliases="trainee name|worker name|staff name"
             />
           </label>
           <label>
@@ -355,6 +376,8 @@ export default function TrainingTracker() {
               value={manualEmail}
               onChange={(e) => setManualEmail(e.target.value)}
               placeholder="Optional"
+              data-ai-label="Manual Trainee Email"
+              data-ai-aliases="trainee email|worker email"
             />
           </label>
           <label>
@@ -364,6 +387,8 @@ export default function TrainingTracker() {
               value={trainerNotes}
               onChange={(e) => setTrainerNotes(e.target.value)}
               placeholder="Initial training context and reminders"
+              data-ai-label="Trainer Notes"
+              data-ai-aliases="training notes|onboarding notes|trainer context"
             />
           </label>
         </div>

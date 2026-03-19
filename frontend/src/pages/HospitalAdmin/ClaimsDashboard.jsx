@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
+import AIAutofillAuditSummary from "../../components/AIAutofillAuditSummary";
 
 export default function ClaimsDashboard() {
   const [loading, setLoading] = useState(false);
@@ -74,6 +75,13 @@ export default function ClaimsDashboard() {
       </div>
 
       {msg ? <div className="card">{msg}</div> : null}
+
+      <AIAutofillAuditSummary
+        title="Claims Autofill Review"
+        subtitle="Recent AI draft/apply activity for claims and reimbursement workflows in this hospital."
+        templateIds={["claims"]}
+        routeIncludes={["/hospital-admin/financials", "/hospital-admin/claims"]}
+      />
 
       <section className="section">
         <div className="card premium-card">

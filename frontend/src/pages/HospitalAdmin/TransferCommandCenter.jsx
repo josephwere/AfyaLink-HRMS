@@ -346,10 +346,16 @@ export default function TransferCommandCenter() {
                   placeholder="Search patient name or ID"
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
+                  data-ai-label="Transfer Patient Search"
+                  data-ai-aliases="patient lookup|search patient|find patient for transfer"
+                  data-ai-intent="lookup"
                 />
                 <select
                   value={transferForm.patientId}
                   onChange={(e) => setTransferForm((prev) => ({ ...prev, patientId: e.target.value }))}
+                  data-ai-label="Transfer Patient"
+                  data-ai-aliases="selected patient|patient for transfer|transfer patient"
+                  data-ai-widget="patient-picker"
                 >
                   <option value="">Select patient</option>
                   {patients.map((p) => (
@@ -364,6 +370,9 @@ export default function TransferCommandCenter() {
                 <select
                   value={transferForm.toHospitalId}
                   onChange={(e) => setTransferForm((prev) => ({ ...prev, toHospitalId: e.target.value }))}
+                  data-ai-label="Destination Hospital"
+                  data-ai-aliases="receiving hospital|transfer destination|destination facility"
+                  data-ai-widget="hospital-picker"
                 >
                   <option value="">Select hospital</option>
                   {hospitals.map((h) => (
@@ -382,6 +391,8 @@ export default function TransferCommandCenter() {
                   value={transferForm.reasons}
                   onChange={(e) => setTransferForm((prev) => ({ ...prev, reasons: e.target.value }))}
                   placeholder="Short reason or clinical context"
+                  data-ai-label="Reason for Transfer"
+                  data-ai-aliases="transfer reason|clinical reason|handover reason"
                 />
               </div>
               <div>
@@ -391,6 +402,8 @@ export default function TransferCommandCenter() {
                   value={transferForm.handoverSummary}
                   onChange={(e) => setTransferForm((prev) => ({ ...prev, handoverSummary: e.target.value }))}
                   placeholder="Key notes for receiving team"
+                  data-ai-label="Handover Summary"
+                  data-ai-aliases="transfer summary|receiving team notes|handover notes"
                 />
               </div>
             </div>

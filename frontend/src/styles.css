@@ -1881,6 +1881,17 @@ body.auth-route {
   font-size: 13px;
 }
 
+@media (max-width: 1120px) {
+  .ai-evidence-drawer {
+    right: 8px !important;
+    left: 8px;
+    width: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    top: 64px;
+    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom));
+  }
+}
+
 @media (max-width: 700px) {
   .ai-chat-page {
     height: auto;
@@ -1920,6 +1931,18 @@ body.auth-route {
   background: rgba(148, 163, 184, 0.16);
   border-color: rgba(148, 163, 184, 0.24);
   color: #cbd5f5;
+}
+
+[data-theme="dark"] .ai-review-confidence.ok {
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .ai-review-confidence.caution {
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .ai-review-confidence.risk {
+  color: #fca5a5;
 }
 
 .ai-status-card {
@@ -2014,6 +2037,271 @@ body.auth-route {
   border-color: color-mix(in oklab, var(--app-border) 72%, #0ea5e9 28%);
 }
 
+.ai-autofill-card {
+  border-color: color-mix(in oklab, var(--app-border) 68%, var(--app-accent) 32%);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--app-surface) 88%, #ffffff 12%), var(--app-surface)),
+    var(--app-surface);
+}
+
+.ai-autofill-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-autofill-head h4 {
+  margin: 0;
+}
+
+.ai-autofill-head p {
+  margin: 6px 0 0;
+}
+
+.ai-autofill-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-autofill-command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 8px;
+}
+
+.ai-autofill-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--app-accent) 14%, transparent);
+  color: color-mix(in oklab, var(--app-accent) 72%, var(--app-text) 28%);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ai-autofill-pill.secondary {
+  background: color-mix(in oklab, var(--app-surface-2, #e2e8f0) 82%, transparent);
+  color: var(--app-text);
+}
+
+.ai-autofill-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in oklab, var(--app-border) 66%, var(--app-accent) 34%);
+  background: color-mix(in oklab, var(--app-surface-2, #f8fafc) 84%, transparent);
+}
+
+.ai-smart-review {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--app-border) 76%, var(--app-accent) 24%);
+  background: color-mix(in oklab, var(--app-surface-2, #f8fafc) 88%, transparent);
+}
+
+.ai-smart-review-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0 !important;
+}
+
+.ai-smart-review-toggle span {
+  font-weight: 600;
+}
+
+.ai-smart-review-threshold {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-smart-review-threshold span {
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.ai-autofill-report ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.ai-autofill-report strong {
+  display: block;
+  margin-top: 10px;
+}
+
+.ai-autofill-review {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-autofill-review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-autofill-review-head h4 {
+  margin: 0;
+}
+
+.ai-review-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ai-review-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 92%, #ffffff 8%);
+}
+
+.ai-review-item.active {
+  border-color: color-mix(in oklab, var(--app-accent) 40%, var(--app-border) 60%);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--app-accent) 12%, transparent);
+}
+
+.ai-review-item.applied {
+  border-color: color-mix(in oklab, #10b981 36%, var(--app-border) 64%);
+}
+
+.ai-review-item.missing {
+  border-style: dashed;
+}
+
+.ai-review-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ai-review-check input {
+  margin-top: 3px;
+}
+
+.ai-review-check span {
+  display: grid;
+  gap: 4px;
+}
+
+.ai-review-check small {
+  color: var(--app-text-muted);
+  word-break: break-word;
+}
+
+.ai-review-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ai-review-confidence {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-review-confidence.ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.ai-review-confidence.caution {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.ai-review-confidence.risk {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
+.ai-review-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in oklab, var(--app-surface-2, #e2e8f0) 82%, transparent);
+}
+
+.ai-review-status.warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.ai-evidence-drawer {
+  width: min(380px, calc(100vw - 36px));
+  max-height: min(760px, calc(100dvh - 112px));
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-evidence-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.ai-evidence-head h4,
+.ai-evidence-head p {
+  margin: 0;
+}
+
+.ai-evidence-head p {
+  margin-top: 4px;
+}
+
+.ai-evidence-body {
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.ai-evidence-stat {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--app-surface) 92%, #ffffff 8%);
+}
+
+.ai-evidence-stat p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .ai-tip-card p {
   margin: 6px 0 0;
 }
@@ -2063,6 +2351,80 @@ body.auth-route {
 
 .ai-history-chat {
   border-color: color-mix(in oklab, var(--app-border) 70%, #a855f7 30%);
+}
+
+.ai-starter-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ai-starter-pack-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 90%, #ffffff 10%);
+}
+
+.ai-starter-pack-card.recommended {
+  border-color: color-mix(in oklab, var(--app-accent) 42%, var(--app-border) 58%);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--app-accent) 10%, transparent);
+}
+
+.ai-starter-pack-card p,
+.ai-starter-pack-card small {
+  margin: 4px 0 0;
+  display: block;
+}
+
+.ai-autofill-audit-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.ai-autofill-audit-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.ai-autofill-audit-check {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0 !important;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 92%, #ffffff 8%);
+}
+
+.ai-autofill-audit-drawer {
+  width: min(1020px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 48px));
+  overflow-y: auto;
+}
+
+.ai-autofill-audit-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ai-autofill-audit-summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in oklab, var(--app-surface) 92%, #ffffff 8%);
 }
 
 .recruitment-cover-preview,
@@ -2596,8 +2958,22 @@ body.auth-route {
   .ai-compact-actions {
     align-items: stretch;
   }
+  .ai-autofill-head,
+  .ai-autofill-source,
+  .ai-autofill-review-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .ai-health-grid {
     grid-template-columns: 1fr;
+  }
+  .ai-evidence-drawer {
+    right: 8px !important;
+    left: 8px;
+    width: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    top: 64px;
+    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom));
   }
   .ai-float {
     right: 12px;

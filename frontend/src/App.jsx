@@ -184,6 +184,7 @@ import OncologyDaycareDashboard from "./pages/Operations/OncologyDaycareDashboar
 ======================= */
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AuditLogs from "./pages/Admin/AuditLogs";
+import AIAutofillAudit from "./pages/Admin/AIAutofillAudit";
 import CreateAdmin from "./pages/Admin/CreateAdmin";
 import TrainingTracker from "./pages/Admin/TrainingTracker";
 import TrainingPlaybook from "./pages/Admin/TrainingPlaybook";
@@ -1568,6 +1569,14 @@ export default function App() {
           >
             <Route index element={<AdminDashboard />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route
+              path="ai-autofill-audit"
+              element={
+                <RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}>
+                  <AIAutofillAudit />
+                </RequireRole>
+              }
+            />
             <Route path="beds" element={<Beds />} />
             <Route path="realtime" element={<RealTimeIntegrations />} />
             <Route path="crdt-patients" element={<CRDTPatientEditor />} />

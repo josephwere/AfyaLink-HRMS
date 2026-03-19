@@ -72,20 +72,48 @@ export default function Lab(){
 
       <div className="welcome-actions mb-16">
         <button type="button" className="btn-primary" onClick={openNew}>New Test</button>
-        <input
-          placeholder="Search by patient or test type"
-          value={query}
-          onChange={e=>setQuery(e.target.value)}
-          className="full-width"
-        />
+          <input
+            placeholder="Search by patient or test type"
+            value={query}
+            onChange={e=>setQuery(e.target.value)}
+            className="full-width"
+            data-ai-label="Lab Search"
+            data-ai-aliases="search lab tests|filter lab tests"
+            data-ai-intent="filter"
+            data-ai-priority="low"
+          />
       </div>
 
       <div id="lab-form-scroll" style={{marginBottom:20}}>
         <form onSubmit={save} className="card form">
-          <input placeholder="Patient name" value={form.patientName} onChange={e=>setForm({...form, patientName:e.target.value})} />
-          <input placeholder="Test type" value={form.testType} onChange={e=>setForm({...form, testType:e.target.value})} />
-          <input placeholder="Result" value={form.result} onChange={e=>setForm({...form, result:e.target.value})} />
-          <input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
+          <input
+            placeholder="Patient name"
+            value={form.patientName}
+            onChange={e=>setForm({...form, patientName:e.target.value})}
+            data-ai-label="Patient Name"
+            data-ai-aliases="lab patient|patient full name|specimen patient"
+          />
+          <input
+            placeholder="Test type"
+            value={form.testType}
+            onChange={e=>setForm({...form, testType:e.target.value})}
+            data-ai-label="Test Type"
+            data-ai-aliases="lab test|investigation|requested test"
+          />
+          <input
+            placeholder="Result"
+            value={form.result}
+            onChange={e=>setForm({...form, result:e.target.value})}
+            data-ai-label="Result"
+            data-ai-aliases="lab result|finding|report result"
+          />
+          <input
+            type="date"
+            value={form.date}
+            onChange={e=>setForm({...form, date:e.target.value})}
+            data-ai-label="Result Date"
+            data-ai-aliases="collection date|report date|lab date"
+          />
           <div>
             <button className="btn-primary" type="submit">{editing ? "Save changes" : "Create test"}</button>
             {editing && (

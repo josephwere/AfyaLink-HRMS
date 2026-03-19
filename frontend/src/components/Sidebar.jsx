@@ -508,6 +508,9 @@ export default function Sidebar({ open = true, onClose }) {
                 <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
                   Audit Logs
                 </Item>
+                <Item to="/admin/ai-autofill-audit" icon="analytics" onSelect={onClose}>
+                  AI Autofill Audit
+                </Item>
                 <Item
                   to="/notifications"
                   icon="notifications"
@@ -815,6 +818,7 @@ function getQuickActions(role) {
       { label: "Manage Hospitals", path: "/super-admin/hospitals" },
       { label: "Create Admin", path: "/admin/create-admin" },
       { label: "Audit Logs", path: "/admin/audit-logs" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
       { label: "SRE Incidents", path: "/admin/sre-incidents" },
       { label: "Support Tickets", path: "/admin/support-tickets" },
       { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
@@ -824,6 +828,7 @@ function getQuickActions(role) {
     SYSTEM_ADMIN: [
       { label: "Manage Hospitals", path: "/super-admin/hospitals" },
       { label: "Audit Logs", path: "/admin/audit-logs" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
       { label: "SRE Incidents", path: "/admin/sre-incidents" },
       { label: "Support Tickets", path: "/admin/support-tickets" },
       { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
@@ -833,6 +838,7 @@ function getQuickActions(role) {
     HOSPITAL_ADMIN: [
       { label: "Open Approvals", path: "/hospital-admin" },
       { label: "Inventory Review", path: "/inventory" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
       { label: "SRE Incidents", path: "/admin/sre-incidents" },
       { label: "Support Tickets", path: "/admin/support-tickets" },
       { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },

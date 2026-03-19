@@ -98,6 +98,7 @@ export const MENU = [
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },
       { label: "Training Tracker", path: "/admin/training-tracker", icon: "analytics" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit", icon: "analytics" },
       { label: "Government Claims Dashboard", path: "/system-admin/government-claims", icon: "analytics" },
       { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit", icon: "shield" },
       { label: "Email/SMS Config", path: "/super-admin/settings", icon: "settings" },
@@ -137,6 +138,7 @@ export const MENU = [
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },
       { label: "Training Tracker", path: "/admin/training-tracker", icon: "analytics" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit", icon: "analytics" },
     ],
   },
 
@@ -167,6 +169,7 @@ export const MENU = [
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },
       { label: "Training Tracker", path: "/admin/training-tracker", icon: "analytics" },
+      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit", icon: "analytics" },
       { label: "Branding & Customization", path: "/hospital-admin/customization", icon: "settings" },
       { label: "Staff Transfers", path: "/hospital-admin/staff-transfers", icon: "requests" },
       { label: "Triage Ops", path: "/ops/triage", icon: "analytics" },

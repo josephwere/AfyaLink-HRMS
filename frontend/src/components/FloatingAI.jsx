@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAuth } from "../utils/auth";
 import {
@@ -10,7 +10,29 @@ import {
   summarizeAssistantPage,
   updateAssistantProfile,
   clearAssistantMemory,
+  logAssistantAutofillAudit,
 } from "../services/assistantApi";
+import { extractDocument } from "../services/aiExtractionApi";
+import {
+  appendTextToFocusedField,
+  applyAiAssignments,
+  clearFocusedField,
+  collectPageFormFields,
+  focusNextField,
+  focusNextSection,
+  focusPreviousField,
+  getFocusedFieldContext,
+  resolveAiAssignments,
+  serializePageFormFields,
+  submitFocusedForm,
+} from "../utils/aiFormFill";
+import { resolveAutofillTemplate } from "../utils/aiAutofillTemplates";
+import { adaptPageFormFields, resolvePageFormAdapter } from "../utils/aiFormAdapters";
+import {
+  getAssistantStarterPack,
+  listAssistantStarterPacks,
+  mergeAssistantStarterPack,
+} from "../utils/aiStarterMacros";
 
 function parseCsv(value) {
   return String(value || "")
@@ -25,8 +47,53 @@ function parseNumber(value) {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function parseKeyValueLines(value, separator = "=>") {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const index = line.indexOf(separator);
+      if (index < 0) return null;
+      return {
+        left: line.slice(0, index).trim(),
+        right: line.slice(index + separator.length).trim(),
+      };
+    })
+    .filter((entry) => entry?.left && entry?.right);
+}
+
+function formatKeyValueLines(rows, leftKey, rightKey, separator = " => ") {
+  if (!Array.isArray(rows)) return "";
+  return rows
+    .map((row) => {
+      const left = String(row?.[leftKey] || "").trim();
+      const right = String(row?.[rightKey] || "").trim();
+      return left && right ? `${left}${separator}${right}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function normalizeVoiceText(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeVoiceCommand(value) {
+  return normalizeVoiceText(value)
+    .toLowerCase()
+    .replace(/[.!?,]/g, "");
+}
+
 export default function FloatingAI() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const { settings } = useSystemSettings();
   const ai = settings?.ai;
@@ -46,6 +113,9 @@ export default function FloatingAI() {
   const [conditionsInput, setConditionsInput] = useState("");
   const [medicationsInput, setMedicationsInput] = useState("");
   const [notes, setNotes] = useState("");
+  const [dictionaryInput, setDictionaryInput] = useState("");
+  const [dotPhrasesInput, setDotPhrasesInput] = useState("");
+  const [workflowTemplateInput, setWorkflowTemplateInput] = useState("");
   const [chatPrompt, setChatPrompt] = useState("");
   const [chatAnswer, setChatAnswer] = useState("");
   const [heightCm, setHeightCm] = useState("170");
@@ -57,16 +127,39 @@ export default function FloatingAI() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatExpanded, setChatExpanded] = useState(true);
   const [iconOk, setIconOk] = useState(true);
+  const [formFillPrompt, setFormFillPrompt] = useState("");
+  const [formFillBusy, setFormFillBusy] = useState(false);
+  const [extractBusy, setExtractBusy] = useState(false);
+  const [formFillSource, setFormFillSource] = useState("");
+  const [formFillFileName, setFormFillFileName] = useState("");
+  const [formFillPastedText, setFormFillPastedText] = useState("");
+  const [formFillReport, setFormFillReport] = useState(null);
+  const [pageFieldCount, setPageFieldCount] = useState(0);
+  const [pageFieldPreview, setPageFieldPreview] = useState([]);
+  const [activeTemplate, setActiveTemplate] = useState(null);
+  const [activeAdapter, setActiveAdapter] = useState(null);
+  const [formFillDraft, setFormFillDraft] = useState(null);
+  const [draftSelection, setDraftSelection] = useState({});
+  const [applyBusy, setApplyBusy] = useState(false);
+  const [reviewItemId, setReviewItemId] = useState("");
+  const [focusedFieldContext, setFocusedFieldContext] = useState(null);
+  const [autoApplyHighConfidence, setAutoApplyHighConfidence] = useState(false);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.88);
 
   const recognitionRef = useRef(null);
   const chatInputRef = useRef(null);
   const chatSectionRef = useRef(null);
   const floatButtonRef = useRef(null);
   const panelRef = useRef(null);
+  const uploadInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
   const aiIcon = ai?.icon || settings?.branding?.appIcon || "";
   const greeting = ai?.greeting || "Assistant";
+  const assistantProfile = context?.assistantProfile || {};
+  const hospitalScope = context?.hospitalScope || String(user?.hospitalId || user?.hospital || "GLOBAL");
+  const starterPacks = useMemo(() => listAssistantStarterPacks(), []);
 
   const isAuthenticated = Boolean(user);
   const role = String(user?.role || "GUEST").toUpperCase();
@@ -79,6 +172,21 @@ export default function FloatingAI() {
   const aiLocked = !canUseAI || !isAuthenticated;
   const hasIcon = Boolean(aiIcon) && iconOk;
   // Open only when user clicks the floating button.
+
+  const recommendedStarterPackIds = useMemo(() => {
+    const roleMap = {
+      DOCTOR: ["doctor", "referrals"],
+      SURGEON: ["doctor", "referrals"],
+      NURSE: ["nurse", "referrals"],
+      LAB_TECH: ["lab"],
+      RADIOLOGIST: ["lab"],
+      HOSPITAL_ADMIN: ["claims", "referrals"],
+      SYSTEM_ADMIN: ["claims"],
+      SUPER_ADMIN: ["claims"],
+      COMMUNITY_HEALTH_WORKER: ["referrals"],
+    };
+    return roleMap[role] || [];
+  }, [role]);
 
   useEffect(() => {
     setIconOk(true);
@@ -105,6 +213,13 @@ export default function FloatingAI() {
             .join(", ")
         );
         setNotes(profile.notes || "");
+        setDictionaryInput(formatKeyValueLines(profile.dictionaryTerms || [], "term", "replacement"));
+        setDotPhrasesInput(formatKeyValueLines(profile.dotPhrases || [], "shortcut", "content"));
+        setWorkflowTemplateInput(
+          formatKeyValueLines(profile.workflowTemplates || [], "workflow", "instructions", ": ")
+        );
+        setAutoApplyHighConfidence(Boolean(profile.autofillPreferences?.autoApplyHighConfidence));
+        setConfidenceThreshold(Number(profile.autofillPreferences?.confidenceThreshold || 0.88));
         const memory = Array.isArray(ctx.chatHistory) ? ctx.chatHistory : [];
         setChatMessages(
           memory
@@ -120,6 +235,52 @@ export default function FloatingAI() {
       .catch((err) => setMsg(err?.message || "Failed to load assistant context"))
       .finally(() => setLoadingContext(false));
   }, [open, isAuthenticated]);
+
+  const getPageFields = useCallback(() => {
+    const rawFields = collectPageFormFields();
+    return adaptPageFormFields({
+      pathname: location.pathname,
+      fields: rawFields,
+      pageTitle: document.title || "AfyaLink",
+    });
+  }, [location.pathname]);
+
+  const refreshPageFields = () => {
+    const fields = getPageFields();
+    setPageFieldCount(fields.length);
+    setPageFieldPreview(
+      fields
+        .map((field) => field.label || field.name || field.id || field.key)
+        .filter(Boolean)
+        .slice(0, 6)
+    );
+    setActiveTemplate(resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" }));
+    setActiveAdapter(resolvePageFormAdapter({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" }));
+    return fields;
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    setFormFillReport(null);
+    setFormFillDraft(null);
+    setDraftSelection({});
+    setReviewItemId("");
+    refreshPageFields();
+    const timer = window.setTimeout(() => refreshPageFields(), 350);
+    return () => window.clearTimeout(timer);
+  }, [open, location.pathname]);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+    const syncFocusedField = () => setFocusedFieldContext(getFocusedFieldContext());
+    syncFocusedField();
+    document.addEventListener("focusin", syncFocusedField);
+    document.addEventListener("click", syncFocusedField, true);
+    return () => {
+      document.removeEventListener("focusin", syncFocusedField);
+      document.removeEventListener("click", syncFocusedField, true);
+    };
+  }, [open, location.pathname]);
 
   const reminderText = useMemo(() => {
     const appt = context?.nextAppointment?.scheduledAt;
@@ -209,6 +370,67 @@ export default function FloatingAI() {
     return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   }, []);
 
+  const parsedDictionaryTerms = useMemo(
+    () =>
+      parseKeyValueLines(dictionaryInput).map((entry) => ({
+        term: entry.left,
+        replacement: entry.right,
+      })),
+    [dictionaryInput]
+  );
+
+  const parsedDotPhrases = useMemo(
+    () =>
+      parseKeyValueLines(dotPhrasesInput).map((entry) => ({
+        shortcut: entry.left,
+        content: entry.right,
+        scope: "global",
+      })),
+    [dotPhrasesInput]
+  );
+
+  const parsedWorkflowTemplates = useMemo(
+    () =>
+      parseKeyValueLines(workflowTemplateInput, ":").map((entry) => ({
+        workflow: entry.left.toLowerCase(),
+        instructions: entry.right,
+      })),
+    [workflowTemplateInput]
+  );
+
+  const buildAssistantProfilePayload = useCallback(
+    (overrides = {}) => {
+      const medications = parseCsv(medicationsInput).map((row) => {
+        const [name, dosage, schedule] = row.split("|").map((v) => String(v || "").trim());
+        return { name, dosage, schedule };
+      });
+      return {
+        conditions: overrides.conditions || parseCsv(conditionsInput),
+        medications: overrides.medications || medications,
+        notes: overrides.notes ?? notes,
+        dictionaryTerms: overrides.dictionaryTerms || parsedDictionaryTerms,
+        dotPhrases: overrides.dotPhrases || parsedDotPhrases,
+        workflowTemplates: overrides.workflowTemplates || parsedWorkflowTemplates,
+        autofillPreferences: {
+          autoApplyHighConfidence:
+            overrides.autofillPreferences?.autoApplyHighConfidence ?? autoApplyHighConfidence,
+          confidenceThreshold:
+            overrides.autofillPreferences?.confidenceThreshold ?? confidenceThreshold,
+        },
+      };
+    },
+    [
+      autoApplyHighConfidence,
+      confidenceThreshold,
+      conditionsInput,
+      medicationsInput,
+      notes,
+      parsedDictionaryTerms,
+      parsedDotPhrases,
+      parsedWorkflowTemplates,
+    ]
+  );
+
   const openChat = () => {
     if (!chatExpanded) {
       setChatExpanded(true);
@@ -277,6 +499,98 @@ export default function FloatingAI() {
     if (field === "conditions") setConditionsInput((prev) => `${prev}${prev ? ", " : ""}${value}`.trim());
     if (field === "medications") setMedicationsInput((prev) => `${prev}${prev ? ", " : ""}${value}`.trim());
     if (field === "notes") setNotes((prev) => `${prev}${prev ? " " : ""}${value}`.trim());
+    if (field === "formfill") setFormFillPrompt((prev) => `${prev}${prev ? " " : ""}${value}`.trim());
+    if (field === "pasted-source") setFormFillPastedText((prev) => `${prev}${prev ? "\n" : ""}${value}`.trim());
+    if (field === "focused") {
+      const applied = appendTextToFocusedField(value);
+      setFocusedFieldContext(getFocusedFieldContext());
+      if (!applied) {
+        setMsg('Click into a form field first, then use "Dictate at Cursor".');
+      }
+    }
+  };
+
+  const applyDictionaryTerms = (value) => {
+    let next = String(value || "");
+    for (const row of parsedDictionaryTerms) {
+      const term = String(row.term || "").trim();
+      const replacement = String(row.replacement || "").trim();
+      if (!term || !replacement) continue;
+      next = next.replace(new RegExp(`\\b${escapeRegex(term)}\\b`, "gi"), replacement);
+    }
+    return next;
+  };
+
+  const expandDotPhrase = (value, scope = "global") => {
+    const text = normalizeVoiceText(value);
+    if (!text.startsWith(".")) return text;
+    const [shortcut, ...rest] = text.split(/\s+/);
+    const match = parsedDotPhrases.find((row) => {
+      const sameShortcut = String(row.shortcut || "").trim().toLowerCase() === shortcut.toLowerCase();
+      const rowScope = String(row.scope || "global").toLowerCase();
+      return sameShortcut && (rowScope === "global" || rowScope === scope.toLowerCase());
+    });
+    if (!match) return text;
+    return [match.content, rest.join(" ")].filter(Boolean).join(rest.length ? " " : "");
+  };
+
+  const resolveVoiceCommand = (value) => {
+    const normalized = normalizeVoiceCommand(value);
+    if (!normalized) return null;
+    if (["next field", "go to next field", "move to next field"].includes(normalized)) return "next-field";
+    if (["previous field", "go to previous field", "move to previous field", "back field"].includes(normalized))
+      return "previous-field";
+    if (["next section", "go to next section", "move to next section"].includes(normalized)) return "next-section";
+    if (["clear field", "erase field", "empty field"].includes(normalized)) return "clear-field";
+    if (["submit form", "save form", "send form"].includes(normalized)) return "submit-form";
+    return null;
+  };
+
+  const runVoiceCommand = (command) => {
+    if (command === "next-field") {
+      const field = focusNextField();
+      setFocusedFieldContext(getFocusedFieldContext());
+      setMsg(field ? `Focused ${field.label || field.name || "next field"}.` : "No next field was found.");
+      return true;
+    }
+    if (command === "previous-field") {
+      const field = focusPreviousField();
+      setFocusedFieldContext(getFocusedFieldContext());
+      setMsg(field ? `Focused ${field.label || field.name || "previous field"}.` : "No previous field was found.");
+      return true;
+    }
+    if (command === "next-section") {
+      const field = focusNextSection();
+      setFocusedFieldContext(getFocusedFieldContext());
+      setMsg(field ? `Jumped to ${field.section || field.label || "the next section"}.` : "No next section was found.");
+      return true;
+    }
+    if (command === "clear-field") {
+      const cleared = clearFocusedField();
+      setFocusedFieldContext(getFocusedFieldContext());
+      setMsg(cleared ? "Focused field cleared." : "Click into a field first so I know what to clear.");
+      return cleared;
+    }
+    if (command === "submit-form") {
+      const submitted = submitFocusedForm();
+      setMsg(submitted ? "Form submitted." : "No form was available to submit from the current page.");
+      return submitted;
+    }
+    return false;
+  };
+
+  const handleDictationTranscript = (field, transcript) => {
+    const cleaned = normalizeVoiceText(transcript);
+    if (!cleaned) return;
+    if (field === "focused") {
+      const command = resolveVoiceCommand(cleaned);
+      if (command) {
+        runVoiceCommand(command);
+        return;
+      }
+    }
+    const transformed = applyDictionaryTerms(expandDotPhrase(cleaned, field));
+    setFieldValue(field, transformed);
   };
 
   const stopDictation = () => {
@@ -287,6 +601,17 @@ export default function FloatingAI() {
     setIsDictating(false);
     setDictationField("");
   };
+
+  const dictationFieldLabel = {
+    symptoms: "Symptoms",
+    question: "Question",
+    conditions: "Conditions",
+    medications: "Medications",
+    notes: "Notes",
+    formfill: "AI fill request",
+    "pasted-source": "Pasted source text",
+    focused: focusedFieldContext?.label || "the focused field",
+  }[dictationField] || dictationField;
 
   const startDictation = (field) => {
     setMsg("");
@@ -310,7 +635,7 @@ export default function FloatingAI() {
         .map((res) => (res?.[0]?.transcript || "").trim())
         .filter(Boolean)
         .join(" ");
-      if (transcript) setFieldValue(field, transcript);
+      if (transcript) handleDictationTranscript(field, transcript);
     };
     recognition.onerror = (event) => {
       setMsg(event?.error ? `Voice input error: ${event.error}` : "Voice input failed");
@@ -416,22 +741,49 @@ export default function FloatingAI() {
     }
   };
 
+  const persistAssistantProfile = useCallback(
+    async (payload, successMessage) => {
+      await updateAssistantProfile(payload);
+      setContext((prev) => ({
+        ...(prev || {}),
+        assistantProfile: {
+          ...(prev?.assistantProfile || {}),
+          ...payload,
+        },
+      }));
+      setMsg(successMessage || `Assistant profile saved for hospital scope ${hospitalScope}.`);
+    },
+    [hospitalScope]
+  );
+
   const saveProfile = async () => {
     setSaveBusy(true);
     setMsg("");
     try {
-      const medications = parseCsv(medicationsInput).map((row) => {
-        const [name, dosage, schedule] = row.split("|").map((v) => String(v || "").trim());
-        return { name, dosage, schedule };
-      });
-      await updateAssistantProfile({
-        conditions: parseCsv(conditionsInput),
-        medications,
-        notes,
-      });
-      setMsg("Assistant profile saved. Advice will now use this health context.");
+      const payload = buildAssistantProfilePayload();
+      await persistAssistantProfile(payload);
     } catch (err) {
       setMsg(err?.message || "Failed to save assistant profile");
+    } finally {
+      setSaveBusy(false);
+    }
+  };
+
+  const applyStarterPack = async (packId) => {
+    const pack = getAssistantStarterPack(packId);
+    if (!pack) return;
+    setSaveBusy(true);
+    setMsg("");
+    try {
+      const merged = mergeAssistantStarterPack(buildAssistantProfilePayload(), pack);
+      setDictionaryInput(formatKeyValueLines(merged.dictionaryTerms || [], "term", "replacement"));
+      setDotPhrasesInput(formatKeyValueLines(merged.dotPhrases || [], "shortcut", "content"));
+      setWorkflowTemplateInput(
+        formatKeyValueLines(merged.workflowTemplates || [], "workflow", "instructions", ": ")
+      );
+      await persistAssistantProfile(merged, `${pack.label} saved for hospital scope ${hospitalScope}.`);
+    } catch (err) {
+      setMsg(err?.message || `Failed to apply ${pack?.label || "starter pack"}.`);
     } finally {
       setSaveBusy(false);
     }
@@ -475,7 +827,400 @@ export default function FloatingAI() {
   };
 
   const handleQuickAsk = () => {
+    setOpen(false);
     navigate("/ai/chatbot");
+  };
+
+  const buildFormFillSourceText = (extraction) => {
+    const parts = [
+      extraction?.rawText || "",
+      extraction?.summary || "",
+      extraction?.fields && Object.keys(extraction.fields).length ? JSON.stringify(extraction.fields) : "",
+    ]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+    return parts.join("\n\n").slice(0, 6000);
+  };
+
+  const combinedFormFillSource = [String(formFillSource || "").trim(), String(formFillPastedText || "").trim()]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 7000);
+
+  const getConfidenceMeta = (value) => {
+    const score = Math.max(0, Math.min(1, Number(value || 0)));
+    if (score >= 0.85) return { score, label: "High", tone: "ok" };
+    if (score >= 0.6) return { score, label: "Medium", tone: "caution" };
+    return { score, label: "Low", tone: "risk" };
+  };
+
+  const buildEvidenceSnippet = ({ sourceText, value, evidence, fieldLabel }) => {
+    const raw = String(sourceText || "").trim();
+    if (!raw) return "";
+    const needles = [value, evidence, fieldLabel]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+
+    for (const needle of needles) {
+      const index = raw.toLowerCase().indexOf(needle.toLowerCase());
+      if (index >= 0) {
+        const start = Math.max(0, index - 70);
+        const end = Math.min(raw.length, index + needle.length + 90);
+        return raw.slice(start, end).trim();
+      }
+    }
+
+    return raw.slice(0, 160);
+  };
+
+  const parseJsonPayload = (text) => {
+    const raw = String(text || "").trim();
+    if (!raw) return null;
+
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fenced?.[1]?.trim() || raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1).trim();
+    if (!candidate) return null;
+
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      return null;
+    }
+  };
+
+  const buildFormFillPromptMessage = (fields) => {
+      const serializableFields = serializePageFormFields(fields).slice(0, 80);
+      const template = resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
+      const adapter = resolvePageFormAdapter({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
+      const savedTemplateNote =
+        assistantProfile.workflowTemplates?.find((row) => String(row.workflow || "").toLowerCase() === template.id)?.instructions || "";
+    const sourceKinds = [
+      formFillPrompt.trim() ? "instruction" : "",
+      formFillSource.trim() ? "upload" : "",
+      formFillPastedText.trim() ? "pasted text" : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return [
+      "You are AfyaLink's form autofill assistant for clinical and admin staff.",
+      "Return valid JSON only. Do not use markdown or prose outside JSON.",
+      'JSON schema: {"summary":"string","assignments":[{"fieldKey":"string","value":"string|boolean","confidence":0.0,"reason":"string","evidence":"string"}],"unmatched":["string"]}.',
+      "Rules:",
+      "- Use only the provided fieldKey values.",
+      "- Omit fields when the source does not clearly support a value.",
+      "- For checkbox fields, use true or false.",
+      "- For select and radio fields, use one of the listed option labels or values.",
+      "- Be conservative with medical data. Never invent diagnoses or measurements.",
+      `Workflow template: ${template.title}`,
+      `Template focus: ${template.description}`,
+      adapter?.id && adapter.id !== "generic" ? `Page adapter: ${adapter.title}` : "",
+      adapter?.description ? `Adapter purpose: ${adapter.description}` : "",
+      `Current role: ${role}`,
+      `Hospital scope: ${hospitalScope}`,
+      focusedFieldContext ? `Focused field: ${focusedFieldContext.label}${focusedFieldContext.section ? ` (${focusedFieldContext.section})` : ""}` : "",
+      ...template.promptHints,
+      ...(adapter?.promptHints || []),
+      savedTemplateNote ? `Saved hospital workflow note: ${savedTemplateNote}` : "",
+      sourceKinds ? `Source kinds: ${sourceKinds}` : "",
+      assistantProfile.notes ? `Persistent assistant notes: ${assistantProfile.notes}` : "",
+      `Route: ${location.pathname}`,
+      `Page title: ${document.title || "AfyaLink"}`,
+      `Available fields: ${JSON.stringify(serializableFields)}`,
+      `User instruction: ${String(formFillPrompt || "").trim() || "Use the uploaded or dictated source to fill the current form."}`,
+      combinedFormFillSource ? `Source text: ${combinedFormFillSource}` : "Source text: none",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  };
+
+  const buildDraftFromAssignments = (fields, payload) => {
+    const resolved = resolveAiAssignments(fields, Array.isArray(payload?.assignments) ? payload.assignments : []);
+    return resolved.map((item, index) => {
+      const assignment = item.assignment || {};
+      const confidence = getConfidenceMeta(assignment.confidence);
+      return {
+        id: `${item.field?.key || assignment.fieldKey || assignment.label || "draft"}-${index}`,
+        matched: Boolean(item.field),
+        fieldKey: item.field?.key || assignment.fieldKey || assignment.key || "",
+        fieldLabel: item.fieldLabel,
+        value: assignment.value,
+        reason: assignment.reason || "",
+        evidence: assignment.evidence || "",
+        sourcePreview: buildEvidenceSnippet({
+          sourceText: combinedFormFillSource,
+          value: assignment.value,
+          evidence: assignment.evidence,
+          fieldLabel: item.fieldLabel,
+        }),
+        confidence,
+        assignment,
+      };
+    });
+  };
+
+  const handleFormFillFile = async (file) => {
+    if (!file) return;
+    if (!isAuthenticated) {
+      setMsg("Sign in to extract a photo or document into this form.");
+      return;
+    }
+    setExtractBusy(true);
+    setMsg("");
+    try {
+      const out = await extractDocument(file);
+      const sourceText = buildFormFillSourceText(out?.extraction || {});
+      if (!sourceText) {
+        throw new Error("The upload did not return enough readable text to fill this form.");
+      }
+      setFormFillSource(sourceText);
+      setFormFillFileName(file.name || "uploaded file");
+      setMsg(`Ready to autofill using ${file.name || "the uploaded file"}.`);
+    } catch (err) {
+      setMsg(err?.message || "Failed to extract text from the uploaded file.");
+      setFormFillSource("");
+      setFormFillFileName("");
+    } finally {
+      setExtractBusy(false);
+      if (uploadInputRef.current) uploadInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  };
+
+  const buildAutofillSourceKinds = () =>
+    [
+      formFillPrompt.trim() ? "instruction" : "",
+      formFillSource.trim() ? "upload" : "",
+      formFillPastedText.trim() ? "pasted-text" : "",
+    ].filter(Boolean);
+
+  const captureAutofillAudit = async ({ eventType, template, summary, items = [], unmatched = [] }) => {
+    try {
+      await logAssistantAutofillAudit({
+        eventType,
+        templateId: template?.id || activeTemplate?.id || "generic",
+        templateTitle: template?.title || activeTemplate?.title || "General Form Fill",
+        route: location.pathname,
+        summary,
+        sourceKinds: buildAutofillSourceKinds(),
+        unmatched,
+        items: items.map((item) => ({
+          fieldKey: item.fieldKey,
+          fieldLabel: item.fieldLabel,
+          value: item.value,
+          confidence: item.confidence?.score ?? item.confidence ?? null,
+          evidence: item.evidence || "",
+          reason: item.reason || item.applyResult?.reason || "",
+          status: item.applied ? "applied" : item.matched ? "queued" : "unmatched",
+        })),
+      });
+    } catch (err) {
+      console.warn("Assistant autofill audit failed:", err?.message || err);
+    }
+  };
+
+  const runPageAutofill = async () => {
+    if (!isAuthenticated) {
+      setMsg("Sign in to use AI autofill on this page.");
+      return;
+    }
+    const fields = refreshPageFields();
+    if (!fields.length) {
+      setMsg("No fillable form fields were detected on this page.");
+      return;
+    }
+    if (!String(formFillPrompt || "").trim() && !String(combinedFormFillSource || "").trim()) {
+      setMsg("Add an instruction, dictate what to fill, or upload a photo/document first.");
+      return;
+    }
+
+    setFormFillBusy(true);
+    setMsg("");
+    setFormFillReport(null);
+    setFormFillDraft(null);
+    setDraftSelection({});
+    setReviewItemId("");
+
+    try {
+      const out = await chatAssistant({
+        message: buildFormFillPromptMessage(fields),
+        userMessage: formFillPrompt || `Autofill ${location.pathname}`,
+        pageContext: String(document?.body?.innerText || "").slice(0, 3000),
+      });
+      const payload = parseJsonPayload(out?.answer || "");
+      if (!payload?.assignments?.length) {
+        throw new Error("The assistant did not return a usable field mapping for this page.");
+      }
+
+      const template = resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
+      let items = buildDraftFromAssignments(fields, payload);
+      let autoAppliedFilled = [];
+      let autoAppliedSkipped = [];
+      if (autoApplyHighConfidence) {
+        const autoCandidates = items.filter(
+          (item) => item.matched && item.confidence.score >= confidenceThreshold
+        );
+        if (autoCandidates.length) {
+          const results = applyAiAssignments(
+            fields,
+            autoCandidates.map((item) => ({
+              fieldKey: item.fieldKey,
+              value: item.value,
+              confidence: item.confidence.score,
+            }))
+          );
+          const resultMap = new Map(autoCandidates.map((item, index) => [item.id, results[index]]));
+          items = items.map((item) => {
+            const result = resultMap.get(item.id);
+            if (!result) return item;
+            return {
+              ...item,
+              applied: result.ok,
+              applyResult: result,
+              lastAppliedAt: result.ok ? new Date().toISOString() : "",
+            };
+          });
+          autoAppliedFilled = results.filter((entry) => entry.ok);
+          autoAppliedSkipped = results.filter((entry) => !entry.ok);
+        }
+      }
+      const selected = Object.fromEntries(
+        items.filter((item) => item.matched && !item.applied).map((item) => [item.id, true])
+      );
+      const draftedCount = items.filter((item) => item.matched).length;
+      const queuedCount = items.filter((item) => item.matched && !item.applied).length;
+      const autoAppliedCount = autoAppliedFilled.length;
+      const baseSummary =
+        payload.summary ||
+        `Drafted ${draftedCount} field${draftedCount === 1 ? "" : "s"} for review.`;
+      const summary = autoAppliedCount
+        ? `${baseSummary} Auto-applied ${autoAppliedCount} high-confidence field${autoAppliedCount === 1 ? "" : "s"} and left ${queuedCount} for review.`
+        : baseSummary;
+
+      setFormFillDraft({
+        template,
+        summary,
+        items,
+        unmatched: Array.isArray(payload.unmatched) ? payload.unmatched : [],
+      });
+      setDraftSelection(selected);
+      setReviewItemId(items.find((item) => item.matched)?.id || items[0]?.id || "");
+      if (autoAppliedCount || autoAppliedSkipped.length) {
+        setFormFillReport({
+          summary:
+            autoAppliedCount > 0
+              ? `Auto-applied ${autoAppliedCount} high-confidence field${autoAppliedCount === 1 ? "" : "s"}.`
+              : "No high-confidence fields were auto-applied.",
+          filled: autoAppliedFilled,
+          skipped: autoAppliedSkipped,
+          unmatched: [],
+        });
+      }
+      await captureAutofillAudit({
+        eventType: "drafted",
+        template,
+        summary,
+        items,
+        unmatched: Array.isArray(payload.unmatched) ? payload.unmatched : [],
+      });
+      if (autoAppliedCount) {
+        await captureAutofillAudit({
+          eventType: "applied",
+          template,
+          summary: `Auto-applied ${autoAppliedCount} high-confidence fields.`,
+          items: items.filter((item) => item.applied),
+        });
+      }
+      setMsg(`${summary} Review the remaining values below before applying them.`);
+    } catch (err) {
+      setMsg(err?.message || "AI autofill failed for this page.");
+    } finally {
+      setFormFillBusy(false);
+    }
+  };
+
+  const applyDraftAssignments = async ({ onlySelected = true, selectedIds = null } = {}) => {
+    if (!formFillDraft?.items?.length) {
+      setMsg("No autofill draft is ready yet.");
+      return;
+    }
+
+    const allowedIds = Array.isArray(selectedIds) ? new Set(selectedIds) : null;
+    const candidates = formFillDraft.items.filter(
+      (item) =>
+        item.matched &&
+        !item.applied &&
+        (!onlySelected || (allowedIds ? allowedIds.has(item.id) : draftSelection[item.id]))
+    );
+    if (!candidates.length) {
+      setMsg(onlySelected ? "Select at least one drafted field to apply." : "No unapplied drafted fields left.");
+      return;
+    }
+
+    setApplyBusy(true);
+    setMsg("");
+    try {
+      const fields = refreshPageFields();
+      const results = applyAiAssignments(
+        fields,
+        candidates.map((item) => ({
+          fieldKey: item.fieldKey,
+          value: item.value,
+        }))
+      );
+
+      const resultMap = new Map(candidates.map((item, index) => [item.id, results[index]]));
+      const nextItems = formFillDraft.items.map((item) => {
+        const result = resultMap.get(item.id);
+        if (!result) return item;
+        return {
+          ...item,
+          applied: result.ok,
+          applyResult: result,
+          lastAppliedAt: new Date().toISOString(),
+        };
+      });
+
+      const filled = results.filter((entry) => entry.ok);
+      const skipped = results.filter((entry) => !entry.ok);
+      const summary = filled.length
+        ? `Applied ${filled.length} reviewed field${filled.length === 1 ? "" : "s"}.`
+        : "No reviewed fields were applied.";
+
+      setFormFillDraft((prev) => ({
+        ...(prev || {}),
+        items: nextItems,
+      }));
+      setFormFillReport({
+        summary,
+        filled,
+        skipped,
+        unmatched: formFillDraft.unmatched || [],
+      });
+      pushHistory(
+        "autofill",
+        "AI Autofill Applied",
+        [
+          summary,
+          filled.length ? `Filled: ${filled.map((item) => `${item.field} = ${item.value}`).join("; ")}` : "",
+          skipped.length ? `Skipped: ${skipped.map((item) => `${item.field} (${item.reason})`).join("; ")}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
+      await captureAutofillAudit({
+        eventType: "applied",
+        template: formFillDraft.template,
+        summary,
+        items: nextItems.filter((item) => resultMap.has(item.id)),
+        unmatched: formFillDraft.unmatched || [],
+      });
+      setMsg(summary);
+    } catch (err) {
+      setMsg(err?.message || "Failed to apply the reviewed autofill draft.");
+    } finally {
+      setApplyBusy(false);
+    }
   };
 
   const summarizePage = async () => {
@@ -507,7 +1252,7 @@ export default function FloatingAI() {
     }
   };
 
-  const busy = loadingContext || adviceBusy || chatBusy || summaryBusy || saveBusy;
+  const busy = loadingContext || adviceBusy || chatBusy || summaryBusy || saveBusy || formFillBusy || extractBusy || applyBusy;
 
   const exportHealthReport = () => {
     if (typeof window === "undefined") return;
@@ -556,6 +1301,8 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
       setMsg("Could not copy summary.");
     }
   };
+
+  const selectedReviewItem = formFillDraft?.items?.find((item) => item.id === reviewItemId) || null;
 
   const floatingUI = (
     <>
@@ -627,7 +1374,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
               {msg && <div className="auth-info">{msg}</div>}
               {isDictating && (
                 <div className="card ai-status-card">
-                  <strong>Mic is on:</strong> Listening for {dictationField}
+                  <strong>Mic is on:</strong> Listening for {dictationFieldLabel}
                   <button type="button" className="btn-secondary" onClick={stopDictation}>
                     Stop Mic
                   </button>
@@ -666,6 +1413,299 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
               <div className="card ai-tip-card">
                 <strong>AI Tip</strong>
                 <p className="muted">{contextTip}</p>
+              </div>
+
+              <div className="card form ai-autofill-card">
+                <div className="ai-autofill-head">
+                  <div>
+                    <h4>AI Autofill Anywhere</h4>
+                    <p className="muted">
+                      Dictate at the cursor, paste source text, or upload a photo/document and let AI draft the current page form for review.
+                    </p>
+                  </div>
+                  <button type="button" className="btn-secondary btn-compact" onClick={refreshPageFields}>
+                    Refresh Fields
+                  </button>
+                </div>
+                <div className="ai-autofill-meta">
+                  <span className="ai-autofill-pill">{pageFieldCount} field{pageFieldCount === 1 ? "" : "s"} detected</span>
+                  {activeTemplate ? <span className="ai-autofill-pill secondary">{activeTemplate.title}</span> : null}
+                  {activeAdapter?.id && activeAdapter.id !== "generic" ? (
+                    <span className="ai-autofill-pill secondary">Adapter: {activeAdapter.title}</span>
+                  ) : null}
+                  {pageFieldPreview.length ? (
+                    <span className="muted">Preview: {pageFieldPreview.join(", ")}</span>
+                  ) : (
+                    <span className="muted">Open any form page and refresh to let AI map the fields.</span>
+                  )}
+                  {activeTemplate?.description ? <span className="muted">{activeTemplate.description}</span> : null}
+                  <span className="muted">Hospital scope: {hospitalScope}</span>
+                  {focusedFieldContext ? (
+                    <span className="muted">
+                      Focused field: <strong>{focusedFieldContext.label}</strong>
+                      {focusedFieldContext.section ? ` • ${focusedFieldContext.section}` : ""}
+                    </span>
+                  ) : (
+                    <span className="muted">Click into any page field, then use Dictate at Cursor or the navigation commands.</span>
+                  )}
+                </div>
+                <div className="ai-autofill-command-grid">
+                  <button type="button" className="btn-secondary btn-compact" onClick={() => startDictation("focused")} disabled={!supportsRecognition || busy}>
+                    🎤 Dictate at Cursor
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => {
+                      const field = focusPreviousField();
+                      setFocusedFieldContext(getFocusedFieldContext());
+                      setMsg(field ? `Focused ${field.label || field.name || "previous field"}.` : "No previous field was found.");
+                    }}
+                  >
+                    Previous Field
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => {
+                      const field = focusNextField();
+                      setFocusedFieldContext(getFocusedFieldContext());
+                      setMsg(field ? `Focused ${field.label || field.name || "next field"}.` : "No next field was found.");
+                    }}
+                  >
+                    Next Field
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => {
+                      const field = focusNextSection();
+                      setFocusedFieldContext(getFocusedFieldContext());
+                      setMsg(field ? `Jumped to ${field.section || field.label || "the next section"}.` : "No next section was found.");
+                    }}
+                  >
+                    Next Section
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => {
+                      const cleared = clearFocusedField();
+                      setFocusedFieldContext(getFocusedFieldContext());
+                      setMsg(cleared ? "Focused field cleared." : "Click into a field first so I know what to clear.");
+                    }}
+                  >
+                    Clear Field
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => {
+                      const submitted = submitFocusedForm();
+                      setMsg(submitted ? "Form submitted." : "No form was available to submit from the current page.");
+                    }}
+                  >
+                    Submit Form
+                  </button>
+                </div>
+                <label>Instruction for this page</label>
+                <textarea
+                  rows={3}
+                  value={formFillPrompt}
+                  onChange={(e) => setFormFillPrompt(e.target.value)}
+                  placeholder="Example: use this referral letter to fill the patient details and transfer summary."
+                />
+                <label>Pasted source text</label>
+                <textarea
+                  rows={3}
+                  value={formFillPastedText}
+                  onChange={(e) => setFormFillPastedText(e.target.value)}
+                  placeholder="Paste referral note, claim letter, lab request, discharge summary, or copied text here."
+                />
+                <div className="ai-inline-actions">
+                  <button type="button" className="btn-secondary" onClick={() => startDictation("formfill")} disabled={!supportsRecognition || busy}>
+                    🎤 Dictate Fill Request
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => startDictation("pasted-source")} disabled={!supportsRecognition || busy}>
+                    🎤 Dictate Source Text
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => uploadInputRef.current?.click()} disabled={busy}>
+                    Upload Image / PDF
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => cameraInputRef.current?.click()} disabled={busy}>
+                    Take Photo
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={runPageAutofill}
+                    disabled={busy || (!formFillPrompt.trim() && !combinedFormFillSource.trim())}
+                  >
+                    {formFillBusy ? "Filling..." : "AI Fill This Page"}
+                  </button>
+                </div>
+                <div className="ai-smart-review">
+                  <label className="ai-smart-review-toggle">
+                    <input
+                      type="checkbox"
+                      checked={autoApplyHighConfidence}
+                      onChange={(e) => setAutoApplyHighConfidence(e.target.checked)}
+                    />
+                    <span>Auto-apply only high-confidence fields</span>
+                  </label>
+                  <div className="ai-smart-review-threshold">
+                    <span>Threshold: {Math.round(confidenceThreshold * 100)}%</span>
+                    <input
+                      type="range"
+                      min="0.6"
+                      max="0.95"
+                      step="0.05"
+                      value={confidenceThreshold}
+                      onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+                    />
+                  </div>
+                  <p className="muted">
+                    Lower-confidence or unmatched fields stay queued in the review list with evidence and provenance.
+                  </p>
+                </div>
+                <input
+                  ref={uploadInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.jpg,.jpeg,.png,.webp"
+                  style={{ display: "none" }}
+                  onChange={(e) => handleFormFillFile(e.target.files?.[0])}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  style={{ display: "none" }}
+                  onChange={(e) => handleFormFillFile(e.target.files?.[0])}
+                />
+                {extractBusy ? <p className="muted">Extracting text from your upload...</p> : null}
+                {formFillFileName || formFillPastedText.trim() ? (
+                  <div className="ai-autofill-source">
+                    <strong>Source ready:</strong> {formFillFileName || "Pasted text"}
+                    {formFillPastedText.trim() ? <span className="muted">Includes pasted/copied text.</span> : null}
+                    <button
+                      type="button"
+                      className="btn-secondary btn-compact"
+                      onClick={() => {
+                        setFormFillSource("");
+                        setFormFillFileName("");
+                        setFormFillPastedText("");
+                      }}
+                    >
+                      Clear Source
+                    </button>
+                  </div>
+                ) : null}
+                {formFillDraft ? (
+                  <div className="card ai-response-card ai-autofill-review">
+                    <div className="ai-autofill-review-head">
+                      <div>
+                        <h4>Review Before Apply</h4>
+                        <p className="muted">{formFillDraft.summary}</p>
+                      </div>
+                      <div className="ai-inline-actions">
+                        <button type="button" className="btn-primary btn-compact" onClick={() => applyDraftAssignments({ onlySelected: true })} disabled={applyBusy}>
+                          {applyBusy ? "Applying..." : "Approve Checked"}
+                        </button>
+                        <button type="button" className="btn-secondary btn-compact" onClick={() => applyDraftAssignments({ onlySelected: false })} disabled={applyBusy}>
+                          Apply All
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary btn-compact"
+                          onClick={() => {
+                            setFormFillDraft(null);
+                            setDraftSelection({});
+                            setReviewItemId("");
+                          }}
+                        >
+                          Clear Draft
+                        </button>
+                      </div>
+                    </div>
+                    <div className="ai-review-list">
+                      {formFillDraft.items.map((item) => (
+                        <div key={item.id} className={`ai-review-item${item.id === reviewItemId ? " active" : ""}${item.applied ? " applied" : ""}${!item.matched ? " missing" : ""}`}>
+                          <label className="ai-review-check">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(draftSelection[item.id])}
+                              disabled={!item.matched || item.applied}
+                              onChange={(e) => setDraftSelection((prev) => ({ ...prev, [item.id]: e.target.checked }))}
+                            />
+                            <span>
+                              <strong>{item.fieldLabel}</strong>
+                              <small>{String(item.value ?? "—")}</small>
+                            </span>
+                          </label>
+                          <div className="ai-review-meta">
+                            <span className={`ai-review-confidence ${item.confidence.tone}`}>{item.confidence.label} {Math.round(item.confidence.score * 100)}%</span>
+                            {item.applied ? <span className="ai-review-status">Applied</span> : null}
+                            {!item.matched ? <span className="ai-review-status warning">Needs manual mapping</span> : null}
+                            <button type="button" className="btn-secondary btn-compact" onClick={() => setReviewItemId(item.id)}>
+                              Evidence
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {formFillDraft.unmatched?.length ? (
+                      <>
+                        <strong>Unmatched source items</strong>
+                        <ul>
+                          {formFillDraft.unmatched.map((item, index) => (
+                            <li key={`draft-unmatched-${index}`}>{item}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+                {formFillReport ? (
+                  <div className="card ai-response-card ai-autofill-report">
+                    <h4>Autofill Result</h4>
+                    <p className="muted">{formFillReport.summary}</p>
+                    {formFillReport.filled?.length ? (
+                      <>
+                        <strong>Filled</strong>
+                        <ul>
+                          {formFillReport.filled.map((item, index) => (
+                            <li key={`filled-${index}`}>
+                              {item.field}: {String(item.value)}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+                    {formFillReport.skipped?.length ? (
+                      <>
+                        <strong>Skipped</strong>
+                        <ul>
+                          {formFillReport.skipped.map((item, index) => (
+                            <li key={`skipped-${index}`}>
+                              {item.field}: {item.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+                    {formFillReport.unmatched?.length ? (
+                      <>
+                        <strong>Unmatched source items</strong>
+                        <ul>
+                          {formFillReport.unmatched.map((item, index) => (
+                            <li key={`unmatched-${index}`}>{item}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
               <div className="card form">
@@ -846,8 +1886,127 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   {saveBusy ? "Saving..." : "Save Assistant Profile"}
                 </button>
               </div>
+
+              <div className="card form">
+                <h4>Assistant Shortcuts & Hospital Templates</h4>
+                <p className="muted">
+                  These settings are saved for <strong>{hospitalScope}</strong>, so teams can keep different shortcuts and workflow habits by hospital.
+                </p>
+                <div className="ai-starter-pack-grid">
+                  {starterPacks.map((pack) => {
+                    const recommended = recommendedStarterPackIds.includes(pack.id);
+                    return (
+                      <div key={pack.id} className={`ai-starter-pack-card${recommended ? " recommended" : ""}`}>
+                        <div>
+                          <strong>{pack.label}</strong>
+                          <p className="muted">{pack.description}</p>
+                          <small className="muted">
+                            {pack.recommendedRoles?.length ? `Best for: ${pack.recommendedRoles.join(", ")}` : "Reusable hospital starter pack"}
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className={recommended ? "btn-primary btn-compact" : "btn-secondary btn-compact"}
+                          onClick={() => applyStarterPack(pack.id)}
+                          disabled={saveBusy}
+                        >
+                          {saveBusy ? "Saving..." : "Apply Pack"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <label>Custom dictionary terms</label>
+                <textarea
+                  rows={3}
+                  value={dictionaryInput}
+                  onChange={(e) => setDictionaryInput(e.target.value)}
+                  placeholder={"sha => Social Health Authority\nspo2 => SpO2"}
+                />
+                <label>Dot phrases / macros</label>
+                <textarea
+                  rows={3}
+                  value={dotPhrasesInput}
+                  onChange={(e) => setDotPhrasesInput(e.target.value)}
+                  placeholder={".claim => Claim reviewed against SHA member card and invoice.\n.admit => Patient admitted, handover completed, vitals stable."}
+                />
+                <label>Workflow templates</label>
+                <textarea
+                  rows={4}
+                  value={workflowTemplateInput}
+                  onChange={(e) => setWorkflowTemplateInput(e.target.value)}
+                  placeholder={"claims: Always capture member number, payer, provider, procedure, total amount.\nreferrals: Keep handover concise and include urgency, destination, and medication notes."}
+                />
+                <div className="ai-inline-actions">
+                  <button type="button" className="btn-secondary btn-compact" onClick={saveProfile} disabled={saveBusy}>
+                    {saveBusy ? "Saving..." : "Save Shortcuts"}
+                  </button>
+                </div>
+                <p className="muted">
+                  In cursor mode you can say voice commands like “next field”, “previous field”, “next section”, “clear field”, or “submit form”.
+                </p>
+              </div>
             </div>
           </aside>
+          {selectedReviewItem ? (
+            <aside
+              className="ai-evidence-drawer"
+              role="dialog"
+              aria-label="Autofill evidence"
+              style={{ position: "fixed", right: 548, bottom: 88, zIndex: 2147483645 }}
+            >
+              <div className="ai-evidence-head">
+                <div>
+                  <h4>Confidence + Evidence</h4>
+                  <p className="muted">{selectedReviewItem.fieldLabel}</p>
+                </div>
+                <button type="button" className="icon-btn" onClick={() => setReviewItemId("")} aria-label="Close evidence drawer">
+                  ×
+                </button>
+              </div>
+              <div className="ai-evidence-body">
+                <div className="ai-evidence-stat">
+                  <span className={`ai-review-confidence ${selectedReviewItem.confidence.tone}`}>
+                    {selectedReviewItem.confidence.label} {Math.round(selectedReviewItem.confidence.score * 100)}%
+                  </span>
+                  <strong>Suggested value</strong>
+                  <p>{String(selectedReviewItem.value ?? "—")}</p>
+                </div>
+                <div className="ai-evidence-stat">
+                  <strong>AI reasoning</strong>
+                  <p>{selectedReviewItem.reason || "No reasoning returned."}</p>
+                </div>
+                <div className="ai-evidence-stat">
+                  <strong>Evidence quote</strong>
+                  <p>{selectedReviewItem.evidence || "No explicit quote returned."}</p>
+                </div>
+                <div className="ai-evidence-stat">
+                  <strong>Source snippet</strong>
+                  <p>{selectedReviewItem.sourcePreview || "No source snippet matched the current draft."}</p>
+                </div>
+                <div className="ai-inline-actions">
+                  {!selectedReviewItem.applied ? (
+                    <button
+                      type="button"
+                      className="btn-primary btn-compact"
+                      onClick={() => applyDraftAssignments({ onlySelected: true, selectedIds: [selectedReviewItem.id] })}
+                      disabled={!selectedReviewItem.matched || applyBusy}
+                    >
+                      Apply This Field
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="btn-secondary btn-compact"
+                    onClick={() => setDraftSelection((prev) => ({ ...prev, [selectedReviewItem.id]: !prev[selectedReviewItem.id] }))}
+                    disabled={!selectedReviewItem.matched || selectedReviewItem.applied}
+                  >
+                    {draftSelection[selectedReviewItem.id] ? "Uncheck" : "Check"} for Apply
+                  </button>
+                </div>
+              </div>
+            </aside>
+          ) : null}
         </>
       )}
     </>

@@ -367,7 +367,13 @@ export default function Beds() {
           {isGlobalRole ? (
             <label>
               Hospital
-              <select value={selectedHospitalId} onChange={(e) => setSelectedHospitalId(e.target.value)}>
+              <select
+                value={selectedHospitalId}
+                onChange={(e) => setSelectedHospitalId(e.target.value)}
+                data-ai-label="Hospital"
+                data-ai-aliases="facility|site|bed scope hospital"
+                data-ai-widget="hospital-scope-selector"
+              >
                 <option value="">Select hospital</option>
                 {hospitals.map((hospital) => (
                   <option key={hospital._id} value={hospital._id}>
@@ -391,11 +397,23 @@ export default function Beds() {
             <form className="grid" style={{ gap: 12 }} onSubmit={createBed}>
               <label>
                 Ward
-                <input value={ward} onChange={(e) => setWard(e.target.value)} placeholder="Ward A" />
+                <input
+                  value={ward}
+                  onChange={(e) => setWard(e.target.value)}
+                  placeholder="Ward A"
+                  data-ai-label="Ward"
+                  data-ai-aliases="unit|ward name|inpatient ward"
+                />
               </label>
               <label>
                 Bed Number
-                <input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="A-01" />
+                <input
+                  value={number}
+                  onChange={(e) => setNumber(e.target.value)}
+                  placeholder="A-01"
+                  data-ai-label="Bed Number"
+                  data-ai-aliases="bed|bed assignment|bed code"
+                />
               </label>
               <button type="submit" className="btn-primary" disabled={saving || (isGlobalRole && !selectedHospitalId)}>
                 {saving ? "Saving..." : "Add Bed"}
@@ -463,12 +481,26 @@ export default function Beds() {
         <div className="card card-header-actions" style={{ marginBottom: 12 }}>
           <h3>Filters</h3>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              data-ai-label="Bed Status Filter"
+              data-ai-aliases="status filter|occupancy filter"
+              data-ai-intent="filter"
+              data-ai-priority="low"
+            >
               <option value="ALL">All beds</option>
               <option value="AVAILABLE">Available</option>
               <option value="OCCUPIED">Occupied</option>
             </select>
-            <select value={wardFilter} onChange={(e) => setWardFilter(e.target.value)}>
+            <select
+              value={wardFilter}
+              onChange={(e) => setWardFilter(e.target.value)}
+              data-ai-label="Ward Filter"
+              data-ai-aliases="ward filter|unit filter"
+              data-ai-intent="filter"
+              data-ai-priority="low"
+            >
               <option value="ALL">All wards</option>
               {wardOptions.map((wardName) => (
                 <option key={wardName} value={wardName}>{wardName}</option>
@@ -602,7 +634,13 @@ export default function Beds() {
                   </div>
                   {transferBedId === bed._id ? (
                     <div style={{ display: "grid", gap: 8 }}>
-                      <select value={targetBedId} onChange={(e) => setTargetBedId(e.target.value)}>
+                      <select
+                        value={targetBedId}
+                        onChange={(e) => setTargetBedId(e.target.value)}
+                        data-ai-label="Target Bed"
+                        data-ai-aliases="transfer bed|destination bed|new bed"
+                        data-ai-widget="bed-selector"
+                      >
                         <option value="">Select target bed</option>
                         {availableBeds
                           .filter((row) => row._id !== bed._id)
@@ -629,6 +667,8 @@ export default function Beds() {
                         value={dischargeNote}
                         onChange={(e) => setDischargeNote(e.target.value)}
                         placeholder="Discharge note"
+                        data-ai-label="Discharge Note"
+                        data-ai-aliases="discharge summary|release note|disposition note"
                       />
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <button type="button" className="btn-primary" onClick={() => dischargePatient(bed)}>
@@ -654,8 +694,17 @@ export default function Beds() {
                             searchPatients(next);
                           }}
                           placeholder="Search patient"
+                          data-ai-label="Patient Search"
+                          data-ai-aliases="assign patient search|find patient|patient lookup"
+                          data-ai-intent="lookup"
                         />
-                        <select value={selectedPatientId} onChange={(e) => setSelectedPatientId(e.target.value)}>
+                        <select
+                          value={selectedPatientId}
+                          onChange={(e) => setSelectedPatientId(e.target.value)}
+                          data-ai-label="Select Patient"
+                          data-ai-aliases="assigned patient|patient|selected patient"
+                          data-ai-widget="patient-picker"
+                        >
                           <option value="">Select patient</option>
                           {patientOptions.map((patient) => (
                             <option key={patient._id} value={patient._id}>

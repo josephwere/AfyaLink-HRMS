@@ -30,3 +30,9 @@ export const clearAssistantMemory = () =>
   apiFetch("/api/ai/assistant/clear-memory", {
     method: "POST",
   });
+
+export const logAssistantAutofillAudit = (payload) =>
+  apiFetch("/api/ai/assistant/autofill-audit", {
+    method: "POST",
+    body: payload || {},
+  });
