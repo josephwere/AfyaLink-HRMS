@@ -27,11 +27,11 @@ export default function Dashboard() {
       </h1>
 
       <div className="grid" style={{ marginBottom: 24 }}>
-        <StatCard title="Audit Logs" value="Live" subtitle="Security events" />
-        <StatCard title="AI Autofill Audit" value="Review" subtitle="Draft/apply trace" />
-        <StatCard title="Admin Accounts" value="Manage" subtitle="Create and review" />
-        <StatCard title="Super Assistants" value="Manage" subtitle="Human assistant team" />
-        <StatCard title="System Access" value="RBAC" subtitle="Role governance" />
+        <StatCard title="Audit Logs" value="Live" subtitle="Security events" path="/admin/audit-logs" />
+        <StatCard title="AI Autofill Audit" value="Review" subtitle="Draft/apply trace" path="/admin/ai-autofill-audit" />
+        <StatCard title="Admin Accounts" value="Manage" subtitle="Create and review" path="/admin/create-admin" />
+        <StatCard title="Super Assistants" value="Manage" subtitle="Human assistant team" path="/admin/super-assistants" />
+        <StatCard title="System Access" value="RBAC" subtitle="Role governance" path="/admin/access-control" />
       </div>
 
       <div className="welcome-actions">

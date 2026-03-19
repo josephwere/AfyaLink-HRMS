@@ -162,6 +162,28 @@ export default function Dashboard() {
     const completed = transfers.filter((t) => t.status === "Completed").length;
     return { pending, approved, completed, total: transfers.length };
   }, [transfers]);
+  const openDoctorSummary = (title) => {
+    switch (title) {
+      case "Today’s Appointments":
+        navigate("/doctor/schedule");
+        break;
+      case "Inpatients Assigned":
+        navigate("/doctor/ward-board");
+        break;
+      case "Surgeries Scheduled":
+        navigate("/doctor/surgery");
+        break;
+      case "Pending Lab Results":
+        navigate("/doctor/lab-results");
+        break;
+      case "Consultation Status":
+      case "License Expiry (Days)":
+        navigate("/doctor/settings");
+        break;
+      default:
+        break;
+    }
+  };
 
   const resolveEscalation = async (encounter, patientKey) => {
     if (!encounter?._id) return;
@@ -200,9 +222,9 @@ export default function Dashboard() {
         <h3>Clinical KPIs</h3>
         <div className="grid info-grid">
           {summary.map((s) => (
-            <StatCard key={s.title} title={s.title} value={s.value} />
+            <StatCard key={s.title} title={s.title} value={s.value} onClick={() => openDoctorSummary(s.title)} />
           ))}
-          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} />
+          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/doctor/escalations")} />
         </div>
       </section>
 
@@ -219,8 +241,8 @@ export default function Dashboard() {
             why={`Score ${burnout?.score ?? 0}; keep below 45 to remain in low-risk band.`}
             onBadgeClick={() => navigate("/doctor/leave")}
           />
-          <StatCard title="Risk Band" value={burnout?.band ?? "—"} />
-          <StatCard title="Recommendations" value={Array.isArray(burnout?.recommendations) ? burnout.recommendations.length : "—"} />
+          <StatCard title="Risk Band" value={burnout?.band ?? "—"} onClick={() => navigate("/doctor/leave")} />
+          <StatCard title="Recommendations" value={Array.isArray(burnout?.recommendations) ? burnout.recommendations.length : "—"} onClick={() => navigate("/doctor/leave")} />
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/clinical-intelligence")}>

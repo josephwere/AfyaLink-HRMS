@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 
 export default function MedicalRecords() {
@@ -76,18 +77,9 @@ export default function MedicalRecords() {
               <div className="action-pill">Ward: {patient.ward || "OPD"}</div>
             </div>
             <div className="grid info-grid">
-              <div className="card stat">
-                <div className="card-title">Status</div>
-                <div className="card-value">{patient.status || "ACTIVE"}</div>
-              </div>
-              <div className="card stat">
-                <div className="card-title">Risk</div>
-                <div className="card-value">{patient.riskLevel || "MEDIUM"}</div>
-              </div>
-              <div className="card stat">
-                <div className="card-title">Diagnosis</div>
-                <div className="card-value">{patient.primaryDiagnosis || "-"}</div>
-              </div>
+              <StatCard title="Status" value={patient.status || "ACTIVE"} onClick={() => navigate(`/doctor/opd?patientId=${patient._id}`)} />
+              <StatCard title="Risk" value={patient.riskLevel || "MEDIUM"} onClick={() => navigate(`/doctor/lab-results?patientId=${patient._id}`)} />
+              <StatCard title="Diagnosis" value={patient.primaryDiagnosis || "-"} onClick={() => navigate(`/doctor/reports-notes?patientId=${patient._id}`)} />
             </div>
           </div>
         </section>

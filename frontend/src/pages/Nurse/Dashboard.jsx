@@ -44,11 +44,11 @@ export default function NurseDashboard() {
       <section className="section">
         <h3>Nursing Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Shift Info" value="Active" />
-          <StatCard title="Assigned Patients" value={data?.patientsTotal ?? "—"} />
-          <StatCard title="Medication Due Alerts" value={data?.pendingLabOrders ?? "—"} />
-          <StatCard title="Pending Requests" value={data?.pendingRequests?.total ?? "—"} />
-          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} />
+          <StatCard title="Shift Info" value="Active" onClick={() => navigate("/nurse/shift")} />
+          <StatCard title="Assigned Patients" value={data?.patientsTotal ?? "—"} onClick={() => navigate("/nurse/patients")} />
+          <StatCard title="Medication Due Alerts" value={data?.pendingLabOrders ?? "—"} onClick={() => navigate("/nurse/medication")} />
+          <StatCard title="Pending Requests" value={data?.pendingRequests?.total ?? "—"} onClick={() => navigate("/nurse/ward-board")} />
+          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/nurse/patients")} />
         </div>
       </section>
 

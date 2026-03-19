@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
+import LegalLinks from "../components/LegalLinks";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
@@ -192,6 +193,8 @@ export default function Login() {
           <span>Looking for hospital jobs?</span>
           <Link to="/careers?src=LOGIN_PAGE">View careers</Link>
         </div>
+
+        <LegalLinks className="auth-legal-links" />
       </form>
     </div>
   );

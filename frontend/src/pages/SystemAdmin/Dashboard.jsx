@@ -255,18 +255,18 @@ export default function SystemAdminDashboard() {
       <section className="section">
         <h3>System Widgets</h3>
         <div className="grid info-grid">
-          <StatCard title="CPU / Memory" value={devOverview?.queues?.integration?.active ?? "—"} />
-          <StatCard title="Req / Min" value={devOverview?.queues?.integration?.completed ?? "—"} />
-          <StatCard title="Failed Logins" value={metrics?.approvals?.total ?? "—"} />
-          <StatCard title="Job Status" value={devOverview?.queues?.integration?.waiting ?? "—"} />
+          <StatCard title="CPU / Memory" value={devOverview?.queues?.integration?.active ?? "—"} onClick={() => navigate("/developer")} />
+          <StatCard title="Req / Min" value={devOverview?.queues?.integration?.completed ?? "—"} onClick={() => navigate("/admin/realtime")} />
+          <StatCard title="Failed Logins" value={metrics?.approvals?.total ?? "—"} onClick={() => navigate("/admin/audit-logs?q=login")} />
+          <StatCard title="Job Status" value={devOverview?.queues?.integration?.waiting ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
           <StatCard
             title="Total Hospitals"
             value={metrics?.hospitals ?? "—"}
             onClick={() => navigate("/super-admin/hospitals")}
           />
-          <StatCard title="Database Health" value={devOverview?.queues?.dlq?.failed ?? "—"} />
-          <StatCard title="Workforce Breached" value={devOverview?.queues?.workforce?.breached ?? "—"} />
-          <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} />
+          <StatCard title="Database Health" value={devOverview?.queues?.dlq?.failed ?? "—"} onClick={() => navigate("/developer")} />
+          <StatCard title="Workforce Breached" value={devOverview?.queues?.workforce?.breached ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
+          <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} onClick={() => navigate("/developer/decision-cockpit")} />
           <StatCard
             title="Unlinked Pharmacists"
             value={unlinkedPharmacists}

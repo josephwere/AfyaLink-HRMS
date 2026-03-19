@@ -284,6 +284,21 @@ body.auth-route {
   text-decoration: none;
 }
 
+.auth-terms-copy {
+  margin-bottom: 12px;
+  line-height: 1.55;
+}
+
+.auth-terms-copy a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.auth-legal-links {
+  margin-top: 10px;
+  justify-content: center;
+}
+
 /* =========================
    AUTH MESSAGES
 ========================= */
@@ -1407,6 +1422,11 @@ body.auth-route {
   font-size: 11px;
   color: var(--sidebar-muted);
   text-align: center;
+}
+
+.sidebar-legal-links {
+  justify-content: center;
+  margin-top: 6px;
 }
 
 .sidebar-scroll {
@@ -3381,6 +3401,12 @@ body.auth-route {
   cursor: pointer;
 }
 
+button.card.stat {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+}
+
 .card.stat.stat-good {
   border-color: #16a34a;
   box-shadow: 0 8px 18px rgba(22, 163, 74, 0.14);
@@ -4453,6 +4479,19 @@ body.auth-route {
   border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.assistant-metric-chip-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assistant-metric-chip-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.26);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
 .assistant-metric-chip strong {
   font-size: 1.15rem;
 }
@@ -4640,6 +4679,17 @@ body.auth-route {
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(255, 255, 255, 0.94);
   padding: 14px;
+}
+
+.assistant-detail-card.clickable {
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assistant-detail-card.clickable:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.26);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
 }
 
 .assistant-detail-card-header {
@@ -4833,6 +4883,19 @@ body.auth-route {
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
+.assistant-log-row-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assistant-log-row-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.26);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
 .assistant-right-stack {
   display: grid;
   gap: 12px;
@@ -4995,4 +5058,72 @@ body.auth-route {
   100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
   }
+}
+
+.legal-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.legal-links.compact {
+  font-size: 0.82rem;
+}
+
+.legal-links a {
+  color: var(--app-accent, #2563eb);
+  font-weight: 600;
+}
+
+.legal-links-separator {
+  opacity: 0.45;
+}
+
+.legal-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.legal-hero {
+  align-items: flex-start;
+}
+
+.legal-kicker {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+  color: var(--muted, #64748b);
+}
+
+.legal-intro-card,
+.legal-section-card {
+  padding: 20px;
+}
+
+.legal-section-card h3 {
+  margin-bottom: 12px;
+}
+
+.legal-section-card p,
+.legal-intro-card p {
+  margin: 0 0 12px;
+  line-height: 1.75;
+  color: #1f2937;
+}
+
+.legal-section-card p:last-child,
+.legal-intro-card p:last-child {
+  margin-bottom: 0;
+}
+
+.query-highlight-row {
+  background: color-mix(in srgb, var(--app-accent, #0ea5e9) 10%, white);
+}
+
+.query-highlight-row td {
+  box-shadow: inset 0 -1px 0 rgba(14, 165, 233, 0.14), inset 0 1px 0 rgba(14, 165, 233, 0.14);
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 
 export default function AssignedPatients() {
@@ -164,18 +165,21 @@ export default function AssignedPatients() {
               </div>
             </div>
             <div className="grid info-grid">
-              <div className="card stat">
-                <div className="card-title">Ward</div>
-                <div className="card-value">{selectedPatient.ward || "-"}</div>
-              </div>
-              <div className="card stat">
-                <div className="card-title">Status</div>
-                <div className="card-value">{selectedPatient.status || "ACTIVE"}</div>
-              </div>
-              <div className="card stat">
-                <div className="card-title">Risk</div>
-                <div className="card-value">{selectedPatient.riskLevel || "MEDIUM"}</div>
-              </div>
+              <StatCard
+                title="Ward"
+                value={selectedPatient.ward || "-"}
+                onClick={() => navigate(`/nurse/ward-board?patientId=${selectedPatient._id}`)}
+              />
+              <StatCard
+                title="Status"
+                value={selectedPatient.status || "ACTIVE"}
+                onClick={() => navigate(`/nurse/patients?patientId=${selectedPatient._id}`)}
+              />
+              <StatCard
+                title="Risk"
+                value={selectedPatient.riskLevel || "MEDIUM"}
+                onClick={() => navigate(`/nurse/vitals?patientId=${selectedPatient._id}`)}
+              />
             </div>
           </div>
         </section>

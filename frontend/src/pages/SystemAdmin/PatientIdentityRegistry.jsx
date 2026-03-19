@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   createPatientIdentityRegistryEntry,
   importPatientIdentityRegistry,
@@ -6,13 +7,15 @@ import {
 } from "../../services/systemAdminApi";
 
 export default function PatientIdentityRegistryPage() {
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [country, setCountry] = useState("");
   const [status, setStatus] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulk, setBulk] = useState("");
+  const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();
   const [form, setForm] = useState({
     country: "",
     idType: "NATIONAL_ID",
@@ -152,15 +155,20 @@ export default function PatientIdentityRegistryPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((row) => (
-                <tr key={row._id}>
+              {items.map((row) => {
+                const matchesHighlight = highlightedText
+                  && [row.idNumber, row.firstName, row.lastName, row.country]
+                    .filter(Boolean)
+                    .some((value) => String(value).toLowerCase().includes(highlightedText));
+                return (
+                <tr key={row._id} className={matchesHighlight ? "query-highlight-row" : ""}>
                   <td>{row.idNumber}</td>
                   <td>{[row.firstName, row.lastName].filter(Boolean).join(" ") || "-"}</td>
                   <td>{row.country}</td>
                   <td>{row.status}</td>
                   <td>{row.dob ? String(row.dob).slice(0, 10) : "-"}</td>
                 </tr>
-              ))}
+              )})}
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={5}>No identity registry entries found.</td>

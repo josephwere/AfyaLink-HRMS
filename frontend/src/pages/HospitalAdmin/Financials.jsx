@@ -1,10 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
+import { useSearchParams } from "react-router-dom";
 import { apiFetch } from '../../utils/apiFetch';
 export default function Financials(){
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [form, setForm] = useState({patient:'', items:[{description:'Consultation', amount:50}]});
+  const highlightedInvoiceId = searchParams.get("invoiceId") || "";
   useEffect(() => {
     loadFinancials();
   }, [page]);
@@ -59,6 +63,23 @@ export default function Financials(){
       alert(e?.message || "Failed to submit claim");
     }
   };
+  const visibleItems = useMemo(() => {
+    const query = String(q || "").trim().toLowerCase();
+    if (!query) return items;
+    return items.filter((it) =>
+      [
+        it.invoiceNumber,
+        it.patient?.firstName,
+        it.patient?.lastName,
+        it.patient?.email,
+        it.patient?.phone,
+        it.patient,
+        it.status,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query))
+    );
+  }, [items, q]);
   return (
     <div className="dashboard">
       <h3>Financials</h3>
@@ -76,6 +97,13 @@ export default function Financials(){
           </form>
         </div>
         <div className="card">
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <input
+              placeholder="Search invoice or patient"
+              value={q}
+              onChange={(e)=>setQ(e.target.value)}
+            />
+          </div>
           <div className="table-wrap">
             <table>
               <thead>
@@ -88,8 +116,8 @@ export default function Financials(){
                 </tr>
               </thead>
               <tbody>
-                {items.map(it=> (
-                  <tr key={it._id}>
+                {visibleItems.map(it=> (
+                  <tr key={it._id} className={String(it._id) === String(highlightedInvoiceId) ? "query-highlight-row" : ""}>
                     <td>{it.invoiceNumber}</td>
                     <td>{it.patient?.firstName || it.patient}</td>
                     <td>{it.total}</td>

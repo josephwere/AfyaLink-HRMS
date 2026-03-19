@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -22,6 +24,7 @@ function defaultAvailabilityRows() {
 }
 
 export default function HospitalAdminAppointments() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [msg, setMsg] = useState("");
@@ -34,6 +37,12 @@ export default function HospitalAdminAppointments() {
   });
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [availabilityForm, setAvailabilityForm] = useState(defaultAvailabilityRows());
+  const queueSectionRef = useRef(null);
+  const availabilitySectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -164,16 +173,16 @@ export default function HospitalAdminAppointments() {
       <section className="section">
         <h3>Today</h3>
         <div className="grid info-grid">
-          <div className="card"><strong>Total appointments</strong><div>{data.summary.totalAppointments ?? 0}</div></div>
-          <div className="card"><strong>Pending assignments</strong><div>{data.summary.pendingAssignments ?? 0}</div></div>
-          <div className="card"><strong>Assigned</strong><div>{data.summary.assignedToday ?? 0}</div></div>
-          <div className="card"><strong>Doctors online</strong><div>{data.summary.doctorsOnline ?? 0}</div></div>
-          <div className="card"><strong>Requested calls</strong><div>{data.calls.filter((call) => call.status === "REQUESTED").length}</div></div>
-          <div className="card"><strong>Active calls</strong><div>{data.calls.filter((call) => call.status === "ACTIVE").length}</div></div>
+          <StatCard title="Total appointments" value={data.summary.totalAppointments ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
+          <StatCard title="Pending assignments" value={data.summary.pendingAssignments ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
+          <StatCard title="Assigned" value={data.summary.assignedToday ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
+          <StatCard title="Doctors online" value={data.summary.doctorsOnline ?? 0} onClick={() => scrollToSection(availabilitySectionRef)} />
+          <StatCard title="Requested calls" value={data.calls.filter((call) => call.status === "REQUESTED").length} onClick={() => navigate("/hospital-admin/consultation-monitor?status=REQUESTED")} />
+          <StatCard title="Active calls" value={data.calls.filter((call) => call.status === "ACTIVE").length} onClick={() => navigate("/hospital-admin/consultation-monitor?status=ACTIVE")} />
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={queueSectionRef}>
         <div className="card doctor-schedule-card">
           <h3>Appointment Queue</h3>
           <div className="table-wrap">
@@ -253,7 +262,7 @@ export default function HospitalAdminAppointments() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={availabilitySectionRef}>
         <h3>Doctor Availability</h3>
         <div className="card premium-card">
           <label>Doctor</label>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   createSupportTicket,
   exportSupportTicketsCsv,
@@ -7,11 +8,12 @@ import {
 } from "../../services/opsApi";
 
 export default function SupportTickets() {
+  const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [form, setForm] = useState({
@@ -188,7 +190,7 @@ export default function SupportTickets() {
               </thead>
               <tbody>
                 {tickets.map((ticket) => (
-                  <tr key={ticket._id}>
+                  <tr key={ticket._id} className={String(ticket._id) === String(highlightedTicketId) ? "query-highlight-row" : ""}>
                     <td>{ticket.ticketKey}</td>
                     <td>{ticket.status}</td>
                     <td>{ticket.priority}</td>
@@ -213,3 +215,4 @@ export default function SupportTickets() {
     </div>
   );
 }
+  const highlightedTicketId = searchParams.get("ticketId") || "";

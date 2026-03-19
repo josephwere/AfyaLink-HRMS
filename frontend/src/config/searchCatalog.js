@@ -13,6 +13,8 @@ const BASE_ITEMS = [
   { label: "AI Voice Dictation", path: "/ai/voice" },
   { label: "AI Document Extract", path: "/ai/extract" },
   { label: "AI Chatbot", path: "/ai/chatbot" },
+  { label: "Terms of Service", path: "/terms" },
+  { label: "Privacy Policy", path: "/privacy" },
 ];
 
 const ROLE_ITEMS = {

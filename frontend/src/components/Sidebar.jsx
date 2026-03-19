@@ -8,6 +8,7 @@ import { normalizeRole } from "../utils/normalizeRole";
 import { useTheme } from "../utils/theme.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { listNotifications } from "../services/notificationsApi";
+import LegalLinks from "./LegalLinks";
 
 function NavIcon({ name }) {
   const { settings } = useSystemSettings();
@@ -198,6 +199,7 @@ export default function Sidebar({ open = true, onClose }) {
               Sign Out
             </button>
           </div>
+          <LegalLinks compact className="sidebar-legal-links" />
           <div>{appName} • Demo Mode</div>
         </div>
       </aside>
@@ -770,6 +772,7 @@ export default function Sidebar({ open = true, onClose }) {
             Sign Out
           </button>
         </div>
+        <LegalLinks compact className="sidebar-legal-links" />
         <div>AfyaLink • Secure</div>
       </div>
     </aside>

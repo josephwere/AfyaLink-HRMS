@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
+import LegalLinks from "../components/LegalLinks";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
@@ -207,6 +208,10 @@ export default function Register() {
           Unverified accounts may be deleted after the verification deadline.
         </div>
 
+        <div className="muted auth-terms-copy">
+          By creating an account, you agree to the <Link to="/terms">Terms</Link> and acknowledge the <Link to="/privacy">Privacy Policy</Link>.
+        </div>
+
         <button type="submit" disabled={submitting}>
           {submitting ? "Creating account..." : "Create account"}
         </button>
@@ -225,6 +230,8 @@ export default function Register() {
           <span>Browse open hospital roles first?</span>
           <Link to="/careers?src=REGISTER_PAGE">View careers</Link>
         </div>
+
+        <LegalLinks className="auth-legal-links" />
       </form>
     </div>
   );

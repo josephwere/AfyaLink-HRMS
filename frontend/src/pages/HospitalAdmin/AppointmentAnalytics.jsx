@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import {
   getAppointmentOverview,
   getAppointmentHeatmap,
@@ -8,6 +10,7 @@ import {
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function AppointmentAnalytics() {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [heatmap, setHeatmap] = useState([]);
   const [consultations, setConsultations] = useState([]);
@@ -43,18 +46,9 @@ export default function AppointmentAnalytics() {
       <section className="section">
         <h3>Overview</h3>
         <div className="grid info-grid">
-          <div className="card stat">
-            <div className="card-title">Appointments (30d)</div>
-            <div className="card-value">{overview?.totalAppointments30d ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Pending Assignments</div>
-            <div className="card-value">{overview?.pendingAssignments ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">No-show Rate</div>
-            <div className="card-value">{overview?.noShowRate ?? "—"}%</div>
-          </div>
+          <StatCard title="Appointments (30d)" value={overview?.totalAppointments30d ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
+          <StatCard title="Pending Assignments" value={overview?.pendingAssignments ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
+          <StatCard title="No-show Rate" value={`${overview?.noShowRate ?? "—"}%`} onClick={() => navigate("/hospital-admin/appointments")} />
         </div>
       </section>
 

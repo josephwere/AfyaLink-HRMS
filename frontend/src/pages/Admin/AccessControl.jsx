@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   getDelegationScope,
   getUserDelegatedPermissions,
@@ -6,14 +7,15 @@ import {
 } from "../../services/delegatedPermissionsApi";
 
 export default function AccessControl() {
-  const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [scope, setScope] = useState({
     actorRole: "",
     manageableRoles: [],
     users: [],
     permissionsCatalog: [],
   });
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState(() => searchParams.get("userId") || "");
   const [checked, setChecked] = useState({});
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);

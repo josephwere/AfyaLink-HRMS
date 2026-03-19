@@ -159,10 +159,10 @@ export default function HRManagerDashboard() {
       <section className="section">
         <h3>Top HR KPIs</h3>
         <div className="grid info-grid">
-          <StatCard title="Open Positions" value={data?.newHires ?? "—"} />
-          <StatCard title="Leave Pending" value={data?.pendingRequests?.leave ?? "—"} />
-          <StatCard title="Turnover %" value={data?.inactiveStaff ?? "—"} />
-          <StatCard title="Compliance Alerts" value={data?.missingLicenses ?? "—"} />
+          <StatCard title="Open Positions" value={data?.newHires ?? "—"} onClick={() => navigate("/hospital-admin/register-staff")} />
+          <StatCard title="Leave Pending" value={data?.pendingRequests?.leave ?? "—"} onClick={() => navigate("/workforce/requests")} />
+          <StatCard title="Turnover %" value={data?.inactiveStaff ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
+          <StatCard title="Compliance Alerts" value={data?.missingLicenses ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
           <StatCard
             title="Training Completion %"
             value={training.completionRate}

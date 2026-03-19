@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -85,19 +86,21 @@ const complianceClass = (status) => (status === "COMPLIANT" ? "status-chip statu
 const CHART_COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function GovernmentClaimsDashboard() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({
-    from: "",
-    to: "",
-    country: "",
-    provider: "",
-    hospitalId: "",
+    from: searchParams.get("from") || "",
+    to: searchParams.get("to") || "",
+    country: searchParams.get("country") || "",
+    provider: searchParams.get("provider") || "",
+    hospitalId: searchParams.get("hospitalId") || "",
   });
   const [claimsFilters, setClaimsFilters] = useState({
-    status: "",
-    riskMin: "",
-    riskMax: "",
-    patientId: "",
-    procedure: "",
+    status: searchParams.get("status") || "",
+    riskMin: searchParams.get("riskMin") || "",
+    riskMax: searchParams.get("riskMax") || "",
+    patientId: searchParams.get("patientId") || "",
+    procedure: searchParams.get("procedure") || "",
   });
   const [alertFilters, setAlertFilters] = useState({ status: "", severity: "" });
 
@@ -152,6 +155,15 @@ export default function GovernmentClaimsDashboard() {
     status: "ACTIVE",
     apiStatus: "UNKNOWN",
   });
+  const highlightedClaimId = searchParams.get("claimId") || "";
+  const autoOpenedClaimRef = useRef("");
+  const claimsSectionRef = useRef(null);
+  const fraudSectionRef = useRef(null);
+  const reportingSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const loadOverview = async () => {
     const qs = buildQuery(filters);
@@ -174,8 +186,8 @@ export default function GovernmentClaimsDashboard() {
     }
   };
 
-  const loadClaims = async () => {
-    const qs = buildQuery({ ...filters, ...claimsFilters });
+  const loadClaims = async (overrides = {}) => {
+    const qs = buildQuery({ ...filters, ...claimsFilters, ...overrides });
     try {
       const res = await apiFetch(`/api/government/claims${qs ? `?${qs}` : ""}`);
       setClaims(Array.isArray(res?.items) ? res.items : []);
@@ -190,8 +202,8 @@ export default function GovernmentClaimsDashboard() {
     }
   };
 
-  const loadFraudAlerts = async () => {
-    const qs = buildQuery({ hospitalId: filters.hospitalId, ...alertFilters });
+  const loadFraudAlerts = async (overrides = {}) => {
+    const qs = buildQuery({ hospitalId: filters.hospitalId, ...alertFilters, ...overrides });
     try {
       const res = await apiFetch(`/api/claims/alerts${qs ? `?${qs}` : ""}`);
       setFraudAlerts(Array.isArray(res?.items) ? res.items : []);
@@ -374,9 +386,29 @@ export default function GovernmentClaimsDashboard() {
     }
   };
 
+  const openClaimsSlice = (status = "") => {
+    setClaimsFilters((prev) => ({ ...prev, status }));
+    void loadClaims({ status });
+    scrollToSection(claimsSectionRef);
+  };
+
+  const openFraudSlice = (overrides = {}) => {
+    setAlertFilters((prev) => ({ ...prev, ...overrides }));
+    void loadFraudAlerts(overrides);
+    scrollToSection(fraudSectionRef);
+  };
+
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (!highlightedClaimId || !claims.length || autoOpenedClaimRef.current === highlightedClaimId) return;
+    const matched = claims.some((claim) => String(claim._id) === String(highlightedClaimId));
+    if (!matched) return;
+    autoOpenedClaimRef.current = highlightedClaimId;
+    openAudit(highlightedClaimId);
+  }, [claims, highlightedClaimId]);
 
   // Auto-refresh disabled by request: manual refresh only.
 
@@ -611,6 +643,59 @@ export default function GovernmentClaimsDashboard() {
     [overview]
   );
 
+  const overviewCards = [
+    {
+      label: "Total Claims",
+      value: formatNumber(overview.summary.totalClaims),
+      onClick: () => openClaimsSlice(""),
+    },
+    {
+      label: "Approved",
+      value: formatNumber(overview.summary.approved),
+      onClick: () => openClaimsSlice("APPROVED"),
+    },
+    {
+      label: "Rejected",
+      value: formatNumber(overview.summary.rejected),
+      onClick: () => openClaimsSlice("REJECTED"),
+    },
+    {
+      label: "Pending",
+      value: formatNumber(overview.summary.pending),
+      onClick: () => openClaimsSlice("PENDING"),
+    },
+    {
+      label: "Review Required",
+      value: formatNumber(overview.summary.reviewRequired),
+      onClick: () => openClaimsSlice("REVIEW_REQUIRED"),
+    },
+    {
+      label: "Fraud Alerts",
+      value: formatNumber(overview.summary.fraudOpen),
+      onClick: () => openFraudSlice({}),
+    },
+    {
+      label: "Hospitals Registered",
+      value: formatNumber(overview.summary.hospitalsTotal),
+      onClick: () => navigate("/system-admin/government-hospital-registry"),
+    },
+    {
+      label: "Patients Verified",
+      value: formatNumber(overview.summary.patientsVerified),
+      onClick: () => navigate("/system-admin/patient-identity-registry"),
+    },
+    {
+      label: "Total Amount",
+      value: formatMoney(overview.summary.totalAmount, "KES"),
+      onClick: () => scrollToSection(reportingSectionRef),
+    },
+    {
+      label: "Compliant Hospitals",
+      value: formatNumber(overview.summary.compliantHospitals),
+      onClick: () => navigate("/system-admin/government-hospital-registry"),
+    },
+  ];
+
   const claimExportRows = useMemo(
     () =>
       claims.map((claim) => ({
@@ -769,50 +854,21 @@ export default function GovernmentClaimsDashboard() {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card premium-card">
-            <strong>Total Claims</strong>
-            <p>{formatNumber(overview.summary.totalClaims)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Approved</strong>
-            <p>{formatNumber(overview.summary.approved)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Rejected</strong>
-            <p>{formatNumber(overview.summary.rejected)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Pending</strong>
-            <p>{formatNumber(overview.summary.pending)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Review Required</strong>
-            <p>{formatNumber(overview.summary.reviewRequired)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Fraud Alerts</strong>
-            <p>{formatNumber(overview.summary.fraudOpen)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Hospitals Registered</strong>
-            <p>{formatNumber(overview.summary.hospitalsTotal)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Patients Verified</strong>
-            <p>{formatNumber(overview.summary.patientsVerified)}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Total Amount</strong>
-            <p>{formatMoney(overview.summary.totalAmount, "KES")}</p>
-          </div>
-          <div className="card premium-card">
-            <strong>Compliant Hospitals</strong>
-            <p>{formatNumber(overview.summary.compliantHospitals)}</p>
-          </div>
+          {overviewCards.map((card) => (
+            <button
+              key={card.label}
+              type="button"
+              className="card stat premium-card stat-clickable"
+              onClick={card.onClick}
+            >
+              <strong>{card.label}</strong>
+              <p>{card.value}</p>
+            </button>
+          ))}
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={claimsSectionRef}>
         <div className="card">
           <h3>Claims Trends</h3>
           <div style={{ width: "100%", height: 240 }}>
@@ -828,7 +884,7 @@ export default function GovernmentClaimsDashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="card">
+        <div className="card" ref={fraudSectionRef}>
           <h3>Fraud Severity Mix</h3>
           <div style={{ width: "100%", height: 240 }}>
             <ResponsiveContainer>
@@ -998,7 +1054,7 @@ export default function GovernmentClaimsDashboard() {
               </thead>
               <tbody>
                 {claims.map((claim) => (
-                  <tr key={claim._id}>
+                  <tr key={claim._id} className={String(claim._id) === String(highlightedClaimId) ? "query-highlight-row" : ""}>
                     <td>{claim._id}</td>
                     <td>{claim.hospital?.name || "—"}</td>
                     <td>{claim.patient ? `${claim.patient.firstName} ${claim.patient.lastName}` : "—"}</td>
@@ -1494,7 +1550,7 @@ export default function GovernmentClaimsDashboard() {
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={reportingSectionRef}>
         <div className="card">
           <h3>Financial & Provider Summary</h3>
           <div className="table-wrap">

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 
 export default function EscalationQueue({ viewer = "hospital" }) {
@@ -177,9 +178,9 @@ export default function EscalationQueue({ viewer = "hospital" }) {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card"><strong>Open</strong><div>{summary.open}</div></div>
-          <div className="card"><strong>Resolved</strong><div>{summary.resolved}</div></div>
-          <div className="card"><strong>Total</strong><div>{rows.length}</div></div>
+          <StatCard title="Open" value={summary.open} onClick={() => applyQuickFilter({ status: "OPEN" })} />
+          <StatCard title="Resolved" value={summary.resolved} onClick={() => applyQuickFilter({ status: "RESOLVED" })} />
+          <StatCard title="Total" value={rows.length} onClick={() => applyQuickFilter({ status: "ALL" })} />
         </div>
       </section>
 

@@ -444,22 +444,22 @@ export default function Beds() {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card stat">
+          <button type="button" className="card stat" onClick={() => { setStatusFilter("ALL"); setWardFilter("ALL"); }}>
             <div className="card-title">Total Beds</div>
             <div className="card-value">{occupancy.total}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => setStatusFilter("OCCUPIED")}>
             <div className="card-title">Occupied</div>
             <div className="card-value">{occupancy.occupied}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => setStatusFilter("AVAILABLE")}>
             <div className="card-title">Available</div>
             <div className="card-value">{occupancy.available}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => navigate("/hospital-admin/ward-board")}>
             <div className="card-title">Occupancy</div>
             <div className="card-value">{occupancy.occupancyRate}%</div>
-          </div>
+          </button>
         </div>
       </section>
 
@@ -467,11 +467,19 @@ export default function Beds() {
         <h3>Ward Summary</h3>
         <div className="grid info-grid">
           {wardSummary.map((row) => (
-            <div key={row.ward} className="card stat">
+            <button
+              type="button"
+              key={row.ward}
+              className="card stat"
+              onClick={() => {
+                setWardFilter(row.ward);
+                setStatusFilter("ALL");
+              }}
+            >
               <div className="card-title">{row.ward}</div>
               <div className="card-value">{row.occupied}/{row.total}</div>
               <div className="card-sub">{row.available} available • {row.occupancyRate}% occupied</div>
-            </div>
+            </button>
           ))}
           {!wardSummary.length ? <div className="card muted">No ward summary available.</div> : null}
         </div>

@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import { StatCard } from "../../components/Cards";
 import { getHospitalAdminDashboard } from "../../services/dashboardApi";
 
 export default function ConsultationMonitor() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [calls, setCalls] = useState([]);
   const [escalations, setEscalations] = useState([]);
-  const [filter, setFilter] = useState("ALL");
+  const [filter, setFilter] = useState(() => searchParams.get("status") || "ALL");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const highlightedCallId = searchParams.get("callId") || "";
 
   const load = async () => {
     setLoading(true);
@@ -82,11 +87,11 @@ export default function ConsultationMonitor() {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card"><strong>Requested</strong><div>{summary.requested}</div></div>
-          <div className="card"><strong>Active</strong><div>{summary.active}</div></div>
-          <div className="card"><strong>Ended</strong><div>{summary.ended}</div></div>
-          <div className="card"><strong>Blocked</strong><div>{summary.blocked}</div></div>
-          <div className="card"><strong>Ward Escalations</strong><div>{summary.wardEscalations}</div></div>
+          <StatCard title="Requested" value={summary.requested} onClick={() => setFilter("REQUESTED")} />
+          <StatCard title="Active" value={summary.active} onClick={() => setFilter("ACTIVE")} />
+          <StatCard title="Ended" value={summary.ended} onClick={() => setFilter("ENDED")} />
+          <StatCard title="Blocked" value={summary.blocked} onClick={() => setFilter("TERMINATED")} />
+          <StatCard title="Ward Escalations" value={summary.wardEscalations} onClick={() => navigate("/hospital-admin/escalations?status=OPEN")} />
         </div>
       </section>
 
@@ -157,7 +162,7 @@ export default function ConsultationMonitor() {
               </thead>
               <tbody>
                 {visibleCalls.map((call) => (
-                  <tr key={call._id}>
+                  <tr key={call._id} className={String(call._id) === String(highlightedCallId) ? "query-highlight-row" : ""}>
                     <td>{call.callType}</td>
                     <td>{call.status}</td>
                     <td>

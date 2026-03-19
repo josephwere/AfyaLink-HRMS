@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   createGovernmentHospitalRegistryEntry,
   importGovernmentHospitalRegistry,
@@ -6,8 +7,9 @@ import {
 } from "../../services/systemAdminApi";
 
 export default function GovernmentHospitalRegistryPage() {
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulk, setBulk] = useState("");
@@ -141,15 +143,20 @@ export default function GovernmentHospitalRegistryPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((row) => (
-                <tr key={row._id}>
+              {items.map((row) => {
+                const matchesHighlight = highlightedText
+                  && [row.officialName, row.registrationNumber, row.email, row.phone]
+                    .filter(Boolean)
+                    .some((value) => String(value).toLowerCase().includes(highlightedText));
+                return (
+                <tr key={row._id} className={matchesHighlight ? "query-highlight-row" : ""}>
                   <td>{row.officialName}</td>
                   <td>{row.registrationNumber}</td>
                   <td>{row.hospitalType}</td>
                   <td>{[row?.location?.city, row?.location?.region, row?.location?.country].filter(Boolean).join(", ") || "-"}</td>
                   <td>{row.validUntil ? String(row.validUntil).slice(0, 10) : "-"}</td>
                 </tr>
-              ))}
+              )})}
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={5}>No approved registry entries found.</td>
@@ -162,3 +169,4 @@ export default function GovernmentHospitalRegistryPage() {
     </div>
   );
 }
+  const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();

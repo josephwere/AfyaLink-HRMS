@@ -30,6 +30,8 @@ import Unauthorized from "./pages/Unauthorized";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import CareersLanding from "./pages/CareersLanding";
+import TermsOfService from "./pages/Legal/TermsOfService";
+import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
 import TwoFactor from "./pages/TwoFactor";
 import StepUp from "./pages/StepUp";
 import GuestDashboard from "./pages/GuestDashboard";
@@ -722,6 +724,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/careers" element={<CareersLanding />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/2fa" element={<TwoFactor />} />
         <Route path="/step-up" element={<StepUp />} />
         <Route path="/unauthorized" element={<Unauthorized />} />

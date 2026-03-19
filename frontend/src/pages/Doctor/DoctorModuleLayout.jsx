@@ -51,11 +51,23 @@ export default function DoctorModuleLayout({ title, subtitle, kpis = [], panels 
           <h3>Key Metrics</h3>
           <div className="grid info-grid">
             {kpis.map((k) => (
-              <div className="card stat" key={k.title}>
+              <button
+                type="button"
+                className={`card stat${k.path || typeof k.onClick === "function" ? " stat-clickable" : ""}`}
+                key={k.title}
+                onClick={() => {
+                  if (typeof k.onClick === "function") {
+                    k.onClick(navigate);
+                    return;
+                  }
+                  if (k.path) navigate(k.path);
+                }}
+                disabled={!k.path && typeof k.onClick !== "function"}
+              >
                 <div className="card-title">{k.title}</div>
                 <div className="card-value">{k.value}</div>
                 {k.subtitle && <div className="card-sub">{k.subtitle}</div>}
-              </div>
+              </button>
             ))}
           </div>
         </section>

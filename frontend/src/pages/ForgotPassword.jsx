@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import LegalLinks from "../components/LegalLinks";
 import { apiFetch } from "../utils/apiFetch";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 
@@ -86,6 +87,8 @@ export default function ForgotPassword() {
           <span>Remembered your password?</span>
           <Link to="/login">Back to login</Link>
         </div>
+
+        <LegalLinks className="auth-legal-links" />
       </form>
     </div>
   );

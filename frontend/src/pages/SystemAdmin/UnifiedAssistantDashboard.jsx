@@ -135,9 +135,94 @@ function buildAiPrompt(selection, recordData, workspaceSettings) {
   ].join("\n");
 }
 
-function DetailCard({ title, subtitle, actions, children, className = "" }) {
+function buildRouteWithParams(path, params = {}) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value == null || value === "") return;
+    qs.set(key, String(value));
+  });
+  const query = qs.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function resolveUnifiedRecordPath(kind, record) {
+  const entityKind = String(kind || "").toLowerCase();
+  if (!record) return "";
+  switch (entityKind) {
+    case "patient": {
+      const lookup = record?.nationalId || record?.countryId || patientName(record);
+      return buildRouteWithParams("/system-admin/patient-identity-registry", {
+        q: lookup,
+        highlight: lookup,
+      });
+    }
+    case "hospital": {
+      const lookup = record?.verification?.registrationNumber || record?.code || record?.name;
+      return buildRouteWithParams("/system-admin/government-hospital-registry", {
+        q: lookup,
+        highlight: lookup,
+      });
+    }
+    case "claim":
+      return buildRouteWithParams("/system-admin/government-claims", {
+        claimId: record?._id,
+        hospitalId: record?.hospital?._id || record?.hospitalSnapshot?._id || "",
+        patientId: record?.patient?.nationalId || record?.patientSnapshot?.nationalId || "",
+      });
+    case "ticket":
+      return buildRouteWithParams("/admin/support-tickets", {
+        ticketId: record?._id,
+        q: record?.ticketKey || record?.title || "",
+      });
+    case "call":
+      return buildRouteWithParams("/hospital-admin/consultation-monitor", {
+        callId: record?._id,
+        status: record?.status || "",
+      });
+    case "user":
+      return buildRouteWithParams("/admin/access-control", {
+        userId: record?._id,
+        q: record?.email || record?.name || record?.phone || "",
+      });
+    case "audit":
+      return buildRouteWithParams("/developer", {
+        auditId: record?._id,
+        resource: record?.resource || "",
+      });
+    case "invoice":
+      return buildRouteWithParams("/hospital-admin/financials", {
+        invoiceId: record?._id,
+        q: record?.invoiceNumber || record?.patient?.email || record?.patient?.name || "",
+      });
+    default:
+      return "";
+  }
+}
+
+function isInteractiveTarget(target) {
+  return Boolean(target?.closest?.("button, a, input, select, textarea, label"));
+}
+
+function DetailCard({ title, subtitle, actions, children, className = "", onOpen }) {
+  const clickable = typeof onOpen === "function";
   return (
-    <div className={`assistant-detail-card ${className}`.trim()}>
+    <div
+      className={`assistant-detail-card${clickable ? " clickable" : ""} ${className}`.trim()}
+      onClick={(event) => {
+        if (!clickable) return;
+        if (isInteractiveTarget(event.target)) return;
+        onOpen();
+      }}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (!clickable || event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+    >
       <div className="assistant-detail-card-header">
         <div>
           <h4>{title}</h4>
@@ -147,6 +232,22 @@ function DetailCard({ title, subtitle, actions, children, className = "" }) {
       </div>
       {children}
     </div>
+  );
+}
+
+function MetricChip({ label, value, onClick }) {
+  const clickable = typeof onClick === "function";
+  const content = (
+    <>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </>
+  );
+  if (!clickable) return <div className="assistant-metric-chip">{content}</div>;
+  return (
+    <button type="button" className="assistant-metric-chip assistant-metric-chip-button" onClick={onClick}>
+      {content}
+    </button>
   );
 }
 
@@ -215,7 +316,7 @@ function ActionList({ items = [], empty = "Nothing available.", onOpen, labelRes
   );
 }
 
-function PatientRecordView({ record, related, onOpenRecord }) {
+function PatientRecordView({ record, related, onOpenRecord, onNavigateRecord }) {
   const claims = safeArray(related?.claims);
   const calls = safeArray(related?.calls);
   const appointments = safeArray(related?.appointments);
@@ -227,7 +328,7 @@ function PatientRecordView({ record, related, onOpenRecord }) {
             <span className={`assistant-badge ${badgeClass(record?.identityVerification?.status)}`}>{record?.identityVerification?.status || "UNVERIFIED"}</span>
             {record?.gender ? <span className="assistant-badge subtle">{record.gender}</span> : null}
           </>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("patient", record)}>
           <DetailRow label="National ID" value={record?.nationalId} />
           <DetailRow label="Health ID" value={record?.countryId} />
           <DetailRow label="Date of Birth" value={record?.dob ? new Date(record.dob).toLocaleDateString() : "—"} />
@@ -235,7 +336,7 @@ function PatientRecordView({ record, related, onOpenRecord }) {
           <DetailRow label="Address" value={record?.address} />
           <DetailRow label="Primary Doctor" value={record?.primaryDoctor?.name || record?.primaryDoctor?.email} />
         </DetailCard>
-        <DetailCard title="Verification & Insurance" subtitle="Identity, registry match, and payer context">
+        <DetailCard title="Verification & Insurance" subtitle="Identity, registry match, and payer context" onOpen={() => onNavigateRecord?.("patient", record)}>
           <DetailRow label="Verification Method" value={record?.identityVerification?.method} />
           <DetailRow label="Registry Match" value={record?.identityVerification?.registryMatch} />
           <DetailRow label="Last Checked" value={formatDate(record?.identityVerification?.lastCheckedAt)} />
@@ -277,7 +378,7 @@ function PatientRecordView({ record, related, onOpenRecord }) {
   );
 }
 
-function HospitalRecordView({ record, related, onOpenRecord }) {
+function HospitalRecordView({ record, related, onOpenRecord, onNavigateRecord }) {
   const claimSummary = safeArray(related?.claimSummary);
   const tickets = safeArray(related?.tickets);
   const calls = safeArray(related?.calls);
@@ -289,7 +390,7 @@ function HospitalRecordView({ record, related, onOpenRecord }) {
             <span className={`assistant-badge ${badgeClass(record?.verification?.status)}`}>{record?.verification?.status || "UNVERIFIED"}</span>
             {record?.type ? <span className="assistant-badge subtle">{record.type}</span> : null}
           </>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("hospital", record)}>
           <DetailRow label="Registration" value={record?.verification?.registrationNumber} />
           <DetailRow label="Contact" value={record?.contact} />
           <DetailRow label="Address" value={record?.address} />
@@ -297,7 +398,7 @@ function HospitalRecordView({ record, related, onOpenRecord }) {
           <DetailRow label="Region" value={record?.location?.region} />
           <DetailRow label="City" value={record?.location?.city} />
         </DetailCard>
-        <DetailCard title="Compliance & Capacity" subtitle="Verification, plan, staff, and patients">
+        <DetailCard title="Compliance & Capacity" subtitle="Verification, plan, staff, and patients" onOpen={() => onNavigateRecord?.("hospital", record)}>
           <DetailRow label="Plan" value={record?.plan} />
           <DetailRow label="Feature Flags" value={Object.entries(record?.features || {}).filter(([, enabled]) => enabled).map(([key]) => formatModeLabel(key))} />
           <DetailRow label="Insurance Providers" value={safeArray(record?.insuranceProviders).map((item) => item.name || item.code)} />
@@ -306,7 +407,7 @@ function HospitalRecordView({ record, related, onOpenRecord }) {
         </DetailCard>
       </div>
 
-      <DetailCard title="Claims Summary" subtitle="Status totals for this hospital">
+      <DetailCard title="Claims Summary" subtitle="Status totals for this hospital" onOpen={() => onNavigateRecord?.("hospital", record)}>
         {claimSummary.length ? (
           <div className="assistant-keyvalue-list">
             {claimSummary.map((row) => (
@@ -342,7 +443,7 @@ function HospitalRecordView({ record, related, onOpenRecord }) {
   );
 }
 
-function ClaimRecordView({ record, related, onOpenRecord }) {
+function ClaimRecordView({ record, related, onOpenRecord, onNavigateRecord }) {
   const audit = safeArray(related?.audit);
   const procedures = safeArray(record?.procedures);
   const riskSignals = safeArray(record?.riskSignals);
@@ -356,7 +457,7 @@ function ClaimRecordView({ record, related, onOpenRecord }) {
               Risk {Math.round(record?.riskScore || 0)}
             </span>
           </>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("claim", record)}>
           <DetailRow label="Patient" value={patientName(record?.patient) || record?.patientSnapshot?.nationalId} />
           <DetailRow label="Provider" value={record?.provider?.name || record?.provider?.code} />
           <DetailRow label="Amount" value={formatMoney(record?.currency, record?.totalAmount)} />
@@ -364,7 +465,7 @@ function ClaimRecordView({ record, related, onOpenRecord }) {
           <DetailRow label="Submitted By" value={record?.submittedBy?.name || record?.submittedBy?.email} />
           <DetailRow label="Decision" value={record?.decision?.notes || record?.decision?.reviewedBy?.name || "Pending"} />
         </DetailCard>
-        <DetailCard title="Fraud & Signature" subtitle="Flags, signals, and integrity proof">
+        <DetailCard title="Fraud & Signature" subtitle="Flags, signals, and integrity proof" onOpen={() => onNavigateRecord?.("claim", record)}>
           <DetailRow label="Duplicate Group" value={record?.duplicateGroup} />
           <DetailRow label="Duplicate Of" value={record?.duplicateOf} />
           <DetailRow label="Risk Flags" value={record?.riskFlags} />
@@ -375,7 +476,7 @@ function ClaimRecordView({ record, related, onOpenRecord }) {
         </DetailCard>
       </div>
 
-      <DetailCard title="Procedures" subtitle="Submitted procedure rows and timing">
+      <DetailCard title="Procedures" subtitle="Submitted procedure rows and timing" onOpen={() => onNavigateRecord?.("claim", record)}>
         {procedures.length ? (
           <div className="assistant-keyvalue-list">
             {procedures.map((item, index) => (
@@ -400,7 +501,7 @@ function ClaimRecordView({ record, related, onOpenRecord }) {
             <button type="button" className="btn-secondary" onClick={() => onOpenRecord?.("hospital", record.hospital._id)}>Open Hospital</button>
           ) : null}
         </>
-      )}>
+      )} onOpen={() => onNavigateRecord?.("claim", record)}>
         {audit.length ? (
           <div className="assistant-timeline">
             {audit.map((item) => (
@@ -419,7 +520,7 @@ function ClaimRecordView({ record, related, onOpenRecord }) {
   );
 }
 
-function TicketRecordView({ record, onOpenRecord }) {
+function TicketRecordView({ record, onOpenRecord, onNavigateRecord }) {
   const events = safeArray(record?.events);
   return (
     <div className="assistant-record-panel">
@@ -429,14 +530,14 @@ function TicketRecordView({ record, onOpenRecord }) {
             <span className={`assistant-badge ${badgeClass(record?.priority)}`}>{record?.priority || "MEDIUM"}</span>
             <span className={`assistant-badge ${badgeClass(record?.status)}`}>{record?.status || "OPEN"}</span>
           </>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("ticket", record)}>
           <div className="muted">{record?.description || "No description provided."}</div>
           <DetailRow label="Category" value={record?.category} />
           <DetailRow label="Hospital" value={record?.hospital?.name || "Platform"} />
           <DetailRow label="Requester" value={record?.requester?.name || record?.requester?.email} />
           <DetailRow label="Assignee" value={record?.assignee?.name || record?.assignee?.email} />
         </DetailCard>
-        <DetailCard title="Linked Incident & Timing">
+        <DetailCard title="Linked Incident & Timing" onOpen={() => onNavigateRecord?.("ticket", record)}>
           <DetailRow label="Linked Incident" value={record?.linkedIncident?.incidentKey || record?.linkedIncident?.summary} />
           <DetailRow label="Created" value={formatDate(record?.createdAt)} />
           <DetailRow label="Updated" value={formatDate(record?.updatedAt)} />
@@ -451,7 +552,7 @@ function TicketRecordView({ record, onOpenRecord }) {
         </DetailCard>
       </div>
 
-      <DetailCard title="Ticket Activity">
+      <DetailCard title="Ticket Activity" onOpen={() => onNavigateRecord?.("ticket", record)}>
         {events.length ? (
           <div className="assistant-timeline">
             {events.map((event, index) => (
@@ -470,7 +571,7 @@ function TicketRecordView({ record, onOpenRecord }) {
   );
 }
 
-function CallRecordView({ record, onOpenRecord }) {
+function CallRecordView({ record, onOpenRecord, onNavigateRecord }) {
   return (
     <div className="assistant-record-panel">
       <div className="assistant-detail-grid two-col">
@@ -479,7 +580,7 @@ function CallRecordView({ record, onOpenRecord }) {
             <span className={`assistant-badge ${badgeClass(record?.status)}`}>{record?.status || "REQUESTED"}</span>
             <span className="assistant-badge subtle">{record?.callType || "VOICE"}</span>
           </>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("call", record)}>
           <DetailRow label="Patient" value={patientName(record?.patient)} />
           <DetailRow label="Patient ID" value={record?.patient?.nationalId} />
           <DetailRow label="Doctor" value={record?.doctor?.name || record?.doctor?.email} />
@@ -487,7 +588,7 @@ function CallRecordView({ record, onOpenRecord }) {
           <DetailRow label="Ended" value={formatDate(record?.endedAt)} />
           <DetailRow label="Blocked" value={record?.isBlocked} />
         </DetailCard>
-        <DetailCard title="Appointment Context">
+        <DetailCard title="Appointment Context" onOpen={() => onNavigateRecord?.("call", record)}>
           <DetailRow label="Service" value={record?.appointment?.serviceType} />
           <DetailRow label="Scheduled" value={formatDate(record?.appointment?.scheduledAt)} />
           <DetailRow label="Visit Status" value={record?.appointment?.status} />
@@ -506,20 +607,20 @@ function CallRecordView({ record, onOpenRecord }) {
   );
 }
 
-function UserRecordView({ record, related, onOpenRecord }) {
+function UserRecordView({ record, related, onOpenRecord, onNavigateRecord }) {
   const tickets = safeArray(related?.tickets);
   const calls = safeArray(related?.calls);
   return (
     <div className="assistant-record-panel">
       <div className="assistant-detail-grid two-col">
-        <DetailCard title={userName(record)} subtitle={record?.role || "User"}>
+        <DetailCard title={userName(record)} subtitle={record?.role || "User"} onOpen={() => onNavigateRecord?.("user", record)}>
           <DetailRow label="Email" value={record?.email} />
           <DetailRow label="Phone" value={record?.phone} />
           <DetailRow label="National ID" value={record?.nationalIdNumber} />
           <DetailRow label="Hospital" value={record?.hospital?.name || "Platform"} />
           <DetailRow label="Employment" value={record?.employment} />
         </DetailCard>
-        <DetailCard title="Assignments">
+        <DetailCard title="Assignments" onOpen={() => onNavigateRecord?.("user", record)}>
           <DetailRow label="Open Tickets" value={tickets.length} />
           <DetailRow label="Call Sessions" value={calls.length} />
         </DetailCard>
@@ -548,7 +649,7 @@ function UserRecordView({ record, related, onOpenRecord }) {
   );
 }
 
-function AuditRecordView({ record }) {
+function AuditRecordView({ record, onNavigateRecord }) {
   return (
     <div className="assistant-record-panel">
       <div className="assistant-detail-grid two-col">
@@ -556,22 +657,22 @@ function AuditRecordView({ record }) {
           <span className={`assistant-badge ${record?.success === false ? "risk" : "good"}`}>
             {record?.success === false ? "Failed" : "Success"}
           </span>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("audit", record)}>
           <DetailRow label="Actor" value={record?.actorId?.name || record?.actorId?.email || record?.actorRole} />
           <DetailRow label="Role" value={record?.actorRole} />
           <DetailRow label="When" value={formatDate(record?.createdAt)} />
           <DetailRow label="Resource ID" value={record?.resourceId} />
           <DetailRow label="Error" value={record?.error} />
         </DetailCard>
-        <DetailCard title="Metadata">
+        <DetailCard title="Metadata" onOpen={() => onNavigateRecord?.("audit", record)}>
           <KeyValueList data={record?.metadata} />
         </DetailCard>
       </div>
       <div className="assistant-detail-grid two-col">
-        <DetailCard title="Before">
+        <DetailCard title="Before" onOpen={() => onNavigateRecord?.("audit", record)}>
           <KeyValueList data={record?.before} />
         </DetailCard>
-        <DetailCard title="After">
+        <DetailCard title="After" onOpen={() => onNavigateRecord?.("audit", record)}>
           <KeyValueList data={record?.after} />
         </DetailCard>
       </div>
@@ -579,20 +680,20 @@ function AuditRecordView({ record }) {
   );
 }
 
-function InvoiceRecordView({ record, onOpenRecord }) {
+function InvoiceRecordView({ record, onOpenRecord, onNavigateRecord }) {
   return (
     <div className="assistant-record-panel">
       <div className="assistant-detail-grid two-col">
         <DetailCard title={record?.invoiceNumber || "Invoice"} subtitle={record?.hospital?.name || "Hospital invoice"} actions={(
           <span className={`assistant-badge ${badgeClass(record?.status)}`}>{record?.status || "UNPAID"}</span>
-        )}>
+        )} onOpen={() => onNavigateRecord?.("invoice", record)}>
           <DetailRow label="Amount" value={formatMoney(record?.currency, record?.total || record?.amount || 0)} />
           <DetailRow label="Patient" value={record?.patient?.name || record?.patient?.email} />
           <DetailRow label="Phone" value={record?.patient?.phone} />
           <DetailRow label="Created" value={formatDate(record?.createdAt)} />
           <DetailRow label="Metadata" value={record?.metadata} />
         </DetailCard>
-        <DetailCard title="Quick Actions">
+        <DetailCard title="Quick Actions" onOpen={() => onNavigateRecord?.("invoice", record)}>
           {record?.hospital?._id ? (
             <button type="button" className="btn-secondary" onClick={() => onOpenRecord?.("hospital", record.hospital._id)}>
               Open Hospital
@@ -604,24 +705,24 @@ function InvoiceRecordView({ record, onOpenRecord }) {
   );
 }
 
-function StructuredRecordRenderer({ kind, record, related, onOpenRecord }) {
+function StructuredRecordRenderer({ kind, record, related, onOpenRecord, onNavigateRecord }) {
   switch (String(kind || "").toLowerCase()) {
     case "patient":
-      return <PatientRecordView record={record} related={related} onOpenRecord={onOpenRecord} />;
+      return <PatientRecordView record={record} related={related} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "hospital":
-      return <HospitalRecordView record={record} related={related} onOpenRecord={onOpenRecord} />;
+      return <HospitalRecordView record={record} related={related} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "claim":
-      return <ClaimRecordView record={record} related={related} onOpenRecord={onOpenRecord} />;
+      return <ClaimRecordView record={record} related={related} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "ticket":
-      return <TicketRecordView record={record} onOpenRecord={onOpenRecord} />;
+      return <TicketRecordView record={record} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "call":
-      return <CallRecordView record={record} onOpenRecord={onOpenRecord} />;
+      return <CallRecordView record={record} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "user":
-      return <UserRecordView record={record} related={related} onOpenRecord={onOpenRecord} />;
+      return <UserRecordView record={record} related={related} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     case "audit":
-      return <AuditRecordView record={record} />;
+      return <AuditRecordView record={record} onNavigateRecord={onNavigateRecord} />;
     case "invoice":
-      return <InvoiceRecordView record={record} onOpenRecord={onOpenRecord} />;
+      return <InvoiceRecordView record={record} onOpenRecord={onOpenRecord} onNavigateRecord={onNavigateRecord} />;
     default:
       return (
         <DetailCard title="Record Details" subtitle="Structured view unavailable">
@@ -631,14 +732,14 @@ function StructuredRecordRenderer({ kind, record, related, onOpenRecord }) {
   }
 }
 
-function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
+function SidebarContext({ selection, recordData, overview, onOpenRecord, onNavigateRecord, onNavigatePath }) {
   const record = recordData?.record;
   const related = recordData?.related || {};
 
   if (!selection || !record) {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Financial Overview">
+        <DetailCard title="Financial Overview" onOpen={() => onNavigatePath?.("/hospital-admin/financials")}>
           {Object.entries(overview?.financialSummary?.claims || {}).slice(0, 4).map(([status, row]) => (
             <div key={status} className="assistant-mini-row">
               <span>{status}</span>
@@ -648,24 +749,29 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
           {!Object.keys(overview?.financialSummary?.claims || {}).length ? <div className="muted">No claim totals available.</div> : null}
         </DetailCard>
 
-        <DetailCard title="System Logs">
+        <DetailCard title="System Logs" onOpen={() => onNavigatePath?.("/developer")}>
           {(overview?.developerSignals || []).map((signal) => (
-            <div key={signal._id} className="assistant-log-row">
+            <button
+              type="button"
+              key={signal._id}
+              className="assistant-log-row assistant-log-row-button"
+              onClick={() => onNavigatePath?.(buildRouteWithParams("/developer", { auditId: signal._id, resource: signal.resource }))}
+            >
               <strong>{signal.action}</strong>
               <div className="muted">{signal.error || signal.resource || "No error detail"}</div>
               <div className="muted">{signal.actorRole} • {formatDate(signal.createdAt)}</div>
-            </div>
+            </button>
           ))}
           {!overview?.developerSignals?.length ? <div className="muted">No recent system errors.</div> : null}
         </DetailCard>
 
-        <DetailCard title="Hospital Watchlist">
+        <DetailCard title="Hospital Watchlist" onOpen={() => onNavigatePath?.("/system-admin/government-hospital-registry")}>
           {(overview?.hospitalWatchlist || []).map((hospital) => (
             <button
               type="button"
               key={hospital._id}
               className="assistant-mini-action"
-              onClick={() => onOpenRecord?.("hospital", hospital._id)}
+              onClick={() => onNavigateRecord?.("hospital", hospital)}
             >
               <span>{hospital.name || hospital.code || "Hospital"}</span>
               <span>{hospital.fraudAlerts} fraud / {hospital.pendingClaims} pending</span>
@@ -680,12 +786,12 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
   if (selection.type === "ticket") {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Requester Context">
+        <DetailCard title="Requester Context" onOpen={() => onNavigateRecord?.("ticket", record)}>
           <DetailRow label="Requester" value={record?.requester?.name || record?.requester?.email} />
           <DetailRow label="Role" value={record?.requester?.role} />
           <DetailRow label="Hospital" value={record?.hospital?.name || "Platform"} />
         </DetailCard>
-        <DetailCard title="Linked Incident">
+        <DetailCard title="Linked Incident" onOpen={() => onNavigateRecord?.("ticket", record)}>
           <DetailRow label="Incident" value={record?.linkedIncident?.incidentKey || record?.linkedIncident?.summary} />
           <DetailRow label="Severity" value={record?.linkedIncident?.severity} />
           <DetailRow label="Status" value={record?.linkedIncident?.status} />
@@ -697,13 +803,13 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
   if (selection.type === "call") {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Patient Snapshot">
+        <DetailCard title="Patient Snapshot" onOpen={() => onNavigateRecord?.("call", record)}>
           <DetailRow label="Patient" value={patientName(record?.patient)} />
           <DetailRow label="Patient ID" value={record?.patient?.nationalId} />
           <DetailRow label="Doctor" value={record?.doctor?.name || record?.doctor?.email} />
           <DetailRow label="Service" value={record?.appointment?.serviceType} />
         </DetailCard>
-        <DetailCard title="Visit Summary">
+        <DetailCard title="Visit Summary" onOpen={() => onNavigateRecord?.("call", record)}>
           <DetailRow label="Visit Status" value={record?.appointment?.status} />
           <DetailRow label="Notes" value={record?.appointment?.notes} />
           <DetailRow label="Summary" value={record?.appointment?.metadata?.consultationSummary} />
@@ -715,12 +821,12 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
   if (recordData?.kind === "claim") {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Risk Snapshot">
+        <DetailCard title="Risk Snapshot" onOpen={() => onNavigateRecord?.("claim", record)}>
           <DetailRow label="Risk Score" value={Math.round(record?.riskScore || 0)} />
           <DetailRow label="Flags" value={record?.riskFlags} />
           <DetailRow label="Signals" value={safeArray(record?.riskSignals).map((item) => `${item.code}: ${item.message}`)} />
         </DetailCard>
-        <DetailCard title="Decision Context">
+        <DetailCard title="Decision Context" onOpen={() => onNavigateRecord?.("claim", record)}>
           <DetailRow label="Reviewed By" value={record?.decision?.reviewedBy?.name || "Pending"} />
           <DetailRow label="Reviewed At" value={formatDate(record?.decision?.reviewedAt)} />
           <DetailRow label="Decision Notes" value={record?.decision?.notes} />
@@ -732,7 +838,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
   if (recordData?.kind === "patient") {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Recent Claims">
+        <DetailCard title="Recent Claims" onOpen={() => onNavigateRecord?.("patient", record)}>
           <ActionList
             items={safeArray(related?.claims).slice(0, 4)}
             empty="No recent claims."
@@ -741,7 +847,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
             metaResolver={(item) => `Risk ${Math.round(item.riskScore || 0)} • ${formatDate(item.createdAt)}`}
           />
         </DetailCard>
-        <DetailCard title="Upcoming / Recent Appointments">
+        <DetailCard title="Upcoming / Recent Appointments" onOpen={() => onNavigateRecord?.("patient", record)}>
           <ActionList
             items={safeArray(related?.appointments).slice(0, 4)}
             empty="No appointments."
@@ -756,7 +862,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord }) {
   return (
     <div className="assistant-right-stack">
       {(related?.claims || related?.claimSummary) ? (
-        <DetailCard title="Claims / Financial">
+        <DetailCard title="Claims / Financial" onOpen={() => onNavigatePath?.("/hospital-admin/financials")}>
           {safeArray(related?.claims).map((claim) => (
             <div key={claim._id} className="assistant-mini-row">
               <span>{claim.status}</span>
@@ -842,6 +948,7 @@ export default function UnifiedAssistantDashboard() {
   const canOpenFinancials = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   const canOpenFraudGuard = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   const canOpenDeveloper = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
+  const canRouteOutsideWorkspace = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   const canBlockCalls = ["SUPER_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   const canOperateCalls = ["SUPER_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
   const consultationRoomRole = role === "PATIENT" ? "PATIENT" : "DOCTOR";
@@ -1197,6 +1304,23 @@ export default function UnifiedAssistantDashboard() {
     setSelection({ type: "record", item: { kind, id } });
   };
 
+  const openDirectPath = (path) => {
+    if (!path) return;
+    navigate(path);
+  };
+
+  const openRecordDestination = (kind, record) => {
+    if (!kind || !record) return;
+    const path = canRouteOutsideWorkspace ? resolveUnifiedRecordPath(kind, record) : "";
+    if (path) {
+      navigate(path);
+      return;
+    }
+    if (record?._id) {
+      openSpecificRecord(kind, record._id);
+    }
+  };
+
   const openMainAction = (target) => {
     if (target === "search") {
       searchInputRef.current?.focus();
@@ -1330,12 +1454,53 @@ export default function UnifiedAssistantDashboard() {
               </div>
             </div>
             <div className="assistant-workspace-summary-strip">
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.activeChats ?? 0}</strong><span>Chats</span></div>
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.activeCalls ?? 0}</strong><span>Calls</span></div>
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.openTickets ?? 0}</strong><span>Tickets</span></div>
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.fraudAlerts ?? 0}</strong><span>Fraud Alerts</span></div>
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.pendingClaims ?? 0}</strong><span>Pending Claims</span></div>
-              <div className="assistant-metric-chip"><strong>{overview?.summary?.systemErrors ?? 0}</strong><span>System Errors</span></div>
+              <MetricChip
+                label="Chats"
+                value={overview?.summary?.activeChats ?? 0}
+                onClick={() => {
+                  if (overview?.channels?.[0]) setSelection({ type: "channel", item: overview.channels[0] });
+                }}
+              />
+              <MetricChip
+                label="Calls"
+                value={overview?.summary?.activeCalls ?? 0}
+                onClick={() => {
+                  if (canOpenConsultationMonitor) navigate("/hospital-admin/consultation-monitor");
+                  else if (overview?.calls?.[0]) setSelection({ type: "call", item: overview.calls[0] });
+                }}
+              />
+              <MetricChip
+                label="Tickets"
+                value={overview?.summary?.openTickets ?? 0}
+                onClick={() => {
+                  if (canRouteOutsideWorkspace) navigate("/admin/support-tickets");
+                  else if (overview?.tickets?.[0]) setSelection({ type: "ticket", item: overview.tickets[0] });
+                }}
+              />
+              <MetricChip
+                label="Fraud Alerts"
+                value={overview?.summary?.fraudAlerts ?? 0}
+                onClick={() => {
+                  if (canOpenFraudGuard) navigate("/system-admin/fraud-guard");
+                  else if (overview?.alerts?.[0]) setSelection({ type: "alert", item: overview.alerts[0] });
+                }}
+              />
+              <MetricChip
+                label="Pending Claims"
+                value={overview?.summary?.pendingClaims ?? 0}
+                onClick={() => {
+                  if (canRouteOutsideWorkspace) navigate("/system-admin/government-claims");
+                  else if (overview?.alerts?.[0]) setSelection({ type: "alert", item: overview.alerts[0] });
+                }}
+              />
+              <MetricChip
+                label="System Errors"
+                value={overview?.summary?.systemErrors ?? 0}
+                onClick={() => {
+                  if (canRouteOutsideWorkspace) navigate("/developer");
+                  else setMessage("System errors stay in the Live Context panel for this role.");
+                }}
+              />
             </div>
           </div>
           {(searching || searchMsg || searchResults.length > 0) && (
@@ -1668,7 +1833,10 @@ export default function UnifiedAssistantDashboard() {
                   <span className="assistant-badge subtle">{selection.item?.type}</span>
                   {selection.item?.riskScore != null ? <span className="assistant-badge subtle">Risk {selection.item.riskScore}</span> : null}
                 </>
-              )}>
+              )} onOpen={() => {
+                if (recordData?.kind && recordData?.record) openRecordDestination(recordData.kind, recordData.record);
+                else openRelatedRecord();
+              }}>
                 <TagList items={selection.item?.flags || []} tone="subtle" />
                 <div className="assistant-composer-actions">
                   <button type="button" className="btn-secondary" onClick={openRelatedRecord}>Open Related Record</button>
@@ -1688,6 +1856,7 @@ export default function UnifiedAssistantDashboard() {
                   record={recordData.record}
                   related={recordData.related}
                   onOpenRecord={openSpecificRecord}
+                  onNavigateRecord={openRecordDestination}
                 />
               ) : null}
             </div>
@@ -1702,6 +1871,7 @@ export default function UnifiedAssistantDashboard() {
                   record={recordData.record}
                   related={recordData.related}
                   onOpenRecord={openSpecificRecord}
+                  onNavigateRecord={openRecordDestination}
                 />
               ) : null}
             </div>
@@ -1870,7 +2040,14 @@ export default function UnifiedAssistantDashboard() {
               )}
             </DetailCard>
 
-            <SidebarContext selection={selection} recordData={recordData} overview={overview} onOpenRecord={openSpecificRecord} />
+            <SidebarContext
+              selection={selection}
+              recordData={recordData}
+              overview={overview}
+              onOpenRecord={openSpecificRecord}
+              onNavigateRecord={openRecordDestination}
+              onNavigatePath={openDirectPath}
+            />
           </div>
         </aside>
       </section>

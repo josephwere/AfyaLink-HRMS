@@ -176,14 +176,15 @@ export default function Dashboard() {
       <section className="section">
         <h3>Top Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Staff Count" value={data?.totalStaff ?? "—"} />
+          <StatCard title="Staff Count" value={data?.totalStaff ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
           <StatCard
             title="Bed Occupancy"
             value={`${data?.bedOccupancyRate ?? "—"}%`}
             subtitle={`${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied`}
+            onClick={() => navigate("/admin/beds")}
           />
-          <StatCard title="Shift Coverage %" value={data?.openShifts ?? "—"} />
-          <StatCard title="Department Alerts" value={data?.pendingRequests ?? "—"} />
+          <StatCard title="Shift Coverage %" value={data?.openShifts ?? "—"} onClick={() => navigate("/workforce/requests#shift")} />
+          <StatCard title="Department Alerts" value={data?.pendingRequests ?? "—"} onClick={() => navigate("/hospital-admin/approvals")} />
           <StatCard title="Pending Doctor Assignments" value={data?.pendingAssignments ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
           <StatCard title="Active Consultation Calls" value={data?.activeConsultationCalls ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
           <StatCard title="Open Ward Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/hospital-admin/consultation-monitor")} />
@@ -217,8 +218,8 @@ export default function Dashboard() {
       <section className="section">
         <h3>AI Staffing Risk</h3>
         <div className="grid info-grid">
-          <StatCard title="Required Doctors" value={forecast?.forecast?.requiredDoctors ?? "—"} trend={trend.requiredDoctors} subtitle="Auto-refresh 45s" />
-          <StatCard title="Required Nurses" value={forecast?.forecast?.requiredNurses ?? "—"} trend={trend.requiredNurses} subtitle="Auto-refresh 45s" />
+          <StatCard title="Required Doctors" value={forecast?.forecast?.requiredDoctors ?? "—"} trend={trend.requiredDoctors} subtitle="Auto-refresh 45s" onClick={() => navigate("/hospital-admin/register-staff?role=doctor")} />
+          <StatCard title="Required Nurses" value={forecast?.forecast?.requiredNurses ?? "—"} trend={trend.requiredNurses} subtitle="Auto-refresh 45s" onClick={() => navigate("/hospital-admin/register-staff?role=nurse")} />
           <StatCard
             title="Doctor Gap"
             value={forecast?.forecast?.doctorGap ?? "—"}
@@ -467,11 +468,11 @@ export default function Dashboard() {
       <section className="section">
         <h3>Machine Connectivity</h3>
         <div className="grid info-grid">
-          <StatCard title="Connected Devices" value={machineStats.total} />
-          <StatCard title="Online" value={machineStats.online} />
-          <StatCard title="Offline" value={machineStats.offline} />
-          <StatCard title="Error" value={machineStats.error} />
-          <StatCard title="Maintenance" value={machineStats.maintenance} />
+          <StatCard title="Connected Devices" value={machineStats.total} onClick={() => navigate("/hospital-admin/machine-connectivity")} />
+          <StatCard title="Online" value={machineStats.online} onClick={() => navigate("/hospital-admin/machine-connectivity")} />
+          <StatCard title="Offline" value={machineStats.offline} onClick={() => navigate("/hospital-admin/machine-connectivity")} />
+          <StatCard title="Error" value={machineStats.error} onClick={() => navigate("/hospital-admin/machine-alerts")} />
+          <StatCard title="Maintenance" value={machineStats.maintenance} onClick={() => navigate("/hospital-admin/machine-connectivity")} />
         </div>
         <div className="action-list" style={{ marginTop: 12 }}>
           <button

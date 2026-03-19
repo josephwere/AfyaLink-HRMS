@@ -118,12 +118,12 @@ export default function Dashboard() {
             value={data?.totalHospitals ?? "—"}
             onClick={() => navigate("/super-admin/hospitals")}
           />
-          <StatCard title="Total Staff" value={data?.totalUsers ?? "—"} />
-          <StatCard title="Active Patients" value={data?.totalPatients ?? "—"} />
-          <StatCard title="Payroll This Month" value={data?.paymentsThisMonth ?? "—"} />
-          <StatCard title="Workforce Pending" value={ops?.queues?.workforce?.totalPending ?? "—"} />
-          <StatCard title="Workforce Breached" value={ops?.queues?.workforce?.breached ?? "—"} />
-          <StatCard title="Total Pharmacists" value={data?.pharmacists ?? "—"} />
+          <StatCard title="Total Staff" value={data?.totalUsers ?? "—"} onClick={() => navigate("/admin/access-control")} />
+          <StatCard title="Active Patients" value={data?.totalPatients ?? "—"} onClick={() => navigate("/system-admin/patient-identity-registry")} />
+          <StatCard title="Payroll This Month" value={data?.paymentsThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title="Workforce Pending" value={ops?.queues?.workforce?.totalPending ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
+          <StatCard title="Workforce Breached" value={ops?.queues?.workforce?.breached ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
+          <StatCard title="Total Pharmacists" value={data?.pharmacists ?? "—"} onClick={() => navigate("/super-admin/pharmacies")} />
           <StatCard
             title="Unlinked Pharmacists"
             value={unlinkedPharmacists}

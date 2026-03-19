@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from "react-router-dom";
 
 function Sparkline({ points = [] }) {
   const nums = (points || []).map((v) => Number(v)).filter((v) => Number.isFinite(v));
@@ -39,43 +40,53 @@ export const StatCard = ({
   badge = "",
   onBadgeClick = null,
   onClick = null,
-}) => (
-  <div
-    className={`card stat stat-${status}${typeof onClick === "function" ? " stat-clickable" : ""}`}
-    onClick={typeof onClick === "function" ? onClick : undefined}
-    role={typeof onClick === "function" ? "button" : undefined}
-    tabIndex={typeof onClick === "function" ? 0 : undefined}
-    onKeyDown={
-      typeof onClick === "function"
-        ? (e) => {
-            if (e.key === "Enter" || e.key === " ") onClick();
-          }
-        : undefined
-    }
-  >
-    <div className="card-title-row">
-      <div className="card-title">{title}</div>
-      {badge ? (
-        typeof onBadgeClick === "function" ? (
-          <button
-            type="button"
-            className={`stat-badge stat-badge-${status}`}
-            onClick={onBadgeClick}
-          >
-            {badge}
-          </button>
-        ) : (
-          <span className={`stat-badge stat-badge-${status}`}>{badge}</span>
-        )
-      ) : null}
-    </div>
-    <div className="card-value">{value}</div>
-    {why ? <div className="card-why" title={why}>Why: {why}</div> : null}
-    {Array.isArray(trend) && trend.length > 1 && (
-      <div style={{ marginTop: 6 }}>
-        <Sparkline points={trend} />
+  path = "",
+}) => {
+  const navigate = useNavigate();
+  const handleOpen = typeof onClick === "function"
+    ? onClick
+    : path
+      ? () => navigate(path)
+      : null;
+
+  return (
+    <div
+      className={`card stat stat-${status}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
+      onClick={typeof handleOpen === "function" ? handleOpen : undefined}
+      role={typeof handleOpen === "function" ? "button" : undefined}
+      tabIndex={typeof handleOpen === "function" ? 0 : undefined}
+      onKeyDown={
+        typeof handleOpen === "function"
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") handleOpen();
+            }
+          : undefined
+      }
+    >
+      <div className="card-title-row">
+        <div className="card-title">{title}</div>
+        {badge ? (
+          typeof onBadgeClick === "function" ? (
+            <button
+              type="button"
+              className={`stat-badge stat-badge-${status}`}
+              onClick={onBadgeClick}
+            >
+              {badge}
+            </button>
+          ) : (
+            <span className={`stat-badge stat-badge-${status}`}>{badge}</span>
+          )
+        ) : null}
       </div>
-    )}
-    {subtitle && <div className="card-sub">{subtitle}</div>}
-  </div>
-);
+      <div className="card-value">{value}</div>
+      {why ? <div className="card-why" title={why}>Why: {why}</div> : null}
+      {Array.isArray(trend) && trend.length > 1 && (
+        <div style={{ marginTop: 6 }}>
+          <Sparkline points={trend} />
+        </div>
+      )}
+      {subtitle && <div className="card-sub">{subtitle}</div>}
+    </div>
+  );
+};
