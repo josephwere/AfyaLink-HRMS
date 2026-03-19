@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import {
   approveLeave,
@@ -53,6 +54,7 @@ function isOverdue(item) {
 export default function Approvals() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [leave, setLeave] = useState([]);
   const [overtime, setOvertime] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -113,6 +115,9 @@ export default function Approvals() {
   }
   const prefScope = `${role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
   const canManagePresetLifecycle = PRESET_LIFECYCLE_ALLOWED.has(role);
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const normalizeCursorResponse = (data) => {
     if (Array.isArray(data)) {
@@ -956,26 +961,40 @@ export default function Approvals() {
       <section className="section">
         <h3>Queue Insights</h3>
         <div className="grid info-grid">
-          <div className="card stat">
-            <div className="card-title">Pending</div>
-            <div className="card-value">{queue?.totals?.pending ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Breached</div>
-            <div className="card-value">{queue?.totals?.breached ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">L2 Pending</div>
-            <div className="card-value">{queue?.totals?.l2Pending ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Approved</div>
-            <div className="card-value">{queue?.totals?.approved ?? "—"}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Rejected</div>
-            <div className="card-value">{queue?.totals?.rejected ?? "—"}</div>
-          </div>
+          <StatCard
+            title="Pending"
+            value={queue?.totals?.pending ?? "—"}
+            onClick={() => {
+              setViewMode("ALL");
+              setQueueKindFilter("ALL");
+              scrollToSection("pending");
+            }}
+          />
+          <StatCard
+            title="Breached"
+            value={queue?.totals?.breached ?? "—"}
+            onClick={() => {
+              setViewMode("BREACHED");
+              setQueueKindFilter("ALL");
+              scrollToSection("pending");
+              setTimeout(jumpToNextBreached, 0);
+            }}
+          />
+          <StatCard
+            title="L2 Pending"
+            value={queue?.totals?.l2Pending ?? "—"}
+            onClick={() => scrollToSection("automation")}
+          />
+          <StatCard
+            title="Approved"
+            value={queue?.totals?.approved ?? "—"}
+            onClick={() => navigate("/admin/audit-logs?q=approved")}
+          />
+          <StatCard
+            title="Rejected"
+            value={queue?.totals?.rejected ?? "—"}
+            onClick={() => navigate("/admin/audit-logs?q=rejected")}
+          />
         </div>
       </section>
 
@@ -1397,7 +1416,16 @@ export default function Approvals() {
               </div>
               <div className="grid info-grid" style={{ marginTop: 10 }}>
                 {(previewResult?.previews || []).map((row) => (
-                  <div className="card stat" key={`preview-${row.requestType}`}>
+                  <button
+                    type="button"
+                    className="card stat"
+                    key={`preview-${row.requestType}`}
+                    onClick={() => {
+                      setViewMode("ALL");
+                      setQueueKindFilter(row.requestType);
+                      scrollToSection("pending");
+                    }}
+                  >
                     <div className="card-title">{row.requestType}</div>
                     <div className="card-value">{row.totalCandidates || 0}</div>
                     <div className="muted">
@@ -1427,7 +1455,7 @@ export default function Approvals() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
@@ -68,6 +68,15 @@ export default function MachineConnectivity() {
     aet: "AFYALINK-PACS",
   });
   const [dicomOutput, setDicomOutput] = useState(null);
+  const registerSectionRef = useRef(null);
+  const devicesSectionRef = useRef(null);
+  const testsSectionRef = useRef(null);
+  const protocolSectionRef = useRef(null);
+  const auditSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const selectedDevice = useMemo(
     () => devices.find((d) => String(d._id) === String(selectedDeviceId)) || null,
@@ -327,7 +336,7 @@ export default function MachineConnectivity() {
         </div>
       )}
 
-      <section className="section">
+      <section className="section" ref={registerSectionRef}>
         <h3>Register Machine Device</h3>
         <form className="card form" onSubmit={registerDevice}>
           <input
@@ -413,7 +422,7 @@ export default function MachineConnectivity() {
         </form>
       </section>
 
-      <section className="section">
+      <section className="section" ref={devicesSectionRef}>
         <h3>Connected Devices</h3>
         <div className="card">
           <div className="table-wrap">
@@ -470,30 +479,37 @@ export default function MachineConnectivity() {
       <section className="section">
         <h3>SLA & Reliability</h3>
         <div className="grid info-grid">
-          <div className="card stat">
+          <button type="button" className="card stat" onClick={() => scrollToSection(devicesSectionRef)}>
             <div className="card-title">Uptime %</div>
             <div className="card-value">{overview?.uptimePercent ?? "—"}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button
+            type="button"
+            className="card stat"
+            onClick={() => {
+              setAuditFilters((prev) => ({ ...prev, action: "HEARTBEAT" }));
+              scrollToSection(auditSectionRef);
+            }}
+          >
             <div className="card-title">Heartbeat 24h</div>
             <div className="card-value">{overview?.heartbeat24h ?? "—"}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => scrollToSection(auditSectionRef)}>
             <div className="card-title">Ingestion Success 24h</div>
             <div className="card-value">{overview?.ingestionSuccess24h ?? "—"}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => scrollToSection(auditSectionRef)}>
             <div className="card-title">Ingestion Fail 24h</div>
             <div className="card-value">{overview?.ingestionFail24h ?? "—"}</div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => scrollToSection(testsSectionRef)}>
             <div className="card-title">Timeout Policy</div>
             <div className="card-value">{overview?.heartbeatTimeoutMinutes ?? "—"} min</div>
-          </div>
+          </button>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={testsSectionRef}>
         <h3>Connectivity Tests</h3>
         <form className="card form" onSubmit={testLabIngest}>
           <input
@@ -546,30 +562,30 @@ export default function MachineConnectivity() {
       <section className="section">
         <h3>Readiness Blueprint</h3>
         <div className="grid info-grid">
-          <div className="card stat">
+          <button type="button" className="card stat" onClick={() => navigate("/system-admin/integration-hub")}>
             <div className="card-title">What Similar Projects Do</div>
             <div className="muted">
               Device registry, API keys, heartbeat monitoring, HL7/FHIR ingestion, audit trails.
             </div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => scrollToSection(registerSectionRef)}>
             <div className="card-title">What Hospitals Need</div>
             <div className="muted">
               Zero-downtime machine onboarding, controlled maintenance mode, result provenance,
               and quick failure detection.
             </div>
-          </div>
-          <div className="card stat">
+          </button>
+          <button type="button" className="card stat" onClick={() => scrollToSection(protocolSectionRef)}>
             <div className="card-title">Future Features</div>
             <div className="muted">
               Device digital twins, predictive maintenance, edge buffering, ASTM/DICOM deep adapters,
               and auto-calibration alerts.
             </div>
-          </div>
+          </button>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={protocolSectionRef}>
         <h3>Protocol Test Tools</h3>
         <div className="grid info-grid">
           <div className="card form">
@@ -634,7 +650,7 @@ export default function MachineConnectivity() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={auditSectionRef}>
         <h3>Machine Audit Trail</h3>
         <div className="card">
           <div className="welcome-actions" style={{ marginBottom: 10 }}>

@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 
@@ -23,11 +25,13 @@ function buildDefaultRows() {
 }
 
 export default function DoctorSettings() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [rows, setRows] = useState(buildDefaultRows());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const weeklySectionRef = useRef(null);
 
   const todayIndex = new Date().getDay();
   const todayRow = useMemo(
@@ -87,6 +91,10 @@ export default function DoctorSettings() {
     }
   };
 
+  const openWeeklyAvailability = () => {
+    weeklySectionRef?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
@@ -109,32 +117,26 @@ export default function DoctorSettings() {
       <section className="section">
         <h3>Today</h3>
         <div className="grid info-grid">
-          <div className="card stat">
-            <div className="card-title">Day</div>
-            <div className="card-value">{DAY_NAMES[todayIndex]}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Schedule</div>
-            <div className="card-value">
-              {todayRow ? `${todayRow.startTime} - ${todayRow.endTime}` : "Closed"}
-            </div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Booking</div>
-            <div className="card-value">
-              {todayRow?.isAvailable === false ? "Closed" : "Open"}
-            </div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Consultations</div>
-            <div className="card-value">
-              {todayRow?.consultationAvailable === false ? "Closed" : "Open"}
-            </div>
-          </div>
+          <StatCard title="Day" value={DAY_NAMES[todayIndex]} onClick={openWeeklyAvailability} />
+          <StatCard
+            title="Schedule"
+            value={todayRow ? `${todayRow.startTime} - ${todayRow.endTime}` : "Closed"}
+            onClick={openWeeklyAvailability}
+          />
+          <StatCard
+            title="Booking"
+            value={todayRow?.isAvailable === false ? "Closed" : "Open"}
+            onClick={openWeeklyAvailability}
+          />
+          <StatCard
+            title="Consultations"
+            value={todayRow?.consultationAvailable === false ? "Closed" : "Open"}
+            onClick={() => navigate("/doctor/schedule")}
+          />
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={weeklySectionRef}>
         <h3>Weekly Availability</h3>
         <div className="card premium-card">
           <div className="table-wrap">
