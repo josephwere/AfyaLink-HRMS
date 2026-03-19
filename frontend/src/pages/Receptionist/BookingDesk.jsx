@@ -135,6 +135,11 @@ export default function ReceptionistBookingDesk() {
             value={patientQuery}
             onChange={(e) => setPatientQuery(e.target.value)}
             placeholder="Search by first name, last name, or national ID"
+            data-ai-label="Patient Search"
+            data-ai-aliases="patient lookup|find patient|search patient by national id|front desk patient"
+            data-ai-widget="patient-search"
+            data-ai-intent="lookup"
+            data-ai-priority="high"
           />
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="table premium-table">
@@ -155,6 +160,10 @@ export default function ReceptionistBookingDesk() {
                         type="button"
                         className="btn-secondary"
                         onClick={() => setForm((prev) => ({ ...prev, patient: patient._id }))}
+                        data-ai-action="select-patient-result"
+                        data-ai-label="Select Patient Result"
+                        data-ai-aliases="pick patient|confirm patient row|select matching patient"
+                        data-ai-help={`${`${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Patient"} ${patient.nationalId ? `| ${patient.nationalId}` : ""}`}
                       >
                         Select
                       </button>
@@ -185,6 +194,9 @@ export default function ReceptionistBookingDesk() {
           <select
             value={form.serviceType}
             onChange={(e) => setForm((prev) => ({ ...prev, serviceType: e.target.value }))}
+            data-ai-label="Booking Service"
+            data-ai-aliases="service type|appointment service|clinic service"
+            data-ai-priority="high"
           >
             <option value="General Consultation">General Consultation</option>
             <option value="Outpatient Review">Outpatient Review</option>
@@ -199,6 +211,9 @@ export default function ReceptionistBookingDesk() {
           <select
             value={form.consultationMode}
             onChange={(e) => setForm((prev) => ({ ...prev, consultationMode: e.target.value }))}
+            data-ai-label="Consultation Type"
+            data-ai-aliases="consultation mode|appointment mode|visit mode"
+            data-ai-priority="high"
           >
             <option value="IN_PERSON">In person</option>
             <option value="CHAT">Chat</option>
@@ -210,12 +225,18 @@ export default function ReceptionistBookingDesk() {
             type="datetime-local"
             value={form.scheduledAt}
             onChange={(e) => setForm((prev) => ({ ...prev, scheduledAt: e.target.value }))}
+            data-ai-label="Preferred Appointment Time"
+            data-ai-aliases="preferred time|booking time|appointment date and time|visit time"
+            data-ai-priority="high"
           />
           <label>Reason</label>
           <input
             value={form.reason}
             onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="Why the patient is visiting"
+            data-ai-label="Appointment Reason"
+            data-ai-aliases="visit reason|booking reason|chief complaint"
+            data-ai-priority="high"
           />
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving ? "Booking..." : "Book Appointment"}

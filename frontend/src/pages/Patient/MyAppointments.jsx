@@ -335,7 +335,13 @@ export default function MyAppointments() {
         <div className="card premium-card">
           <h3>1) Choose Location</h3>
           <label>Location mode</label>
-          <select value={locationMode} onChange={(e) => setLocationMode(e.target.value)}>
+          <select
+            value={locationMode}
+            onChange={(e) => setLocationMode(e.target.value)}
+            data-ai-label="Location Mode"
+            data-ai-aliases="location source|gps mode|manual coordinates mode"
+            data-ai-priority="low"
+          >
             <option value="manual">Manual Coordinates</option>
             <option value="gps">Use Current GPS</option>
           </select>
@@ -347,10 +353,24 @@ export default function MyAppointments() {
           )}
 
           <label>Latitude</label>
-          <input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="-1.286389" />
+          <input
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+            placeholder="-1.286389"
+            data-ai-label="Latitude"
+            data-ai-aliases="current latitude|patient latitude|location latitude"
+            data-ai-priority="low"
+          />
 
           <label>Longitude</label>
-          <input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="36.817223" />
+          <input
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+            placeholder="36.817223"
+            data-ai-label="Longitude"
+            data-ai-aliases="current longitude|patient longitude|location longitude"
+            data-ai-priority="low"
+          />
 
           <label>Search radius (km)</label>
           <input
@@ -359,6 +379,9 @@ export default function MyAppointments() {
             max={500}
             value={radiusKm}
             onChange={(e) => setRadiusKm(Number(e.target.value || 100))}
+            data-ai-label="Search Radius (km)"
+            data-ai-aliases="radius|distance radius|hospital search radius"
+            data-ai-priority="low"
           />
 
           <label>Location label (optional)</label>
@@ -366,6 +389,9 @@ export default function MyAppointments() {
             value={locationLabel}
             onChange={(e) => setLocationLabel(e.target.value)}
             placeholder="Nairobi CBD"
+            data-ai-label="Location Label"
+            data-ai-aliases="area label|location name|patient area"
+            data-ai-priority="low"
           />
         </div>
       </section>
@@ -374,7 +400,15 @@ export default function MyAppointments() {
         <div className="card premium-card">
           <h3>2) Select Nearest Hospital</h3>
           <label>Hospital</label>
-          <select value={hospitalId} onChange={(e) => setHospitalId(e.target.value)} disabled={!locationReady}>
+          <select
+            value={hospitalId}
+            onChange={(e) => setHospitalId(e.target.value)}
+            disabled={!locationReady}
+            data-ai-label="Nearest Hospital"
+            data-ai-aliases="hospital|selected hospital|booking hospital|facility"
+            data-ai-widget="hospital-picker"
+            data-ai-priority="high"
+          >
             <option value="">{locationReady ? "Select nearest hospital" : "Choose location first"}</option>
             {hospitals.map((h) => (
               <option key={h._id} value={h._id}>
@@ -400,6 +434,9 @@ export default function MyAppointments() {
           <select
             value={form.serviceType}
             onChange={(e) => setForm((p) => ({ ...p, serviceType: e.target.value }))}
+            data-ai-label="Appointment Service"
+            data-ai-aliases="service type|consultation service|clinic service"
+            data-ai-priority="high"
           >
             <option value="General Consultation">General Consultation</option>
             <option value="Outpatient Review">Outpatient Review</option>
@@ -416,11 +453,17 @@ export default function MyAppointments() {
             value={form.scheduledAt}
             onChange={(e) => setForm((p) => ({ ...p, scheduledAt: e.target.value }))}
             required
+            data-ai-label="Appointment Date & Time"
+            data-ai-aliases="appointment time|scheduled time|booking date and time"
+            data-ai-priority="high"
           />
           <label>Consultation type</label>
           <select
             value={form.consultationMode}
             onChange={(e) => setForm((p) => ({ ...p, consultationMode: e.target.value }))}
+            data-ai-label="Consultation Type"
+            data-ai-aliases="consultation mode|appointment mode|visit mode"
+            data-ai-priority="high"
           >
             <option value="IN_PERSON">In person</option>
             <option value="CHAT">Chat</option>
@@ -432,16 +475,27 @@ export default function MyAppointments() {
             value={form.reason}
             onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
             placeholder="Consultation reason"
+            data-ai-label="Appointment Reason"
+            data-ai-aliases="consultation reason|visit reason|chief complaint"
+            data-ai-priority="high"
           />
           <label>Preferred doctor (optional)</label>
           <input
             value={doctorSearch}
             onChange={(e) => setDoctorSearch(e.target.value)}
             placeholder="Search doctor by name, email or department"
+            data-ai-label="Doctor Search"
+            data-ai-aliases="doctor lookup|find doctor|preferred doctor search"
+            data-ai-intent="lookup"
+            data-ai-priority="medium"
           />
           <select
             value={form.doctor}
             onChange={(e) => setForm((p) => ({ ...p, doctor: e.target.value }))}
+            data-ai-label="Preferred Doctor"
+            data-ai-aliases="doctor|selected doctor|assigned doctor"
+            data-ai-widget="doctor-picker"
+            data-ai-priority="high"
           >
             <option value="">Any available doctor</option>
             {filteredDoctors.map((d) => (

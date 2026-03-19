@@ -38,6 +38,162 @@ function mergeField(field, extras = {}) {
 
 const ADAPTERS = [
   {
+    id: "receptionist-booking",
+    title: "Receptionist Booking Adapter",
+    description: "Targets front-desk patient lookup and quick-booking controls without treating result tables as fill targets.",
+    match({ pathname, pageTitle, fields }) {
+      return (
+        includesAny(pathname, ["receptionist/bookingdesk", "bookingdesk"]) ||
+        includesAny(pageTitle, ["front desk booking", "booking desk", "quick booking"]) ||
+        (fields || []).some((field) => matchesField(field, ["patient search", "booking service", "preferred appointment time"]))
+      );
+    },
+    promptHints: [
+      "Front-desk booking pages need patient lookup, service, consultation type, preferred time, reason, and preferred doctor.",
+      "If the page only exposes a patient search box and a manual results table, fill the search box and booking details but do not assume a patient row was selected.",
+    ],
+    adaptField(field) {
+      if (matchesField(field, ["patient search", "find patient"])) {
+        return mergeField(field, {
+          aliases: ["patient lookup", "front desk patient search", "search by national id"],
+          widget: "patient-search",
+          intent: "lookup",
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["booking service", "service"])) {
+        return mergeField(field, {
+          aliases: ["service type", "appointment service", "clinic service"],
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["consultation type"])) {
+        return mergeField(field, {
+          aliases: ["consultation mode", "appointment mode", "visit mode"],
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["preferred appointment time", "preferred time"])) {
+        return mergeField(field, {
+          aliases: ["booking time", "appointment date and time", "visit time"],
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["appointment reason", "reason"])) {
+        return mergeField(field, {
+          aliases: ["visit reason", "booking reason", "chief complaint"],
+          priority: "high",
+        });
+      }
+      return field;
+    },
+  },
+  {
+    id: "patient-appointments",
+    title: "Patient Appointment Adapter",
+    description: "Matches location, nearest-hospital, doctor, and appointment booking controls on patient self-service pages.",
+    match({ pathname, pageTitle, fields }) {
+      return (
+        includesAny(pathname, ["patient/myappointments", "myappointments"]) ||
+        includesAny(pageTitle, ["my appointments", "book appointment"]) ||
+        (fields || []).some((field) =>
+          matchesField(field, ["nearest hospital", "appointment date & time", "doctor search"])
+        )
+      );
+    },
+    promptHints: [
+      "Patient appointment pages usually require location or a selected hospital before booking details can be applied.",
+      "De-prioritize location controls unless the instruction includes coordinates, GPS, location label, or nearest-hospital selection.",
+    ],
+    adaptField(field) {
+      if (matchesField(field, ["location mode", "latitude", "longitude", "search radius", "location label"])) {
+        return mergeField(field, {
+          intent: "location",
+          priority: matchesField(field, ["latitude", "longitude"]) ? "medium" : "low",
+        });
+      }
+      if (matchesField(field, ["nearest hospital", "hospital"])) {
+        return mergeField(field, {
+          aliases: ["selected hospital", "booking hospital", "facility"],
+          widget: "hospital-picker",
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["doctor search"])) {
+        return mergeField(field, {
+          aliases: ["doctor lookup", "find doctor", "preferred doctor search"],
+          intent: "lookup",
+          priority: "medium",
+        });
+      }
+      if (matchesField(field, ["preferred doctor", "doctor"])) {
+        return mergeField(field, {
+          aliases: ["selected doctor", "assigned doctor", "doctor picker"],
+          widget: "doctor-picker",
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["appointment service", "appointment date & time", "consultation type", "appointment reason"])) {
+        return mergeField(field, { priority: "high" });
+      }
+      return field;
+    },
+  },
+  {
+    id: "community-health-worker",
+    title: "Community Health Worker Adapter",
+    description: "Boosts section-specific household, maternal, child, vaccination, surveillance, chronic care, and referral forms.",
+    match({ pathname, pageTitle, fields }) {
+      return (
+        includesAny(pathname, ["communityhealthworker", "/chw", "chw"]) ||
+        includesAny(pageTitle, ["community health worker", "chw"]) ||
+        (fields || []).some((field) =>
+          matchesField(field, ["household search", "maternal household", "child household", "referral urgency"])
+        )
+      );
+    },
+    promptHints: [
+      "Community health worker pages contain multiple independent forms. Fill only the section relevant to the instruction instead of mixing maternal, child, vaccination, chronic care, disease surveillance, and referrals.",
+      "Household search is usually a filter, while household selectors inside forms are actual clinical-entry targets.",
+    ],
+    adaptField(field) {
+      if (matchesField(field, ["household search"])) {
+        return mergeField(field, {
+          aliases: ["search household", "find household", "chw search"],
+          intent: "filter",
+          priority: "low",
+        });
+      }
+      if (matchesField(field, ["household", "visit household", "maternal household", "child household", "vaccination household", "chronic follow-up household"])) {
+        return mergeField(field, {
+          aliases: ["selected household", "family household", "community household"],
+          widget: "household-picker",
+          priority: matchesField(field, ["household search"]) ? "low" : "high",
+        });
+      }
+      if (matchesField(field, ["receiving hospital", "referral hospital"])) {
+        return mergeField(field, {
+          aliases: ["destination hospital", "receiving facility", "referral destination"],
+          widget: "hospital-picker",
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["referral urgency", "severity", "household risk level", "nutrition risk", "medication compliance", "cold chain status"])) {
+        return mergeField(field, { priority: "high" });
+      }
+      if (matchesField(field, ["next visit date", "next action date", "expected delivery date", "follow-up date"])) {
+        return mergeField(field, {
+          aliases: ["review date", "planned visit date", "return date"],
+          priority: "high",
+        });
+      }
+      if (matchesField(field, ["visit notes", "maternal notes", "child growth notes", "follow-up notes", "disease report notes", "referral summary"])) {
+        return mergeField(field, { priority: "high" });
+      }
+      return field;
+    },
+  },
+  {
     id: "claims-workflows",
     title: "Claims Workflow Adapter",
     description: "Boost matching for payer, member, authorization, and billed amount fields.",

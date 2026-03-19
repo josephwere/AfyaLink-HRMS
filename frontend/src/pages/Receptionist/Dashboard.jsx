@@ -35,7 +35,15 @@ export default function ReceptionistDashboard() {
           <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>
             My Requests
           </button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/receptionist/booking-desk")}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => navigate("/receptionist/booking-desk")}
+            data-ai-action="open-booking-desk"
+            data-ai-label="Open Booking Desk"
+            data-ai-aliases="front desk booking|open booking workflow|go to booking desk"
+            data-ai-help="Navigate to the receptionist booking desk workflow."
+          >
             Booking Desk
           </button>
         </div>
@@ -54,10 +62,26 @@ export default function ReceptionistDashboard() {
       <section className="section">
         <h3>Main Tasks</h3>
         <div className="panel-grid">
-          <button type="button" className="action-link" onClick={() => navigate("/receptionist/booking-desk")}>
+          <button
+            type="button"
+            className="action-link"
+            onClick={() => navigate("/receptionist/booking-desk")}
+            data-ai-action="open-booking-desk"
+            data-ai-label="Open Fast Hospital Booking"
+            data-ai-aliases="fast booking|front desk booking|booking task"
+            data-ai-help="Navigate to the fast hospital booking workflow."
+          >
             Fast Hospital Booking
           </button>
-          <button type="button" className="action-link" onClick={() => navigate("/notifications")}>
+          <button
+            type="button"
+            className="action-link"
+            onClick={() => navigate("/notifications")}
+            data-ai-action="open-front-desk-messages"
+            data-ai-label="Open Front Desk Messages"
+            data-ai-aliases="notifications|messages|front desk inbox"
+            data-ai-help="Navigate to receptionist notifications and messages."
+          >
             Front Desk Messages
           </button>
         </div>
@@ -99,10 +123,26 @@ export default function ReceptionistDashboard() {
             </table>
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/hospital-admin/transfer-command-center")}
+              data-ai-action="open-transfer-command-center"
+              data-ai-label="Open Transfer Command Center"
+              data-ai-aliases="transfer command center|handover desk|transfer workflow"
+              data-ai-help="Navigate to the transfer command center for hospital handoffs."
+            >
               Transfer Command Center
             </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/receptionist/booking-desk")}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => navigate("/receptionist/booking-desk")}
+              data-ai-action="open-booking-desk"
+              data-ai-label="Open Booking Desk"
+              data-ai-aliases="booking desk|front desk booking|booking workflow"
+              data-ai-help="Navigate to the receptionist booking desk workflow."
+            >
               Booking Desk
             </button>
           </div>

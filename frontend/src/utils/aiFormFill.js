@@ -1,5 +1,6 @@
 const FIELD_SELECTOR =
   "input, textarea, select, [contenteditable='true'], [role='textbox'], [role='combobox'], [data-ai-field]";
+const ACTION_SELECTOR = "[data-ai-action]";
 const IGNORED_INPUT_TYPES = new Set(["hidden", "submit", "button", "reset", "file", "image"]);
 
 function normalizeText(value) {
@@ -103,6 +104,17 @@ function getSectionText(element) {
   if (!container) return "";
   const heading = container.querySelector("h1, h2, h3, h4, h5, h6, legend");
   return compactText(heading?.textContent);
+}
+
+function getActionContextText(element) {
+  const explicit = compactText(element.getAttribute?.("data-ai-help"));
+  if (explicit) return explicit;
+
+  const row = element.closest("tr, li, .card, .panel, .list-item");
+  if (!row) return "";
+  const clone = row.cloneNode(true);
+  clone.querySelectorAll("[data-ai-action]").forEach((node) => node.remove());
+  return compactText(clone.textContent).slice(0, 240);
 }
 
 function buildKey(prefix, seed) {
@@ -288,6 +300,41 @@ export function collectPageFormFields() {
     counts.set(field.key, count);
     return count === 1 ? field : { ...field, key: `${field.key}-${count}` };
   });
+}
+
+export function collectPageActionTargets() {
+  if (typeof document === "undefined") return [];
+
+  const elements = Array.from(document.querySelectorAll(ACTION_SELECTOR)).filter((element) => isVisible(element));
+  const targets = [];
+  const counts = new Map();
+
+  for (const element of elements) {
+    const actionType = compactText(element.getAttribute("data-ai-action"));
+    if (!actionType) continue;
+
+    const label =
+      compactText(element.getAttribute("data-ai-label")) ||
+      compactText(element.getAttribute("aria-label")) ||
+      compactText(element.textContent) ||
+      actionType;
+    const keySeed = [actionType, label, getActionContextText(element)].filter(Boolean).join(" ");
+    const key = buildKey("action", keySeed);
+    const count = (counts.get(key) || 0) + 1;
+    counts.set(key, count);
+
+    targets.push({
+      key: count === 1 ? key : `${key}-${count}`,
+      label,
+      actionType,
+      section: getSectionText(element),
+      aliases: uniqueStrings(splitAliases(element.getAttribute("data-ai-aliases"))),
+      helpText: getActionContextText(element),
+      element,
+    });
+  }
+
+  return targets;
 }
 
 function setNativeValue(element, value) {
@@ -498,6 +545,109 @@ export function applyAiAssignments(fields, assignments = []) {
 
 export function serializePageFormFields(fields = []) {
   return fields.map(toSerializableField);
+}
+
+export function serializePageActionTargets(targets = []) {
+  return targets.map((target) => ({
+    key: target.key,
+    label: target.label,
+    actionType: target.actionType,
+    section: target.section || "",
+    aliases: target.aliases || [],
+    helpText: target.helpText || "",
+  }));
+}
+
+function findActionTarget(targets, action) {
+  const candidates = [
+    action?.actionKey,
+    action?.key,
+    action?.actionType,
+    action?.label,
+  ]
+    .map((value) => normalizeText(value))
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    const exact =
+      targets.find((target) => normalizeText(target.key) === candidate) ||
+      targets.find((target) => normalizeText(target.label) === candidate) ||
+      targets.find((target) => normalizeText(target.actionType) === candidate) ||
+      targets.find((target) => (target.aliases || []).some((alias) => normalizeText(alias) === candidate));
+    if (exact) return exact;
+  }
+
+  for (const candidate of candidates) {
+    const partial =
+      targets.find((target) => normalizeText(target.key).includes(candidate)) ||
+      targets.find((target) => normalizeText(target.label).includes(candidate)) ||
+      targets.find((target) => normalizeText(target.actionType).includes(candidate)) ||
+      targets.find((target) => normalizeText(target.helpText).includes(candidate)) ||
+      targets.find((target) => (target.aliases || []).some((alias) => normalizeText(alias).includes(candidate)));
+    if (partial) return partial;
+  }
+
+  return null;
+}
+
+export function resolveAiActions(targets, actions = []) {
+  return actions.map((action, index) => {
+    const target = findActionTarget(targets, action);
+    return {
+      index,
+      action,
+      target: target || null,
+      ok: Boolean(target),
+      actionLabel: target?.label || action?.label || action?.actionType || action?.actionKey || "Unknown action",
+      reason: target ? "" : "Action not found on this page",
+    };
+  });
+}
+
+function triggerActionTarget(target) {
+  const element = target?.element;
+  if (!element) {
+    throw new Error("Action element not found");
+  }
+  element.focus?.({ preventScroll: false });
+  element.click?.();
+  return target.label || target.actionType || "Action executed";
+}
+
+export function applyAiActions(targets, actions = []) {
+  const results = [];
+  const resolved = resolveAiActions(targets, actions);
+
+  for (const item of resolved) {
+    const action = item.action;
+    const target = item.target;
+    if (!target) {
+      results.push({
+        ok: false,
+        field: action?.actionKey || action?.label || action?.actionType || "Unknown action",
+        reason: "Action not found on this page",
+      });
+      continue;
+    }
+
+    try {
+      const applied = triggerActionTarget(target);
+      results.push({
+        ok: true,
+        field: target.label || target.actionType || target.key,
+        value: applied,
+        confidence: action?.confidence ?? null,
+      });
+    } catch (error) {
+      results.push({
+        ok: false,
+        field: target.label || target.actionType || target.key,
+        reason: error?.message || "Failed to execute action",
+      });
+    }
+  }
+
+  return results;
 }
 
 function getFocusableFields() {

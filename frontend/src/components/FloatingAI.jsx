@@ -15,13 +15,17 @@ import {
 import { extractDocument } from "../services/aiExtractionApi";
 import {
   appendTextToFocusedField,
+  applyAiActions,
   applyAiAssignments,
   clearFocusedField,
+  collectPageActionTargets,
   collectPageFormFields,
   focusNextField,
   focusNextSection,
   focusPreviousField,
   getFocusedFieldContext,
+  resolveAiActions,
+  serializePageActionTargets,
   resolveAiAssignments,
   serializePageFormFields,
   submitFocusedForm,
@@ -135,6 +139,7 @@ export default function FloatingAI() {
   const [formFillPastedText, setFormFillPastedText] = useState("");
   const [formFillReport, setFormFillReport] = useState(null);
   const [pageFieldCount, setPageFieldCount] = useState(0);
+  const [pageActionCount, setPageActionCount] = useState(0);
   const [pageFieldPreview, setPageFieldPreview] = useState([]);
   const [activeTemplate, setActiveTemplate] = useState(null);
   const [activeAdapter, setActiveAdapter] = useState(null);
@@ -236,18 +241,21 @@ export default function FloatingAI() {
       .finally(() => setLoadingContext(false));
   }, [open, isAuthenticated]);
 
-  const getPageFields = useCallback(() => {
+  const getPageAutofillSurface = useCallback(() => {
     const rawFields = collectPageFormFields();
-    return adaptPageFormFields({
+    const fields = adaptPageFormFields({
       pathname: location.pathname,
       fields: rawFields,
       pageTitle: document.title || "AfyaLink",
     });
+    const actions = collectPageActionTargets();
+    return { fields, actions };
   }, [location.pathname]);
 
   const refreshPageFields = () => {
-    const fields = getPageFields();
+    const { fields, actions } = getPageAutofillSurface();
     setPageFieldCount(fields.length);
+    setPageActionCount(actions.length);
     setPageFieldPreview(
       fields
         .map((field) => field.label || field.name || field.id || field.key)
@@ -256,7 +264,7 @@ export default function FloatingAI() {
     );
     setActiveTemplate(resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" }));
     setActiveAdapter(resolvePageFormAdapter({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" }));
-    return fields;
+    return { fields, actions };
   };
 
   useEffect(() => {
@@ -889,8 +897,9 @@ export default function FloatingAI() {
     }
   };
 
-  const buildFormFillPromptMessage = (fields) => {
+  const buildFormFillPromptMessage = (fields, actions = []) => {
       const serializableFields = serializePageFormFields(fields).slice(0, 80);
+      const serializableActions = serializePageActionTargets(actions).slice(0, 30);
       const template = resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
       const adapter = resolvePageFormAdapter({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
       const savedTemplateNote =
@@ -905,10 +914,13 @@ export default function FloatingAI() {
     return [
       "You are AfyaLink's form autofill assistant for clinical and admin staff.",
       "Return valid JSON only. Do not use markdown or prose outside JSON.",
-      'JSON schema: {"summary":"string","assignments":[{"fieldKey":"string","value":"string|boolean","confidence":0.0,"reason":"string","evidence":"string"}],"unmatched":["string"]}.',
+      'JSON schema: {"summary":"string","assignments":[{"fieldKey":"string","value":"string|boolean","confidence":0.0,"reason":"string","evidence":"string"}],"actions":[{"actionKey":"string","confidence":0.0,"reason":"string","evidence":"string"}],"unmatched":["string"]}.',
       "Rules:",
       "- Use only the provided fieldKey values.",
+      "- Use only the provided actionKey values for actions.",
       "- Omit fields when the source does not clearly support a value.",
+      "- Only suggest actions when the user instruction clearly requires a click or selection and the action is explicitly listed below.",
+      "- Never invent actions. Do not return navigation or submit actions unless the instruction clearly asks for them.",
       "- For checkbox fields, use true or false.",
       "- For select and radio fields, use one of the listed option labels or values.",
       "- Be conservative with medical data. Never invent diagnoses or measurements.",
@@ -927,6 +939,7 @@ export default function FloatingAI() {
       `Route: ${location.pathname}`,
       `Page title: ${document.title || "AfyaLink"}`,
       `Available fields: ${JSON.stringify(serializableFields)}`,
+      `Available actions: ${JSON.stringify(serializableActions)}`,
       `User instruction: ${String(formFillPrompt || "").trim() || "Use the uploaded or dictated source to fill the current form."}`,
       combinedFormFillSource ? `Source text: ${combinedFormFillSource}` : "Source text: none",
     ]
@@ -934,13 +947,14 @@ export default function FloatingAI() {
       .join("\n\n");
   };
 
-  const buildDraftFromAssignments = (fields, payload) => {
+  const buildDraftFromAssignments = (fields, actions, payload) => {
     const resolved = resolveAiAssignments(fields, Array.isArray(payload?.assignments) ? payload.assignments : []);
-    return resolved.map((item, index) => {
+    const assignmentItems = resolved.map((item, index) => {
       const assignment = item.assignment || {};
       const confidence = getConfidenceMeta(assignment.confidence);
       return {
         id: `${item.field?.key || assignment.fieldKey || assignment.label || "draft"}-${index}`,
+        kind: "field",
         matched: Boolean(item.field),
         fieldKey: item.field?.key || assignment.fieldKey || assignment.key || "",
         fieldLabel: item.fieldLabel,
@@ -957,6 +971,32 @@ export default function FloatingAI() {
         assignment,
       };
     });
+
+    const resolvedActions = resolveAiActions(actions, Array.isArray(payload?.actions) ? payload.actions : []);
+    const actionItems = resolvedActions.map((item, index) => {
+      const action = item.action || {};
+      const confidence = getConfidenceMeta(action.confidence);
+      return {
+        id: `${item.target?.key || action.actionKey || action.label || "action"}-${index}`,
+        kind: "action",
+        matched: Boolean(item.target),
+        fieldKey: item.target?.key || action.actionKey || action.key || "",
+        fieldLabel: item.actionLabel,
+        value: item.target?.helpText || item.target?.label || action.label || action.actionType || "Execute action",
+        reason: action.reason || "",
+        evidence: action.evidence || "",
+        sourcePreview: buildEvidenceSnippet({
+          sourceText: combinedFormFillSource,
+          value: item.target?.helpText || item.target?.label || action.label || action.actionType,
+          evidence: action.evidence,
+          fieldLabel: item.actionLabel,
+        }),
+        confidence,
+        assignment: action,
+      };
+    });
+
+    return [...assignmentItems, ...actionItems];
   };
 
   const handleFormFillFile = async (file) => {
@@ -1024,9 +1064,15 @@ export default function FloatingAI() {
       setMsg("Sign in to use AI autofill on this page.");
       return;
     }
-    const fields = refreshPageFields();
+    const { fields, actions } = refreshPageFields();
     if (!fields.length) {
-      setMsg("No fillable form fields were detected on this page.");
+      if (!actions.length) {
+        setMsg("No fillable form fields or reviewed actions were detected on this page.");
+        return;
+      }
+    }
+    if (!fields.length && actions.length && !String(formFillPrompt || "").trim() && !String(combinedFormFillSource || "").trim()) {
+      setMsg("Add an instruction, dictate what to do, or upload a photo/document first.");
       return;
     }
     if (!String(formFillPrompt || "").trim() && !String(combinedFormFillSource || "").trim()) {
@@ -1043,22 +1089,22 @@ export default function FloatingAI() {
 
     try {
       const out = await chatAssistant({
-        message: buildFormFillPromptMessage(fields),
+        message: buildFormFillPromptMessage(fields, actions),
         userMessage: formFillPrompt || `Autofill ${location.pathname}`,
         pageContext: String(document?.body?.innerText || "").slice(0, 3000),
       });
       const payload = parseJsonPayload(out?.answer || "");
-      if (!payload?.assignments?.length) {
-        throw new Error("The assistant did not return a usable field mapping for this page.");
+      if (!payload?.assignments?.length && !payload?.actions?.length) {
+        throw new Error("The assistant did not return a usable field mapping or reviewed action for this page.");
       }
 
       const template = resolveAutofillTemplate({ pathname: location.pathname, fields, pageTitle: document.title || "AfyaLink" });
-      let items = buildDraftFromAssignments(fields, payload);
+      let items = buildDraftFromAssignments(fields, actions, payload);
       let autoAppliedFilled = [];
       let autoAppliedSkipped = [];
       if (autoApplyHighConfidence) {
         const autoCandidates = items.filter(
-          (item) => item.matched && item.confidence.score >= confidenceThreshold
+          (item) => item.kind === "field" && item.matched && item.confidence.score >= confidenceThreshold
         );
         if (autoCandidates.length) {
           const results = applyAiAssignments(
@@ -1089,10 +1135,11 @@ export default function FloatingAI() {
       );
       const draftedCount = items.filter((item) => item.matched).length;
       const queuedCount = items.filter((item) => item.matched && !item.applied).length;
+      const draftedActionCount = items.filter((item) => item.kind === "action" && item.matched).length;
       const autoAppliedCount = autoAppliedFilled.length;
       const baseSummary =
         payload.summary ||
-        `Drafted ${draftedCount} field${draftedCount === 1 ? "" : "s"} for review.`;
+        `Drafted ${draftedCount} item${draftedCount === 1 ? "" : "s"} for review.`;
       const summary = autoAppliedCount
         ? `${baseSummary} Auto-applied ${autoAppliedCount} high-confidence field${autoAppliedCount === 1 ? "" : "s"} and left ${queuedCount} for review.`
         : baseSummary;
@@ -1131,7 +1178,11 @@ export default function FloatingAI() {
           items: items.filter((item) => item.applied),
         });
       }
-      setMsg(`${summary} Review the remaining values below before applying them.`);
+      setMsg(
+        draftedActionCount
+          ? `${summary} ${draftedActionCount} reviewed action${draftedActionCount === 1 ? "" : "s"} also need explicit approval.`
+          : `${summary} Review the remaining items below before applying them.`
+      );
     } catch (err) {
       setMsg(err?.message || "AI autofill failed for this page.");
     } finally {
@@ -1153,23 +1204,35 @@ export default function FloatingAI() {
         (!onlySelected || (allowedIds ? allowedIds.has(item.id) : draftSelection[item.id]))
     );
     if (!candidates.length) {
-      setMsg(onlySelected ? "Select at least one drafted field to apply." : "No unapplied drafted fields left.");
+      setMsg(onlySelected ? "Select at least one drafted item to apply." : "No unapplied drafted items left.");
       return;
     }
 
     setApplyBusy(true);
     setMsg("");
     try {
-      const fields = refreshPageFields();
-      const results = applyAiAssignments(
+      const { fields, actions } = refreshPageFields();
+      const fieldCandidates = candidates.filter((item) => item.kind !== "action");
+      const actionCandidates = candidates.filter((item) => item.kind === "action");
+      const fieldResults = applyAiAssignments(
         fields,
-        candidates.map((item) => ({
+        fieldCandidates.map((item) => ({
           fieldKey: item.fieldKey,
           value: item.value,
         }))
       );
+      const actionResults = applyAiActions(
+        actions,
+        actionCandidates.map((item) => ({
+          actionKey: item.fieldKey,
+          confidence: item.confidence?.score,
+        }))
+      );
 
-      const resultMap = new Map(candidates.map((item, index) => [item.id, results[index]]));
+      const resultMap = new Map([
+        ...fieldCandidates.map((item, index) => [item.id, fieldResults[index]]),
+        ...actionCandidates.map((item, index) => [item.id, actionResults[index]]),
+      ]);
       const nextItems = formFillDraft.items.map((item) => {
         const result = resultMap.get(item.id);
         if (!result) return item;
@@ -1181,11 +1244,12 @@ export default function FloatingAI() {
         };
       });
 
+      const results = [...fieldResults, ...actionResults];
       const filled = results.filter((entry) => entry.ok);
       const skipped = results.filter((entry) => !entry.ok);
       const summary = filled.length
-        ? `Applied ${filled.length} reviewed field${filled.length === 1 ? "" : "s"}.`
-        : "No reviewed fields were applied.";
+        ? `Applied ${filled.length} reviewed item${filled.length === 1 ? "" : "s"}.`
+        : "No reviewed items were applied.";
 
       setFormFillDraft((prev) => ({
         ...(prev || {}),
@@ -1429,6 +1493,9 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                 </div>
                 <div className="ai-autofill-meta">
                   <span className="ai-autofill-pill">{pageFieldCount} field{pageFieldCount === 1 ? "" : "s"} detected</span>
+                  {pageActionCount ? (
+                    <span className="ai-autofill-pill secondary">{pageActionCount} safe action{pageActionCount === 1 ? "" : "s"}</span>
+                  ) : null}
                   {activeTemplate ? <span className="ai-autofill-pill secondary">{activeTemplate.title}</span> : null}
                   {activeAdapter?.id && activeAdapter.id !== "generic" ? (
                     <span className="ai-autofill-pill secondary">Adapter: {activeAdapter.title}</span>
@@ -1640,12 +1707,13 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                             />
                             <span>
                               <strong>{item.fieldLabel}</strong>
+                              {item.kind === "action" ? <em>Action</em> : null}
                               <small>{String(item.value ?? "—")}</small>
                             </span>
                           </label>
                           <div className="ai-review-meta">
                             <span className={`ai-review-confidence ${item.confidence.tone}`}>{item.confidence.label} {Math.round(item.confidence.score * 100)}%</span>
-                            {item.applied ? <span className="ai-review-status">Applied</span> : null}
+                            {item.applied ? <span className="ai-review-status">{item.kind === "action" ? "Executed" : "Applied"}</span> : null}
                             {!item.matched ? <span className="ai-review-status warning">Needs manual mapping</span> : null}
                             <button type="button" className="btn-secondary btn-compact" onClick={() => setReviewItemId(item.id)}>
                               Evidence
@@ -1969,7 +2037,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                   <span className={`ai-review-confidence ${selectedReviewItem.confidence.tone}`}>
                     {selectedReviewItem.confidence.label} {Math.round(selectedReviewItem.confidence.score * 100)}%
                   </span>
-                  <strong>Suggested value</strong>
+                  <strong>{selectedReviewItem.kind === "action" ? "Suggested action" : "Suggested value"}</strong>
                   <p>{String(selectedReviewItem.value ?? "—")}</p>
                 </div>
                 <div className="ai-evidence-stat">
@@ -1992,8 +2060,8 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
                       onClick={() => applyDraftAssignments({ onlySelected: true, selectedIds: [selectedReviewItem.id] })}
                       disabled={!selectedReviewItem.matched || applyBusy}
                     >
-                      Apply This Field
-                    </button>
+                        {selectedReviewItem.kind === "action" ? "Execute This Action" : "Apply This Field"}
+                      </button>
                   ) : null}
                   <button
                     type="button"
