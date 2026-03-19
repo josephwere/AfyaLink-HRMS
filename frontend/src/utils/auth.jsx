@@ -580,6 +580,7 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    if (loading) return;
     if (!canRoleOverride && roleOverride) {
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
       setRoleOverrideState("");
@@ -588,7 +589,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem(STRICT_IMPERSONATION_KEY);
       setStrictImpersonationState(false);
     }
-  }, [canRoleOverride, roleOverride, strictImpersonation]);
+  }, [canRoleOverride, roleOverride, strictImpersonation, loading]);
 
   return (
     <AuthContext.Provider

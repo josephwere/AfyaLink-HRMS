@@ -8,6 +8,7 @@ import { normalizeRole } from "./normalizeRole";
 const ROLE_REDIRECT_MAP = Object.freeze({
   // 🔑 Super & system admins
   SUPER_ADMIN: "/super-admin",
+  SUPER_ASSISTANT: "/system-admin/unified-assistant",
   SYSTEM_ADMIN: "/system-admin",
   HOSPITAL_ADMIN: "/hospital-admin",
   HOSPITAL_ADMIN_ASSISTANT: "/hospital-admin",

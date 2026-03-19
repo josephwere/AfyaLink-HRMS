@@ -65,6 +65,7 @@ const userSchema = new Schema(
       type: String,
       enum: [
         "SUPER_ADMIN",
+        "SUPER_ASSISTANT",
         "SYSTEM_ADMIN",
         "HOSPITAL_ADMIN",
         "HOSPITAL_ADMIN_ASSISTANT",

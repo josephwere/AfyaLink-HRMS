@@ -68,14 +68,14 @@ router.get(
 router.get(
   "/ops/queue",
   protect,
-  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "SUPER_ASSISTANT"),
   getHospitalAppointmentOps
 );
 
 router.post(
   "/:id/assign",
   protect,
-  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "SUPER_ASSISTANT"),
   audit("APPOINTMENT_ASSIGN_DOCTOR", "appointments"),
   assignAppointmentDoctor
 );
@@ -113,7 +113,7 @@ router.post(
 router.patch(
   "/calls/:id/block",
   protect,
-  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "SUPER_ASSISTANT"),
   audit("CALL_SESSION_BLOCK", "appointments"),
   blockCallSession
 );
@@ -137,7 +137,7 @@ router.patch(
 router.delete(
   "/calls/:id",
   protect,
-  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "SUPER_ASSISTANT"),
   audit("CALL_SESSION_DELETE", "appointments"),
   softDeleteCallSession
 );

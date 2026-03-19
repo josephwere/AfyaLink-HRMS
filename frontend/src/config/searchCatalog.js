@@ -17,6 +17,7 @@ const BASE_ITEMS = [
 
 const ROLE_ITEMS = {
   SUPER_ADMIN: [
+    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
     { label: "Super Admin Dashboard", path: "/super-admin" },
     { label: "Manage Hospitals", path: "/super-admin/hospitals" },
     { label: "System Settings", path: "/super-admin/settings" },
@@ -45,6 +46,7 @@ const ROLE_ITEMS = {
     { label: "Notifications", path: "/notifications" },
   ],
   SYSTEM_ADMIN: [
+    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
     { label: "System Admin Dashboard", path: "/system-admin" },
     { label: "Integration Hub", path: "/system-admin/integration-hub" },
     { label: "Integration Control Plane", path: "/system-admin/integration-control-plane" },
@@ -73,6 +75,9 @@ const ROLE_ITEMS = {
     { label: "Training Playbook", path: "/admin/training-playbook" },
     { label: "Launch Readiness", path: "/admin/launch-readiness" },
     { label: "Notifications", path: "/notifications" },
+  ],
+  SUPER_ASSISTANT: [
+    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
   ],
   GOVERNMENT_ADMIN: [
     { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
@@ -218,6 +223,7 @@ const ROLE_ITEMS = {
     { label: "Notifications", path: "/notifications" },
   ],
   DEVELOPER: [
+    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
     { label: "Developer Console", path: "/developer" },
     { label: "Queue Replay", path: "/developer/queue-replay" },
     { label: "Webhook Retry", path: "/developer/webhook-retry" },

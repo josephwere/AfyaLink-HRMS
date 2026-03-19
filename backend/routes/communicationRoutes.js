@@ -13,6 +13,7 @@ const router = express.Router();
 router.use(
   protect,
   permit(
+    "SUPER_ASSISTANT",
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
     "DEVELOPER",

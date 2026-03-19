@@ -15,6 +15,7 @@ dotenv.config();
 ====================================================== */
 const ROLE_PRIORITY = {
   SUPER_ADMIN: 100,
+  SUPER_ASSISTANT: 95,
   SYSTEM_ADMIN: 90,
   GOVERNMENT_ADMIN: 5,
   GOVERNMENT_REGULATOR: 5,
@@ -89,6 +90,7 @@ const authenticate = async (req, res, next) => {
     ====================================================== */
     const isAdmin =
       user.role === "SUPER_ADMIN" ||
+      user.role === "SUPER_ASSISTANT" ||
       user.role === "SYSTEM_ADMIN" ||
       user.role === "HOSPITAL_ADMIN" ||
       user.role === "GOVERNMENT_ADMIN" ||

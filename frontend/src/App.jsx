@@ -162,6 +162,7 @@ import ClaimRules from "./pages/SystemAdmin/ClaimRules";
 import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
 import FraudGuard from "./pages/SystemAdmin/FraudGuard";
 import GovernmentClaimsDashboard from "./pages/SystemAdmin/GovernmentClaimsDashboard";
+import UnifiedAssistantDashboard from "./pages/SystemAdmin/UnifiedAssistantDashboard";
 import CommunicationCenter from "./pages/Communication/Center";
 import MyRequests from "./pages/Workforce/MyRequests";
 import QueueReplay from "./pages/Developer/QueueReplay";
@@ -1329,6 +1330,14 @@ export default function App() {
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_REGULATOR", "GOVERNMENT_ADMIN", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}>
                 <GovernmentClaimsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/unified-assistant"
+            element={
+              <RequireRole roles={["SUPER_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <UnifiedAssistantDashboard />
               </RequireRole>
             }
           />

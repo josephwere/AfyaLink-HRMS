@@ -6,6 +6,7 @@ import { ROLES } from "../constants/roles";
  */
 export const ROLE_REDIRECT_MAP = Object.freeze({
   [ROLES.SUPER_ADMIN]: "/super-admin",
+  [ROLES.SUPER_ASSISTANT]: "/system-admin/unified-assistant",
   [ROLES.HOSPITAL_ADMIN]: "/admin",
   [ROLES.DOCTOR]: "/doctor",
   [ROLES.NURSE]: "/nurse",

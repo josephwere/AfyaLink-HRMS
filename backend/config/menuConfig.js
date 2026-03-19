@@ -94,6 +94,7 @@ export const MENU = [
       { label: "API Keys", path: "/super-admin/settings", icon: "settings" },
       { label: "Integration Settings", path: "/admin/realtime", icon: "settings" },
       { label: "Migration Hub", path: "/system-admin/migrations", icon: "settings" },
+      { label: "Unified Assistant", path: "/system-admin/unified-assistant", icon: "ai" },
       { label: "Communication Center", path: "/communication", icon: "notifications" },
       { label: "Print Center", path: "/admin/print-center", icon: "reports" },
       { label: "Offline Ops Monitor", path: "/admin/offline-ops", icon: "analytics" },
@@ -108,10 +109,19 @@ export const MENU = [
   },
 
   {
+    section: "Unified Assistant",
+    roles: ["SUPER_ASSISTANT"],
+    items: [
+      { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant", icon: "ai" },
+    ],
+  },
+
+  {
     section: "System Admin",
     roles: ["SYSTEM_ADMIN"],
     items: [
       { label: "System Dashboard", path: "/system-admin", icon: "home" },
+      { label: "Unified Assistant", path: "/system-admin/unified-assistant", icon: "ai" },
       { label: "Server Monitoring", path: "/system-admin", icon: "analytics" },
       { label: "Error Logs", path: "/system-admin", icon: "reports" },
       { label: "API Logs", path: "/developer", icon: "settings" },
@@ -286,6 +296,7 @@ export const MENU = [
     section: "Developer",
     roles: ["DEVELOPER"],
     items: [
+      { label: "Unified Assistant", path: "/system-admin/unified-assistant", icon: "ai" },
       { label: "API Explorer", path: "/developer", icon: "settings" },
       { label: "Webhooks", path: "/developer/webhook-retry", icon: "settings" },
       { label: "Feature Flags", path: "/super-admin/settings", icon: "settings" },

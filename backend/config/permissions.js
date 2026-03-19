@@ -16,6 +16,10 @@ export const PERMISSIONS = {
     "*": ["*"],
     audit: ["read"],
   },
+  SUPER_ASSISTANT: {
+    "*": ["*"],
+    audit: ["read"],
+  },
 
   GOVERNMENT_ADMIN: {
     "*": ["*"],

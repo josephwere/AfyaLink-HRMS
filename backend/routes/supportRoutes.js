@@ -15,7 +15,7 @@ function nextTicketKey() {
 
 function normalizeScope(req, requestedHospital) {
   const role = String(req.user?.effectiveRole || req.user?.role || "").toUpperCase();
-  const privileged = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
+  const privileged = ["SUPER_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
   return privileged ? requestedHospital || null : req.user?.hospital || null;
 }
 
@@ -26,6 +26,7 @@ function csvEscape(value) {
 router.use(
   protect,
   requireRole(
+    "SUPER_ASSISTANT",
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
     "DEVELOPER",
