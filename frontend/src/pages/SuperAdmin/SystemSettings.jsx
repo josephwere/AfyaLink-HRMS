@@ -50,7 +50,7 @@ async function optimizeImageDataUrl(file, { maxDimension = 1600, targetBytes = 9
 
 export default function SystemSettings() {
   const { user } = useAuth();
-  const { settings, setSettings } = useSystemSettings();
+  const { settings, setSettings, lastSyncedAt, pushConnected } = useSystemSettings();
   const [form, setForm] = useState({
     branding: {
       appIcon: "",
@@ -302,6 +302,14 @@ export default function SystemSettings() {
     }));
   };
 
+  const lastSyncedLabel = lastSyncedAt
+    ? new Date(lastSyncedAt).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : "waiting";
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -310,6 +318,19 @@ export default function SystemSettings() {
           <p className="muted">Branding, payments, and AI configuration.</p>
         </div>
         <div className="welcome-actions">
+          <div
+            className={`settings-sync-badge ${pushConnected ? "live" : "fallback"}`}
+            title={
+              lastSyncedAt
+                ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
+                : "Waiting for the first successful sync."
+            }
+          >
+            <span className="settings-sync-dot" />
+            <span>{pushConnected ? "Live sync" : "Sync fallback"}</span>
+            <span className="settings-sync-separator">•</span>
+            <span>Last synced {lastSyncedLabel}</span>
+          </div>
           <button type="button" className="btn-primary" onClick={save} disabled={loading}>
             {loading ? "Saving..." : "Save All Settings"}
           </button>

@@ -36,33 +36,11 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
-  const [bgReady, setBgReady] = useState(false);
 
   React.useEffect(() => {
     document.body.classList.add("auth-route");
     return () => document.body.classList.remove("auth-route");
   }, []);
-
-  React.useEffect(() => {
-    const src = settings?.branding?.loginBackground;
-    if (!src) {
-      setBgReady(false);
-      return;
-    }
-    let active = true;
-    const img = new Image();
-    img.decoding = "async";
-    img.onload = () => {
-      if (active) setBgReady(true);
-    };
-    img.onerror = () => {
-      if (active) setBgReady(false);
-    };
-    img.src = src;
-    return () => {
-      active = false;
-    };
-  }, [settings?.branding?.loginBackground]);
 
   React.useEffect(() => {
     const sync = () => {
@@ -156,8 +134,17 @@ export default function Register() {
      UI
   -------------------------- */
   return (
-    <div className={`auth-bg ${bgReady ? "auth-bg-ready" : ""}`}>
+    <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
       <form className="auth-card" onSubmit={handleSubmit}>
+        {settings?.branding?.logo && (
+          <div
+            className="brand-logo"
+            style={{
+              backgroundImage: `url(${settings.branding.logo})`,
+              margin: "0 auto 10px",
+            }}
+          />
+        )}
         <h1>Create your account</h1>
         <p className="subtitle">Join AfyaLink HRMS</p>
 

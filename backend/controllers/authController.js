@@ -15,6 +15,7 @@ import { appendComplianceLedger } from "../utils/complianceLedger.js";
 import { assessLoginRisk, upsertTrustedDevice } from "../utils/sessionRisk.js";
 import RiskAssessment from "../models/RiskAssessment.js";
 import { getRiskPolicy } from "../utils/riskPolicy.js";
+import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
 
 /* ======================================================
    HELPERS
@@ -260,41 +261,9 @@ export const forgotPassword = async (req, res) => {
       return res.json({ msg: "If the email exists, a reset link has been sent." });
     }
 
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashed = crypto.createHash("sha256").update(rawToken).digest("hex");
-    user.resetPasswordToken = hashed;
-    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
-    user.resetPasswordRequestedAt = new Date();
-    await user.save();
-
-    const frontendBase =
-      process.env.FRONTEND_URL || req.headers.origin || `${req.protocol}://${req.get("host")}`;
-    const resetLink = `${frontendBase}/reset-password?token=${rawToken}`;
-
-    await sendEmail({
-      to: user.email,
-      subject: "Reset your AfyaLink password",
-      html: emailTemplate(
-        "Reset Password",
-        `<p>Click the link below to reset your password. This link expires in 1 hour.</p>
-         <p><a href="${resetLink}">Reset Password</a></p>`
-      ),
-    });
-
-    await AuditLog.create({
-      actorId: user._id,
-      actorRole: user.role,
-      action: "PASSWORD_RESET_REQUESTED",
-      resource: "User",
-      resourceId: user._id,
-    });
-    await appendComplianceLedger({
-      actorId: user._id,
-      actorRole: user.role,
-      action: "PASSWORD_RESET_REQUESTED",
-      resource: "User",
-      resourceId: user._id,
-      hospital: user.hospital || null,
+    await issuePasswordResetLink({
+      user,
+      frontendBase: resolveFrontendBase(req),
     });
 
     return res.json({ msg: "If the email exists, a reset link has been sent." });

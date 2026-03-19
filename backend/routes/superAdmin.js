@@ -11,6 +11,8 @@ import {
   updateHospitalAdmin,
   listSuperAssistants,
   updateSuperAssistant,
+  sendSuperAssistantResetLink,
+  bulkUpdateSuperAssistants,
 } from "../controllers/superAdmin.js";
 
 const router = express.Router();
@@ -57,6 +59,16 @@ router.patch(
   "/super-assistants/:id",
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
   updateSuperAssistant
+);
+router.post(
+  "/super-assistants/bulk-actions",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  bulkUpdateSuperAssistants
+);
+router.post(
+  "/super-assistants/:id/send-reset-link",
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN"),
+  sendSuperAssistantResetLink
 );
 
 export default router;

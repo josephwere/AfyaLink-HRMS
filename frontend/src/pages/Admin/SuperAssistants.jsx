@@ -1,10 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { listSuperAssistants, updateSuperAssistant } from "../../services/superAdminApi";
+import {
+  bulkUpdateSuperAssistants,
+  listSuperAssistants,
+  sendSuperAssistantResetLink,
+  updateSuperAssistant,
+} from "../../services/superAdminApi";
 import { useAuth } from "../../utils/auth";
 
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED", "ON_LEAVE"];
+const BULK_ACTIONS = [
+  { value: "ENABLE", label: "Enable selected" },
+  { value: "DISABLE", label: "Disable selected" },
+  { value: "SET_STATUS", label: "Set operating status" },
+  { value: "SEND_RESET_LINK", label: "Send invite/reset link" },
+];
 
 const coerceList = (value) => {
   if (Array.isArray(value)) return value;
@@ -25,11 +36,32 @@ const formatProvider = (value) => {
   return provider === "google" ? "Google" : "Password";
 };
 
+const formatBucket = (value) => {
+  const bucket = String(value || "").toUpperCase();
+  const labels = {
+    ACTIVE_TODAY: "Active today",
+    ACTIVE_7D: "Active in 7d",
+    STALE_30D: "Idle < 30d",
+    DORMANT: "Dormant",
+    NEVER_LOGGED_IN: "Never logged in",
+  };
+  return labels[bucket] || "Unknown";
+};
+
 function StatusPill({ active, status }) {
   const normalized = String(status || "ACTIVE").toUpperCase();
   const tone = !active || normalized === "SUSPENDED" ? "warn" : "ok";
   const label = !active ? "DISABLED" : normalized.replaceAll("_", " ");
   return <span className={`profile-status-pill ${tone}`}>{label}</span>;
+}
+
+function ActivityBadge({ bucket }) {
+  const normalized = String(bucket || "NEVER_LOGGED_IN").toUpperCase();
+  let tone = "subtle";
+  if (normalized === "ACTIVE_TODAY" || normalized === "ACTIVE_7D") tone = "good";
+  else if (normalized === "STALE_30D") tone = "warn";
+  else if (normalized === "DORMANT") tone = "risk";
+  return <span className={`assistant-badge ${tone}`}>{formatBucket(normalized)}</span>;
 }
 
 export default function SuperAssistants() {
@@ -38,10 +70,22 @@ export default function SuperAssistants() {
   const canManage = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
 
   const [items, setItems] = useState([]);
+  const [summary, setSummary] = useState({
+    total: 0,
+    active: 0,
+    disabled: 0,
+    activeToday: 0,
+    active7d: 0,
+    neverLoggedIn: 0,
+    pendingResets: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [selectedId, setSelectedId] = useState("");
+  const [selectedRows, setSelectedRows] = useState({});
+  const [bulkAction, setBulkAction] = useState("ENABLE");
+  const [bulkStatus, setBulkStatus] = useState("ACTIVE");
   const [filters, setFilters] = useState({
     q: "",
     active: "",
@@ -64,26 +108,71 @@ export default function SuperAssistants() {
     status: "ACTIVE",
   });
 
-  const load = React.useCallback(async (nextFilters = filters, preferredId = "") => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const data = await listSuperAssistants(nextFilters);
-      const rows = coerceList(data);
-      setItems(rows);
-      setSelectedId((current) => {
-        const keepCurrent = rows.some((row) => String(row._id) === String(current));
-        const targetId = preferredId || (keepCurrent ? current : rows[0]?._id || "");
-        return targetId ? String(targetId) : "";
-      });
-    } catch (err) {
-      setItems([]);
-      setSelectedId("");
-      setMsg(err?.message || "Unable to load super assistants right now.");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+  const load = React.useCallback(
+    async (nextFilters = filters, preferredId = "") => {
+      setLoading(true);
+      setMsg("");
+      try {
+        const data = await listSuperAssistants(nextFilters);
+        const rows = coerceList(data);
+        setItems(rows);
+        setSummary({
+          total: Number(data?.summary?.total || rows.length || 0),
+          active: Number(data?.summary?.active || rows.filter((row) => row.active).length || 0),
+          disabled: Number(data?.summary?.disabled || rows.filter((row) => !row.active).length || 0),
+          activeToday: Number(
+            data?.summary?.activeToday ||
+              rows.filter((row) => row?.activityMetrics?.bucket === "ACTIVE_TODAY").length ||
+              0
+          ),
+          active7d: Number(
+            data?.summary?.active7d ||
+              rows.filter((row) =>
+                ["ACTIVE_TODAY", "ACTIVE_7D"].includes(row?.activityMetrics?.bucket)
+              ).length ||
+              0
+          ),
+          neverLoggedIn: Number(
+            data?.summary?.neverLoggedIn ||
+              rows.filter((row) => row?.activityMetrics?.bucket === "NEVER_LOGGED_IN").length ||
+              0
+          ),
+          pendingResets: Number(
+            data?.summary?.pendingResets || rows.filter((row) => row?.resetPasswordRequestedAt).length || 0
+          ),
+        });
+        setSelectedRows((prev) => {
+          const next = {};
+          rows.forEach((row) => {
+            if (prev[String(row._id)]) next[String(row._id)] = true;
+          });
+          return next;
+        });
+        setSelectedId((current) => {
+          const keepCurrent = rows.some((row) => String(row._id) === String(current));
+          const targetId = preferredId || (keepCurrent ? current : rows[0]?._id || "");
+          return targetId ? String(targetId) : "";
+        });
+      } catch (err) {
+        setItems([]);
+        setSummary({
+          total: 0,
+          active: 0,
+          disabled: 0,
+          activeToday: 0,
+          active7d: 0,
+          neverLoggedIn: 0,
+          pendingResets: 0,
+        });
+        setSelectedRows({});
+        setSelectedId("");
+        setMsg(err?.message || "Unable to load super assistants right now.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters]
+  );
 
   useEffect(() => {
     if (!canManage) return;
@@ -93,6 +182,11 @@ export default function SuperAssistants() {
   const selected = useMemo(
     () => items.find((row) => String(row._id) === String(selectedId)) || null,
     [items, selectedId]
+  );
+
+  const selectedCount = useMemo(
+    () => Object.values(selectedRows).filter(Boolean).length,
+    [selectedRows]
   );
 
   useEffect(() => {
@@ -115,28 +209,13 @@ export default function SuperAssistants() {
     });
   }, [selected]);
 
-  const stats = useMemo(() => {
-    const total = items.length;
-    const active = items.filter((row) => row.active !== false).length;
-    const suspended = items.filter(
-      (row) => String(row?.systemProfile?.status || "ACTIVE").toUpperCase() === "SUSPENDED"
-    ).length;
-    const google = items.filter((row) => String(row.authProvider || "local").toLowerCase() === "google").length;
-    const recent = items.filter((row) => row?.sessionSecurity?.lastLoginAt).length;
-    return { total, active, suspended, google, recent };
-  }, [items]);
-
   const onSave = async (e) => {
     e.preventDefault();
     if (!selected) return;
     setSaving(true);
     setMsg("");
     try {
-      const data = await updateSuperAssistant(selected._id, editForm);
-      const updated = data?.user || data?.assistant || null;
-      setItems((prev) =>
-        prev.map((row) => (String(row._id) === String(selected._id) ? { ...row, ...updated } : row))
-      );
+      await updateSuperAssistant(selected._id, editForm);
       setMsg("Super assistant updated.");
       await load(filters, selected._id);
     } catch (err) {
@@ -163,6 +242,62 @@ export default function SuperAssistants() {
     }
   };
 
+  const sendInviteOrReset = async (row) => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const res = await sendSuperAssistantResetLink(row._id);
+      if (res?.resetLink && navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(res.resetLink).catch(() => {});
+      }
+      setMsg(
+        res?.mode === "invite"
+          ? "Invite link sent. The secure link was also copied if clipboard access was available."
+          : "Reset link sent. The secure link was also copied if clipboard access was available."
+      );
+      await load(filters, row._id);
+    } catch (err) {
+      setMsg(err?.message || "Unable to send invite/reset link.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const applyBulkAction = async () => {
+    const ids = Object.entries(selectedRows)
+      .filter(([, checked]) => checked)
+      .map(([id]) => id);
+    if (!ids.length) {
+      setMsg("Select at least one super assistant.");
+      return;
+    }
+    setSaving(true);
+    setMsg("");
+    try {
+      const payload = {
+        ids,
+        action: bulkAction,
+        ...(bulkAction === "SET_STATUS" ? { status: bulkStatus } : {}),
+      };
+      const res = await bulkUpdateSuperAssistants(payload);
+      setMsg(res?.msg || "Bulk action completed.");
+      await load(filters, selectedId);
+    } catch (err) {
+      setMsg(err?.message || "Unable to run bulk action.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleRowSelection = (id) => {
+    setSelectedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const allVisibleSelected = items.length > 0 && items.every((row) => selectedRows[String(row._id)]);
+
   if (!canManage) {
     return <p>🚫 Access denied</p>;
   }
@@ -173,7 +308,7 @@ export default function SuperAssistants() {
         <div>
           <h2>Super Assistants</h2>
           <p className="muted">
-            Manage human super assistants, access posture, and current operating status for the unified support layer.
+            Manage human super assistants, bulk actions, invite/reset flows, and activity signals for the unified support layer.
           </p>
         </div>
         <div className="welcome-actions">
@@ -190,11 +325,13 @@ export default function SuperAssistants() {
 
       <section className="section">
         <div className="grid info-grid">
-          <StatCard title="Total Assistants" value={stats.total} subtitle="Current filtered result set" />
-          <StatCard title="Active Access" value={stats.active} subtitle="Accounts currently enabled" />
-          <StatCard title="Suspended" value={stats.suspended} subtitle="Need review before reactivation" />
-          <StatCard title="Google Sign-In" value={stats.google} subtitle="Accounts linked to Google auth" />
-          <StatCard title="Seen Recently" value={stats.recent} subtitle="Have a recorded last login" />
+          <StatCard title="Total Assistants" value={summary.total} subtitle="Current filtered result set" />
+          <StatCard title="Active Access" value={summary.active} subtitle="Accounts currently enabled" />
+          <StatCard title="Disabled" value={summary.disabled} subtitle="Temporarily blocked accounts" />
+          <StatCard title="Active Today" value={summary.activeToday} subtitle="Touched the workspace today" />
+          <StatCard title="Active 7 Days" value={summary.active7d} subtitle="Recent operating activity" />
+          <StatCard title="Never Logged In" value={summary.neverLoggedIn} subtitle="Best candidates for invite links" />
+          <StatCard title="Pending Reset Links" value={summary.pendingResets} subtitle="Password/reset requests already issued" />
         </div>
       </section>
 
@@ -248,12 +385,7 @@ export default function SuperAssistants() {
           </div>
 
           <div className="welcome-actions" style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setFilters(draftFilters)}
-              disabled={loading}
-            >
+            <button type="button" className="btn-primary" onClick={() => setFilters(draftFilters)} disabled={loading}>
               Apply Filters
             </button>
             <button
@@ -272,15 +404,74 @@ export default function SuperAssistants() {
         </div>
       </section>
 
+      <section className="section">
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Bulk Controls</h3>
+              <p className="muted">Run safe access and invite actions on the selected assistants.</p>
+            </div>
+            <div className="action-pill">{selectedCount} selected</div>
+          </div>
+          <div className="ai-autofill-audit-filters" style={{ marginTop: 12 }}>
+            <label>
+              Action
+              <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
+                {BULK_ACTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {bulkAction === "SET_STATUS" ? (
+              <label>
+                Status
+                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option.replaceAll("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
+          <div className="welcome-actions" style={{ marginTop: 12 }}>
+            <button type="button" className="btn-primary" onClick={applyBulkAction} disabled={saving || !selectedCount}>
+              {saving ? "Working..." : "Apply to Selected"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                if (allVisibleSelected) {
+                  setSelectedRows({});
+                  return;
+                }
+                const next = {};
+                items.forEach((row) => {
+                  next[String(row._id)] = true;
+                });
+                setSelectedRows(next);
+              }}
+              disabled={!items.length}
+            >
+              {allVisibleSelected ? "Clear Selection" : "Select Visible"}
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section
         className="section"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16 }}
       >
         <div className="card">
           <div className="card-header-actions">
             <div>
               <h3>Management Table</h3>
-              <p className="muted">Select a row to review identity, access, and current status.</p>
+              <p className="muted">Select a row to review identity, access, and activity metrics.</p>
             </div>
             <div className="action-pill">{items.length} loaded</div>
           </div>
@@ -288,23 +479,49 @@ export default function SuperAssistants() {
             <table className="doctor-table">
               <thead>
                 <tr>
+                  <th style={{ width: 44 }}>
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={() => {
+                        if (allVisibleSelected) {
+                          setSelectedRows({});
+                          return;
+                        }
+                        const next = {};
+                        items.forEach((row) => {
+                          next[String(row._id)] = true;
+                        });
+                        setSelectedRows(next);
+                      }}
+                    />
+                  </th>
                   <th>Name</th>
                   <th>Provider</th>
                   <th>Status</th>
+                  <th>Activity</th>
                   <th>Last Login</th>
-                  <th>Created</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((row) => {
-                  const isSelected = String(row._id) === String(selectedId);
+                  const id = String(row._id);
+                  const isSelected = id === String(selectedId);
+                  const needsInvite = row?.activityMetrics?.bucket === "NEVER_LOGGED_IN";
                   return (
                     <tr
                       key={row._id}
-                      onClick={() => setSelectedId(String(row._id))}
+                      onClick={() => setSelectedId(id)}
                       style={isSelected ? { background: "rgba(37, 99, 235, 0.08)" } : undefined}
                     >
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(selectedRows[id])}
+                          onChange={() => toggleRowSelection(id)}
+                        />
+                      </td>
                       <td>
                         <strong>{row.name || "Unnamed"}</strong>
                         <div className="muted">{row.email || "No email"}</div>
@@ -317,27 +534,41 @@ export default function SuperAssistants() {
                       <td>
                         <StatusPill active={row.active !== false} status={row?.systemProfile?.status} />
                       </td>
-                      <td>{formatDateTime(row?.sessionSecurity?.lastLoginAt)}</td>
-                      <td>{formatDateTime(row.createdAt)}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleActive(row);
-                          }}
-                          disabled={saving}
-                        >
-                          {row.active === false ? "Enable" : "Disable"}
-                        </button>
+                        <div className="assistant-badge-row-left">
+                          <ActivityBadge bucket={row?.activityMetrics?.bucket} />
+                        </div>
+                        <div className="muted">
+                          Devices: {row?.activityMetrics?.trustedDeviceCount ?? 0}
+                        </div>
+                      </td>
+                      <td>{formatDateTime(row?.sessionSecurity?.lastLoginAt)}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <div className="welcome-actions">
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => toggleActive(row)}
+                            disabled={saving}
+                          >
+                            {row.active === false ? "Enable" : "Disable"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => sendInviteOrReset(row)}
+                            disabled={saving || !row.email}
+                          >
+                            {needsInvite ? "Invite" : "Reset"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="muted">
+                    <td colSpan="7" className="muted">
                       No super assistants found for the current filters.
                     </td>
                   </tr>
@@ -409,16 +640,45 @@ export default function SuperAssistants() {
                   Last login: {formatDateTime(selected?.sessionSecurity?.lastLoginAt)}
                 </div>
                 <div className="profile-status-pill">
-                  Created: {formatDateTime(selected.createdAt)}
+                  Last activity: {formatDateTime(selected?.systemProfile?.lastActivityAt)}
                 </div>
                 <div className="profile-status-pill warn">
                   Protected account: {selected.protectedAccount ? "Yes" : "No"}
                 </div>
               </div>
 
+              <div className="grid info-grid" style={{ marginTop: 12 }}>
+                <div className="card stat">
+                  <div className="card-title">Activity State</div>
+                  <div className="card-value" style={{ fontSize: 18 }}>{formatBucket(selected?.activityMetrics?.bucket)}</div>
+                </div>
+                <div className="card stat">
+                  <div className="card-title">Trusted Devices</div>
+                  <div className="card-value">{selected?.activityMetrics?.trustedDeviceCount ?? 0}</div>
+                </div>
+                <div className="card stat">
+                  <div className="card-title">Idle Days</div>
+                  <div className="card-value">
+                    {selected?.activityMetrics?.daysSinceLastLogin ?? "—"}
+                  </div>
+                </div>
+                <div className="card stat">
+                  <div className="card-title">Account Age</div>
+                  <div className="card-value">{selected?.activityMetrics?.accountAgeDays ?? 0}d</div>
+                </div>
+              </div>
+
               <div className="welcome-actions" style={{ marginTop: 12 }}>
                 <button type="submit" className="btn-primary" disabled={saving}>
                   {saving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => sendInviteOrReset(selected)}
+                  disabled={saving || !selected.email}
+                >
+                  {selected?.activityMetrics?.bucket === "NEVER_LOGGED_IN" ? "Send Invite Link" : "Send Reset Link"}
                 </button>
                 <button
                   type="button"

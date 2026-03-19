@@ -1,6 +1,7 @@
 // backend/controllers/superAdmin.js
 import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
+import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
 
 const createProtectedGlobalUser = async ({ name, email, password, role }) => {
   if (await User.findOne({ email })) {
@@ -11,6 +12,7 @@ const createProtectedGlobalUser = async ({ name, email, password, role }) => {
     name,
     email,
     password,
+    passwordSetAt: new Date(),
     role,
     emailVerified: true,
     twoFactorEnabled: true,
@@ -42,6 +44,62 @@ const buildProtectedGlobalUserFilter = ({ role, q = "", active, authProvider = "
   return filter;
 };
 
+const computeActivityMetrics = (row) => {
+  const now = Date.now();
+  const lastLoginAt = row?.sessionSecurity?.lastLoginAt ? new Date(row.sessionSecurity.lastLoginAt) : null;
+  const lastActivityAt = row?.systemProfile?.lastActivityAt ? new Date(row.systemProfile.lastActivityAt) : null;
+  const createdAt = row?.createdAt ? new Date(row.createdAt) : null;
+  const trustedDeviceCount = Array.isArray(row?.trustedDevices) ? row.trustedDevices.length : 0;
+  const daysSinceLastLogin = lastLoginAt
+    ? Math.max(0, Math.floor((now - lastLoginAt.getTime()) / (24 * 60 * 60 * 1000)))
+    : null;
+  const accountAgeDays = createdAt
+    ? Math.max(0, Math.floor((now - createdAt.getTime()) / (24 * 60 * 60 * 1000)))
+    : 0;
+
+  let bucket = "NEVER_LOGGED_IN";
+  if (daysSinceLastLogin !== null) {
+    if (daysSinceLastLogin <= 1) bucket = "ACTIVE_TODAY";
+    else if (daysSinceLastLogin <= 7) bucket = "ACTIVE_7D";
+    else if (daysSinceLastLogin <= 30) bucket = "STALE_30D";
+    else bucket = "DORMANT";
+  }
+
+  return {
+    trustedDeviceCount,
+    daysSinceLastLogin,
+    accountAgeDays,
+    lastLoginAt: lastLoginAt ? lastLoginAt.toISOString() : null,
+    lastActivityAt: lastActivityAt ? lastActivityAt.toISOString() : null,
+    bucket,
+  };
+};
+
+const serializeProtectedGlobalUser = (row) => {
+  const activityMetrics = computeActivityMetrics(row);
+  return {
+    _id: row._id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone || "",
+    role: row.role,
+    active: row.active !== false,
+    authProvider: row.authProvider || "local",
+    protectedAccount: Boolean(row.protectedAccount),
+    createdAt: row.createdAt,
+    passwordSetAt: row.passwordSetAt || null,
+    resetPasswordRequestedAt: row.resetPasswordRequestedAt || null,
+    systemProfile: {
+      status: row?.systemProfile?.status || "ACTIVE",
+      lastActivityAt: row?.systemProfile?.lastActivityAt || null,
+    },
+    sessionSecurity: {
+      lastLoginAt: row?.sessionSecurity?.lastLoginAt || null,
+    },
+    activityMetrics,
+  };
+};
+
 const listProtectedGlobalUsers = async ({ req, res, role }) => {
   try {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -57,7 +115,7 @@ const listProtectedGlobalUsers = async ({ req, res, role }) => {
     const [items, total] = await Promise.all([
       User.find(filter)
         .select(
-          "name email phone role active authProvider protectedAccount createdAt systemProfile.status sessionSecurity.lastLoginAt"
+          "name email phone role active authProvider protectedAccount createdAt passwordSetAt resetPasswordRequestedAt systemProfile.status systemProfile.lastActivityAt sessionSecurity.lastLoginAt trustedDevices"
         )
         .sort({ createdAt: -1, _id: -1 })
         .skip((page - 1) * limit)
@@ -66,7 +124,20 @@ const listProtectedGlobalUsers = async ({ req, res, role }) => {
       User.countDocuments(filter),
     ]);
 
-    return res.json({ items, total, page, limit });
+    const serializedItems = items.map(serializeProtectedGlobalUser);
+    const summary = {
+      total,
+      active: serializedItems.filter((row) => row.active).length,
+      disabled: serializedItems.filter((row) => !row.active).length,
+      activeToday: serializedItems.filter((row) => row.activityMetrics.bucket === "ACTIVE_TODAY").length,
+      active7d: serializedItems.filter((row) =>
+        ["ACTIVE_TODAY", "ACTIVE_7D"].includes(row.activityMetrics.bucket)
+      ).length,
+      neverLoggedIn: serializedItems.filter((row) => row.activityMetrics.bucket === "NEVER_LOGGED_IN").length,
+      pendingResets: serializedItems.filter((row) => row.resetPasswordRequestedAt).length,
+    };
+
+    return res.json({ items: serializedItems, total, page, limit, summary });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ msg: "Server error" });
@@ -96,11 +167,11 @@ const updateProtectedGlobalUser = async ({ req, res, role }) => {
 
     const out = await User.findById(user._id)
       .select(
-        "name email phone role active authProvider protectedAccount createdAt systemProfile.status sessionSecurity.lastLoginAt"
+        "name email phone role active authProvider protectedAccount createdAt passwordSetAt resetPasswordRequestedAt systemProfile.status systemProfile.lastActivityAt sessionSecurity.lastLoginAt trustedDevices"
       )
       .lean();
 
-    return res.json({ success: true, user: out });
+    return res.json({ success: true, user: serializeProtectedGlobalUser(out) });
   } catch (err) {
     if (err?.code === 11000) {
       return res.status(400).json({ msg: "Email or phone already exists" });
@@ -430,3 +501,128 @@ export const listSuperAssistants = async (req, res) =>
 
 export const updateSuperAssistant = async (req, res) =>
   updateProtectedGlobalUser({ req, res, role: "SUPER_ASSISTANT" });
+
+export const sendSuperAssistantResetLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const assistant = await User.findOne({ _id: id, role: "SUPER_ASSISTANT", protectedAccount: true });
+    if (!assistant) {
+      return res.status(404).json({ msg: "Super assistant not found" });
+    }
+    if (!assistant.email) {
+      return res.status(400).json({ msg: "Super assistant must have an email address to receive a reset link" });
+    }
+
+    const invite = !assistant?.sessionSecurity?.lastLoginAt;
+    const result = await issuePasswordResetLink({
+      user: assistant,
+      frontendBase: resolveFrontendBase(req),
+      actorId: req.user?._id,
+      actorRole: req.user?.role,
+      invite,
+      metadata: {
+        requestedByAdmin: true,
+        targetRole: assistant.role,
+      },
+    });
+
+    return res.json({
+      success: true,
+      mode: invite ? "invite" : "reset",
+      resetLink: result.resetLink,
+      expiresAt: result.expiresAt,
+      msg: invite ? "Invite link sent to super assistant." : "Reset link sent to super assistant.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Unable to send reset link" });
+  }
+};
+
+export const bulkUpdateSuperAssistants = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+    const action = String(req.body?.action || "").trim().toUpperCase();
+    const status = String(req.body?.status || "").trim().toUpperCase();
+
+    if (!ids.length) {
+      return res.status(400).json({ msg: "Select at least one super assistant" });
+    }
+    if (!action) {
+      return res.status(400).json({ msg: "Action is required" });
+    }
+
+    const assistants = await User.find({
+      _id: { $in: ids },
+      role: "SUPER_ASSISTANT",
+      protectedAccount: true,
+    });
+
+    if (!assistants.length) {
+      return res.status(404).json({ msg: "No matching super assistants found" });
+    }
+
+    if (action === "SEND_RESET_LINK") {
+      const frontendBase = resolveFrontendBase(req);
+      let sent = 0;
+      for (const assistant of assistants) {
+        if (!assistant.email) continue;
+        const invite = !assistant?.sessionSecurity?.lastLoginAt;
+        await issuePasswordResetLink({
+          user: assistant,
+          frontendBase,
+          actorId: req.user?._id,
+          actorRole: req.user?.role,
+          invite,
+          metadata: {
+            requestedByAdmin: true,
+            bulk: true,
+            targetRole: assistant.role,
+          },
+        });
+        sent += 1;
+      }
+      return res.json({
+        success: true,
+        updatedCount: sent,
+        msg: `Sent ${sent} invite/reset link${sent === 1 ? "" : "s"}.`,
+      });
+    }
+
+    if (action === "SET_STATUS" && !status) {
+      return res.status(400).json({ msg: "Status is required for set status" });
+    }
+
+    for (const assistant of assistants) {
+      if (action === "ENABLE") {
+        assistant.active = true;
+        if (assistant?.systemProfile?.status === "SUSPENDED") {
+          assistant.systemProfile = assistant.systemProfile || {};
+          assistant.systemProfile.status = "ACTIVE";
+        }
+      } else if (action === "DISABLE") {
+        assistant.active = false;
+        assistant.systemProfile = assistant.systemProfile || {};
+        assistant.systemProfile.status = "SUSPENDED";
+      } else if (action === "SET_STATUS") {
+        assistant.systemProfile = assistant.systemProfile || {};
+        assistant.systemProfile.status = status;
+      } else {
+        return res.status(400).json({ msg: "Unsupported bulk action" });
+      }
+      await assistant.save();
+    }
+
+    return res.json({
+      success: true,
+      updatedCount: assistants.length,
+      msg: `Updated ${assistants.length} super assistant account${assistants.length === 1 ? "" : "s"}.`,
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(400).json({ msg: "A duplicate email or phone value already exists" });
+    }
+    console.error(err);
+    return res.status(500).json({ msg: "Unable to run bulk action" });
+  }
+};

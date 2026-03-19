@@ -1,15 +1,34 @@
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
+import { getIO } from "../utils/socket.js";
 
 export const getSystemSettings = async (_req, res) => {
   const doc = await getSystemSettingsDoc({ lean: true });
+  res.set("Cache-Control", "no-store");
   res.json(doc);
 };
 
 export const getPublicBranding = async (_req, res) => {
   const doc = await getSystemSettingsDoc({ lean: true });
+  res.set("Cache-Control", "no-store");
 
   return res.json({
     branding: doc?.branding || {},
+    ai: {
+      enabled: doc?.ai?.enabled !== false,
+      icon: doc?.ai?.icon || "",
+      name: doc?.ai?.name || "NeuroEdge",
+      greeting: doc?.ai?.greeting || "Hi, how can I help?",
+      url: doc?.ai?.url || "",
+    },
+    monetization: {
+      featureAccess: {
+        ai:
+          doc?.monetization?.featureAccess?.get?.("ai") ||
+          doc?.monetization?.featureAccess?.ai ||
+          "FREE",
+      },
+    },
+    updatedAt: doc?.updatedAt || null,
   });
 };
 
@@ -82,5 +101,24 @@ export const updateSystemSettings = async (req, res) => {
   }
 
   await doc.save();
+
+  try {
+    const io = getIO();
+    io.emit("system-settings:updated", {
+      updatedAt: doc.updatedAt || new Date().toISOString(),
+      brandingChanged: Boolean(branding),
+      aiChanged: Boolean(ai),
+      monetizationChanged: Boolean(monetization),
+      communicationsChanged: Boolean(communications),
+      clinicalChanged: Boolean(clinical),
+      governmentApisChanged: Boolean(governmentApis),
+      actorId: req.user?.id || null,
+      actorRole: req.user?.role || null,
+    });
+  } catch {
+    // Socket server may not be initialized in lightweight/test environments.
+  }
+
+  res.set("Cache-Control", "no-store");
   res.json({ success: true, settings: doc });
 };

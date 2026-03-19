@@ -74,3 +74,16 @@ export const updateSuperAssistant = async (id, data) => {
     body: data,
   });
 };
+
+export const bulkUpdateSuperAssistants = async (data) => {
+  return apiFetch("/api/super-admin/super-assistants/bulk-actions", {
+    method: "POST",
+    body: data,
+  });
+};
+
+export const sendSuperAssistantResetLink = async (id) => {
+  return apiFetch(`/api/super-admin/super-assistants/${id}/send-reset-link`, {
+    method: "POST",
+  });
+};

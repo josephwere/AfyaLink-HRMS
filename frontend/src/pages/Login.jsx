@@ -26,8 +26,6 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [slowAuth, setSlowAuth] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [bgReady, setBgReady] = useState(false);
-
   /* -------------------------
      Post-register notice
   -------------------------- */
@@ -53,27 +51,6 @@ export default function Login() {
     document.body.classList.add("auth-route");
     return () => document.body.classList.remove("auth-route");
   }, []);
-
-  useEffect(() => {
-    const src = settings?.branding?.loginBackground;
-    if (!src) {
-      setBgReady(false);
-      return;
-    }
-    let active = true;
-    const img = new Image();
-    img.decoding = "async";
-    img.onload = () => {
-      if (active) setBgReady(true);
-    };
-    img.onerror = () => {
-      if (active) setBgReady(false);
-    };
-    img.src = src;
-    return () => {
-      active = false;
-    };
-  }, [settings?.branding?.loginBackground]);
 
   useEffect(() => {
     const onOnline = () => setIsOffline(false);
@@ -136,7 +113,7 @@ export default function Login() {
      UI
   -------------------------- */
   return (
-    <div className={`auth-bg ${bgReady ? "auth-bg-ready" : ""}`}>
+    <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
       <form className="auth-card" onSubmit={handleSubmit}>
         {settings?.branding?.logo && (
           <div

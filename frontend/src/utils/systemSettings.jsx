@@ -1,6 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { io } from "socket.io-client";
 
 const SystemSettingsContext = createContext(null);
+
+const PUBLIC_SETTINGS_CACHE_KEY = "afyalink_public_settings";
+const BRANDING_CACHE_KEY = "afyalink_public_branding";
+const SETTINGS_SYNC_KEY = "afyalink_system_settings_version";
+const SETTINGS_CHANNEL = "afyalink-system-settings";
+const PRIVILEGED_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
 
 function setFavicon(href) {
   if (!href) return;
@@ -13,134 +20,304 @@ function setFavicon(href) {
   link.href = href;
 }
 
+function ensureImagePreload(url) {
+  if (!url) return;
+  const existing = document.head.querySelector(`link[data-afyalink-preload="${url}"]`);
+  if (existing) return;
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
+  link.href = url;
+  link.setAttribute("data-afyalink-preload", url);
+  document.head.appendChild(link);
+}
+
 function preloadImage(url, { eager = false } = {}) {
   if (!url) return;
+  if (eager) ensureImagePreload(url);
   const img = new Image();
   img.decoding = "async";
   img.loading = eager ? "eager" : "lazy";
   img.src = url;
 }
 
-function readCachedBranding() {
+function readCachedPublicSettings() {
   try {
-    const cached = localStorage.getItem("afyalink_public_branding");
-    if (!cached) return {};
-    const branding = JSON.parse(cached);
+    const cached = localStorage.getItem(PUBLIC_SETTINGS_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch {
+    // ignore corrupted cache
+  }
+
+  try {
+    const brandingCached = localStorage.getItem(BRANDING_CACHE_KEY);
+    if (!brandingCached) return {};
+    const branding = JSON.parse(brandingCached);
     return branding && typeof branding === "object" ? { branding } : {};
   } catch {
     return {};
   }
 }
 
+function normalizePublicSettings(data) {
+  const branding = data?.branding && typeof data.branding === "object" ? data.branding : {};
+  const ai = data?.ai && typeof data.ai === "object" ? data.ai : {};
+  const monetization = data?.monetization && typeof data.monetization === "object" ? data.monetization : {};
+  return {
+    branding,
+    ai: {
+      enabled: ai.enabled !== false,
+      icon: ai.icon || "",
+      name: ai.name || "NeuroEdge",
+      greeting: ai.greeting || "Hi, how can I help?",
+      url: ai.url || "",
+    },
+    monetization: {
+      ...(monetization || {}),
+      featureAccess: {
+        ...(monetization?.featureAccess || {}),
+        ai: monetization?.featureAccess?.ai || "FREE",
+      },
+    },
+    updatedAt: data?.updatedAt || null,
+  };
+}
+
+function getStoredRole() {
+  try {
+    return String(JSON.parse(localStorage.getItem("user") || "{}")?.role || "").toUpperCase();
+  } catch {
+    return "";
+  }
+}
+
+function broadcastSettingsUpdate() {
+  try {
+    localStorage.setItem(SETTINGS_SYNC_KEY, String(Date.now()));
+  } catch {
+    // ignore storage issues
+  }
+  if (typeof BroadcastChannel !== "undefined") {
+    try {
+      const channel = new BroadcastChannel(SETTINGS_CHANNEL);
+      channel.postMessage({ type: "SETTINGS_UPDATED", at: Date.now() });
+      channel.close();
+    } catch {
+      // ignore channel issues
+    }
+  }
+}
+
 export function SystemSettingsProvider({ children }) {
-  const [baseSettings, setBaseSettings] = useState(() => readCachedBranding());
+  const [baseSettings, setBaseSettings] = useState(() => readCachedPublicSettings());
   const [hospitalCustomization, setHospitalCustomization] = useState(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [pushConnected, setPushConnected] = useState(false);
+  const [syncSource, setSyncSource] = useState("bootstrap");
   const base = import.meta.env.VITE_API_URL || "";
-  const BRANDING_CACHE_KEY = "afyalink_public_branding";
 
   const mergeSettings = (globalSettings, customization) => {
-    if (!customization?.enabled) return globalSettings || {};
-    const next = { ...(globalSettings || {}) };
+    const global = globalSettings || {};
+    if (!customization?.enabled) return global;
+    const next = { ...global };
     next.branding = {
-      ...(globalSettings?.branding || {}),
+      ...(global.branding || {}),
       ...(customization?.branding || {}),
       appName:
         customization?.branding?.appName ||
-        globalSettings?.branding?.appName ||
+        global?.branding?.appName ||
         "AfyaLink",
     };
     next.hospitalCustomization = customization;
     return next;
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const fetchWithAuth = () =>
-      fetch(`${base}/api/system-settings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(async (r) => {
-          if (!r.ok) return null;
-          return r.json();
-        })
-        .then((data) => {
-          if (data?.branding) {
-            localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(data.branding));
-          }
-          setBaseSettings(data || {});
-        });
-
-    const fetchPublic = () =>
-      fetch(`${base}/api/system-settings/public`)
-        .then(async (r) => {
-          if (!r.ok) throw new Error("public branding unavailable");
-          return r.json();
-        })
-        .then((data) => {
-          const branding = data?.branding || {};
-          localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(branding));
-          setBaseSettings({ branding });
-        });
-
-    if (token) {
-      fetchWithAuth().catch(() => {
-        const cached = localStorage.getItem(BRANDING_CACHE_KEY);
-        if (cached) {
-          try {
-            setBaseSettings({ branding: JSON.parse(cached) });
-            return;
-          } catch {
-            // ignore corrupted cache
-          }
-        }
-        setBaseSettings({});
-      });
-      return;
+  const writePublicCache = useCallback((next) => {
+    try {
+      const normalized = normalizePublicSettings(next);
+      localStorage.setItem(PUBLIC_SETTINGS_CACHE_KEY, JSON.stringify(normalized));
+      localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(normalized.branding || {}));
+    } catch {
+      // ignore cache write issues
     }
+  }, []);
 
-    fetchPublic().catch(() => {
-      const cached = localStorage.getItem(BRANDING_CACHE_KEY);
-      if (cached) {
-        try {
-          setBaseSettings({ branding: JSON.parse(cached) });
-          return;
-        } catch {
-          // ignore corrupted cache
-        }
-      }
-      setBaseSettings({});
+  const fetchPublicSettings = useCallback(async () => {
+    const response = await fetch(`${base}/api/system-settings/public`, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-cache",
+      },
     });
+    if (!response.ok) {
+      throw new Error("public branding unavailable");
+    }
+    const data = await response.json();
+    const normalized = normalizePublicSettings(data);
+    writePublicCache(normalized);
+    return normalized;
+  }, [base, writePublicCache]);
+
+  const fetchPrivateSettings = useCallback(async (token) => {
+    const response = await fetch(`${base}/api/system-settings`, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Cache-Control": "no-cache",
+      },
+    });
+    if (!response.ok) {
+      throw new Error("private settings unavailable");
+    }
+    return response.json();
   }, [base]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const rawUser = localStorage.getItem("user");
-    let role = "";
-    try {
-      role = JSON.parse(rawUser || "{}")?.role || "";
-    } catch {
-      role = "";
-    }
-
-    // Hospital customization endpoint is only valid for hospital-scoped roles.
+  const fetchHospitalCustomization = useCallback(async (token, role) => {
     if (!token || role !== "HOSPITAL_ADMIN") {
       setHospitalCustomization(null);
-      return;
+      return null;
+    }
+    try {
+      const response = await fetch(`${base}/api/hospital-admin/config`, {
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Cache-Control": "no-cache",
+        },
+      });
+      if (!response.ok) {
+        setHospitalCustomization(null);
+        return null;
+      }
+      const data = await response.json();
+      const customization = data?.customization || null;
+      setHospitalCustomization(customization);
+      return customization;
+    } catch {
+      setHospitalCustomization(null);
+      return null;
+    }
+  }, [base]);
+
+  const refreshSettings = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    const role = getStoredRole();
+    let syncSucceeded = false;
+
+    let publicSettings = null;
+    try {
+      publicSettings = await fetchPublicSettings();
+      setBaseSettings(publicSettings);
+      syncSucceeded = true;
+    } catch {
+      const cached = readCachedPublicSettings();
+      setBaseSettings(cached);
+      publicSettings = cached;
     }
 
-    fetch(`${base}/api/hospital-admin/config`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (r) => {
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then((data) => {
-        const customization = data?.customization || null;
-        setHospitalCustomization(customization);
-      })
-      .catch(() => setHospitalCustomization(null));
-  }, [base]);
+    if (token && PRIVILEGED_ROLES.has(role)) {
+      try {
+        const privateSettings = await fetchPrivateSettings(token);
+        setBaseSettings(privateSettings || publicSettings || {});
+        syncSucceeded = true;
+      } catch {
+        setBaseSettings(publicSettings || {});
+      }
+    }
+
+    await fetchHospitalCustomization(token, role);
+    if (syncSucceeded) {
+      setLastSyncedAt(new Date().toISOString());
+    }
+  }, [fetchHospitalCustomization, fetchPrivateSettings, fetchPublicSettings]);
+
+  useEffect(() => {
+    refreshSettings();
+
+    const onFocus = () => {
+      refreshSettings().catch(() => {});
+    };
+    const onVisibility = () => {
+      if (!document.hidden) refreshSettings().catch(() => {});
+    };
+    const onStorage = (event) => {
+      if (event.key === SETTINGS_SYNC_KEY || event.key === PUBLIC_SETTINGS_CACHE_KEY) {
+        refreshSettings().catch(() => {});
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("storage", onStorage);
+
+    let channel = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel(SETTINGS_CHANNEL);
+      channel.onmessage = (event) => {
+        if (event?.data?.type === "SETTINGS_UPDATED") {
+          refreshSettings().catch(() => {});
+        }
+      };
+    }
+
+    const intervalId = window.setInterval(() => {
+      refreshSettings().catch(() => {});
+    }, 20000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("storage", onStorage);
+      window.clearInterval(intervalId);
+      channel?.close?.();
+    };
+  }, [refreshSettings]);
+
+  useEffect(() => {
+    const socketUrl =
+      import.meta.env.VITE_SOCKET_URL ||
+      import.meta.env.VITE_API_URL ||
+      window.location.origin;
+
+    const token = localStorage.getItem("token");
+    const socket = io(socketUrl, {
+      transports: ["websocket"],
+      autoConnect: true,
+      auth: token ? { token } : {},
+    });
+
+    socket.on("connect", () => {
+      setPushConnected(true);
+    });
+
+    socket.on("disconnect", () => {
+      setPushConnected(false);
+    });
+
+    socket.on("system-settings:updated", () => {
+      setSyncSource("push");
+      refreshSettings().catch(() => {});
+    });
+
+    socket.on("connect_error", () => {
+      setPushConnected(false);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("system-settings:updated");
+      socket.disconnect();
+      setPushConnected(false);
+    };
+  }, [refreshSettings]);
 
   const settings = useMemo(
     () => mergeSettings(baseSettings, hospitalCustomization),
@@ -148,30 +325,34 @@ export function SystemSettingsProvider({ children }) {
   );
 
   useEffect(() => {
-    if (!settings) return;
-    const branding = settings.branding || {};
-    if (branding.favicon) {
-      setFavicon(branding.favicon);
-    }
+    const branding = settings?.branding || {};
     const root = document.documentElement;
+
+    if (branding.favicon) setFavicon(branding.favicon);
     if (branding.logo) root.style.setProperty("--brand-logo", `url(${branding.logo})`);
+    else root.style.removeProperty("--brand-logo");
+
     if (branding.appIcon) root.style.setProperty("--brand-icon", `url(${branding.appIcon})`);
+    else root.style.removeProperty("--brand-icon");
+
     if (branding.loginBackground) root.style.setProperty("--login-bg", `url(${branding.loginBackground})`);
+    else root.style.removeProperty("--login-bg");
+
     if (branding.homeBackground) root.style.setProperty("--home-bg", `url(${branding.homeBackground})`);
+    else root.style.removeProperty("--home-bg");
+
     const connection = navigator?.connection || navigator?.mozConnection || navigator?.webkitConnection;
     const saveData = Boolean(connection?.saveData);
     const slowNetwork = /2g/.test(String(connection?.effectiveType || ""));
     const canWarmHeavyAssets = !saveData && !slowNetwork;
 
     preloadImage(branding.logo, { eager: true });
-    preloadImage(branding.appIcon, { eager: false });
+    preloadImage(branding.appIcon, { eager: true });
+    preloadImage(branding.loginBackground, { eager: true });
     if (canWarmHeavyAssets) {
-      const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 500));
-      schedule(() => {
-        preloadImage(branding.loginBackground, { eager: false });
-        preloadImage(branding.homeBackground, { eager: false });
-      });
+      preloadImage(branding.homeBackground, { eager: false });
     }
+
     if (settings?.hospitalCustomization?.theme?.primaryColor) {
       root.style.setProperty("--primary", settings.hospitalCustomization.theme.primaryColor);
     }
@@ -180,17 +361,25 @@ export function SystemSettingsProvider({ children }) {
     }
   }, [settings]);
 
-  const setSettings = (next) => {
-    setBaseSettings(next);
-  };
+  const setSettings = useCallback((next) => {
+    setBaseSettings(next || {});
+    writePublicCache(next || {});
+    setLastSyncedAt(new Date().toISOString());
+    setSyncSource("local");
+    broadcastSettingsUpdate();
+  }, [writePublicCache]);
 
   const value = useMemo(
     () => ({
       settings,
       setSettings,
+      refreshSettings,
       hospitalCustomization,
+      lastSyncedAt,
+      pushConnected,
+      syncSource,
     }),
-    [settings, hospitalCustomization]
+    [settings, setSettings, refreshSettings, hospitalCustomization, lastSyncedAt, pushConnected, syncSource]
   );
 
   return (
