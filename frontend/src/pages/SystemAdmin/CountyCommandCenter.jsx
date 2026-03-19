@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getCountyCommandCenterSummary } from "../../services/systemAdminApi";
@@ -16,6 +16,11 @@ export default function CountyCommandCenter() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [region, setRegion] = useState("");
+  const regionalSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async (selectedRegion = region) => {
     setLoading(true);
@@ -63,30 +68,33 @@ export default function CountyCommandCenter() {
       <section className="section">
         <h3>Group Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Regions" value={data?.summary?.totalRegions ?? 0} />
-          <StatCard title="Hospitals" value={data?.summary?.totalHospitals ?? 0} />
-          <StatCard title="Pending Approvals" value={data?.summary?.pendingApprovals ?? 0} />
-          <StatCard title="Appointments Today" value={data?.summary?.appointmentsToday ?? 0} />
-          <StatCard title="Regions At Risk" value={data?.summary?.regionsAtRisk ?? 0} />
+          <StatCard title="Regions" value={data?.summary?.totalRegions ?? 0} onClick={() => scrollToSection(regionalSectionRef)} />
+          <StatCard title="Hospitals" value={data?.summary?.totalHospitals ?? 0} onClick={() => navigate("/system-admin/government-hospital-registry")} />
+          <StatCard title="Pending Approvals" value={data?.summary?.pendingApprovals ?? 0} onClick={() => navigate("/hospital-admin/approvals")} />
+          <StatCard title="Appointments Today" value={data?.summary?.appointmentsToday ?? 0} onClick={() => scrollToSection(regionalSectionRef)} />
+          <StatCard title="Regions At Risk" value={data?.summary?.regionsAtRisk ?? 0} onClick={() => scrollToSection(regionalSectionRef)} />
           <StatCard
             title="Bed Occupancy"
             value={`${data?.summary?.bedState?.occupancyRate ?? 0}%`}
             subtitle={`${data?.summary?.bedState?.occupied ?? 0}/${data?.summary?.bedState?.total ?? 0} occupied`}
+            onClick={() => navigate("/admin/beds")}
           />
           <StatCard
             title="Low Stock"
             value={data?.summary?.stockRisk?.lowStockItems ?? 0}
             subtitle={`${data?.summary?.stockRisk?.criticalStockItems ?? 0} critical`}
+            onClick={() => scrollToSection(regionalSectionRef)}
           />
           <StatCard
             title="Open Outages"
             value={data?.summary?.outages?.open ?? 0}
             subtitle={`${data?.summary?.outages?.sev1 ?? 0} SEV1`}
+            onClick={() => navigate("/admin/offline-ops")}
           />
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={regionalSectionRef}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <h3>Regional Operations</h3>

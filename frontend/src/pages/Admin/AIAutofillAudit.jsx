@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { StatCard } from "../../components/Cards";
 import { listAiAdminLogs } from "../../services/aiAdminApi";
 import { useAuth } from "../../utils/auth";
 
@@ -34,6 +35,11 @@ export default function AIAutofillAudit() {
     hospitalKey: defaultHospitalKey,
     limit: 100,
   });
+  const logSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async (nextFilters = filters) => {
     setLoading(true);
@@ -115,6 +121,16 @@ export default function AIAutofillAudit() {
     });
   };
 
+  const applySummaryActions = (actions) => {
+    const nextFilters = {
+      ...filters,
+      actions,
+    };
+    setFilters(nextFilters);
+    load(nextFilters);
+    scrollToSection(logSectionRef);
+  };
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -135,30 +151,35 @@ export default function AIAutofillAudit() {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card stat">
-            <div className="card-title">Draft Events</div>
-            <div className="card-value">{stats.drafted}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Apply Events</div>
-            <div className="card-value">{stats.applied}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Hospitals</div>
-            <div className="card-value">{stats.hospitals}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Queued Fields</div>
-            <div className="card-value">{stats.queuedFields}</div>
-          </div>
-          <div className="card stat">
-            <div className="card-title">Applied Fields</div>
-            <div className="card-value">{stats.appliedFields}</div>
-          </div>
+          <StatCard
+            title="Draft Events"
+            value={stats.drafted}
+            onClick={() => applySummaryActions(["AI_ASSISTANT_AUTOFILL_DRAFTED"])}
+          />
+          <StatCard
+            title="Apply Events"
+            value={stats.applied}
+            onClick={() => applySummaryActions(["AI_ASSISTANT_AUTOFILL_APPLIED"])}
+          />
+          <StatCard
+            title="Hospitals"
+            value={stats.hospitals}
+            onClick={() => scrollToSection(logSectionRef)}
+          />
+          <StatCard
+            title="Queued Fields"
+            value={stats.queuedFields}
+            onClick={() => applySummaryActions(["AI_ASSISTANT_AUTOFILL_DRAFTED"])}
+          />
+          <StatCard
+            title="Applied Fields"
+            value={stats.appliedFields}
+            onClick={() => applySummaryActions(["AI_ASSISTANT_AUTOFILL_APPLIED"])}
+          />
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={logSectionRef}>
         <div className="card">
           <div className="ai-autofill-audit-filters">
             <label>

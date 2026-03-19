@@ -99,23 +99,23 @@ export default function DeveloperDashboard() {
       <section className="section">
         <h3>Queue Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Integration Waiting" value={data?.queues?.integration?.waiting ?? "—"} />
-          <StatCard title="DLQ Failed" value={data?.queues?.dlq?.failed ?? "—"} />
-          <StatCard title="Webhook Waiting" value={data?.queues?.webhook?.waiting ?? "—"} />
-          <StatCard title="Notification Waiting" value={data?.queues?.notifications?.waiting ?? "—"} />
-          <StatCard title="Workforce Pending" value={data?.queues?.workforce?.totalPending ?? "—"} />
-          <StatCard title="Workforce Breached" value={data?.queues?.workforce?.breached ?? "—"} />
+          <StatCard title="Integration Waiting" value={data?.queues?.integration?.waiting ?? "—"} onClick={() => navigate("/admin/realtime")} />
+          <StatCard title="DLQ Failed" value={data?.queues?.dlq?.failed ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
+          <StatCard title="Webhook Waiting" value={data?.queues?.webhook?.waiting ?? "—"} onClick={() => navigate("/developer/webhook-retry")} />
+          <StatCard title="Notification Waiting" value={data?.queues?.notifications?.waiting ?? "—"} onClick={() => navigate("/admin/realtime")} />
+          <StatCard title="Workforce Pending" value={data?.queues?.workforce?.totalPending ?? "—"} onClick={() => navigate("/developer/decision-cockpit")} />
+          <StatCard title="Workforce Breached" value={data?.queues?.workforce?.breached ?? "—"} onClick={() => navigate("/developer/decision-cockpit")} />
         </div>
       </section>
 
       <section className="section">
         <h3>Trust Foundation</h3>
         <div className="grid info-grid">
-          <StatCard title="Ledger Writes (24h)" value={trust?.ledgerWrites24h ?? "—"} />
-          <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} />
-          <StatCard title="Consent Denials (24h)" value={trust?.consentDenials24h ?? "—"} />
-          <StatCard title="Risk Step-Ups (24h)" value={trust?.highRiskStepUps24h ?? "—"} />
-          <StatCard title="Active Consents" value={trust?.activeConsents ?? "—"} />
+          <StatCard title="Ledger Writes (24h)" value={trust?.ledgerWrites24h ?? "—"} onClick={() => navigate("/developer/provenance-verify")} />
+          <StatCard title="Policy Denials (24h)" value={trust?.policyDenials24h ?? "—"} onClick={() => navigate("/developer/decision-cockpit")} />
+          <StatCard title="Consent Denials (24h)" value={trust?.consentDenials24h ?? "—"} onClick={() => navigate("/developer/provenance-verify")} />
+          <StatCard title="Risk Step-Ups (24h)" value={trust?.highRiskStepUps24h ?? "—"} onClick={() => navigate("/developer/decision-cockpit")} />
+          <StatCard title="Active Consents" value={trust?.activeConsents ?? "—"} onClick={() => navigate("/developer/provenance-verify")} />
         </div>
       </section>
 

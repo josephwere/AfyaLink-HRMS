@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getRegulatoryAutoReport } from "../../services/intelligenceApi";
 import { StatCard } from "../../components/Cards";
 
 export default function RegulatoryReports() {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,11 +44,11 @@ export default function RegulatoryReports() {
           <section className="section">
             <h3>Summary</h3>
             <div className="grid info-grid">
-              <StatCard title="Staff Total" value={data?.workforce?.staffTotal ?? "—"} />
-              <StatCard title="Inactive Staff" value={data?.workforce?.inactiveStaff ?? "—"} />
-              <StatCard title="Pending Approvals" value={data?.approvals?.total ?? "—"} />
-              <StatCard title="Export Events (30d)" value={data?.compliance?.exportEvents ?? "—"} />
-              <StatCard title="ABAC Denials (30d)" value={data?.compliance?.abacDeniedEvents ?? "—"} />
+              <StatCard title="Staff Total" value={data?.workforce?.staffTotal ?? "—"} onClick={() => navigate("/admin/access-control")} />
+              <StatCard title="Inactive Staff" value={data?.workforce?.inactiveStaff ?? "—"} onClick={() => navigate("/admin/access-control")} />
+              <StatCard title="Pending Approvals" value={data?.approvals?.total ?? "—"} onClick={() => navigate("/hospital-admin/approvals")} />
+              <StatCard title="Export Events (30d)" value={data?.compliance?.exportEvents ?? "—"} onClick={() => navigate("/admin/audit-logs?q=export")} />
+              <StatCard title="ABAC Denials (30d)" value={data?.compliance?.abacDeniedEvents ?? "—"} onClick={() => navigate("/admin/audit-logs?q=abac")} />
             </div>
           </section>
 
@@ -73,4 +75,3 @@ export default function RegulatoryReports() {
     </div>
   );
 }
-

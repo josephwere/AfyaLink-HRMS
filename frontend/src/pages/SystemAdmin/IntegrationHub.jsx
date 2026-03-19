@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getIntegrationHubSummary } from "../../services/systemAdminApi";
@@ -16,6 +16,12 @@ export default function IntegrationHub() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const prioritySectionRef = useRef(null);
+  const inventorySectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -74,15 +80,15 @@ export default function IntegrationHub() {
       <section className="section">
         <h3>Coverage Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Total Connectors" value={data?.totals?.totalConnectors ?? 0} />
-          <StatCard title="Ready Modules" value={data?.totals?.readyModules ?? 0} />
-          <StatCard title="At Risk" value={data?.totals?.atRiskModules ?? 0} />
-          <StatCard title="Degraded" value={data?.totals?.degradedModules ?? 0} />
-          <StatCard title="Missing" value={data?.totals?.missingModules ?? 0} />
+          <StatCard title="Total Connectors" value={data?.totals?.totalConnectors ?? 0} onClick={() => scrollToSection(inventorySectionRef)} />
+          <StatCard title="Ready Modules" value={data?.totals?.readyModules ?? 0} onClick={() => scrollToSection(prioritySectionRef)} />
+          <StatCard title="At Risk" value={data?.totals?.atRiskModules ?? 0} onClick={() => scrollToSection(prioritySectionRef)} />
+          <StatCard title="Degraded" value={data?.totals?.degradedModules ?? 0} onClick={() => scrollToSection(prioritySectionRef)} />
+          <StatCard title="Missing" value={data?.totals?.missingModules ?? 0} onClick={() => navigate("/system-admin/integration-control-plane")} />
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={prioritySectionRef}>
         <div className="card doctor-schedule-card">
           <h3>Priority Integrations</h3>
           <div className="table-wrap">
@@ -134,7 +140,7 @@ export default function IntegrationHub() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={inventorySectionRef}>
         <h3>Connector Inventory</h3>
         <div className="card">
           <div className="table-wrap">

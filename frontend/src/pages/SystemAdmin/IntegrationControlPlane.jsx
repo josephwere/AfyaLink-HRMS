@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import EyeIcon from "../../components/EyeIcon";
@@ -51,6 +51,12 @@ export default function IntegrationControlPlane() {
   const [showOnHover, setShowOnHover] = useState(false);
   const [govSaving, setGovSaving] = useState(false);
   const [govMessage, setGovMessage] = useState("");
+  const modulesSectionRef = useRef(null);
+  const credentialsSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -166,16 +172,16 @@ export default function IntegrationControlPlane() {
       <section className="section">
         <h3>Rollout Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Hospitals With Payments" value={data?.summary?.paymentEnabledHospitals ?? 0} />
-          <StatCard title="SHA Coverage" value={data?.summary?.shaCoverageHospitals ?? 0} />
-          <StatCard title="M-PESA Coverage" value={data?.summary?.mpesaCoverageHospitals ?? 0} />
-          <StatCard title="Overdue Invoices" value={data?.summary?.overdueInvoices ?? 0} />
-          <StatCard title="Transactions 30d" value={data?.summary?.totalTransactions30d ?? 0} />
-          <StatCard title="Succeeded 30d" value={data?.summary?.succeededTransactions30d ?? 0} />
+          <StatCard title="Hospitals With Payments" value={data?.summary?.paymentEnabledHospitals ?? 0} onClick={() => navigate("/admin/payment-settings")} />
+          <StatCard title="SHA Coverage" value={data?.summary?.shaCoverageHospitals ?? 0} onClick={() => scrollToSection(credentialsSectionRef)} />
+          <StatCard title="M-PESA Coverage" value={data?.summary?.mpesaCoverageHospitals ?? 0} onClick={() => navigate("/admin/payment-settings")} />
+          <StatCard title="Overdue Invoices" value={data?.summary?.overdueInvoices ?? 0} onClick={() => navigate("/payments/full")} />
+          <StatCard title="Transactions 30d" value={data?.summary?.totalTransactions30d ?? 0} onClick={() => scrollToSection(modulesSectionRef)} />
+          <StatCard title="Succeeded 30d" value={data?.summary?.succeededTransactions30d ?? 0} onClick={() => scrollToSection(modulesSectionRef)} />
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={modulesSectionRef}>
         <div className="card doctor-schedule-card">
           <h3>Control Plane Modules</h3>
           <div className="table-wrap">
@@ -267,7 +273,7 @@ export default function IntegrationControlPlane() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={credentialsSectionRef}>
         <h3>Government API Credentials</h3>
         <div className="card form">
           <p className="muted">Update SHA and eTIMS API endpoints and tokens from the UI. Changes take effect immediately.</p>
