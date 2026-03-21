@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import {
@@ -67,6 +67,11 @@ export default function TransferCommandCenter() {
     scopes: DEFAULT_SCOPES,
     expiresInDays: 30,
   });
+  const queueSectionRef = useRef(null);
+
+  const focusQueue = () => {
+    queueSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -169,6 +174,34 @@ export default function TransferCommandCenter() {
     () => items.find((row) => String(row._id) === String(selectedId)) || null,
     [items, selectedId]
   );
+
+  const openSummaryView = (kind) => {
+    if (kind === "all") {
+      setStatus("");
+      focusQueue();
+      return;
+    }
+    if (kind === "pending") {
+      setStatus("Pending");
+      focusQueue();
+      return;
+    }
+    if (kind === "approved") {
+      setStatus("Approved");
+      focusQueue();
+      return;
+    }
+    setStatus("");
+    const matcher =
+      kind === "consent"
+        ? (row) => String(row?.consentStatus || "").toLowerCase().includes("pending")
+        : kind === "overdue"
+        ? (row) => Boolean(row?.overdue)
+        : (row) => Number(row?.handoverCompletionScore || 0) < 70 || Number(row?.handoverMissingCount || 0) > 0;
+    const match = items.find(matcher);
+    if (match?._id) setSelectedId(String(match._id));
+    focusQueue();
+  };
 
   const resetActionState = () => {
     setActionMsg("");
@@ -322,12 +355,12 @@ export default function TransferCommandCenter() {
 
       <section className="section">
         <div className="grid info-grid">
-          <StatCard title="Transfers" value={data?.summary?.total ?? 0} />
-          <StatCard title="Pending" value={data?.summary?.pending ?? 0} />
-          <StatCard title="Approved" value={data?.summary?.approved ?? 0} />
-          <StatCard title="Consent Pending" value={data?.summary?.consentPending ?? 0} />
-          <StatCard title="Overdue" value={data?.summary?.overdue ?? 0} />
-          <StatCard title="Low Continuity" value={data?.summary?.lowContinuity ?? 0} />
+          <StatCard title="Transfers" value={data?.summary?.total ?? 0} onClick={() => openSummaryView("all")} />
+          <StatCard title="Pending" value={data?.summary?.pending ?? 0} onClick={() => openSummaryView("pending")} />
+          <StatCard title="Approved" value={data?.summary?.approved ?? 0} onClick={() => openSummaryView("approved")} />
+          <StatCard title="Consent Pending" value={data?.summary?.consentPending ?? 0} onClick={() => openSummaryView("consent")} />
+          <StatCard title="Overdue" value={data?.summary?.overdue ?? 0} onClick={() => openSummaryView("overdue")} />
+          <StatCard title="Low Continuity" value={data?.summary?.lowContinuity ?? 0} onClick={() => openSummaryView("continuity")} />
         </div>
       </section>
 
@@ -438,7 +471,7 @@ export default function TransferCommandCenter() {
         </section>
       ) : null}
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={queueSectionRef}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <h3>Transfer Queue</h3>

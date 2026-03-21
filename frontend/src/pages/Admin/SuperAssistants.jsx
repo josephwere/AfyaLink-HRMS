@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import {
@@ -107,6 +107,7 @@ export default function SuperAssistants() {
     active: true,
     status: "ACTIVE",
   });
+  const tableSectionRef = useRef(null);
 
   const load = React.useCallback(
     async (nextFilters = filters, preferredId = "") => {
@@ -298,6 +299,52 @@ export default function SuperAssistants() {
 
   const allVisibleSelected = items.length > 0 && items.every((row) => selectedRows[String(row._id)]);
 
+  const focusManagementTable = () => {
+    tableSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const applySummaryView = (kind) => {
+    if (kind === "total") {
+      const reset = { q: "", active: "", authProvider: "", status: "", limit: 100 };
+      setDraftFilters(reset);
+      setFilters(reset);
+      focusManagementTable();
+      return;
+    }
+    if (kind === "active") {
+      const next = { ...draftFilters, active: "true" };
+      setDraftFilters(next);
+      setFilters(next);
+      focusManagementTable();
+      return;
+    }
+    if (kind === "disabled") {
+      const next = { ...draftFilters, active: "false" };
+      setDraftFilters(next);
+      setFilters(next);
+      focusManagementTable();
+      return;
+    }
+
+    const matcher =
+      kind === "activeToday"
+        ? (row) => row?.activityMetrics?.bucket === "ACTIVE_TODAY"
+        : kind === "active7d"
+        ? (row) => ["ACTIVE_TODAY", "ACTIVE_7D"].includes(row?.activityMetrics?.bucket)
+        : kind === "never"
+        ? (row) => row?.activityMetrics?.bucket === "NEVER_LOGGED_IN"
+        : (row) => Boolean(row?.resetPasswordRequestedAt);
+
+    const match = items.find(matcher);
+    if (match?._id) {
+      setSelectedId(String(match._id));
+      focusManagementTable();
+      return;
+    }
+    setMsg("No assistants in this category for the current result set.");
+    focusManagementTable();
+  };
+
   if (!canManage) {
     return <p>🚫 Access denied</p>;
   }
@@ -325,13 +372,13 @@ export default function SuperAssistants() {
 
       <section className="section">
         <div className="grid info-grid">
-          <StatCard title="Total Assistants" value={summary.total} subtitle="Current filtered result set" />
-          <StatCard title="Active Access" value={summary.active} subtitle="Accounts currently enabled" />
-          <StatCard title="Disabled" value={summary.disabled} subtitle="Temporarily blocked accounts" />
-          <StatCard title="Active Today" value={summary.activeToday} subtitle="Touched the workspace today" />
-          <StatCard title="Active 7 Days" value={summary.active7d} subtitle="Recent operating activity" />
-          <StatCard title="Never Logged In" value={summary.neverLoggedIn} subtitle="Best candidates for invite links" />
-          <StatCard title="Pending Reset Links" value={summary.pendingResets} subtitle="Password/reset requests already issued" />
+          <StatCard title="Total Assistants" value={summary.total} subtitle="Current filtered result set" onClick={() => applySummaryView("total")} />
+          <StatCard title="Active Access" value={summary.active} subtitle="Accounts currently enabled" onClick={() => applySummaryView("active")} />
+          <StatCard title="Disabled" value={summary.disabled} subtitle="Temporarily blocked accounts" onClick={() => applySummaryView("disabled")} />
+          <StatCard title="Active Today" value={summary.activeToday} subtitle="Touched the workspace today" onClick={() => applySummaryView("activeToday")} />
+          <StatCard title="Active 7 Days" value={summary.active7d} subtitle="Recent operating activity" onClick={() => applySummaryView("active7d")} />
+          <StatCard title="Never Logged In" value={summary.neverLoggedIn} subtitle="Best candidates for invite links" onClick={() => applySummaryView("never")} />
+          <StatCard title="Pending Reset Links" value={summary.pendingResets} subtitle="Password/reset requests already issued" onClick={() => applySummaryView("pendingResets")} />
         </div>
       </section>
 
@@ -465,6 +512,7 @@ export default function SuperAssistants() {
 
       <section
         className="section"
+        ref={tableSectionRef}
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16 }}
       >
         <div className="card">
@@ -648,21 +696,73 @@ export default function SuperAssistants() {
               </div>
 
               <div className="grid info-grid" style={{ marginTop: 12 }}>
-                <div className="card stat">
+                <div
+                  className="card stat stat-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    applySummaryView(
+                      selected?.activityMetrics?.bucket === "ACTIVE_TODAY"
+                        ? "activeToday"
+                        : selected?.activityMetrics?.bucket === "ACTIVE_7D"
+                        ? "active7d"
+                        : selected?.activityMetrics?.bucket === "NEVER_LOGGED_IN"
+                        ? "never"
+                        : "total"
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      applySummaryView(
+                        selected?.activityMetrics?.bucket === "ACTIVE_TODAY"
+                          ? "activeToday"
+                          : selected?.activityMetrics?.bucket === "ACTIVE_7D"
+                          ? "active7d"
+                          : selected?.activityMetrics?.bucket === "NEVER_LOGGED_IN"
+                          ? "never"
+                          : "total"
+                      );
+                    }
+                  }}
+                >
                   <div className="card-title">Activity State</div>
                   <div className="card-value" style={{ fontSize: 18 }}>{formatBucket(selected?.activityMetrics?.bucket)}</div>
                 </div>
-                <div className="card stat">
+                <div
+                  className="card stat stat-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={focusManagementTable}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") focusManagementTable();
+                  }}
+                >
                   <div className="card-title">Trusted Devices</div>
                   <div className="card-value">{selected?.activityMetrics?.trustedDeviceCount ?? 0}</div>
                 </div>
-                <div className="card stat">
+                <div
+                  className="card stat stat-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={focusManagementTable}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") focusManagementTable();
+                  }}
+                >
                   <div className="card-title">Idle Days</div>
                   <div className="card-value">
                     {selected?.activityMetrics?.daysSinceLastLogin ?? "—"}
                   </div>
                 </div>
-                <div className="card stat">
+                <div
+                  className="card stat stat-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={focusManagementTable}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") focusManagementTable();
+                  }}
+                >
                   <div className="card-title">Account Age</div>
                   <div className="card-value">{selected?.activityMetrics?.accountAgeDays ?? 0}d</div>
                 </div>

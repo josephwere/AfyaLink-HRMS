@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 
 const PAGE_SIZE = 20;
@@ -63,6 +64,7 @@ export default function MachineAlerts() {
   const [manifestData, setManifestData] = useState(null);
   const [manifestVerifyLoading, setManifestVerifyLoading] = useState(false);
   const [manifestVerifyResult, setManifestVerifyResult] = useState(null);
+  const alertsSectionRef = useRef(null);
 
   const load = useCallback(
     async (nextPage = page) => {
@@ -379,6 +381,36 @@ export default function MachineAlerts() {
     return { unread, high, escalated };
   }, [items]);
 
+  const focusAlerts = () => {
+    alertsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const openOverview = (kind) => {
+    if (kind === "unread") {
+      setFilters((prev) => ({ ...prev, read: "UNREAD" }));
+      focusAlerts();
+      return;
+    }
+    if (kind === "high") {
+      setFilters((prev) => ({ ...prev, severity: "HIGH" }));
+      focusAlerts();
+      return;
+    }
+    if (kind === "all") {
+      setFilters({ read: "ALL", severity: "ALL" });
+      focusAlerts();
+      return;
+    }
+    const escalated = items.find((row) => Boolean(row?.meta?.escalated));
+    if (escalated?._id) {
+      openTimeline(escalated._id);
+      focusAlerts();
+      return;
+    }
+    setMsg("No escalated alerts are available on the current page.");
+    focusAlerts();
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
@@ -416,15 +448,17 @@ export default function MachineAlerts() {
       <section className="section">
         <h3>Overview</h3>
         <div className="grid info-grid">
-          <div className={`card stat stat-${severityClass("HIGH")}`}>
-            <div className="card-title">Unread on current page</div>
-            <div className="card-value">{stats.unread}</div>
-          </div>
-          <div className={`card stat stat-${severityClass("HIGH")}`}>
-            <div className="card-title">High severity</div>
-            <div className="card-value">{stats.high}</div>
-          </div>
-          <div className="card stat stat-warn">
+          <StatCard title="Unread on current page" value={stats.unread} status={severityClass("HIGH")} onClick={() => openOverview("unread")} />
+          <StatCard title="High severity" value={stats.high} status={severityClass("HIGH")} onClick={() => openOverview("high")} />
+          <div
+            className="card stat stat-warn stat-clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => openOverview("escalated")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") openOverview("escalated");
+            }}
+          >
             <div className="card-title">Escalated</div>
             <div className="card-value">{stats.escalated}</div>
             <div className="card-sub">
@@ -438,14 +472,11 @@ export default function MachineAlerts() {
               Reason required on high severity: {autoEscalation.requireReasonForHighSeverityActions ? "Yes" : "No"}
             </div>
           </div>
-          <div className="card stat">
-            <div className="card-title">Total matched</div>
-            <div className="card-value">{total}</div>
-          </div>
+          <StatCard title="Total matched" value={total} onClick={() => openOverview("all")} />
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" ref={alertsSectionRef}>
         <h3>Escalation Policy</h3>
         <form className="card form" onSubmit={savePolicy}>
           <div className="form-grid cols-3">

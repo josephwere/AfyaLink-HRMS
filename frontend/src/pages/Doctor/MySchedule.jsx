@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import ConsultationRoom from "../../components/ConsultationRoom";
 
 export default function MySchedule() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [calls, setCalls] = useState([]);
   const [availability, setAvailability] = useState([]);
@@ -11,6 +13,8 @@ export default function MySchedule() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
+  const appointmentsSectionRef = useRef(null);
+  const callsSectionRef = useRef(null);
 
   const fetchEncounterSnapshots = async (appointmentRows) => {
     const patientIds = [...new Set(
@@ -90,6 +94,10 @@ export default function MySchedule() {
     () => availability.find((row) => Number(row.dayOfWeek) === new Date().getDay()) || null,
     [availability]
   );
+
+  const focusSection = (ref) => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const closeoutLabel = (encounter) => {
     if (!encounter?._id) return "No visit";
@@ -184,19 +192,65 @@ export default function MySchedule() {
       <section className="section">
         <h3>Today</h3>
         <div className="grid info-grid">
-          <div className="card stat">
+          <div
+            className="card stat stat-clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => focusSection(appointmentsSectionRef)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") focusSection(appointmentsSectionRef);
+            }}
+          >
             <div className="card-title">Appointments</div>
             <div className="card-value">{todayAppointments.length}</div>
           </div>
-          <div className="card stat">
+          <div
+            className="card stat stat-clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => focusSection(callsSectionRef)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") focusSection(callsSectionRef);
+            }}
+          >
             <div className="card-title">Requested Calls</div>
             <div className="card-value">{calls.filter((c) => c.status === "REQUESTED").length}</div>
           </div>
-          <div className="card stat">
+          <div
+            className="card stat stat-clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              const openCall = calls.find((call) => call.status === "ACTIVE");
+              if (openCall) {
+                setActiveCall(openCall);
+                return;
+              }
+              focusSection(callsSectionRef);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                const openCall = calls.find((call) => call.status === "ACTIVE");
+                if (openCall) {
+                  setActiveCall(openCall);
+                  return;
+                }
+                focusSection(callsSectionRef);
+              }
+            }}
+          >
             <div className="card-title">Active Calls</div>
             <div className="card-value">{calls.filter((c) => c.status === "ACTIVE").length}</div>
           </div>
-          <div className="card stat">
+          <div
+            className="card stat stat-clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/doctor/settings")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") navigate("/doctor/settings");
+            }}
+          >
             <div className="card-title">Clinic Status</div>
             <div className="card-value">
               {todayAvailability?.consultationAvailable === false
@@ -209,7 +263,7 @@ export default function MySchedule() {
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section doctor-main-grid" ref={appointmentsSectionRef}>
         <div className="card doctor-schedule-card">
           <h3>Today’s Appointments</h3>
           <div className="table-wrap">
@@ -286,7 +340,7 @@ export default function MySchedule() {
           </div>
         </div>
 
-        <div className="card doctor-alerts-card">
+        <div className="card doctor-alerts-card" ref={callsSectionRef}>
           <h3>Consultation Inbox</h3>
           <div className="alert-stack">
             {calls.map((call) => (

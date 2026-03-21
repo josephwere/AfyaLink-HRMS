@@ -395,6 +395,7 @@ export default function SystemAdminDashboard() {
             status={gapStatus(ai?.forecast?.forecast?.doctorGap)}
             badge={badgeFromStatus(gapStatus(ai?.forecast?.forecast?.doctorGap))}
             why={`Gap is ${ai?.forecast?.forecast?.doctorGap ?? 0}; >5 means critical staffing risk.`}
+            onClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
           />
           <StatCard
@@ -405,6 +406,7 @@ export default function SystemAdminDashboard() {
             status={gapStatus(ai?.forecast?.forecast?.nurseGap)}
             badge={badgeFromStatus(gapStatus(ai?.forecast?.forecast?.nurseGap))}
             why={`Gap is ${ai?.forecast?.forecast?.nurseGap ?? 0}; >5 means critical staffing risk.`}
+            onClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
           />
           <StatCard
@@ -433,6 +435,7 @@ export default function SystemAdminDashboard() {
               )
             )}
             why={`Units with unmet demand are flagged. 2+ under-capacity units are critical.`}
+            onClick={() => navigate("/system-admin/clinical-intelligence#digital-twin")}
             onBadgeClick={() => navigate("/system-admin/clinical-intelligence#digital-twin")}
           />
           <StatCard
@@ -443,6 +446,7 @@ export default function SystemAdminDashboard() {
             status={countStatus(ai?.twin?.twin?.pendingRequests?.shifts, 5, 15)}
             badge={badgeFromStatus(countStatus(ai?.twin?.twin?.pendingRequests?.shifts, 5, 15))}
             why={`Pending shift requests above 15 indicate strong scheduling pressure.`}
+            onClick={() => navigate("/hospital-admin/approvals?kind=SHIFT&view=all")}
             onBadgeClick={() => navigate("/hospital-admin/approvals?kind=SHIFT&view=all")}
           />
         </div>

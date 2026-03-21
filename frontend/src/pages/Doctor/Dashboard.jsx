@@ -239,6 +239,7 @@ export default function Dashboard() {
             status={burnoutStatus(burnout?.score)}
             badge={badgeFromStatus(burnoutStatus(burnout?.score))}
             why={`Score ${burnout?.score ?? 0}; keep below 45 to remain in low-risk band.`}
+            onClick={() => navigate("/doctor/leave")}
             onBadgeClick={() => navigate("/doctor/leave")}
           />
           <StatCard title="Risk Band" value={burnout?.band ?? "—"} onClick={() => navigate("/doctor/leave")} />
@@ -360,9 +361,9 @@ export default function Dashboard() {
           </div>
           {transferError ? <div className="muted">{transferError}</div> : null}
           <div className="grid info-grid" style={{ marginTop: 12 }}>
-            <StatCard title="Total" value={transferStats.total || "—"} />
-            <StatCard title="Approved" value={transferStats.approved || 0} />
-            <StatCard title="Completed" value={transferStats.completed || 0} />
+            <StatCard title="Total" value={transferStats.total || "—"} onClick={() => navigate("/doctor/transfers")} />
+            <StatCard title="Approved" value={transferStats.approved || 0} onClick={() => navigate("/doctor/transfers")} />
+            <StatCard title="Completed" value={transferStats.completed || 0} onClick={() => navigate("/doctor/transfers")} />
           </div>
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">

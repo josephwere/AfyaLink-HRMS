@@ -228,6 +228,7 @@ export default function Dashboard() {
             status={gapStatus(forecast?.forecast?.doctorGap)}
             badge={badgeFromStatus(gapStatus(forecast?.forecast?.doctorGap))}
             why={`Gap ${forecast?.forecast?.doctorGap ?? 0}; >3 requires urgent staffing intervention.`}
+            onClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
           />
           <StatCard
@@ -238,6 +239,7 @@ export default function Dashboard() {
             status={gapStatus(forecast?.forecast?.nurseGap)}
             badge={badgeFromStatus(gapStatus(forecast?.forecast?.nurseGap))}
             why={`Gap ${forecast?.forecast?.nurseGap ?? 0}; >3 requires urgent staffing intervention.`}
+            onClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
           />
         </div>

@@ -296,9 +296,10 @@ export default function HRManagerDashboard() {
             status={burnoutStatus(burnout?.score)}
             badge={badgeFromStatus(burnoutStatus(burnout?.score))}
             why={`Burnout score ${burnout?.score ?? 0}; >=75 high risk, 45-74 medium.`}
+            onClick={() => navigate("/workforce/requests?status=PENDING")}
             onBadgeClick={() => navigate("/workforce/requests?status=PENDING")}
           />
-          <StatCard title="Burnout Band" value={burnout?.band ?? "—"} />
+          <StatCard title="Burnout Band" value={burnout?.band ?? "—"} onClick={() => navigate("/workforce/requests?status=PENDING")} />
           <StatCard
             title="Projected KPI"
             value={causal?.projected ?? "—"}
@@ -307,6 +308,7 @@ export default function HRManagerDashboard() {
             status={changeStatus(causal?.changePct)}
             badge={badgeFromStatus(changeStatus(causal?.changePct))}
             why={`Projected KPI is ${causal?.projected ?? 0}; negative expected change means risk.`}
+            onClick={() => navigate("/hospital-admin/register-staff")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff")}
           />
           <StatCard
@@ -317,6 +319,7 @@ export default function HRManagerDashboard() {
             status={changeStatus(causal?.changePct)}
             badge={badgeFromStatus(changeStatus(causal?.changePct))}
             why={`Change ${causal?.changePct ?? 0}%; <0 is risk, 0-3 is watch.`}
+            onClick={() => navigate("/hospital-admin/register-staff")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff")}
           />
         </div>
