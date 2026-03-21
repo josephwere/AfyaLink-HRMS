@@ -1,14 +1,24 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/assets/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
+      "source": "/api/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/healthz",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/healthz"
+    },
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/socket.io/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

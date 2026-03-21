@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 const SystemSettingsContext = createContext(null);
@@ -7,7 +7,34 @@ const PUBLIC_SETTINGS_CACHE_KEY = "afyalink_public_settings";
 const BRANDING_CACHE_KEY = "afyalink_public_branding";
 const SETTINGS_SYNC_KEY = "afyalink_system_settings_version";
 const SETTINGS_CHANNEL = "afyalink-system-settings";
+const PUBLIC_SETTINGS_BASE_KEY = "afyalink_public_settings_base";
 const PRIVILEGED_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
+
+function isLocalHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function joinUrl(base, path) {
+  const safeBase = String(base || "").replace(/\/+$/, "");
+  const safePath = String(path || "").startsWith("/") ? path : `/${path}`;
+  return `${safeBase}${safePath}`;
+}
+
+function readStoredPublicSettingsBase() {
+  try {
+    return localStorage.getItem(PUBLIC_SETTINGS_BASE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredPublicSettingsBase(base) {
+  try {
+    if (base) localStorage.setItem(PUBLIC_SETTINGS_BASE_KEY, base);
+  } catch {
+    // ignore storage issues
+  }
+}
 
 function setFavicon(href) {
   if (!href) return;
@@ -112,12 +139,16 @@ function broadcastSettingsUpdate() {
 }
 
 export function SystemSettingsProvider({ children }) {
+  const refreshInFlightRef = useRef(null);
   const [baseSettings, setBaseSettings] = useState(() => readCachedPublicSettings());
   const [hospitalCustomization, setHospitalCustomization] = useState(null);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [pushConnected, setPushConnected] = useState(false);
   const [syncSource, setSyncSource] = useState("bootstrap");
-  const base = import.meta.env.VITE_API_URL || "";
+  const configuredBase = import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "";
+  const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
+  const isHostedFrontend = typeof window !== "undefined" && !isLocalHost(runtimeHost);
 
   const mergeSettings = (globalSettings, customization) => {
     const global = globalSettings || {};
@@ -145,25 +176,63 @@ export function SystemSettingsProvider({ children }) {
     }
   }, []);
 
-  const fetchPublicSettings = useCallback(async () => {
-    const response = await fetch(`${base}/api/system-settings/public`, {
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-cache",
-      },
-    });
-    if (!response.ok) {
-      throw new Error("public branding unavailable");
+  const getPublicSettingsBases = useCallback(() => {
+    const localBackend =
+      typeof window !== "undefined" && isLocalHost(runtimeHost)
+        ? `${window.location.protocol}//${runtimeHost}:5000`
+        : "";
+    const storedBase = readStoredPublicSettingsBase();
+    const candidates = [];
+    if (storedBase) candidates.push(storedBase);
+    if (isHostedFrontend && runtimeOrigin) candidates.push(runtimeOrigin);
+    if (configuredBase) candidates.push(configuredBase);
+    if (!isHostedFrontend && localBackend) candidates.push(localBackend);
+    if (runtimeOrigin) candidates.push(runtimeOrigin);
+    return [...new Set(candidates.filter(Boolean))];
+  }, [configuredBase, isHostedFrontend, runtimeHost, runtimeOrigin]);
+
+  const fetchJsonWithTimeout = useCallback(async (url, options = {}, timeoutMs = 12000) => {
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+    } finally {
+      globalThis.clearTimeout(timeoutId);
     }
-    const data = await response.json();
-    const normalized = normalizePublicSettings(data);
-    writePublicCache(normalized);
-    return normalized;
-  }, [base, writePublicCache]);
+  }, []);
+
+  const fetchPublicSettings = useCallback(async () => {
+    let lastError = null;
+    for (const candidateBase of getPublicSettingsBases()) {
+      try {
+        const response = await fetchJsonWithTimeout(joinUrl(candidateBase, "/api/system-settings/public"), {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+          },
+        });
+        const contentType = String(response.headers.get("content-type") || "");
+        if (!response.ok || !contentType.includes("application/json")) {
+          throw new Error("public branding unavailable");
+        }
+        const data = await response.json();
+        const normalized = normalizePublicSettings(data);
+        writePublicCache(normalized);
+        writeStoredPublicSettingsBase(candidateBase);
+        return normalized;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("public branding unavailable");
+  }, [fetchJsonWithTimeout, getPublicSettingsBases, writePublicCache]);
 
   const fetchPrivateSettings = useCallback(async (token) => {
-    const response = await fetch(`${base}/api/system-settings`, {
+    const response = await fetch(joinUrl(configuredBase || runtimeOrigin, "/api/system-settings"), {
       cache: "no-store",
       headers: {
         Accept: "application/json",
@@ -175,7 +244,7 @@ export function SystemSettingsProvider({ children }) {
       throw new Error("private settings unavailable");
     }
     return response.json();
-  }, [base]);
+  }, [configuredBase, runtimeOrigin]);
 
   const fetchHospitalCustomization = useCallback(async (token, role) => {
     if (!token || role !== "HOSPITAL_ADMIN") {
@@ -183,7 +252,7 @@ export function SystemSettingsProvider({ children }) {
       return null;
     }
     try {
-      const response = await fetch(`${base}/api/hospital-admin/config`, {
+      const response = await fetch(joinUrl(configuredBase || runtimeOrigin, "/api/hospital-admin/config"), {
         cache: "no-store",
         headers: {
           Accept: "application/json",
@@ -203,37 +272,45 @@ export function SystemSettingsProvider({ children }) {
       setHospitalCustomization(null);
       return null;
     }
-  }, [base]);
+  }, [configuredBase, runtimeOrigin]);
 
   const refreshSettings = useCallback(async () => {
-    const token = localStorage.getItem("token");
-    const role = getStoredRole();
-    let syncSucceeded = false;
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+    refreshInFlightRef.current = (async () => {
+      const token = localStorage.getItem("token");
+      const role = getStoredRole();
+      let syncSucceeded = false;
 
-    let publicSettings = null;
-    try {
-      publicSettings = await fetchPublicSettings();
-      setBaseSettings(publicSettings);
-      syncSucceeded = true;
-    } catch {
-      const cached = readCachedPublicSettings();
-      setBaseSettings(cached);
-      publicSettings = cached;
-    }
-
-    if (token && PRIVILEGED_ROLES.has(role)) {
+      let publicSettings = null;
       try {
-        const privateSettings = await fetchPrivateSettings(token);
-        setBaseSettings(privateSettings || publicSettings || {});
+        publicSettings = await fetchPublicSettings();
+        setBaseSettings(publicSettings);
         syncSucceeded = true;
       } catch {
-        setBaseSettings(publicSettings || {});
+        const cached = readCachedPublicSettings();
+        setBaseSettings(cached);
+        publicSettings = cached;
       }
-    }
 
-    await fetchHospitalCustomization(token, role);
-    if (syncSucceeded) {
-      setLastSyncedAt(new Date().toISOString());
+      if (token && PRIVILEGED_ROLES.has(role)) {
+        try {
+          const privateSettings = await fetchPrivateSettings(token);
+          setBaseSettings(privateSettings || publicSettings || {});
+          syncSucceeded = true;
+        } catch {
+          setBaseSettings(publicSettings || {});
+        }
+      }
+
+      await fetchHospitalCustomization(token, role);
+      if (syncSucceeded) {
+        setLastSyncedAt(new Date().toISOString());
+      }
+    })();
+    try {
+      return await refreshInFlightRef.current;
+    } finally {
+      refreshInFlightRef.current = null;
     }
   }, [fetchHospitalCustomization, fetchPrivateSettings, fetchPublicSettings]);
 
@@ -282,6 +359,7 @@ export function SystemSettingsProvider({ children }) {
   useEffect(() => {
     const socketUrl =
       import.meta.env.VITE_SOCKET_URL ||
+      (isHostedFrontend ? runtimeOrigin : "") ||
       import.meta.env.VITE_API_URL ||
       window.location.origin;
 
