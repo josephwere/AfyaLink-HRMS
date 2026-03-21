@@ -47,6 +47,15 @@ export default function StaffDashboard() {
       ? ["Session Schedule", "Patient Notes", "Treatment Plans", "Progress Tracking", "Follow-up Planner"]
       : ["Appointment Scheduling", "Patient Check-In", "Billing Initiation", "Queue Management", "Visitor Log"];
 
+  const roleWorkspacePath =
+    role === "RADIOLOGIST"
+      ? "/ops/imaging"
+      : role === "THERAPIST"
+      ? "/doctor/appointments"
+      : role === "RECEPTIONIST"
+      ? "/receptionist/booking-desk"
+      : "/workforce/requests";
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -63,10 +72,10 @@ export default function StaffDashboard() {
       <section className="section">
         <h3>Daily Summary</h3>
         <div className="grid info-grid">
-          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} />
-          <StatCard title="Hospital Pending Requests" value={data?.hospitalPendingRequests ?? "—"} />
-          <StatCard title="Unread Notifications" value={data?.notificationsUnread ?? "—"} />
-          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} />
+          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
+          <StatCard title="Hospital Pending Requests" value={data?.hospitalPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
+          <StatCard title="Unread Notifications" value={data?.notificationsUnread ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} onClick={() => navigate(roleWorkspacePath)} />
         </div>
       </section>
 

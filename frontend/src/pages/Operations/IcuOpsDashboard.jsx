@@ -40,10 +40,10 @@ export default function IcuOpsDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Active Inpatients" value={data?.activeInpatients ?? "—"} />
-          <StatCard title="Admissions Today" value={data?.admissionsToday ?? "—"} />
-          <StatCard title="High-Risk Followups" value={data?.highRiskFollowups ?? "—"} />
-          <StatCard title="Pending Lab Results" value={data?.pendingLabResults ?? "—"} />
+          <StatCard title="Active Inpatients" value={data?.activeInpatients ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Admissions Today" value={data?.admissionsToday ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="High-Risk Followups" value={data?.highRiskFollowups ?? "—"} onClick={() => navigate("/doctor/ward-board")} />
+          <StatCard title="Pending Lab Results" value={data?.pendingLabResults ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
         </div>
       </section>
 

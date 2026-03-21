@@ -53,9 +53,9 @@ export default function PharmacyDashboard() {
         <div className="grid info-grid">
           <StatCard title="Pending Prescriptions" value={pendingPrescriptions} onClick={() => navigate("/pharmacy/queue")} />
           <StatCard title="Dispensed" value={dispensedToday} onClick={() => navigate("/pharmacy/queue")} />
-          <StatCard title="Low Stock Alerts" value={lowStock} />
-          <StatCard title="Expiring Drugs" value="Live" />
-          <StatCard title="Controlled Drugs" value="Tracked" />
+          <StatCard title="Low Stock Alerts" value={lowStock} onClick={() => navigate("/pharmacy/inventory")} />
+          <StatCard title="Expiring Drugs" value="Live" onClick={() => navigate("/pharmacy/expiry")} />
+          <StatCard title="Controlled Drugs" value="Tracked" onClick={() => navigate("/pharmacy/controlled")} />
         </div>
       </section>
 

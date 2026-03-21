@@ -38,10 +38,10 @@ export default function OncologyDaycareDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Cycles Today" value={data?.cyclesToday ?? "-"} />
-          <StatCard title="Upcoming Cycles" value={data?.upcomingCycles ?? "-"} />
-          <StatCard title="Active Oncology Cases" value={data?.activeOncologyCases ?? "-"} />
-          <StatCard title="Pending Chemo Orders" value={data?.pendingChemoOrders ?? "-"} />
+          <StatCard title="Cycles Today" value={data?.cyclesToday ?? "-"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Upcoming Cycles" value={data?.upcomingCycles ?? "-"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Active Oncology Cases" value={data?.activeOncologyCases ?? "-"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Pending Chemo Orders" value={data?.pendingChemoOrders ?? "-"} onClick={() => navigate("/pharmacy/queue")} />
         </div>
       </section>
 

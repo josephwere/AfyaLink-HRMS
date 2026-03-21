@@ -44,10 +44,10 @@ export default function SurgeonDashboard() {
       <section className="section">
         <h3>Surgical Summary</h3>
         <div className="grid info-grid">
-          <StatCard title="Surgeries Today" value={data?.surgeriesToday ?? "—"} />
-          <StatCard title="Upcoming Surgeries" value={data?.upcomingSurgeries ?? "—"} />
-          <StatCard title="Active Encounters" value={data?.activeEncounters ?? "—"} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} />
+          <StatCard title="Surgeries Today" value={data?.surgeriesToday ?? "—"} onClick={() => navigate("/doctor/surgery")} />
+          <StatCard title="Upcoming Surgeries" value={data?.upcomingSurgeries ?? "—"} onClick={() => navigate("/ops/theatre")} />
+          <StatCard title="Active Encounters" value={data?.activeEncounters ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
         </div>
       </section>
 

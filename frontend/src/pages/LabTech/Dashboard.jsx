@@ -43,10 +43,10 @@ export default function LabTechDashboard() {
       <section className="section">
         <h3>Lab Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Pending Tests" value={data?.pendingOrders ?? "—"} />
-          <StatCard title="Completed Today" value={data?.completedToday ?? "—"} />
-          <StatCard title="Abnormal Results" value={data?.overdueOrders ?? "—"} />
-          <StatCard title="Orders Today" value={data?.ordersToday ?? "—"} />
+          <StatCard title="Pending Tests" value={data?.pendingOrders ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
+          <StatCard title="Completed Today" value={data?.completedToday ?? "—"} onClick={() => navigate("/lab-tech/archive")} />
+          <StatCard title="Abnormal Results" value={data?.overdueOrders ?? "—"} onClick={() => navigate("/lab-tech/qc")} />
+          <StatCard title="Orders Today" value={data?.ordersToday ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
         </div>
       </section>
 

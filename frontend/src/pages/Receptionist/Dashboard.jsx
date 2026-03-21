@@ -52,10 +52,10 @@ export default function ReceptionistDashboard() {
       <section className="section">
         <h3>Front Desk Summary</h3>
         <div className="grid info-grid">
-          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} />
-          <StatCard title="Patients Total" value={data?.patientsTotal ?? "—"} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} />
-          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} />
+          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
+          <StatCard title="Patients Total" value={data?.patientsTotal ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
+          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
         </div>
       </section>
 

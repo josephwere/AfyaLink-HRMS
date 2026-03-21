@@ -43,10 +43,10 @@ export default function PayrollOfficerDashboard() {
       <section className="section">
         <h3>Payroll Status</h3>
         <div className="grid info-grid">
-          <StatCard title="Current Payroll Status" value={data?.invoicesThisMonth ?? "—"} />
-          <StatCard title="Total Gross" value={data?.totalThisMonth ?? "—"} />
-          <StatCard title="Total Deductions" value={data?.unpaidInvoices ?? "—"} />
-          <StatCard title="Net Pay Summary" value={data?.paidThisMonth ?? "—"} />
+          <StatCard title="Current Payroll Status" value={data?.invoicesThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title="Total Gross" value={data?.totalThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title="Total Deductions" value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title="Net Pay Summary" value={data?.paidThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
         </div>
       </section>
 

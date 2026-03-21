@@ -40,10 +40,10 @@ export default function TheatreOpsDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Surgeries Today" value={data?.surgeriesToday ?? "—"} />
-          <StatCard title="Upcoming Surgeries" value={data?.upcomingSurgeries ?? "—"} />
-          <StatCard title="Active Surgical Encounters" value={data?.activeSurgicalEncounters ?? "—"} />
-          <StatCard title="Post-op Followups" value={data?.postOpFollowups ?? "—"} />
+          <StatCard title="Surgeries Today" value={data?.surgeriesToday ?? "—"} onClick={() => navigate("/doctor/surgery")} />
+          <StatCard title="Upcoming Surgeries" value={data?.upcomingSurgeries ?? "—"} onClick={() => navigate("/doctor/surgery")} />
+          <StatCard title="Active Surgical Encounters" value={data?.activeSurgicalEncounters ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Post-op Followups" value={data?.postOpFollowups ?? "—"} onClick={() => navigate("/doctor/ward-board")} />
         </div>
       </section>
 

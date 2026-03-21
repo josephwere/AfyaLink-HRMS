@@ -41,10 +41,10 @@ export default function RadiologistDashboard() {
       <section className="section">
         <h3>Imaging Operations</h3>
         <div className="grid info-grid">
-          <StatCard title="Pending Imaging Orders" value={data?.pendingImagingOrders ?? "—"} />
-          <StatCard title="Completed Today" value={data?.completedToday ?? "—"} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} />
-          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} />
+          <StatCard title="Pending Imaging Orders" value={data?.pendingImagingOrders ?? "—"} onClick={() => navigate("/ops/imaging")} />
+          <StatCard title="Completed Today" value={data?.completedToday ?? "—"} onClick={() => navigate("/ops/imaging")} />
+          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
         </div>
       </section>
 

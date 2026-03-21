@@ -41,10 +41,10 @@ export default function TherapistDashboard() {
       <section className="section">
         <h3>Therapy Workload</h3>
         <div className="grid info-grid">
-          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} />
-          <StatCard title="Upcoming Appointments" value={data?.upcomingAppointments ?? "—"} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} />
-          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} />
+          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Upcoming Appointments" value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
         </div>
       </section>
 

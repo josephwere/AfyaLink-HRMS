@@ -64,10 +64,10 @@ export default function Dashboard() {
       <section className="section">
         <h3>Top Summary</h3>
         <div className="grid info-grid">
-          <StatCard title="Upcoming Appointment" value={data?.upcomingAppointments ?? "—"} />
-          <StatCard title="Outstanding Bill" value={data?.unpaidInvoices ?? "—"} />
-          <StatCard title="Active Prescription" value={data?.prescriptionsActive ?? "—"} />
-          <StatCard title="Lab Results" value={data?.labResults ?? "—"} />
+          <StatCard title="Upcoming Appointment" value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/patient/appointments")} />
+          <StatCard title="Outstanding Bill" value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/patient/billing")} />
+          <StatCard title="Active Prescription" value={data?.prescriptionsActive ?? "—"} onClick={() => navigate("/patient/prescriptions")} />
+          <StatCard title="Lab Results" value={data?.labResults ?? "—"} onClick={() => navigate("/patient/lab-results")} />
         </div>
       </section>
 

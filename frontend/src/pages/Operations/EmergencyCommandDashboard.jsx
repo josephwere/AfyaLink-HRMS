@@ -38,10 +38,10 @@ export default function EmergencyCommandDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Active Emergencies" value={data?.activeEmergencies ?? "-"} />
-          <StatCard title="Escalated Incidents" value={data?.escalatedIncidents ?? "-"} />
-          <StatCard title="Ambulance Dispatches Today" value={data?.ambulanceDispatchesToday ?? "-"} />
-          <StatCard title="Triage Backlog" value={data?.triageBacklog ?? "-"} />
+          <StatCard title="Active Emergencies" value={data?.activeEmergencies ?? "-"} onClick={() => navigate("/ops/triage")} />
+          <StatCard title="Escalated Incidents" value={data?.escalatedIncidents ?? "-"} onClick={() => navigate("/security-admin")} />
+          <StatCard title="Ambulance Dispatches Today" value={data?.ambulanceDispatchesToday ?? "-"} onClick={() => navigate("/communication")} />
+          <StatCard title="Triage Backlog" value={data?.triageBacklog ?? "-"} onClick={() => navigate("/ops/triage")} />
         </div>
       </section>
 

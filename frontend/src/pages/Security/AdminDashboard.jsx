@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getSecurityAdminDashboard } from "../../services/dashboardApi";
@@ -13,6 +14,7 @@ import { listTransfers } from "../../services/transferApi";
 
 export default function SecurityAdminDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [overstays, setOverstays] = useState([]);
@@ -109,10 +111,10 @@ export default function SecurityAdminDashboard() {
       <section className="section">
         <h3>Security Snapshot</h3>
         <div className="grid info-grid">
-          <StatCard title="Active Access Points" value={data?.officersActive ?? "—"} />
-          <StatCard title="Open Incidents" value={data?.openIncidents ?? "—"} />
-          <StatCard title="Escalated Incidents" value={data?.escalatedIncidents ?? "—"} />
-          <StatCard title="Incidents Today" value={data?.incidentsToday ?? "—"} />
+          <StatCard title="Active Access Points" value={data?.officersActive ?? "—"} onClick={() => navigate("/security-admin")} />
+          <StatCard title="Open Incidents" value={data?.openIncidents ?? "—"} onClick={() => navigate("/security-admin")} />
+          <StatCard title="Escalated Incidents" value={data?.escalatedIncidents ?? "—"} onClick={() => navigate("/ops/emergency-command")} />
+          <StatCard title="Incidents Today" value={data?.incidentsToday ?? "—"} onClick={() => navigate("/security-admin")} />
         </div>
       </section>
 

@@ -38,10 +38,10 @@ export default function DialysisOpsDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Sessions Today" value={data?.sessionsToday ?? "-"} />
-          <StatCard title="Upcoming Sessions" value={data?.upcomingSessions ?? "-"} />
-          <StatCard title="Active Dialysis Cases" value={data?.activeDialysisCases ?? "-"} />
-          <StatCard title="Delayed Sessions" value={data?.delayedSessions ?? "-"} />
+          <StatCard title="Sessions Today" value={data?.sessionsToday ?? "-"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Upcoming Sessions" value={data?.upcomingSessions ?? "-"} onClick={() => navigate("/doctor/appointments")} />
+          <StatCard title="Active Dialysis Cases" value={data?.activeDialysisCases ?? "-"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Delayed Sessions" value={data?.delayedSessions ?? "-"} onClick={() => navigate("/hospital-admin/transfer-command-center")} />
         </div>
       </section>
 

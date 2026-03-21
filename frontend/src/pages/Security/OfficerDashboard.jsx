@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getSecurityOfficerDashboard } from "../../services/dashboardApi";
@@ -14,6 +15,7 @@ import { listTransfers } from "../../services/transferApi";
 
 export default function SecurityOfficerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [logs, setLogs] = useState([]);
   const [inside, setInside] = useState([]);
@@ -139,10 +141,10 @@ export default function SecurityOfficerDashboard() {
       <section className="section">
         <h3>Shift & Zone</h3>
         <div className="grid info-grid">
-          <StatCard title="Current Shift" value="Active" />
-          <StatCard title="Assigned Zone" value={user?.hospital || "Main"} />
-          <StatCard title="Open Incidents" value={data?.openIncidents ?? "—"} />
-          <StatCard title="Incidents Today" value={data?.incidentsToday ?? "—"} />
+          <StatCard title="Current Shift" value="Active" onClick={() => navigate("/workforce/requests#shift")} />
+          <StatCard title="Assigned Zone" value={user?.hospital || "Main"} onClick={() => navigate("/security-officer")} />
+          <StatCard title="Open Incidents" value={data?.openIncidents ?? "—"} onClick={() => navigate("/ops/emergency-command")} />
+          <StatCard title="Incidents Today" value={data?.incidentsToday ?? "—"} onClick={() => navigate("/security-officer")} />
         </div>
       </section>
 

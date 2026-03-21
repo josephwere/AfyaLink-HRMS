@@ -40,10 +40,10 @@ export default function TriageOpsDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Arrivals Today" value={data?.arrivalsToday ?? "—"} />
-          <StatCard title="Pending Triage" value={data?.pendingTriage ?? "—"} />
-          <StatCard title="Active Encounters" value={data?.activeEncounters ?? "—"} />
-          <StatCard title="Urgent Lab Backlog" value={data?.urgentLabBacklog ?? "—"} />
+          <StatCard title="Arrivals Today" value={data?.arrivalsToday ?? "—"} onClick={() => navigate("/ops/emergency-command")} />
+          <StatCard title="Pending Triage" value={data?.pendingTriage ?? "—"} onClick={() => navigate("/ops/emergency-command")} />
+          <StatCard title="Active Encounters" value={data?.activeEncounters ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="Urgent Lab Backlog" value={data?.urgentLabBacklog ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
         </div>
       </section>
 

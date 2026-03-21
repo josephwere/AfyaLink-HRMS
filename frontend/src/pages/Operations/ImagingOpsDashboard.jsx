@@ -40,10 +40,10 @@ export default function ImagingOpsDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="Pending Imaging" value={data?.imagingPending ?? "—"} />
-          <StatCard title="Completed Today" value={data?.imagingCompletedToday ?? "—"} />
-          <StatCard title="Critical Reads Backlog" value={data?.criticalReadsBacklog ?? "—"} />
-          <StatCard title="Open Equipment Issues" value={data?.openEquipmentIssues ?? "—"} />
+          <StatCard title="Pending Imaging" value={data?.imagingPending ?? "—"} onClick={() => navigate("/radiologist")} />
+          <StatCard title="Completed Today" value={data?.imagingCompletedToday ?? "—"} onClick={() => navigate("/radiologist")} />
+          <StatCard title="Critical Reads Backlog" value={data?.criticalReadsBacklog ?? "—"} onClick={() => navigate("/radiologist")} />
+          <StatCard title="Open Equipment Issues" value={data?.openEquipmentIssues ?? "—"} onClick={() => navigate("/hospital-admin/machine-alerts")} />
         </div>
       </section>
 

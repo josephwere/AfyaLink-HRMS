@@ -38,10 +38,10 @@ export default function NeonatalIcuDashboard() {
       <section className="section">
         <h3>Live Metrics</h3>
         <div className="grid info-grid">
-          <StatCard title="NICU Admissions Today" value={data?.nicuAdmissionsToday ?? "-"} />
-          <StatCard title="Active NICU Cases" value={data?.activeNicuCases ?? "-"} />
-          <StatCard title="High-Risk Followups" value={data?.highRiskFollowups ?? "-"} />
-          <StatCard title="Pending Critical Labs" value={data?.pendingCriticalLabs ?? "-"} />
+          <StatCard title="NICU Admissions Today" value={data?.nicuAdmissionsToday ?? "-"} onClick={() => navigate("/ops/icu")} />
+          <StatCard title="Active NICU Cases" value={data?.activeNicuCases ?? "-"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title="High-Risk Followups" value={data?.highRiskFollowups ?? "-"} onClick={() => navigate("/doctor/ward-board")} />
+          <StatCard title="Pending Critical Labs" value={data?.pendingCriticalLabs ?? "-"} onClick={() => navigate("/lab-tech/test-queue")} />
         </div>
       </section>
 
