@@ -181,6 +181,9 @@ app.use(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
+      "Accept",
+      "Cache-Control",
+      "Pragma",
       "Authorization",
       "X-Afya-View-Role",
       "X-AfyaLink-View-Role",
