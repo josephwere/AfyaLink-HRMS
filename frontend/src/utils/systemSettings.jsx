@@ -359,7 +359,6 @@ export function SystemSettingsProvider({ children }) {
   useEffect(() => {
     const socketUrl =
       import.meta.env.VITE_SOCKET_URL ||
-      (isHostedFrontend ? runtimeOrigin : "") ||
       import.meta.env.VITE_API_URL ||
       window.location.origin;
 
