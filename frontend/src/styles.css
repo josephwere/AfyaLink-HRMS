@@ -2665,20 +2665,118 @@ body.auth-route {
   min-width: 0;
 }
 
+.premium-shell {
+  gap: 24px;
+}
+
+.premium-shell-head {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 18px;
+}
+
+.premium-shell-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--app-accent-2) 18%, transparent) 0, transparent 30%),
+    radial-gradient(circle at bottom left, color-mix(in oklab, var(--app-accent) 12%, transparent) 0, transparent 28%);
+  opacity: 0.85;
+}
+
+.premium-shell-head > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-shell-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 24%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 84%, var(--app-accent-2) 16%);
+  color: var(--app-accent-2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.premium-shell-title {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.premium-shell-subtitle {
+  max-width: 860px;
+  margin: 10px 0 0;
+  color: var(--app-muted);
+  font-size: 15px;
+}
+
+.premium-shell-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.premium-shell-stat {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-accent-2) 12%);
+  backdrop-filter: blur(10px);
+}
+
+.premium-shell-stat span {
+  display: block;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.premium-shell-stat strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.premium-inline-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--app-accent) 16%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 90%, var(--app-accent) 10%);
+  color: var(--app-text);
+  font-size: 14px;
+}
+
 /* Extra safe scroll space for CHW long forms on mobile + low-height screens. */
 .chw-dashboard {
   padding-bottom: calc(160px + env(safe-area-inset-bottom));
 }
 
 .welcome-panel {
-  background: #ffffff;
-  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--app-surface) 92%, white 8%), var(--app-surface));
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 10%, var(--app-border));
+  border-radius: 18px;
   padding: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.10);
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -2742,22 +2840,47 @@ body.auth-route {
 }
 
 .btn-primary {
-  background: #0f766e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--app-accent) 92%, white 8%), var(--app-accent-2));
   color: #ffffff;
   border: none;
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 11px 16px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 .btn-secondary {
-  background: #f3f4f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: color-mix(in oklab, var(--app-surface) 86%, var(--app-accent-2) 14%);
   color: #111827;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 16%, var(--app-border));
+  padding: 11px 16px;
+  border-radius: 12px;
   cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary.active {
@@ -3260,13 +3383,34 @@ body.auth-route {
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--app-surface);
+  border: 1px solid color-mix(in oklab, var(--app-border) 92%, white 8%);
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
+}
+
+.premium-card {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--app-accent-2) 10%, transparent) 0, transparent 32%),
+    linear-gradient(180deg, color-mix(in oklab, var(--app-surface) 92%, white 8%), var(--app-surface));
+  box-shadow:
+    0 22px 54px rgba(15, 23, 42, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+[data-theme="dark"] .premium-card {
+  box-shadow:
+    0 22px 54px rgba(2, 8, 23, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .card.form {
@@ -3417,11 +3561,17 @@ body.auth-route {
 
 .card.stat {
   padding: 16px;
-  border: 1px solid var(--app-border);
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
 }
 
 .card.stat.stat-clickable {
   cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.card.stat.stat-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.14);
 }
 
 button.card.stat {
@@ -3524,6 +3674,238 @@ button.card.stat {
   transition: all 0.2s;
   max-width: 100%;
   white-space: normal;
+}
+
+.premium-banner {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--app-accent) 16%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-accent) 12%);
+  color: var(--app-text);
+}
+
+.premium-code {
+  margin-top: 12px;
+  font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.premium-empty {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px dashed color-mix(in oklab, var(--app-accent-2) 18%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 90%, var(--app-surface-2) 10%);
+}
+
+.premium-empty strong {
+  font-size: 15px;
+}
+
+.premium-empty span {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.premium-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 12px;
+}
+
+.premium-method-card {
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 16%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-accent-2) 12%);
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.premium-method-card.recommended {
+  border-color: color-mix(in oklab, var(--app-accent) 34%, var(--app-accent-2));
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--app-surface) 74%, var(--app-accent) 26%),
+    color-mix(in oklab, var(--app-surface) 84%, var(--app-accent-2) 16%)
+  );
+}
+
+.premium-method-card__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.premium-method-card__emoji {
+  font-size: 20px;
+}
+
+.premium-method-card__label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.premium-method-card__meta {
+  margin-top: 10px;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.payments-timeline-cell {
+  min-width: 280px;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.premium-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in oklab, var(--app-surface) 78%, var(--app-accent-2) 22%);
+  color: var(--app-text);
+  border-top: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+}
+
+.premium-table tbody tr {
+  background: color-mix(in oklab, var(--app-surface) 94%, var(--app-surface-2) 6%);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.premium-table tbody tr:hover {
+  background: color-mix(in oklab, var(--app-surface) 82%, var(--app-accent-2) 18%);
+}
+
+.auth-status-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-status-card {
+  max-width: 520px;
+  text-align: center;
+}
+
+.auth-status-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--app-accent) 76%, white 24%), var(--app-accent-2));
+  color: #fff;
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.24);
+}
+
+.auth-status-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.error-boundary-shell {
+  min-height: calc(100dvh - 56px);
+  display: grid;
+  place-items: center;
+  padding: 28px;
+}
+
+.error-boundary-card {
+  width: min(760px, 100%);
+}
+
+.mini-chat-shell,
+.mini-voice-shell,
+.mini-stat-card {
+  display: grid;
+  gap: 14px;
+}
+
+.mini-chat-log {
+  display: grid;
+  gap: 10px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 12%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 86%, var(--app-surface-2) 14%);
+}
+
+.mini-chat-bubble {
+  display: grid;
+  gap: 6px;
+  width: fit-content;
+  max-width: min(100%, 82%);
+  padding: 12px 14px;
+  border-radius: 16px;
+}
+
+.mini-chat-bubble.is-user {
+  justify-self: end;
+  background: linear-gradient(135deg, var(--app-accent), var(--app-accent-2));
+  color: #fff;
+}
+
+.mini-chat-bubble.is-assistant {
+  justify-self: start;
+  background: color-mix(in oklab, var(--app-surface) 82%, var(--app-accent-2) 18%);
+}
+
+.mini-chat-input {
+  display: grid;
+  gap: 10px;
+}
+
+.mini-chat-input textarea {
+  min-height: 100px;
+}
+
+.mini-voice-transcript {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 12%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-surface-2) 12%);
+}
+
+.mini-stat-card h4 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mini-stat-card__value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.page-admin-dashboard__stats {
+  margin-bottom: 4px;
 }
 
 .card button.primary {
@@ -5108,6 +5490,12 @@ button.card.stat {
 .legal-page {
   max-width: 1100px;
   margin: 0 auto;
+  min-height: 100%;
+  padding: 20px 0 48px;
+}
+
+.legal-page .section {
+  scroll-margin-top: 24px;
 }
 
 .legal-hero {

@@ -19,13 +19,13 @@ export default class AppErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="dashboard">
-          <div className="card">
+        <div className="error-boundary-shell">
+          <div className="card premium-card error-boundary-card">
             <h2>Something went wrong</h2>
             <p className="muted">
               A page error occurred. Reload to recover. If it persists, report the action that caused it.
             </p>
-            <pre>{this.state.message}</pre>
+            <pre className="premium-code">{this.state.message}</pre>
             <button type="button" className="btn-primary" onClick={() => window.location.reload()}>
               Reload
             </button>

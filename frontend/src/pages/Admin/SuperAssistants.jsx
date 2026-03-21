@@ -8,6 +8,8 @@ import {
   updateSuperAssistant,
 } from "../../services/superAdminApi";
 import { useAuth } from "../../utils/auth";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED", "ON_LEAVE"];
 const BULK_ACTIONS = [
@@ -66,7 +68,7 @@ function ActivityBadge({ bucket }) {
 
 export default function SuperAssistants() {
   const { user } = useAuth();
-  const actorRole = String(user?.role || "").toUpperCase();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const canManage = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
 
   const [items, setItems] = useState([]);
@@ -346,7 +348,7 @@ export default function SuperAssistants() {
   };
 
   if (!canManage) {
-    return <p>🚫 Access denied</p>;
+    return <AccessDeniedCard message="Human super assistant management is limited to founder and system admin roles." />;
   }
 
   return (

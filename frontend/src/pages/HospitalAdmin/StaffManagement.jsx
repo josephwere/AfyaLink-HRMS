@@ -3,6 +3,8 @@ import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
 import { listRegisteredPharmacies } from "../../services/pharmacyNetworkApi";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 const HOSPITAL_ADMIN_ROLE_OPTIONS = [
   "HOSPITAL_ADMIN",
@@ -98,7 +100,7 @@ export default function StaffManagement() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
-  const normalizedRole = String(user?.role || "").toUpperCase();
+  const normalizedRole = normalizeRole(user?.actualRole || user?.role);
   const isGlobalActor =
     normalizedRole === "SUPER_ADMIN" ||
     normalizedRole === "SYSTEM_ADMIN" ||
@@ -112,14 +114,14 @@ export default function StaffManagement() {
   const [missingPharmacyOnly, setMissingPharmacyOnly] = useState(false);
 
   if (
-    user?.role !== "HOSPITAL_ADMIN" &&
-    user?.role !== "HOSPITAL_ADMIN_ASSISTANT" &&
-    user?.role !== "HR_MANAGER" &&
-    user?.role !== "SUPER_ADMIN" &&
-    user?.role !== "SYSTEM_ADMIN" &&
-    user?.role !== "DEVELOPER"
+    normalizedRole !== "HOSPITAL_ADMIN" &&
+    normalizedRole !== "HOSPITAL_ADMIN_ASSISTANT" &&
+    normalizedRole !== "HR_MANAGER" &&
+    normalizedRole !== "SUPER_ADMIN" &&
+    normalizedRole !== "SYSTEM_ADMIN" &&
+    normalizedRole !== "DEVELOPER"
   ) {
-    return <p>🚫 Access denied</p>;
+    return <AccessDeniedCard message="Staff management is restricted to authorized hospital and global admin roles." />;
   }
 
   const load = async () => {

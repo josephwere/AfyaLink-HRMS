@@ -1,47 +1,88 @@
+import React, { useRef, useState } from "react";
 
-import React, { useState, useRef } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL || "";
-export default function AIChat(){ 
-  const [input, setInput] = useState('');
+
+export default function AIChat() {
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [sending, setSending] = useState(false);
   const evtSourceRef = useRef(null);
 
   const send = async () => {
-    setMessages(prev => [...prev, { role: 'user', text: input }]);
-    setInput('');
-    // start SSE
-    const res = await fetch(`${API_BASE}/api/ai/chat`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ message: input }) });
-    if (!res.ok) return;
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let assistantText = '';
-    while(true){
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      try {
-        // attempt to parse chunked JSON lines
-        const parsed = JSON.parse(chunk.trim());
-        assistantText += parsed.chunk ? parsed.chunk : chunk;
-        setMessages(prev => {
-          const last = prev[prev.length -1];
-          if (last && last.role === 'assistant') {
-            return [...prev.slice(0, -1), { role: 'assistant', text: assistantText }];
+    const message = input.trim();
+    if (!message || sending) return;
+    setSending(true);
+    setMessages((prev) => [...prev, { role: "user", text: message }]);
+    setInput("");
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let assistantText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        try {
+          const parsed = JSON.parse(chunk.trim());
+          assistantText += parsed.chunk ? parsed.chunk : chunk;
+        } catch {
+          assistantText += chunk;
+        }
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant") {
+            return [...prev.slice(0, -1), { role: "assistant", text: assistantText }];
           }
-          return [...prev, { role: 'assistant', text: assistantText }];
+          return [...prev, { role: "assistant", text: assistantText }];
         });
-      } catch (e) {
-        // append raw chunk
-        assistantText += chunk;
       }
+    } finally {
+      setSending(false);
     }
   };
 
-  return (<div style={{border:'1px solid #eee',padding:12,borderRadius:8}}>
-    <div style={{height:220,overflow:'auto',marginBottom:8,background:'#fafafa',padding:8,borderRadius:6}}>
-      {messages.map((m,i)=>(<div key={i} style={{textAlign:m.role==='user'?'right':'left'}}><b>{m.role}:</b> <span>{m.text}</span></div>))}
+  return (
+    <div className="premium-card mini-chat-shell">
+      <div className="card-header-actions">
+        <div>
+          <h3>AI Chat</h3>
+          <p className="muted">Lightweight assistant console for quick prompt-response flows.</p>
+        </div>
+      </div>
+
+      <div className="mini-chat-log">
+        {messages.length === 0 ? (
+          <div className="premium-empty">
+            <strong>No messages yet</strong>
+            <span>Start a conversation to stream the assistant response here.</span>
+          </div>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} className={`mini-chat-bubble ${m.role === "user" ? "is-user" : "is-assistant"}`}>
+              <strong>{m.role === "user" ? "You" : "AI"}</strong>
+              <span>{m.text}</span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mini-chat-input">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          rows={3}
+          placeholder="Describe symptoms or ask a question..."
+        />
+        <button type="button" className="btn-primary" onClick={send} disabled={sending || !input.trim()}>
+          {sending ? "Sending..." : "Send"}
+        </button>
+      </div>
     </div>
-    <textarea value={input} onChange={e=>setInput(e.target.value)} rows={3} style={{width:'100%'}}/>
-    <button type="button" onClick={send}>Send</button>
-  </div>);
+  );
 }

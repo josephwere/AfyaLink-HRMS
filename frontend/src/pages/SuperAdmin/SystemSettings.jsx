@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
 import { getSystemSettings, updateSystemSettings } from "../../services/systemSettingsApi";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -50,6 +52,7 @@ async function optimizeImageDataUrl(file, { maxDimension = 1600, targetBytes = 9
 
 export default function SystemSettings() {
   const { user } = useAuth();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const { settings, setSettings, lastSyncedAt, pushConnected } = useSystemSettings();
   const [form, setForm] = useState({
     branding: {
@@ -103,8 +106,8 @@ export default function SystemSettings() {
   const [msg, setMsg] = useState(null);
   const [initialForm, setInitialForm] = useState(null);
 
-  if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(user?.role)) {
-    return <p>🚫 Access denied</p>;
+  if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
+    return <AccessDeniedCard message="System settings require founder, system admin, or developer privileges." />;
   }
 
   useEffect(() => {

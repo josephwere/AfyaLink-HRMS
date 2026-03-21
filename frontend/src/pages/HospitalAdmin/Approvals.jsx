@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 import {
   approveLeave,
   rejectLeave,
@@ -109,9 +111,9 @@ export default function Approvals() {
   const [cacheBadge, setCacheBadge] = useState("Live • now");
   const skipInitialNetworkLoadRef = useRef(false);
 
-  const role = user?.role;
+  const role = normalizeRole(user?.actualRole || user?.role);
   if (!ALLOWED.has(role)) {
-    return <p>Access denied</p>;
+    return <AccessDeniedCard message="Approval queues are only available to the configured workforce approval roles." />;
   }
   const prefScope = `${role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
   const canManagePresetLifecycle = PRESET_LIFECYCLE_ALLOWED.has(role);

@@ -1,20 +1,21 @@
 import { Link } from "react-router-dom";
 
-export default function Unauthorized() {
+export default function AccessDeniedCard({
+  title = "Access denied",
+  message = "This area is not available for the current role view or account privileges.",
+}) {
   return (
     <div className="auth-status-shell">
-      <div className="auth-status-card">
+      <div className="auth-status-card premium-card">
         <div className="auth-status-icon">🚫</div>
-        <h1>Access denied</h1>
-        <p className="subtitle">
-          You do not have permission to access this page with the current role view.
-        </p>
+        <h1>{title}</h1>
+        <p className="subtitle">{message}</p>
         <div className="auth-status-actions">
           <Link to="/profile" className="btn-secondary">
-            Switch Role View
+            Role View Switcher
           </Link>
           <Link to="/" className="btn-primary">
-            Go Home
+            Back to dashboard
           </Link>
         </div>
       </div>

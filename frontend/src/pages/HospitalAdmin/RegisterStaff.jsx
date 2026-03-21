@@ -3,9 +3,12 @@ import { useLocation } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import PasswordInput from "../../components/PasswordInput";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 export default function RegisterStaff() {
   const { user } = useAuth();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const location = useLocation();
   const [form, setForm] = useState({
     name: "",
@@ -39,14 +42,14 @@ export default function RegisterStaff() {
   }, [location.search]);
 
   if (
-    user?.role !== "HOSPITAL_ADMIN" &&
-    user?.role !== "HOSPITAL_ADMIN_ASSISTANT" &&
-    user?.role !== "HR_MANAGER" &&
-    user?.role !== "SUPER_ADMIN" &&
-    user?.role !== "SYSTEM_ADMIN" &&
-    user?.role !== "DEVELOPER"
+    actorRole !== "HOSPITAL_ADMIN" &&
+    actorRole !== "HOSPITAL_ADMIN_ASSISTANT" &&
+    actorRole !== "HR_MANAGER" &&
+    actorRole !== "SUPER_ADMIN" &&
+    actorRole !== "SYSTEM_ADMIN" &&
+    actorRole !== "DEVELOPER"
   ) {
-    return <p>🚫 Access denied</p>;
+    return <AccessDeniedCard message="Only authorized workforce managers can register hospital staff." />;
   }
 
   const submit = async (e) => {

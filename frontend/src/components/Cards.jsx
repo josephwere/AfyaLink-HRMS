@@ -51,7 +51,7 @@ export const StatCard = ({
 
   return (
     <div
-      className={`card stat stat-${status}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
+      className={`card premium-card stat stat-${status}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
       onClick={typeof handleOpen === "function" ? handleOpen : undefined}
       role={typeof handleOpen === "function" ? "button" : undefined}
       tabIndex={typeof handleOpen === "function" ? 0 : undefined}

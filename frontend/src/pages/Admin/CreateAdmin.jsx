@@ -10,6 +10,8 @@ import {
 import { useAuth } from "../../utils/auth";
 import DismissibleCardSection from "../../components/DismissibleCardSection";
 import PasswordInput from "../../components/PasswordInput";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 export default function CreateAdmin() {
   const { user } = useAuth();
@@ -28,13 +30,13 @@ export default function CreateAdmin() {
   const [loading, setLoading] = useState(false);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [msg, setMsg] = useState(null);
-  const actorRole = String(user?.role || "").toUpperCase();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const canCreateAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
   const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
   const canCreateSuperAssistant = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
 
   if (!canCreateAdmins) {
-    return <p>🚫 Access denied</p>;
+    return <AccessDeniedCard message="Only founder and system admin roles can create admin accounts from this screen." />;
   }
 
   const loadHospitals = React.useCallback(async (q = "") => {

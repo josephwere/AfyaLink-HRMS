@@ -21,12 +21,30 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 20 }}>
-        Admin Tools
-      </h1>
+    <div className="dashboard premium-shell page-admin-dashboard">
+      <section className="premium-card premium-shell-head">
+        <div className="premium-shell-kicker">Admin workspace</div>
+        <div className="card-header-actions">
+          <div>
+            <h1 className="premium-shell-title">Admin Tools</h1>
+            <p className="premium-shell-subtitle">
+              Control governance, audit visibility, AI traceability, and human assistant operations from one premium command surface.
+            </p>
+          </div>
+          <div className="premium-shell-meta">
+            <div className="premium-shell-stat">
+              <span>Transfer feed</span>
+              <strong>{transfers.length}</strong>
+            </div>
+            <div className="premium-shell-stat">
+              <span>Pending handoffs</span>
+              <strong>{transfers.filter((t) => t.status === "Pending").length}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid" style={{ marginBottom: 24 }}>
+      <div className="grid page-admin-dashboard__stats">
         <StatCard title="Audit Logs" value="Live" subtitle="Security events" path="/admin/audit-logs" />
         <StatCard title="AI Autofill Audit" value="Review" subtitle="Draft/apply trace" path="/admin/ai-autofill-audit" />
         <StatCard title="Admin Accounts" value="Manage" subtitle="Create and review" path="/admin/create-admin" />
@@ -41,8 +59,8 @@ export default function Dashboard() {
         <Link to="/admin/super-assistants">Super Assistants</Link>
       </div>
 
-      <section className="section" style={{ marginTop: 24 }}>
-        <div className="card">
+      <section className="section">
+        <div className="card premium-card">
           <div className="card-header-actions">
             <div>
               <h3>Transfer Continuity</h3>
@@ -53,7 +71,7 @@ export default function Dashboard() {
             </div>
           </div>
           {transferError ? <div className="muted">{transferError}</div> : null}
-          <div className="table-wrap" style={{ marginTop: 12 }}>
+          <div className="table-wrap">
             <table className="doctor-table">
               <thead>
                 <tr>

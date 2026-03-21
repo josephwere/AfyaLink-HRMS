@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { listTransfers } from "../../services/transferApi";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 
 /**
  * HOSPITAL KPI DASHBOARD
@@ -13,6 +15,7 @@ import { listTransfers } from "../../services/transferApi";
 
 export default function HospitalKPIDashboard() {
   const { user } = useAuth();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const navigate = useNavigate();
 
   const [kpis, setKpis] = useState(null);
@@ -22,7 +25,7 @@ export default function HospitalKPIDashboard() {
   const [transferError, setTransferError] = useState("");
 
   useEffect(() => {
-    if (user?.role === "HOSPITAL_ADMIN" || user?.role === "SUPER_ADMIN") {
+    if (actorRole === "HOSPITAL_ADMIN" || actorRole === "SUPER_ADMIN") {
       loadKPIs();
       loadTransfers();
 
@@ -30,7 +33,7 @@ export default function HospitalKPIDashboard() {
       const t = setInterval(loadKPIs, 30000);
       return () => clearInterval(t);
     }
-  }, [user]);
+  }, [actorRole]);
 
   async function loadKPIs() {
     try {
@@ -57,8 +60,8 @@ export default function HospitalKPIDashboard() {
   }
 
   if (!user) return <div>Please log in</div>;
-  if (user.role !== "HOSPITAL_ADMIN" && user.role !== "SUPER_ADMIN")
-    return <div>Access denied</div>;
+  if (actorRole !== "HOSPITAL_ADMIN" && actorRole !== "SUPER_ADMIN")
+    return <AccessDeniedCard message="Hospital KPI visibility is restricted to hospital admin and founder roles." />;
   if (loading) return <div>Loading KPIs…</div>;
   if (error) return <div style={{ color: "red" }}>{error}</div>;
   if (!kpis) return null;

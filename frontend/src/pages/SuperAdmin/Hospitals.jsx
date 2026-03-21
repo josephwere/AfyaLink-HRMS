@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
 import PasswordInput from "../../components/PasswordInput";
+import { normalizeRole } from "../../utils/normalizeRole";
+import AccessDeniedCard from "../../components/AccessDeniedCard";
 import { createHospital, updateHospital, searchGovernmentHospitals } from "../../services/hospitalApi";
 import {
   createBranch,
@@ -28,6 +30,7 @@ const coerceList = (value) => {
 
 export default function SuperAdminHospitals() {
   const { user } = useAuth();
+  const actorRole = normalizeRole(user?.actualRole || user?.role);
   const location = useLocation();
   const [hospitals, setHospitals] = useState([]);
   const [query, setQuery] = useState("");
@@ -243,11 +246,11 @@ export default function SuperAdminHospitals() {
       .catch(() => setAdminFilterBranches([]));
   }, [adminListHospitalId]);
 
-  const isSuperAdmin = user?.role === "SUPER_ADMIN";
-  const isSystemAdmin = user?.role === "SYSTEM_ADMIN";
+  const isSuperAdmin = actorRole === "SUPER_ADMIN";
+  const isSystemAdmin = actorRole === "SYSTEM_ADMIN";
 
   if (!isSuperAdmin && !isSystemAdmin) {
-    return <p>🚫 Access denied</p>;
+    return <AccessDeniedCard message="Only founder and system-level admin roles can manage the hospital registry." />;
   }
 
   const submitHospital = async (e) => {
