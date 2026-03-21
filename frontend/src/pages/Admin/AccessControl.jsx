@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getDelegationScope,
   getUserDelegatedPermissions,
@@ -7,7 +7,9 @@ import {
 } from "../../services/delegatedPermissionsApi";
 
 export default function AccessControl() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const permissionsRef = useRef(null);
   const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [scope, setScope] = useState({
     actorRole: "",
@@ -107,11 +109,33 @@ export default function AccessControl() {
         </p>
         {scope.actorRole ? (
           <div className="kpi-grid">
-            <div className="kpi-card">
+            <div
+              className="kpi-card kpi-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate("/profile")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate("/profile");
+                }
+              }}
+            >
               <div className="kpi-label">Your Role</div>
               <div className="kpi-value">{scope.actorRole}</div>
             </div>
-            <div className="kpi-card">
+            <div
+              className="kpi-card kpi-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => permissionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  permissionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+            >
               <div className="kpi-label">Manageable Roles</div>
               <div className="kpi-value">{(scope.manageableRoles || []).length}</div>
             </div>
@@ -119,7 +143,7 @@ export default function AccessControl() {
         ) : null}
       </div>
 
-      <div className="card">
+      <div className="card" ref={permissionsRef}>
         <div className="form-row">
           <input
             value={q}

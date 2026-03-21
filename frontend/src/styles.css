@@ -337,6 +337,17 @@ body.auth-route {
   text-align: center;
 }
 
+.kpi-card-clickable {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.kpi-card-clickable:hover,
+.kpi-card-clickable:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
 /* =========================
    DARK MODE VISIBILITY HARDENING
 ========================= */

@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getOfflineMetricsSnapshot, refreshOfflineMetricsSnapshot } from "../../utils/offlineQueue";
 import { getOfflineOpsMetrics, getOfflineQueueStatus } from "../../services/offlineOpsApi";
 
 export default function OfflineOps() {
+  const filtersRef = useRef(null);
+  const moduleTableRef = useRef(null);
+  const clientSignalsRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [hours, setHours] = useState(72);
   const [q, setQ] = useState("");
@@ -69,17 +72,17 @@ export default function OfflineOps() {
 
       <section className="section">
         <div className="grid info-grid">
-          <div className="card"><h3>Tracked Clients</h3><p>{server?.summary?.clients ?? 0}</p></div>
-          <div className="card"><h3>Pending Actions</h3><p>{server?.summary?.pendingQueued ?? 0}</p></div>
-          <div className="card"><h3>Retry Failures</h3><p>{server?.summary?.retryFailures ?? 0}</p></div>
-          <div className="card"><h3>Last Sync (Any)</h3><p>{server?.summary?.lastSyncAt ? new Date(server.summary.lastSyncAt).toLocaleString() : "-"}</p></div>
-          <div className="card"><h3>Server Queue</h3><p>{queueStatus?.counts?.integrationQueue ?? 0}</p></div>
-          <div className="card"><h3>DLQ</h3><p>{queueStatus?.counts?.dlq ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Tracked Clients</h3><p>{server?.summary?.clients ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Pending Actions</h3><p>{server?.summary?.pendingQueued ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Retry Failures</h3><p>{server?.summary?.retryFailures ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Last Sync (Any)</h3><p>{server?.summary?.lastSyncAt ? new Date(server.summary.lastSyncAt).toLocaleString() : "-"}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Server Queue</h3><p>{queueStatus?.counts?.integrationQueue ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>DLQ</h3><p>{queueStatus?.counts?.dlq ?? 0}</p></div>
         </div>
       </section>
 
       <section className="section doctor-main-grid">
-        <div className="card">
+        <div className="card" ref={filtersRef}>
           <h3>Filters</h3>
           <div className="grid info-grid">
             <label>
@@ -107,7 +110,7 @@ export default function OfflineOps() {
       </section>
 
       <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
+        <div className="card doctor-schedule-card" ref={moduleTableRef}>
           <h3>Pending By Module</h3>
           <div className="table-wrap">
             <table className="data-table">
@@ -136,7 +139,7 @@ export default function OfflineOps() {
           </div>
         </div>
 
-        <div className="card doctor-alerts-card">
+        <div className="card doctor-alerts-card" ref={clientSignalsRef}>
           <h3>Client Signals</h3>
           <div className="alert-stack">
             {(server?.clients || []).slice(0, 20).map((c) => (

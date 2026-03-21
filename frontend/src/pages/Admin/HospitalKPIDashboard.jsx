@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { listTransfers } from "../../services/transferApi";
@@ -12,6 +13,7 @@ import { listTransfers } from "../../services/transferApi";
 
 export default function HospitalKPIDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [kpis, setKpis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,26 +71,26 @@ export default function HospitalKPIDashboard() {
           ENCOUNTERS
       ============================== */}
       <Section title="Encounters">
-        <Kpi label="Total" value={kpis?.encounters?.total ?? kpis?.totalEncounters ?? 0} />
-        <Kpi label="Active" value={kpis?.encounters?.active ?? "—"} />
-        <Kpi label="Completed" value={kpis?.encounters?.completed ?? "—"} />
+        <Kpi label="Total" value={kpis?.encounters?.total ?? kpis?.totalEncounters ?? 0} onClick={() => navigate("/doctor/opd")} />
+        <Kpi label="Active" value={kpis?.encounters?.active ?? "—"} onClick={() => navigate("/doctor/opd?focus=RECORD")} />
+        <Kpi label="Completed" value={kpis?.encounters?.completed ?? "—"} onClick={() => navigate("/reports")} />
       </Section>
 
       {/* =============================
           INSURANCE — SHA
       ============================== */}
       <Section title={`Insurance (${kpis?.insurance?.provider || "SHA"})`}>
-        <Kpi label="Pending" value={kpis?.insurance?.pending ?? "—"} warn />
-        <Kpi label="Approved" value={kpis?.insurance?.approved ?? "—"} success />
-        <Kpi label="Rejected" value={kpis?.insurance?.rejected ?? "—"} danger />
+        <Kpi label="Pending" value={kpis?.insurance?.pending ?? "—"} warn onClick={() => navigate("/hospital-admin/financials")} />
+        <Kpi label="Approved" value={kpis?.insurance?.approved ?? "—"} success onClick={() => navigate("/hospital-admin/financials")} />
+        <Kpi label="Rejected" value={kpis?.insurance?.rejected ?? "—"} danger onClick={() => navigate("/hospital-admin/financials")} />
       </Section>
 
       {/* =============================
           CLINICAL FLOW
       ============================== */}
       <Section title="Clinical Flow">
-        <Kpi label="Lab Pending" value={kpis?.flow?.labPending ?? "—"} warn />
-        <Kpi label="Pharmacy Pending" value={kpis?.flow?.pharmacyPending ?? "—"} />
+        <Kpi label="Lab Pending" value={kpis?.flow?.labPending ?? "—"} warn onClick={() => navigate("/lab-tech/test-queue")} />
+        <Kpi label="Pharmacy Pending" value={kpis?.flow?.pharmacyPending ?? "—"} onClick={() => navigate("/pharmacy")} />
       </Section>
 
       {/* =============================
@@ -99,11 +101,13 @@ export default function HospitalKPIDashboard() {
           label="Total Revenue"
           value={`KES ${Number(kpis?.billing?.totalRevenue || 0).toLocaleString()}`}
           success
+          onClick={() => navigate("/hospital-admin/financials")}
         />
         <Kpi
           label="Pending Payments"
           value={kpis?.billing?.pendingPayments ?? "—"}
           warn
+          onClick={() => navigate("/hospital-admin/financials")}
         />
       </Section>
 
@@ -168,14 +172,26 @@ function Section({ title, children }) {
 /* ===============================
    KPI CARD
 =============================== */
-function Kpi({ label, value, warn, success, danger }) {
+function Kpi({ label, value, warn, success, danger, onClick }) {
   let color = "#111827";
   if (warn) color = "#f59e0b";
   if (success) color = "#16a34a";
   if (danger) color = "#dc2626";
 
   return (
-    <div className="kpi-card">
+    <div
+      className={`kpi-card${typeof onClick === "function" ? " kpi-card-clickable" : ""}`}
+      role={typeof onClick === "function" ? "button" : undefined}
+      tabIndex={typeof onClick === "function" ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (typeof onClick !== "function") return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+    >
       <div className="kpi-label">{label}</div>
       <div className="kpi-value" style={{ color, fontWeight: 700 }}>
         {value}

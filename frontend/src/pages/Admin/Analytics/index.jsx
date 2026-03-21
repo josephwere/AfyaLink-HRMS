@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo} from "react";
+import React, {useEffect, useState, useMemo, useRef} from "react";
 
 /**
  * Admin Analytics
@@ -9,6 +9,8 @@ import React, {useEffect, useState, useMemo} from "react";
 function loadTests(){ try{ return JSON.parse(localStorage.getItem("lab_tests")||"[]"); }catch(e){return [];}}
 
 export default function Analytics(){
+  const chartRef = useRef(null);
+  const recentTestsRef = useRef(null);
   const [tests, setTests] = useState([]);
   useEffect(()=> setTests(loadTests()), []);
   const total = tests.length;
@@ -35,17 +37,39 @@ export default function Analytics(){
       </div>
 
       <div className="kpi-grid">
-        <div className="kpi-card">
+        <div
+          className="kpi-card kpi-card-clickable"
+          role="button"
+          tabIndex={0}
+          onClick={() => recentTestsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              recentTestsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+        >
           <div className="kpi-label">Total lab tests</div>
           <div className="kpi-value">{total}</div>
         </div>
-        <div className="kpi-card">
+        <div
+          className="kpi-card kpi-card-clickable"
+          role="button"
+          tabIndex={0}
+          onClick={() => chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+        >
           <div className="kpi-label">Positive results (contains 'pos')</div>
           <div className="kpi-value">{positive}</div>
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" ref={chartRef}>
         <h3>Tests per day</h3>
         <div aria-hidden style={{width:"100%",height:200,border:"1px solid #eee",padding:10}}>
           {byDate.length===0 && <div style={{color:"#666"}}>No data to chart.</div>}
@@ -66,7 +90,7 @@ export default function Analytics(){
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" ref={recentTestsRef}>
         <h3>Recent tests</h3>
         <div className="table-wrap">
           <table className="table lite">
