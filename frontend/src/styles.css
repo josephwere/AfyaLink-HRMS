@@ -1481,7 +1481,7 @@ body.auth-route {
   background: #111827;
   color: #ffffff;
   border: none;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 999px;
   display: flex;
   flex-direction: column;
@@ -1493,21 +1493,24 @@ body.auth-route {
 }
 
 .ai-float-icon-only {
-  padding: 12px;
+  padding: 8px;
+  min-width: 48px;
+  min-height: 48px;
   gap: 0;
   align-items: center;
+  justify-content: center;
   background: rgba(15, 23, 42, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   box-shadow:
-    0 18px 34px rgba(2, 6, 23, 0.45),
-    0 0 0 3px rgba(59, 130, 246, 0.12);
+    0 14px 26px rgba(2, 6, 23, 0.38),
+    0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .ai-float-icon-only::before {
   content: "";
   position: absolute;
-  inset: -6px;
+  inset: -4px;
   border-radius: 999px;
   background: conic-gradient(
     from 120deg,
@@ -1517,7 +1520,7 @@ body.auth-route {
     rgba(56, 189, 248, 0.35)
   );
   filter: blur(10px);
-  opacity: 0.8;
+  opacity: 0.72;
   z-index: -1;
   animation: aiFloatPulse 6s ease-in-out infinite;
   pointer-events: none;
@@ -1536,8 +1539,8 @@ body.auth-route {
 }
 
 .ai-float-icon {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 0;
   overflow: visible;
   background: transparent;
@@ -3033,7 +3036,16 @@ body.auth-route {
   .ai-float {
     right: 12px;
     bottom: max(12px, env(safe-area-inset-bottom));
-    padding: 10px 12px;
+    padding: 9px 11px;
+  }
+  .ai-float-icon-only {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 7px;
+  }
+  .ai-float-icon {
+    width: 28px;
+    height: 28px;
   }
   .ai-float-badge {
     font-size: 12px;
