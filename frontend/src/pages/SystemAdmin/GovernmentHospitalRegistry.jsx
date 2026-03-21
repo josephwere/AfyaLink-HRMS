@@ -10,6 +10,7 @@ export default function GovernmentHospitalRegistryPage() {
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [q, setQ] = useState(() => searchParams.get("q") || "");
+  const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulk, setBulk] = useState("");
@@ -169,4 +170,3 @@ export default function GovernmentHospitalRegistryPage() {
     </div>
   );
 }
-  const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();

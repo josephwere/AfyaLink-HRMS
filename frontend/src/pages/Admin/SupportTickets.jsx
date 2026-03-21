@@ -14,6 +14,7 @@ export default function SupportTickets() {
   const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
   const [q, setQ] = useState(() => searchParams.get("q") || "");
+  const highlightedTicketId = searchParams.get("ticketId") || "";
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [form, setForm] = useState({
@@ -215,4 +216,3 @@ export default function SupportTickets() {
     </div>
   );
 }
-  const highlightedTicketId = searchParams.get("ticketId") || "";
