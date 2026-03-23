@@ -3,10 +3,10 @@ import fetch from "node-fetch";
 
 const TW_SID = process.env.TWILIO_ACCOUNT_SID;
 const TW_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TW_NUMBER = process.env.TWILIO_NUMBER;
+const TW_NUMBER = process.env.TWILIO_NUMBER || process.env.TWILIO_PHONE_NUMBER;
 
-const AT_KEY = process.env.AFRICASTALKING_API_KEY;
-const AT_USER = process.env.AFRICASTALKING_USERNAME;
+const AT_KEY = process.env.AFRICASTALKING_API_KEY || process.env.AT_API_KEY;
+const AT_USER = process.env.AFRICASTALKING_USERNAME || process.env.AT_USERNAME;
 
 /**
  * ✅ SAFE Twilio initialization
@@ -23,8 +23,17 @@ if (TW_SID && TW_SID.startsWith("AC") && TW_TOKEN) {
 /**
  * Send SMS
  */
-export async function sendSMS({ provider = "twilio", to, message }) {
-  if (provider === "twilio" && twClient) {
+export async function sendSMS({ provider = "auto", to, message }) {
+  const resolvedProvider =
+    provider === "auto"
+      ? twClient
+        ? "twilio"
+        : AT_KEY && AT_USER
+          ? "africastalking"
+          : "log"
+      : provider;
+
+  if (resolvedProvider === "twilio" && twClient) {
     const msg = await twClient.messages.create({
       body: message,
       from: TW_NUMBER,
@@ -33,7 +42,7 @@ export async function sendSMS({ provider = "twilio", to, message }) {
     return { provider: "twilio", sid: msg.sid };
   }
 
-  if (provider === "africastalking" && AT_KEY && AT_USER) {
+  if (resolvedProvider === "africastalking" && AT_KEY && AT_USER) {
     const res = await fetch(
       "https://api.africastalking.com/version1/messaging",
       {
@@ -82,7 +91,7 @@ export async function notifyPatient({
   patient,
   message,
   channel = "sms",
-  provider = "twilio",
+  provider = "auto",
 }) {
   if (!patient || !patient.phone) {
     throw new Error("Patient with phone number is required");

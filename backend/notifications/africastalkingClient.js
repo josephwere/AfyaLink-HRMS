@@ -2,8 +2,8 @@
 import axios from "axios";
 
 export async function sendSMS(to, message) {
-  const apiKey = process.env.AT_API_KEY;
-  const username = process.env.AT_USERNAME;
+  const apiKey = process.env.AFRICASTALKING_API_KEY || process.env.AT_API_KEY;
+  const username = process.env.AFRICASTALKING_USERNAME || process.env.AT_USERNAME;
 
   const data = new URLSearchParams({
     username,
