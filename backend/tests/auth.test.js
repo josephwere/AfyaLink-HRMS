@@ -86,4 +86,46 @@ describe('Auth (register/login)', ()=>{
     expect(login.status).toBe(200);
     expect(login.body.success).toBe(true);
   });
+
+  test('google-created accounts can request reset and then login with a password', async () => {
+    await User.create({
+      name: 'Google Reset User',
+      email: 'google-reset@afya.test',
+      authProvider: 'google',
+      googleId: 'google-reset-user-id',
+      emailVerified: true,
+      role: 'PATIENT',
+    });
+
+    const forgot = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'google-reset@afya.test' });
+
+    expect(forgot.status).toBe(200);
+
+    const user = await User.findOne({ email: 'google-reset@afya.test' }).select(
+      '+resetPasswordToken +resetPasswordExpires +password'
+    );
+    expect(user.resetPasswordToken).toBeTruthy();
+    expect(user.password).toBeFalsy();
+
+    const rawToken = 'google-reset-token';
+    user.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 1000);
+    await user.save();
+
+    const reset = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: rawToken, password: 'GooglePass123!' });
+
+    expect(reset.status).toBe(200);
+    expect(reset.body.success).toBe(true);
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'google-reset@afya.test', password: 'GooglePass123!' });
+
+    expect(login.status).toBe(200);
+    expect(login.body.success).toBe(true);
+  });
 });

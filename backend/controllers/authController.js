@@ -264,10 +264,6 @@ export const forgotPassword = async (req, res) => {
       return res.json({ msg: "If the email exists, a reset link has been sent." });
     }
 
-    if (user.authProvider === "google" && user.role !== "SUPER_ADMIN") {
-      return res.json({ msg: "If the email exists, a reset link has been sent." });
-    }
-
     await issuePasswordResetLink({
       user,
       frontendBase: resolveFrontendBase(req),
@@ -290,10 +286,7 @@ export const requestPasswordResetPhoneOtp = async (req, res) => {
     }
 
     const user = await User.findOne({ phone }).select("+password");
-    if (
-      !user ||
-      (user.authProvider === "google" && user.role !== "SUPER_ADMIN")
-    ) {
+    if (!user) {
       return res.json({
         msg: "If the phone number exists, a reset code has been sent.",
       });
@@ -572,17 +565,10 @@ export const login = async (req, res) => {
       });
     }
 
-    if (user.authProvider === "google" && user.role !== "SUPER_ADMIN") {
+    if (user.authProvider === "google" && !user.password) {
       return res.status(400).json({
         success: false,
-        msg: "Please sign in using Google",
-      });
-    }
-
-    if (user.authProvider === "google" && user.role === "SUPER_ADMIN" && !user.password) {
-      return res.status(400).json({
-        success: false,
-        msg: "Super admin password login is not configured yet. Please sign in using Google or set a password in Profile.",
+        msg: "This Google account does not have a password yet. Use Google sign-in or reset your password to create one.",
       });
     }
 
