@@ -11,7 +11,9 @@ import {
   verify2FAOtp,
   changePassword,
   forgotPassword,
+  requestPasswordResetPhoneOtp,
   resetPassword,
+  resetPasswordWithPhoneOtp,
   logout,
   adminVerifyUser,
   requestPhoneOtp,
@@ -38,7 +40,9 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", protect, logout);
 router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password/phone/request-otp", requestPasswordResetPhoneOtp);
 router.post("/reset-password", resetPassword);
+router.post("/reset-password/phone", resetPasswordWithPhoneOtp);
 
 /* =========================
    CURRENT USER (BOOTSTRAP)

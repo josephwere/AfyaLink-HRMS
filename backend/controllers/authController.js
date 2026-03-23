@@ -280,6 +280,59 @@ export const forgotPassword = async (req, res) => {
 };
 
 /* ======================================================
+   FORGOT PASSWORD (PHONE OTP)
+====================================================== */
+export const requestPasswordResetPhoneOtp = async (req, res) => {
+  try {
+    const phone = String(req.body?.phone || "").trim();
+    if (!phone) {
+      return res.status(400).json({ msg: "Phone number is required" });
+    }
+
+    const user = await User.findOne({ phone }).select("+password");
+    if (
+      !user ||
+      (user.authProvider === "google" && user.role !== "SUPER_ADMIN")
+    ) {
+      return res.json({
+        msg: "If the phone number exists, a reset code has been sent.",
+      });
+    }
+
+    const otp = generateOtp();
+    await setOtp(`password-reset:${user._id}`, otp, 600);
+    await sendSMS({
+      to: user.phone,
+      message: `Your AfyaLink password reset code is ${otp}. It expires in 10 minutes.`,
+    });
+
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_OTP_REQUESTED",
+      resource: "User",
+      resourceId: user._id,
+      metadata: { channel: "sms" },
+    });
+    await appendComplianceLedger({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_OTP_REQUESTED",
+      resource: "User",
+      resourceId: user._id,
+      hospital: user.hospital || null,
+      metadata: { channel: "sms" },
+    });
+
+    return res.json({
+      msg: "If the phone number exists, a reset code has been sent.",
+    });
+  } catch {
+    return res.status(500).json({ msg: "Unable to process reset request" });
+  }
+};
+
+/* ======================================================
    RESET PASSWORD
 ====================================================== */
 export const resetPassword = async (req, res) => {
@@ -300,7 +353,7 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ msg: "Reset link expired or invalid" });
     }
 
-    user.password = await bcrypt.hash(password, 10);
+    user.password = password;
     user.passwordSetAt = new Date();
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
@@ -322,6 +375,64 @@ export const resetPassword = async (req, res) => {
       resource: "User",
       resourceId: user._id,
       hospital: user.hospital || null,
+    });
+
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ msg: "Unable to reset password" });
+  }
+};
+
+/* ======================================================
+   RESET PASSWORD (PHONE OTP)
+====================================================== */
+export const resetPasswordWithPhoneOtp = async (req, res) => {
+  try {
+    const phone = String(req.body?.phone || "").trim();
+    const otp = String(req.body?.otp || "").trim();
+    const password = String(req.body?.password || "");
+
+    if (!phone || !otp || !password) {
+      return res.status(400).json({
+        msg: "Phone number, reset code, and new password are required",
+      });
+    }
+
+    const user = await User.findOne({ phone }).select("+password");
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid or expired reset code" });
+    }
+
+    const savedOtp = await getOtp(`password-reset:${user._id}`);
+    if (!savedOtp || savedOtp !== otp) {
+      return res.status(400).json({ msg: "Invalid or expired reset code" });
+    }
+
+    await delOtp(`password-reset:${user._id}`);
+    user.password = password;
+    user.passwordSetAt = new Date();
+    user.refreshTokens = [];
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    user.resetPasswordRequestedAt = undefined;
+    await user.save();
+
+    await AuditLog.create({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_COMPLETED",
+      resource: "User",
+      resourceId: user._id,
+      metadata: { channel: "sms" },
+    });
+    await appendComplianceLedger({
+      actorId: user._id,
+      actorRole: user.role,
+      action: "PASSWORD_RESET_COMPLETED",
+      resource: "User",
+      resourceId: user._id,
+      hospital: user.hospital || null,
+      metadata: { channel: "sms" },
     });
 
     return res.json({ success: true });
@@ -1173,7 +1284,7 @@ export const changePassword = async (req, res) => {
       }
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
     user.passwordSetAt = new Date();
     user.refreshTokens = [];
     await user.save();
