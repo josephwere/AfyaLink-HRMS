@@ -48,6 +48,9 @@ export default function PatientBilling() {
           <button type="button" className="btn-primary" onClick={() => navigate("/payments")}>
             Open Payments
           </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-records")}>
+            Family Records
+          </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>
             Open Reports
           </button>

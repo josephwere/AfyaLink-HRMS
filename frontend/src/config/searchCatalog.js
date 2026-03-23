@@ -287,6 +287,7 @@ const ROLE_ITEMS = {
     { label: "Careers", path: "/careers" },
     { label: "My Appointments", path: "/patient/appointments" },
     { label: "Medical Records", path: "/patient/medical-records" },
+    { label: "Family Records", path: "/patient/family-records" },
     { label: "Prescriptions", path: "/patient/prescriptions" },
     { label: "Lab Results", path: "/patient/lab-results" },
     { label: "Billing", path: "/patient/billing" },

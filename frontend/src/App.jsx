@@ -85,6 +85,7 @@ import PharmacySuppliers from "./pages/Pharmacy/SupplierOrders";
 import PharmacyReports from "./pages/Pharmacy/ReportsPage";
 import PatientAppointments from "./pages/Patient/MyAppointments";
 import PatientMedicalRecords from "./pages/Patient/MedicalRecords";
+import PatientFamilyRecords from "./pages/Patient/FamilyRecords";
 import PatientPrescriptions from "./pages/Patient/Prescriptions";
 import PatientLabResults from "./pages/Patient/LabResults";
 import PatientBilling from "./pages/Patient/Billing";
@@ -771,6 +772,14 @@ export default function App() {
             element={
               <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
                 <PatientMedicalRecords />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/patient/family-records"
+            element={
+              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+                <PatientFamilyRecords />
               </RequireRole>
             }
           />

@@ -37,6 +37,8 @@ export default function Patients() {
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const [guardianRelationship, setGuardianRelationship] = useState("PARENT");
   const [guardianNotes, setGuardianNotes] = useState("");
+  const [inviteNewGuardian, setInviteNewGuardian] = useState(false);
+  const [newGuardian, setNewGuardian] = useState({ name: "", email: "", phone: "" });
   const cacheScope = `${user?.role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
   const isMinor = isMinorDob(form.dob);
 
@@ -145,13 +147,24 @@ export default function Patients() {
   const create = async () => {
     setMsg("");
     try {
-      await apiFetch("/api/patients", {
+      const res = await apiFetch("/api/patients", {
         method: "POST",
         body: {
           ...form,
           ...(isMinor && selectedGuardian
             ? {
                 guardianAccountId: selectedGuardian._id,
+                guardianRelationship,
+                guardianNotes,
+              }
+            : {}),
+          ...(isMinor && inviteNewGuardian && !selectedGuardian
+            ? {
+                createGuardianAccount: {
+                  name: newGuardian.name,
+                  email: newGuardian.email,
+                  phone: newGuardian.phone,
+                },
                 guardianRelationship,
                 guardianNotes,
               }
@@ -165,10 +178,14 @@ export default function Patients() {
       setSelectedGuardian(null);
       setGuardianRelationship("PARENT");
       setGuardianNotes("");
+      setInviteNewGuardian(false);
+      setNewGuardian({ name: "", email: "", phone: "" });
       setMsg(
         isMinor && selectedGuardian
           ? "Patient created and linked to the selected parent account."
-          : "Patient created."
+          : res?.guardianInviteIssued
+            ? "Patient created. Parent account was created and an invite email was sent."
+            : "Patient created."
       );
     } catch (err) {
       setMsg(err?.message || "Failed to create patient");
@@ -281,6 +298,16 @@ export default function Patients() {
                     Clear Parent
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setInviteNewGuardian((prev) => !prev);
+                    if (selectedGuardian) setSelectedGuardian(null);
+                  }}
+                >
+                  {inviteNewGuardian ? "Use Existing Parent" : "Create & Invite Parent"}
+                </button>
               </div>
               <select value={guardianRelationship} onChange={(e) => setGuardianRelationship(e.target.value)}>
                 <option value="PARENT">Parent</option>
@@ -292,13 +319,36 @@ export default function Patients() {
                 value={guardianNotes}
                 onChange={(e) => setGuardianNotes(e.target.value)}
               />
+              {inviteNewGuardian ? (
+                <div className="card form">
+                  <strong>Create parent account and send invite</strong>
+                  <input
+                    placeholder="Parent full name"
+                    value={newGuardian.name}
+                    onChange={(e) => setNewGuardian((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                  <input
+                    placeholder="Parent email"
+                    value={newGuardian.email}
+                    onChange={(e) => setNewGuardian((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                  <input
+                    placeholder="Parent phone (optional)"
+                    value={newGuardian.phone}
+                    onChange={(e) => setNewGuardian((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                  <span className="muted">
+                    A secure set-password email will be sent to the parent after the child record is created.
+                  </span>
+                </div>
+              ) : null}
               {selectedGuardian ? (
                 <div className="card">
                   <strong>Linked parent:</strong> {selectedGuardian.name}
                   <div className="muted">{selectedGuardian.email || selectedGuardian.phone || selectedGuardian.nationalIdNumber || "No contact"}</div>
                 </div>
               ) : null}
-              {guardianResults.length ? (
+              {guardianResults.length && !inviteNewGuardian ? (
                 <div className="table-wrap">
                   <table>
                     <thead>

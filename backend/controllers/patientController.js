@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import Patient from "../models/Patient.js";
 import Hospital from "../models/Hospital.js";
 import User from "../models/User.js";
@@ -5,6 +6,7 @@ import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { isMinorDob } from "../services/familyMonitoringService.js";
+import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
 
 function resolveActorHospitalId(req) {
   return req.user?.hospitalId || req.user?.hospital || null;
@@ -32,10 +34,13 @@ export const createPatient = async (req, res, next) => {
       guardianAccountId = null,
       guardianRelationship = "PARENT",
       guardianNotes = "",
+      createGuardianAccount = null,
       ...patientPayload
     } = req.body || {};
-    const shouldLinkGuardian = Boolean(guardianAccountId) && isMinorDob(patientPayload?.dob);
+    const isMinor = isMinorDob(patientPayload?.dob);
+    const shouldLinkGuardian = Boolean(guardianAccountId || createGuardianAccount) && isMinor;
     let guardian = null;
+    let guardianInvite = null;
 
     /* ================= LOAD HOSPITAL LIMITS ================= */
     const hospital = await Hospital.findOne({
@@ -72,10 +77,54 @@ export const createPatient = async (req, res, next) => {
     }
 
     if (shouldLinkGuardian) {
-      guardian = await User.findOne({
-        _id: guardianAccountId,
-        active: true,
-      }).select("_id role familyMonitoring hospital");
+      if (guardianAccountId) {
+        guardian = await User.findOne({
+          _id: guardianAccountId,
+          active: true,
+        }).select("_id role familyMonitoring hospital");
+      } else if (createGuardianAccount && typeof createGuardianAccount === "object") {
+        const name = String(createGuardianAccount.name || "").trim();
+        const email = String(createGuardianAccount.email || "").trim().toLowerCase();
+        const phone = String(createGuardianAccount.phone || "").trim();
+
+        if (!name || !email) {
+          return res.status(400).json({ message: "Parent name and email are required to create and invite a new parent account" });
+        }
+
+        guardian = await User.findOne({
+          active: true,
+          $or: [{ email }, ...(phone ? [{ phone }] : [])],
+        }).select("_id role familyMonitoring hospital email phone");
+
+        if (!guardian) {
+          guardian = await User.create({
+            name,
+            email,
+            phone: phone || undefined,
+            role: "PATIENT",
+            hospital: hospitalId,
+            password: crypto.randomBytes(18).toString("base64url"),
+            authProvider: "local",
+            active: true,
+            metadata: {
+              invitedAsGuardian: true,
+              invitedBy: req.user._id,
+            },
+          });
+
+          guardianInvite = await issuePasswordResetLink({
+            user: guardian,
+            frontendBase: resolveFrontendBase(req),
+            actorId: req.user._id,
+            actorRole: req.user?.role || null,
+            invite: true,
+            metadata: {
+              kind: "MINOR_GUARDIAN_INVITE",
+              invitedForMinorRegistration: true,
+            },
+          });
+        }
+      }
 
       if (!guardian) {
         return res.status(400).json({ message: "Selected parent account was not found" });
@@ -134,7 +183,11 @@ export const createPatient = async (req, res, next) => {
       });
     }
 
-    res.status(201).json(patient);
+    res.status(201).json({
+      patient,
+      guardianInviteIssued: Boolean(guardianInvite),
+      guardianInviteExpiresAt: guardianInvite?.expiresAt || null,
+    });
   } catch (err) {
     next(err);
   }

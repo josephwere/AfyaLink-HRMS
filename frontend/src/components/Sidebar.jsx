@@ -629,6 +629,7 @@ export default function Sidebar({ open = true, onClose }) {
                 <Section title="Patient Workspace">
                   <Item to="/patient/appointments" icon="appointments" onSelect={onClose}>My Appointments</Item>
                   <Item to="/patient/medical-records" icon="reports" onSelect={onClose}>Medical Records</Item>
+                  <Item to="/patient/family-records" icon="staff" onSelect={onClose}>Family Records</Item>
                   <Item to="/patient/prescriptions" icon="pharmacy" onSelect={onClose}>Prescriptions</Item>
                   <Item to="/patient/lab-results" icon="lab" onSelect={onClose}>Lab Results</Item>
                   <Item to="/patient/billing" icon="payroll" onSelect={onClose}>Billing</Item>

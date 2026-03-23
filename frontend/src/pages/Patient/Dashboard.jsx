@@ -57,6 +57,7 @@ export default function Dashboard() {
           <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>Billing</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/reports")}>Reports</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>Family Records</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>Profile</button>
         </div>
@@ -82,6 +83,9 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="welcome-actions">
+              <button className="btn-primary" type="button" onClick={() => navigate("/patient/family-records")}>
+                Open Family Records
+              </button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>
                 Manage Linked Children
               </button>
@@ -94,22 +98,22 @@ export default function Dashboard() {
             <StatCard
               title="Linked Children"
               value={data.familyMonitoring.linkedMinorCount}
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
               title="Upcoming Child Visits"
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.upcomingAppointments || 0), 0)}
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
               title="Tracked Encounters"
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.totalEncounters || 0), 0)}
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
               title="Active Child Prescriptions"
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.activePrescriptions || 0), 0)}
-              onClick={() => navigate("/patient/prescriptions")}
+              onClick={() => navigate("/patient/family-records")}
             />
           </div>
           <div className="panel-grid" style={{ marginTop: 14 }}>
@@ -126,8 +130,8 @@ export default function Dashboard() {
                   Latest diagnosis: {item.latestDiagnosis || "No diagnosis captured yet"}
                 </p>
                 <div className="doctor-actions-row" style={{ marginTop: 10 }}>
-                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/appointments")}>
-                    Child Appointments
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>
+                    Family Records
                   </button>
                   <button className="btn-secondary" type="button" onClick={() => navigate("/patient/medical-records")}>
                     Medical Records
