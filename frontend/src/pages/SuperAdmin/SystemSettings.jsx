@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
-import { getSystemSettings, updateSystemSettings } from "../../services/systemSettingsApi";
+import {
+  getEmailDeliveryHealth,
+  getSystemSettings,
+  updateSystemSettings,
+} from "../../services/systemSettingsApi";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
@@ -105,6 +109,8 @@ export default function SystemSettings() {
   const [savingCard, setSavingCard] = useState("");
   const [msg, setMsg] = useState(null);
   const [initialForm, setInitialForm] = useState(null);
+  const [emailHealth, setEmailHealth] = useState(null);
+  const [emailHealthLoading, setEmailHealthLoading] = useState(false);
 
   if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
     return <AccessDeniedCard message="System settings require founder, system admin, or developer privileges." />;
@@ -138,6 +144,27 @@ export default function SystemSettings() {
         setInitialForm(next);
       })
       .catch(() => {});
+  }, []);
+
+  const loadEmailHealth = async () => {
+    setEmailHealthLoading(true);
+    try {
+      const data = await getEmailDeliveryHealth();
+      setEmailHealth(data);
+    } catch (err) {
+      setEmailHealth({
+        status: "warning",
+        provider: "unknown",
+        recommendations: [err?.message || "Failed to load email delivery health."],
+        checkedAt: new Date().toISOString(),
+      });
+    } finally {
+      setEmailHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEmailHealth();
   }, []);
 
   const isObject = (value) =>
@@ -341,6 +368,97 @@ export default function SystemSettings() {
       </div>
 
       {msg && <div className="card">{msg}</div>}
+
+      <section className="section">
+        <h3>Email Delivery Health</h3>
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <strong>Email provider status</strong>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
+                Verify whether Brevo email delivery, sender identity, and contact sync are ready on the live backend.
+              </p>
+            </div>
+            <div className="welcome-actions" style={{ gap: 8 }}>
+              <span className={`action-pill ${emailHealth?.status === "healthy" ? "ok" : "warn"}`}>
+                {emailHealth?.status === "healthy" ? "Healthy" : "Needs attention"}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={loadEmailHealth}
+                disabled={emailHealthLoading}
+              >
+                {emailHealthLoading ? "Refreshing..." : "Refresh Status"}
+              </button>
+            </div>
+          </div>
+
+          <div className="panel-grid" style={{ marginTop: 12 }}>
+            <div className="card premium-card">
+              <h4>Active Provider</h4>
+              <p className="muted">{emailHealth?.provider || "unknown"}</p>
+              <p className="muted">
+                Sender: {emailHealth?.sender?.name || "AfyaLink HRMS"}{" "}
+                {emailHealth?.sender?.emailMasked ? `• ${emailHealth.sender.emailMasked}` : ""}
+              </p>
+            </div>
+            <div className="card premium-card">
+              <h4>Brevo API</h4>
+              <p className="muted">
+                {emailHealth?.brevo?.apiConfigured ? "Configured" : "Missing API key"}
+              </p>
+              <p className="muted">
+                Contact sync: {emailHealth?.brevo?.contactSyncEnabled ? "enabled" : "disabled"}
+              </p>
+              <p className="muted">
+                Lists: {emailHealth?.brevo?.defaultListIds?.length ? emailHealth.brevo.defaultListIds.join(", ") : "none"}
+              </p>
+            </div>
+            <div className="card premium-card">
+              <h4>SMTP Fallback</h4>
+              <p className="muted">
+                {emailHealth?.smtp?.configured ? "Configured" : "Not configured"}
+              </p>
+              <p className="muted">
+                {emailHealth?.smtp?.host || "No SMTP host"} • Port {emailHealth?.smtp?.port || "—"}
+              </p>
+              <p className="muted">
+                Login: {emailHealth?.smtp?.loginMasked || "not set"}
+              </p>
+            </div>
+          </div>
+
+          <div className="panel-grid" style={{ marginTop: 12 }}>
+            <div className="card">
+              <h4>Recommended Next Checks</h4>
+              {emailHealth?.recommendations?.length ? (
+                <ul className="muted" style={{ marginTop: 8, paddingLeft: 18 }}>
+                  {emailHealth.recommendations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Backend email delivery looks ready. Next run <code>{emailHealth?.brevo?.smokeScript || "npm run smoke:brevo-email"}</code> on the backend host.
+                </p>
+              )}
+            </div>
+            <div className="card">
+              <h4>Smoke Test</h4>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Command: <code>{emailHealth?.brevo?.smokeScript || "npm run smoke:brevo-email"}</code>
+              </p>
+              <p className="muted">
+                Sandbox default: {emailHealth?.brevo?.smokeSandboxDefault ? "enabled" : "disabled"}
+              </p>
+              <p className="muted">
+                Last checked: {emailHealth?.checkedAt ? new Date(emailHealth.checkedAt).toLocaleString() : "waiting"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="section">
         <h3>Branding Assets</h3>
