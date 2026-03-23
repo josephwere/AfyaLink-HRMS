@@ -14,6 +14,7 @@ import Hospital from "../models/Hospital.js";
 import Notification from "../models/Notification.js";
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 import { v4 as uuidv4 } from "uuid";
+import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 function resolveHospitalId(req) {
   const role = String(req.user?.role || "").toUpperCase();
@@ -92,20 +93,6 @@ function buildEncounterCloseoutSummary(encounter, { policy, billing = null, pres
       prescription: policy.requirePrescriptionWhenPharmacyEnabled,
     },
   };
-}
-
-async function resolvePatientIdsForUser(userId, hospitalId = null) {
-  const user = await User.findById(userId).select("phone nationalIdNumber");
-  if (!user) return [];
-
-  const filters = [{ "metadata.userId": userId }];
-  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
-  if (user.phone) filters.push({ contact: user.phone });
-
-  const where = { active: true, $or: filters };
-  if (hospitalId) where.hospital = hospitalId;
-  const rows = await Patient.find(where).select("_id");
-  return rows.map((row) => String(row._id));
 }
 
 export const listEncounters = async (req, res) => {

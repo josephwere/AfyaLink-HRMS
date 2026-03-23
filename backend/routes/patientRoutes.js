@@ -6,6 +6,7 @@ import {
   listPatients,
   getPatient,
   searchPatients,
+  searchGuardianAccounts,
   deactivatePatient,
 } from "../controllers/patientController.js";
 
@@ -34,6 +35,7 @@ router.get("/", protect, listPatients);
  * ======================================================
  */
 router.get("/search", protect, searchPatients);
+router.get("/guardians/search", protect, searchGuardianAccounts);
 
 /**
  * ======================================================

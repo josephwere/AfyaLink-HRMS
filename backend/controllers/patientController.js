@@ -1,8 +1,14 @@
 import Patient from "../models/Patient.js";
 import Hospital from "../models/Hospital.js";
+import User from "../models/User.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
+import { isMinorDob } from "../services/familyMonitoringService.js";
+
+function resolveActorHospitalId(req) {
+  return req.user?.hospitalId || req.user?.hospital || null;
+}
 
 function resolveScopedHospitalId(req) {
   const actorRole = String(req.user?.role || "").toUpperCase();
@@ -21,7 +27,15 @@ function resolveScopedHospitalId(req) {
  */
 export const createPatient = async (req, res, next) => {
   try {
-    const hospitalId = req.user.hospitalId;
+    const hospitalId = resolveActorHospitalId(req);
+    const {
+      guardianAccountId = null,
+      guardianRelationship = "PARENT",
+      guardianNotes = "",
+      ...patientPayload
+    } = req.body || {};
+    const shouldLinkGuardian = Boolean(guardianAccountId) && isMinorDob(patientPayload?.dob);
+    let guardian = null;
 
     /* ================= LOAD HOSPITAL LIMITS ================= */
     const hospital = await Hospital.findOne({
@@ -57,13 +71,68 @@ export const createPatient = async (req, res, next) => {
       });
     }
 
+    if (shouldLinkGuardian) {
+      guardian = await User.findOne({
+        _id: guardianAccountId,
+        active: true,
+      }).select("_id role familyMonitoring hospital");
+
+      if (!guardian) {
+        return res.status(400).json({ message: "Selected parent account was not found" });
+      }
+    }
+
     /* ================= CREATE PATIENT ================= */
     const patient = await Patient.create({
-      ...req.body,
+      ...patientPayload,
       hospital: hospitalId, // 🔐 tenant enforced
       createdBy: req.user._id,
       active: true,
     });
+
+    if (guardian && isMinorDob(patient.dob)) {
+      guardian.familyMonitoring = guardian.familyMonitoring || {};
+      guardian.familyMonitoring.linkedMinorPatients = [
+        ...(guardian.familyMonitoring.linkedMinorPatients || []).filter(
+          (link) => String(link.patient) !== String(patient._id)
+        ),
+        {
+          patient: patient._id,
+          relationship: String(guardianRelationship || "PARENT").trim() || "PARENT",
+          status: "ACTIVE",
+          linkedAt: new Date(),
+          linkedBy: req.user._id,
+          notes: String(guardianNotes || "").trim(),
+        },
+      ];
+
+      patient.guardianLinks = [
+        ...(patient.guardianLinks || []).filter(
+          (link) => String(link.user) !== String(guardian._id)
+        ),
+        {
+          user: guardian._id,
+          relationship: String(guardianRelationship || "PARENT").trim() || "PARENT",
+          status: "ACTIVE",
+          canMonitor: true,
+          linkedAt: new Date(),
+          linkedBy: req.user._id,
+          notes: String(guardianNotes || "").trim(),
+        },
+      ];
+
+      await Promise.all([guardian.save(), patient.save()]);
+      await audit({
+        req,
+        action: "REGISTER_MINOR_WITH_GUARDIAN_LINK",
+        resource: "Patient",
+        resourceId: patient._id,
+        metadata: {
+          guardianAccountId: guardian._id,
+          guardianRelationship: guardianRelationship || "PARENT",
+        },
+      });
+    }
 
     res.status(201).json(patient);
   } catch (err) {
@@ -219,6 +288,53 @@ export const searchPatients = async (req, res, next) => {
       .select("-__v");
 
     res.json(patients);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const searchGuardianAccounts = async (req, res, next) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const hospitalId = resolveScopedHospitalId(req);
+    if (!q) {
+      return res.json({ items: [] });
+    }
+
+    const rows = await User.find({
+      active: true,
+      role: { $in: ["PATIENT", "GUEST"] },
+      $and: [
+        {
+          $or: hospitalId
+            ? [{ hospital: hospitalId }, { hospital: null }, { hospital: { $exists: false } }]
+            : [{ hospital: null }, { hospital: { $exists: false } }],
+        },
+        {
+          $or: [
+            { name: { $regex: q, $options: "i" } },
+            { email: { $regex: q, $options: "i" } },
+            { phone: { $regex: q, $options: "i" } },
+            { nationalIdNumber: { $regex: q, $options: "i" } },
+          ],
+        },
+      ],
+    })
+      .select("name email phone role nationalIdNumber hospital")
+      .limit(12)
+      .lean();
+
+    return res.json({
+      items: rows.map((row) => ({
+        _id: row._id,
+        name: row.name || "Unnamed guardian",
+        email: row.email || "",
+        phone: row.phone || "",
+        role: row.role || "PATIENT",
+        nationalIdNumber: row.nationalIdNumber || "",
+        hospital: row.hospital || null,
+      })),
+    });
   } catch (err) {
     next(err);
   }

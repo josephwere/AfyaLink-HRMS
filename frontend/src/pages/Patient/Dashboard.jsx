@@ -56,6 +56,7 @@ export default function Dashboard() {
         <div className="welcome-actions">
           <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>Billing</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/reports")}>Reports</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
           <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>Profile</button>
         </div>
@@ -70,6 +71,76 @@ export default function Dashboard() {
           <StatCard title="Lab Results" value={data?.labResults ?? "—"} onClick={() => navigate("/patient/lab-results")} />
         </div>
       </section>
+
+      {data?.familyMonitoring?.linkedMinorCount ? (
+        <section className="section">
+          <div className="welcome-panel">
+            <div>
+              <h3>Family Monitoring</h3>
+              <p className="muted">
+                Linked minor records are visible here so a parent or guardian can trace each child’s care from one account.
+              </p>
+            </div>
+            <div className="welcome-actions">
+              <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>
+                Manage Linked Children
+              </button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications?category=WELLNESS")}>
+                Open Daily Quotes
+              </button>
+            </div>
+          </div>
+          <div className="grid info-grid">
+            <StatCard
+              title="Linked Children"
+              value={data.familyMonitoring.linkedMinorCount}
+              onClick={() => navigate("/profile")}
+            />
+            <StatCard
+              title="Upcoming Child Visits"
+              value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.upcomingAppointments || 0), 0)}
+              onClick={() => navigate("/profile")}
+            />
+            <StatCard
+              title="Tracked Encounters"
+              value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.totalEncounters || 0), 0)}
+              onClick={() => navigate("/profile")}
+            />
+            <StatCard
+              title="Active Child Prescriptions"
+              value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.activePrescriptions || 0), 0)}
+              onClick={() => navigate("/patient/prescriptions")}
+            />
+          </div>
+          <div className="panel-grid" style={{ marginTop: 14 }}>
+            {data.familyMonitoring.linkedMinors.map((item) => (
+              <div key={item.patientId} className="card premium-card">
+                <h4>{item.name}</h4>
+                <p className="muted">
+                  {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
+                </p>
+                <p className="muted">
+                  Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
+                </p>
+                <p className="muted">
+                  Latest diagnosis: {item.latestDiagnosis || "No diagnosis captured yet"}
+                </p>
+                <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/appointments")}>
+                    Child Appointments
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/medical-records")}>
+                    Medical Records
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>
+                    Manage Link
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {latestPrescription ? (
         <section className="section">
@@ -122,6 +193,7 @@ export default function Dashboard() {
           <h3>Health Timeline</h3>
           <div className="panel-grid">
             <button className="action-link" type="button" onClick={() => navigate("/patient/medical-records")}>Medical Records</button>
+            <button className="action-link" type="button" onClick={() => navigate("/reports")}>Reports</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>Prescriptions</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>Lab Results</button>
             <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>Insurance</button>

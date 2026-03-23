@@ -11,28 +11,9 @@ import { getIO } from "../utils/socket.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { calendarOptimizeSlot } from "../utils/aiAdvanced.js";
+import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
-
-async function resolvePatientIdsForUser(userId, hospitalId = null) {
-  const user = await User.findById(userId).select("name phone nationalIdNumber");
-  if (!user) return [];
-
-  const filters = [];
-  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
-  if (user.phone) filters.push({ contact: user.phone });
-  filters.push({ "metadata.userId": userId });
-  if (!filters.length) return [];
-
-  const where = {
-    active: true,
-    $or: filters,
-  };
-  if (hospitalId) where.hospital = hospitalId;
-
-  const rows = await Patient.find(where).select("_id");
-  return rows.map((p) => String(p._id));
-}
 
 function parseTimeToMinutes(value, fallback) {
   const match = String(value || fallback || "08:00").match(/^(\d{1,2}):(\d{2})$/);

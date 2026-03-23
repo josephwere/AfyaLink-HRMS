@@ -6,6 +6,19 @@ import { useAuth } from "../../utils/auth";
 const PATIENTS_QUERY_CACHE_KEY = "patients_query_cache_v1";
 const PATIENTS_QUERY_CACHE_TTL_MS = 15 * 60 * 1000;
 
+function isMinorDob(dob) {
+  if (!dob) return false;
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) return false;
+  const now = new Date();
+  let age = now.getFullYear() - birthDate.getFullYear();
+  const monthDelta = now.getMonth() - birthDate.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+  return age < 18;
+}
+
 export default function Patients() {
   const { user } = useAuth();
   const [patients, setPatients] = useState([]);
@@ -18,7 +31,14 @@ export default function Patients() {
   const [cacheReady, setCacheReady] = useState(false);
   const [cacheBadge, setCacheBadge] = useState("Live • now");
   const [form, setForm] = useState({ firstName: "", lastName: "", nationalId: "", dob: "" });
+  const [guardianQuery, setGuardianQuery] = useState("");
+  const [guardianResults, setGuardianResults] = useState([]);
+  const [guardianSearching, setGuardianSearching] = useState(false);
+  const [selectedGuardian, setSelectedGuardian] = useState(null);
+  const [guardianRelationship, setGuardianRelationship] = useState("PARENT");
+  const [guardianNotes, setGuardianNotes] = useState("");
   const cacheScope = `${user?.role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
+  const isMinor = isMinorDob(form.dob);
 
   const parseList = (data) => ({
     items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
@@ -125,11 +145,55 @@ export default function Patients() {
   const create = async () => {
     setMsg("");
     try {
-      await apiFetch("/api/patients", { method: "POST", body: form });
+      await apiFetch("/api/patients", {
+        method: "POST",
+        body: {
+          ...form,
+          ...(isMinor && selectedGuardian
+            ? {
+                guardianAccountId: selectedGuardian._id,
+                guardianRelationship,
+                guardianNotes,
+              }
+            : {}),
+        },
+      });
       await fetchPatients();
       setForm({ firstName: "", lastName: "", nationalId: "", dob: "" });
+      setGuardianQuery("");
+      setGuardianResults([]);
+      setSelectedGuardian(null);
+      setGuardianRelationship("PARENT");
+      setGuardianNotes("");
+      setMsg(
+        isMinor && selectedGuardian
+          ? "Patient created and linked to the selected parent account."
+          : "Patient created."
+      );
     } catch (err) {
       setMsg(err?.message || "Failed to create patient");
+    }
+  };
+
+  const searchGuardians = async () => {
+    if (!guardianQuery.trim()) {
+      setMsg("Enter parent email, phone, name, or ID before searching.");
+      return;
+    }
+    setGuardianSearching(true);
+    setMsg("");
+    try {
+      const params = new URLSearchParams({ q: guardianQuery.trim() });
+      const data = await apiFetch(`/api/patients/guardians/search?${params.toString()}`);
+      setGuardianResults(Array.isArray(data?.items) ? data.items : []);
+      if (!(data?.items || []).length) {
+        setMsg("No matching parent account found.");
+      }
+    } catch (err) {
+      setGuardianResults([]);
+      setMsg(err?.message || "Failed to search parent accounts.");
+    } finally {
+      setGuardianSearching(false);
     }
   };
 
@@ -194,6 +258,80 @@ export default function Patients() {
             value={form.dob}
             onChange={(e) => setForm({ ...form, dob: e.target.value })}
           />
+          {isMinor ? (
+            <>
+              <div className="subtle-banner">
+                This patient is a minor. Link a parent or guardian account so the child can be monitored from the parent account.
+              </div>
+              <input
+                placeholder="Search parent by name, email, phone, or ID"
+                value={guardianQuery}
+                onChange={(e) => setGuardianQuery(e.target.value)}
+              />
+              <div className="welcome-actions">
+                <button type="button" className="btn-secondary" onClick={searchGuardians} disabled={guardianSearching}>
+                  {guardianSearching ? "Searching..." : "Find Parent Account"}
+                </button>
+                {selectedGuardian ? (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setSelectedGuardian(null)}
+                  >
+                    Clear Parent
+                  </button>
+                ) : null}
+              </div>
+              <select value={guardianRelationship} onChange={(e) => setGuardianRelationship(e.target.value)}>
+                <option value="PARENT">Parent</option>
+                <option value="GUARDIAN">Guardian</option>
+                <option value="CAREGIVER">Caregiver</option>
+              </select>
+              <input
+                placeholder="Guardian note (optional)"
+                value={guardianNotes}
+                onChange={(e) => setGuardianNotes(e.target.value)}
+              />
+              {selectedGuardian ? (
+                <div className="card">
+                  <strong>Linked parent:</strong> {selectedGuardian.name}
+                  <div className="muted">{selectedGuardian.email || selectedGuardian.phone || selectedGuardian.nationalIdNumber || "No contact"}</div>
+                </div>
+              ) : null}
+              {guardianResults.length ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Contact</th>
+                        <th>Role</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {guardianResults.map((item) => (
+                        <tr key={item._id}>
+                          <td>{item.name}</td>
+                          <td>{item.email || item.phone || item.nationalIdNumber || "-"}</td>
+                          <td>{item.role}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className={selectedGuardian?._id === item._id ? "btn-secondary" : "btn-primary"}
+                              onClick={() => setSelectedGuardian(item)}
+                            >
+                              {selectedGuardian?._id === item._id ? "Selected" : "Use"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </>
+          ) : null}
           <div>
             <button type="button" className="btn-primary" onClick={create}>Create</button>
           </div>

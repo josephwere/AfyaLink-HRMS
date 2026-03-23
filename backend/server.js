@@ -18,6 +18,7 @@ import { runWorkforceAutomationSweep } from "./workers/workforceAutomationSweep.
 import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWorker.js";
 import { runTrainingOverdueSweep } from "./workers/trainingOverdueWorker.js";
 import { runAiAssistantBootstrap } from "./utils/aiAssistantBootstrap.js";
+import { deliverDailyRoleQuotes } from "./services/dailyRoleQuoteService.js";
 
 dotenv.config();
 
@@ -126,6 +127,16 @@ const start = async () => {
         }
       } catch (err) {
         console.error("[TRAINING_SWEEP] failed", err);
+      }
+    }, { timezone: "Africa/Nairobi" });
+    cron.schedule("5 6 * * *", async () => {
+      try {
+        const result = await deliverDailyRoleQuotes();
+        if (result.created > 0) {
+          console.log(`[DAILY_ROLE_QUOTES] date=${result.quoteDate} scanned=${result.scanned} created=${result.created}`);
+        }
+      } catch (err) {
+        console.error("[DAILY_ROLE_QUOTES] failed", err);
       }
     }, { timezone: "Africa/Nairobi" });
 

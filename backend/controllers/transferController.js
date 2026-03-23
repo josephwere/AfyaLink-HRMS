@@ -12,6 +12,7 @@ import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { appendComplianceLedger } from "../utils/complianceLedger.js";
 import { signProvenance, verifyProvenance } from "../utils/provenance.js";
+import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 function canAccessTransfer(user, transfer) {
   const role = normalizeRole(user?.role || "");
@@ -36,26 +37,6 @@ function isActiveConsent(consent) {
   if (!consent || consent.status !== "GRANTED") return false;
   if (consent.expiresAt && new Date(consent.expiresAt) < new Date()) return false;
   return true;
-}
-
-async function resolvePatientIdsForUser(userId, hospitalId = null) {
-  const user = await User.findById(userId).select("name phone nationalIdNumber");
-  if (!user) return [];
-
-  const filters = [];
-  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
-  if (user.phone) filters.push({ contact: user.phone });
-  filters.push({ "metadata.userId": userId });
-  if (!filters.length) return [];
-
-  const where = {
-    active: true,
-    $or: filters,
-  };
-  if (hospitalId) where.hospital = hospitalId;
-
-  const rows = await Patient.find(where).select("_id");
-  return rows.map((p) => String(p._id));
 }
 
 async function requireConsentForCrossHospitalRead(req, transfer) {

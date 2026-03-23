@@ -151,6 +151,20 @@ export default function Profile() {
     currency: "KES",
     status: "PENDING",
   });
+  const [familyPrefs, setFamilyPrefs] = useState({
+    receiveMinorAlerts: true,
+    showDailyMinorSummary: true,
+  });
+  const [linkedMinors, setLinkedMinors] = useState([]);
+  const [familySearch, setFamilySearch] = useState({
+    q: "",
+    dob: "",
+    relationship: "PARENT",
+    notes: "",
+  });
+  const [familyResults, setFamilyResults] = useState([]);
+  const [familyBusy, setFamilyBusy] = useState(false);
+  const [familyMsg, setFamilyMsg] = useState("");
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -172,6 +186,7 @@ export default function Profile() {
     credentialsInfo: false,
     financialInfo: false,
     insuranceProfile: false,
+    familyMonitoring: false,
     systemData: false,
     roleChecklist: false,
     trainingGuide: false,
@@ -319,6 +334,11 @@ export default function Profile() {
         currency: me?.insuranceProfile?.currency || "KES",
         status: me?.insuranceProfile?.status || "PENDING",
       });
+      setFamilyPrefs({
+        receiveMinorAlerts: me?.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
+        showDailyMinorSummary: me?.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
+      });
+      setLinkedMinors(Array.isArray(me?.linkedMinorSummaries) ? me.linkedMinorSummaries : []);
       setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
     } catch {
       setError("Unable to load security settings");
@@ -460,6 +480,103 @@ export default function Profile() {
       setUiPrefMsg(err?.message || "Failed to save preference.");
     } finally {
       setUiPrefSaving(false);
+    }
+  };
+
+  const saveFamilyPreferences = async () => {
+    setFamilyBusy(true);
+    setFamilyMsg("");
+    try {
+      await apiFetch("/api/profile", {
+        method: "PUT",
+        body: { familyMonitoringPreferences: familyPrefs },
+      });
+      setFamilyMsg("Family monitoring preferences saved.");
+    } catch (err) {
+      setFamilyMsg(err?.message || "Failed to save family monitoring preferences.");
+    } finally {
+      setFamilyBusy(false);
+    }
+  };
+
+  const refreshFamilyMonitoring = async () => {
+    const data = await apiFetch("/api/profile/family");
+    setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
+    setFamilyPrefs({
+      receiveMinorAlerts: data?.preferences?.receiveMinorAlerts !== false,
+      showDailyMinorSummary: data?.preferences?.showDailyMinorSummary !== false,
+    });
+  };
+
+  const searchMinorProfiles = async () => {
+    if (!familySearch.q.trim() || !familySearch.dob) {
+      setFamilyMsg("Enter the child's name and date of birth before searching.");
+      return;
+    }
+    setFamilyBusy(true);
+    setFamilyMsg("");
+    try {
+      const params = new URLSearchParams({
+        q: familySearch.q.trim(),
+        dob: familySearch.dob,
+      });
+      const data = await apiFetch(`/api/profile/family/search?${params.toString()}`);
+      setFamilyResults(Array.isArray(data?.items) ? data.items : []);
+      if (!(data?.items || []).length) {
+        setFamilyMsg("No matching minor profile was found in your hospital scope.");
+      }
+    } catch (err) {
+      setFamilyResults([]);
+      setFamilyMsg(err?.message || "Failed to search minor profiles.");
+    } finally {
+      setFamilyBusy(false);
+    }
+  };
+
+  const linkMinorProfile = async (patientId) => {
+    setFamilyBusy(true);
+    setFamilyMsg("");
+    try {
+      const data = await apiFetch("/api/profile/family/minors/link", {
+        method: "POST",
+        body: {
+          patientId,
+          relationship: familySearch.relationship,
+          notes: familySearch.notes,
+        },
+      });
+      setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
+      setFamilyResults((prev) =>
+        prev.map((item) =>
+          item.patientId === patientId ? { ...item, alreadyLinked: true } : item
+        )
+      );
+      setFamilyMsg(data?.message || "Child linked successfully.");
+    } catch (err) {
+      setFamilyMsg(err?.message || "Failed to link child profile.");
+    } finally {
+      setFamilyBusy(false);
+    }
+  };
+
+  const unlinkMinorProfile = async (patientId) => {
+    setFamilyBusy(true);
+    setFamilyMsg("");
+    try {
+      const data = await apiFetch(`/api/profile/family/minors/${patientId}`, {
+        method: "DELETE",
+      });
+      setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
+      setFamilyResults((prev) =>
+        prev.map((item) =>
+          item.patientId === patientId ? { ...item, alreadyLinked: false } : item
+        )
+      );
+      setFamilyMsg(data?.message || "Child removed from monitoring.");
+    } catch (err) {
+      setFamilyMsg(err?.message || "Failed to remove child profile.");
+    } finally {
+      setFamilyBusy(false);
     }
   };
 
@@ -2073,6 +2190,140 @@ export default function Profile() {
           {sectionSaving.insuranceProfile ? "Saving..." : "Save Insurance Profile"}
         </button>
         {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
+      </DismissibleSection>
+
+      <DismissibleSection
+        sectionKey="familyMonitoring"
+        title="Family & Minor Monitoring"
+        open={openSections.familyMonitoring}
+        onClose={closeSection}
+        onOpen={openSection}
+      >
+        <p className="muted">
+          Link minors under 18 to your account so their appointments, encounters, and medical record trail can be monitored from one parent or guardian login.
+        </p>
+        <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+          <input
+            type="checkbox"
+            checked={familyPrefs.receiveMinorAlerts}
+            onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, receiveMinorAlerts: e.target.checked }))}
+          />
+          Receive alerts for linked children
+        </label>
+        <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginTop: 8 }}>
+          <input
+            type="checkbox"
+            checked={familyPrefs.showDailyMinorSummary}
+            onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, showDailyMinorSummary: e.target.checked }))}
+          />
+          Show linked children summary on patient dashboards
+        </label>
+        <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
+          <button type="button" className="secondary" onClick={saveFamilyPreferences} disabled={familyBusy}>
+            {familyBusy ? "Saving..." : "Save Family Preferences"}
+          </button>
+          <button type="button" className="secondary" onClick={refreshFamilyMonitoring} disabled={familyBusy}>
+            Refresh Linked Children
+          </button>
+        </div>
+
+        <hr style={{ margin: "18px 0" }} />
+
+        <label>Child name</label>
+        <input
+          value={familySearch.q}
+          onChange={(e) => setFamilySearch((prev) => ({ ...prev, q: e.target.value }))}
+          placeholder="Enter first or last name"
+        />
+        <label>Child date of birth</label>
+        <input
+          type="date"
+          value={familySearch.dob}
+          onChange={(e) => setFamilySearch((prev) => ({ ...prev, dob: e.target.value }))}
+        />
+        <label>Relationship</label>
+        <select
+          value={familySearch.relationship}
+          onChange={(e) => setFamilySearch((prev) => ({ ...prev, relationship: e.target.value }))}
+        >
+          <option value="PARENT">Parent</option>
+          <option value="GUARDIAN">Guardian</option>
+          <option value="CAREGIVER">Caregiver</option>
+        </select>
+        <label>Notes</label>
+        <input
+          value={familySearch.notes}
+          onChange={(e) => setFamilySearch((prev) => ({ ...prev, notes: e.target.value }))}
+          placeholder="Optional note for the care team"
+        />
+        <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
+          <button type="button" className="primary" onClick={searchMinorProfiles} disabled={familyBusy}>
+            {familyBusy ? "Working..." : "Find Child Profile"}
+          </button>
+        </div>
+        {familyMsg ? <p style={{ marginTop: 8 }}>{familyMsg}</p> : null}
+
+        {familyResults.length ? (
+          <div style={{ marginTop: 14 }}>
+            <h4 style={{ marginBottom: 8 }}>Matching Minor Profiles</h4>
+            <div className="panel-grid">
+              {familyResults.map((item) => (
+                <div key={item.patientId} className="card">
+                  <strong>{item.name}</strong>
+                  <p className="muted" style={{ marginTop: 6 }}>
+                    Age {item.age ?? "—"} • {item.gender || "Unspecified"} • {item.hospitalName || "Hospital not set"}
+                  </p>
+                  <p className="muted">
+                    DOB: {item.dob ? String(item.dob).slice(0, 10) : "-"}
+                  </p>
+                  <button
+                    type="button"
+                    className={item.alreadyLinked ? "secondary" : "primary"}
+                    disabled={familyBusy || item.alreadyLinked}
+                    onClick={() => linkMinorProfile(item.patientId)}
+                  >
+                    {item.alreadyLinked ? "Already Linked" : "Link to My Account"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: 18 }}>
+          <h4 style={{ marginBottom: 8 }}>Linked Children</h4>
+          {linkedMinors.length ? (
+            <div className="panel-grid">
+              {linkedMinors.map((item) => (
+                <div key={item.patientId} className="card">
+                  <div className="profile-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <p className="muted" style={{ marginTop: 6 }}>
+                        {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
+                      </p>
+                    </div>
+                    <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
+                      Remove
+                    </button>
+                  </div>
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
+                  </p>
+                  <p className="muted">
+                    Latest diagnosis: {item.latestDiagnosis || "No diagnosis captured yet"}
+                  </p>
+                  <p className="muted">
+                    Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}
+                  </p>
+                  {item.notes ? <p className="muted">Notes: {item.notes}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No linked children yet.</p>
+          )}
+        </div>
       </DismissibleSection>
 
       <DismissibleSection

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 
 export default function PatientMedicalRecords() {
+  const navigate = useNavigate();
   const [encounters, setEncounters] = useState([]);
   const [msg, setMsg] = useState("");
 
@@ -24,6 +26,9 @@ export default function PatientMedicalRecords() {
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => window.print()}>
             Download Record
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>
+            Open Reports
           </button>
         </div>
       </div>

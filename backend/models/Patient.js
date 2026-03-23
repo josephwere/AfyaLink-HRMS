@@ -53,6 +53,25 @@ const patientSchema = new Schema(
       immutable: { type: Boolean, default: false },
     },
 
+    guardianLinks: {
+      type: [
+        {
+          user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+          relationship: { type: String, trim: true, default: "PARENT" },
+          status: {
+            type: String,
+            enum: ["ACTIVE", "REMOVED"],
+            default: "ACTIVE",
+          },
+          canMonitor: { type: Boolean, default: true },
+          linkedAt: { type: Date, default: Date.now },
+          linkedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+          notes: { type: String, trim: true, default: "" },
+        },
+      ],
+      default: [],
+    },
+
     metadata: Object,
 
     /* ================= SOFT DELETE ================= */

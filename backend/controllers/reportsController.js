@@ -9,6 +9,7 @@ import ShiftRequest from "../models/ShiftRequest.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { recordExportEvent } from "../utils/exportAudit.js";
+import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 import { generateMedicalReport } from "../services/medicalReportService.js";
 import { getIO } from "../utils/socket.js";
@@ -143,10 +144,16 @@ export const getReports = async (req, res) => {
 export const getMyReports = async (req, res) => {
   try {
     const role = normalizeRole(req.user.role);
-    const filter = { hospital: req.user.hospital };
+    const filter = req.user.hospital ? { hospital: req.user.hospital } : {};
 
     if (role === "DOCTOR") filter.createdBy = req.user._id;
-    if (role === "PATIENT") filter.patient = req.user._id;
+    if (role === "PATIENT") {
+      const patientIds = await resolvePatientIdsForUser(req.user._id, req.user.hospital || null);
+      if (!patientIds.length) {
+        return res.json({ items: [], total: 0, page: 1, limit: 25 });
+      }
+      filter.patient = { $in: patientIds };
+    }
 
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);

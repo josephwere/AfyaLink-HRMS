@@ -6,6 +6,7 @@ import { predictNextAvailableSlot, simpleRiskScore } from '../utils/aiUtils.js';
 import { extractDocumentBase64, assistantChat } from "../services/aiAdapter.js";
 import { logAudit } from "../services/auditService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
+import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 export const suggestSlot = async (req, res, next) => {
   try {
@@ -66,19 +67,6 @@ export const extractDocument = async (req, res, next) => {
     next(err);
   }
 };
-
-async function resolvePatientIdsForUser(userId, hospitalId = null) {
-  const user = await User.findById(userId).select("phone nationalIdNumber");
-  if (!user) return [];
-  const filters = [];
-  if (user.nationalIdNumber) filters.push({ nationalId: user.nationalIdNumber });
-  if (user.phone) filters.push({ contact: user.phone });
-  filters.push({ "metadata.userId": userId });
-  const where = { active: true, $or: filters };
-  if (hospitalId) where.hospital = hospitalId;
-  const rows = await Patient.find(where).select("_id");
-  return rows.map((p) => String(p._id));
-}
 
 function buildAdvice({ role, symptoms = [], vitals = {}, assistantProfile = {}, nextAppointmentAt = null }) {
   const alerts = [];

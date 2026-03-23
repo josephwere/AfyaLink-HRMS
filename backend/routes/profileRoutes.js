@@ -2,6 +2,10 @@
 import express from "express";
 import { 
   getProfile, 
+  getFamilyMonitoring,
+  searchMinorProfiles,
+  linkMinorProfile,
+  unlinkMinorProfile,
   updateProfile, 
   enable2FA, 
   disable2FA, 
@@ -14,6 +18,10 @@ const router = express.Router();
 
 // Profile
 router.get("/", protect, getProfile);
+router.get("/family", protect, getFamilyMonitoring);
+router.get("/family/search", protect, searchMinorProfiles);
+router.post("/family/minors/link", protect, linkMinorProfile);
+router.delete("/family/minors/:patientId", protect, unlinkMinorProfile);
 router.put("/", protect, updateProfile);
 
 // 2FA

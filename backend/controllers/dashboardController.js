@@ -22,6 +22,7 @@ import ChwReferral from "../models/ChwReferral.js";
 import DiseaseReport from "../models/DiseaseReport.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
+import { buildLinkedMinorSummariesForUser, resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 const LICENSE_ROLES = [
   "DOCTOR",
@@ -1226,19 +1227,23 @@ export async function patientDashboard(req, res) {
     const hospital = hospitalFilter(req);
     const userId = req.user._id;
     const todayEnd = endOfDay();
+    const patientIds = await resolvePatientIdsForUser(userId, hospital.hospital || null);
 
     const [
       upcomingAppointments,
       unpaidInvoices,
       prescriptionsActive,
       labResults,
+      linkedMinors,
     ] = await Promise.all([
-      Appointment.countDocuments({
-        ...hospital,
-        patient: userId,
-        scheduledAt: { $gt: todayEnd },
-        status: { $ne: "Cancelled" },
-      }),
+      patientIds.length
+        ? Appointment.countDocuments({
+            ...hospital,
+            patient: { $in: patientIds },
+            scheduledAt: { $gt: todayEnd },
+            status: { $ne: "Cancelled" },
+          })
+        : 0,
       Invoice.countDocuments({
         ...hospital,
         patient: userId,
@@ -1254,6 +1259,7 @@ export async function patientDashboard(req, res) {
         patient: userId,
         status: "Completed",
       }),
+      buildLinkedMinorSummariesForUser(userId),
     ]);
 
     res.json({
@@ -1261,6 +1267,10 @@ export async function patientDashboard(req, res) {
       unpaidInvoices,
       prescriptionsActive,
       labResults,
+      familyMonitoring: {
+        linkedMinors,
+        linkedMinorCount: linkedMinors.length,
+      },
     });
   } catch (err) {
     console.error("Patient dashboard error:", err);

@@ -366,6 +366,30 @@ const userSchema = new Schema(
       showSecretsOnHover: { type: Boolean, default: false },
     },
 
+    familyMonitoring: {
+      linkedMinorPatients: {
+        type: [
+          {
+            patient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
+            relationship: { type: String, trim: true, default: "PARENT" },
+            status: {
+              type: String,
+              enum: ["ACTIVE", "REMOVED"],
+              default: "ACTIVE",
+            },
+            linkedAt: { type: Date, default: Date.now },
+            linkedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+            notes: { type: String, trim: true, default: "" },
+          },
+        ],
+        default: [],
+      },
+      preferences: {
+        receiveMinorAlerts: { type: Boolean, default: true },
+        showDailyMinorSummary: { type: Boolean, default: true },
+      },
+    },
+
     metadata: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }

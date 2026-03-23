@@ -97,6 +97,7 @@ export default function Page() {
             <option value="AI">AI</option>
             <option value="TRAINING">Training</option>
             <option value="PHARMACY">Pharmacy</option>
+            <option value="WELLNESS">Wellness</option>
           </select>
           <select value={read} onChange={(e) => setRead(e.target.value)}>
             <option value="ALL">All Status</option>
@@ -198,6 +199,11 @@ export default function Page() {
                     {String(n?.meta?.type || "").toUpperCase() === "PHARMACY_COVERAGE_RISK" ? (
                       <div className="muted" style={{ marginTop: 6 }}>
                         Action: link pharmacists to registered pharmacies before referrals or dispensing fail.
+                      </div>
+                    ) : null}
+                    {String(n?.meta?.kind || "").toUpperCase() === "DAILY_ROLE_QUOTE" ? (
+                      <div className="muted" style={{ marginTop: 6 }}>
+                        Daily quote for {String(n?.meta?.quoteRole || role || "your role").replaceAll("_", " ")}.
                       </div>
                     ) : null}
                   </td>
