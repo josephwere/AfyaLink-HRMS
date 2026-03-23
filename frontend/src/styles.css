@@ -2935,6 +2935,45 @@ body.auth-route {
   border: 1px dashed #e5e7eb;
 }
 
+.module-workspace {
+  gap: 22px;
+}
+
+.module-workspace-hero {
+  gap: 20px;
+}
+
+.module-workspace-actions {
+  align-items: center;
+}
+
+.module-kpi-grid .stat {
+  text-align: left;
+  min-height: 132px;
+}
+
+.module-panel-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.module-panel-card {
+  text-align: left;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 180px;
+  border-style: solid;
+}
+
+.module-panel-card h4 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.module-panel-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 .action-list {
   display: flex;
   flex-wrap: wrap;
@@ -3077,6 +3116,9 @@ body.auth-route {
 @media (max-width: 900px) {
   .navbar {
     flex-wrap: wrap;
+  }
+  .premium-split {
+    grid-template-columns: 1fr;
   }
   .app-grid {
     min-height: 100dvh;
@@ -3762,6 +3804,116 @@ button.card.stat {
   letter-spacing: 0.05em;
 }
 
+.premium-form-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.premium-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.premium-console {
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-surface-2) 12%);
+}
+
+.premium-console pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.premium-note-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.premium-note {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 12%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 92%, var(--app-surface-2) 8%);
+}
+
+.premium-note strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--app-muted);
+}
+
+.premium-note span,
+.premium-note p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.premium-table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.premium-table-actions > * {
+  flex: 0 0 auto;
+}
+
+.premium-hero-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--app-accent) 84%, white 16%), var(--app-accent-2));
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.22);
+}
+
+.premium-split {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+}
+
+.premium-status-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.premium-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--app-accent) 18%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 88%, var(--app-accent) 12%);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.premium-form-hint {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
 .payments-timeline-cell {
   min-width: 280px;
 }
@@ -3872,6 +4024,16 @@ button.card.stat {
   background: color-mix(in oklab, var(--app-surface) 82%, var(--app-accent-2) 18%);
 }
 
+.mini-chat-bubble strong {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mini-chat-bubble span {
+  line-height: 1.55;
+}
+
 .mini-chat-input {
   display: grid;
   gap: 10px;
@@ -3879,6 +4041,23 @@ button.card.stat {
 
 .mini-chat-input textarea {
   min-height: 100px;
+}
+
+.mini-chat-input input,
+.mini-chat-input textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 94%, white 6%);
+  color: var(--app-text);
+}
+
+.mini-chat-input input:focus,
+.mini-chat-input textarea:focus {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
 }
 
 .mini-voice-transcript {

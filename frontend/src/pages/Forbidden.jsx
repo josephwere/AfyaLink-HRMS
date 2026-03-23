@@ -1,13 +1,10 @@
-import { Link } from "react-router-dom";
+import AccessDeniedCard from "../components/AccessDeniedCard";
 
 export default function Forbidden() {
   return (
-    <div className="auth-bg">
-      <div className="auth-card">
-        <h1>403 — Forbidden</h1>
-        <p>You don’t have permission to access this page.</p>
-        <Link to="/">Go home</Link>
-      </div>
-    </div>
+    <AccessDeniedCard
+      title="403 — Forbidden"
+      message="This route is blocked for the current account or role view. Switch role view or return to a page you are authorized to operate."
+    />
   );
 }

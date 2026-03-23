@@ -54,43 +54,36 @@ export default function AIChatWS() {
   };
 
   return (
-    <div>
-      <div
-        style={{
-          maxHeight: 320,
-          overflowY: "auto",
-          border: "1px solid #eee",
-          padding: 8,
-        }}
-      >
+    <div className="mini-chat-shell">
+      <div className="mini-chat-log">
         {messages.map((m, i) => (
           <div
             key={i}
-            style={{
-              margin: 6,
-              background:
-                m.from === "ai"
-                  ? "#eef"
-                  : m.from === "user"
-                  ? "#dfd"
-                  : "#eee",
-              padding: 8,
-              borderRadius: 6,
-            }}
+            className={`mini-chat-bubble${
+              m.from === "user" ? " is-user" : m.from === "ai" ? " is-assistant" : ""
+            }`}
           >
-            <b>{m.from}:</b> {m.text}
+            <strong>{m.from === "user" ? "You" : m.from === "ai" ? "NeuroEdge" : "System"}</strong>
+            <span>{m.text}</span>
           </div>
         ))}
       </div>
 
-      <div className="actions-row mt-8">
+      <div className="mini-chat-input">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          style={{ flex: 1 }}
           placeholder="Describe symptoms..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
         />
-        <button type="button" className="btn-primary" onClick={send}>Ask AI</button>
+        <div className="actions-row">
+          <button type="button" className="btn-primary" onClick={send}>Ask AI</button>
+        </div>
       </div>
     </div>
   );

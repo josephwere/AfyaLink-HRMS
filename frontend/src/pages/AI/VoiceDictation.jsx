@@ -22,21 +22,22 @@ export default function VoiceDictation() {
   }
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
+    <div className="dashboard premium-shell">
+      <section className="premium-card premium-shell-head">
+        <div className="premium-shell-kicker">Dictation lab</div>
         <div>
-          <h2>Voice Dictation</h2>
-          <p className="muted">
-            Paste base64 audio payload to transcribe through your AI provider.
+          <h1 className="premium-shell-title">Voice Dictation</h1>
+          <p className="premium-shell-subtitle">
+            Send recorded audio payloads through the configured AI transcription provider and inspect the transcript without leaving the product.
           </p>
         </div>
-      </div>
+      </section>
 
-      <section className="section">
-        <div className="card">
+      <div className="premium-split">
+        <section className="card premium-card form premium-stack">
           <label>Audio (base64)</label>
           <textarea
-            rows={6}
+            rows={8}
             value={audioBase64}
             onChange={(e) => setAudioBase64(e.target.value)}
             placeholder="Base64 audio payload"
@@ -46,16 +47,23 @@ export default function VoiceDictation() {
               {loading ? "Transcribing..." : "Transcribe"}
             </button>
           </div>
-          {error && <p className="error-text">{error}</p>}
-        </div>
-      </section>
+          {error && <div className="premium-inline-note">{error}</div>}
+        </section>
 
-      <section className="section">
-        <h3>Transcript</h3>
-        <div className="card">
-          {text ? <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{text}</pre> : <p className="muted">No transcript yet.</p>}
-        </div>
-      </section>
+        <aside className="card premium-card premium-stack">
+          <div className="premium-tag">Transcript</div>
+          {text ? (
+            <div className="premium-console">
+              <pre>{text}</pre>
+            </div>
+          ) : (
+            <div className="premium-empty">
+              <strong>No transcript yet</strong>
+              <span>Paste an audio payload and run transcription to populate this output panel.</span>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -230,7 +230,7 @@ export default function PaymentsPage() {
   if (!user) {
     return (
       <div className="auth-status-shell">
-        <div className="auth-status-card">
+        <div className="auth-status-card premium-card">
           <div className="auth-status-icon">₿</div>
           <h1>Payments are locked</h1>
           <p className="subtitle">Sign in first to review billing, workflow state, and payment channels.</p>
