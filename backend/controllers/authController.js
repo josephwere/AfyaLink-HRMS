@@ -15,7 +15,11 @@ import { appendComplianceLedger } from "../utils/complianceLedger.js";
 import { assessLoginRisk, upsertTrustedDevice } from "../utils/sessionRisk.js";
 import RiskAssessment from "../models/RiskAssessment.js";
 import { getRiskPolicy } from "../utils/riskPolicy.js";
-import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
+import {
+  buildFrontendUrl,
+  issuePasswordResetLink,
+  resolveFrontendBase,
+} from "../utils/passwordReset.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
 
 /* ======================================================
@@ -211,7 +215,7 @@ export const register = async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
-      const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+      const verifyLink = buildFrontendUrl(req, `/verify-email?token=${token}`);
       sendEmail({
         to: user.email,
         subject: "Verify your AfyaLink account",
@@ -391,7 +395,7 @@ export const resendVerificationEmail = async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const verifyLink = buildFrontendUrl(req, `/verify-email?token=${token}`);
 
     await sendEmail({
       to: user.email,

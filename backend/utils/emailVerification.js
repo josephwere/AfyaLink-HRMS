@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/emailService.js";
+import { resolveFrontendBase } from "./passwordReset.js";
 
 export function generateEmailToken(userId) {
   return jwt.sign(
@@ -9,10 +10,10 @@ export function generateEmailToken(userId) {
   );
 }
 
-export async function sendVerificationEmail(user) {
+export async function sendVerificationEmail(user, { req, frontendBase } = {}) {
   const token = generateEmailToken(user._id);
-
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const base = frontendBase || resolveFrontendBase(req);
+  const verifyUrl = `${String(base || "").replace(/\/+$/, "")}/verify-email?token=${token}`;
 
   await sendEmail({
     to: user.email,

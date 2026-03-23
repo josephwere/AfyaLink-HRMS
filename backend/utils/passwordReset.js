@@ -19,7 +19,37 @@ function emailTemplate(title, body) {
 }
 
 export function resolveFrontendBase(req) {
-  return process.env.FRONTEND_URL || req.headers.origin || `${req.protocol}://${req.get("host")}`;
+  const normalize = (value) => String(value || "").trim().replace(/\/+$/, "");
+  const configured = [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_PUBLIC_URL,
+    "https://afya-link-hrms-4.vercel.app",
+    "https://afya-link-hrms-frontend-4.vercel.app",
+    "https://afya-link-hrms-frontend-4.onrender.com",
+  ]
+    .map(normalize)
+    .filter(Boolean);
+
+  const origin = normalize(req?.headers?.origin);
+  if (origin) {
+    if (configured.includes(origin)) return origin;
+    try {
+      const parsed = new URL(origin);
+      if (["localhost", "127.0.0.1"].includes(parsed.hostname)) {
+        return origin;
+      }
+    } catch {
+      // ignore invalid origin and fall back to configured base
+    }
+  }
+
+  return configured[0] || origin || `${req?.protocol || "https"}://${req?.get?.("host") || ""}`.replace(/\/+$/, "");
+}
+
+export function buildFrontendUrl(req, path) {
+  const base = resolveFrontendBase(req);
+  const suffix = String(path || "").startsWith("/") ? String(path) : `/${String(path || "")}`;
+  return `${base}${suffix}`;
 }
 
 export async function issuePasswordResetLink({

@@ -32,6 +32,8 @@ let shuttingDown = false;
 ====================================================== */
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  process.env.FRONTEND_PUBLIC_URL,
+  "https://afya-link-hrms-4.vercel.app",
   "https://afya-link-hrms-frontend-4.vercel.app",
   "https://afya-link-hrms-frontend-4.onrender.com",
   "http://localhost:3000",
