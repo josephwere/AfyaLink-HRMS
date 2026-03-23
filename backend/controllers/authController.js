@@ -16,6 +16,7 @@ import { assessLoginRisk, upsertTrustedDevice } from "../utils/sessionRisk.js";
 import RiskAssessment from "../models/RiskAssessment.js";
 import { getRiskPolicy } from "../utils/riskPolicy.js";
 import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
+import { queueBrevoContactSync } from "../services/brevoContacts.js";
 
 /* ======================================================
    HELPERS
@@ -230,6 +231,8 @@ export const register = async (req, res) => {
         message: `Your AfyaLink verification code is ${otp}`,
       });
     }
+
+    queueBrevoContactSync(user, { source: "REGISTER" });
 
     res.status(201).json({
       success: true,
@@ -730,6 +733,8 @@ export const googleAuth = async (req, res) => {
         hospital: user.hospital || null,
         metadata: { authProvider: "google" },
       });
+
+      queueBrevoContactSync(user, { source: "GOOGLE_REGISTER" });
     }
 
     const accessToken = signAccessToken({

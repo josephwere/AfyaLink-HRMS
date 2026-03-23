@@ -7,6 +7,7 @@ import { audit } from "../utils/audit.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { isMinorDob } from "../services/familyMonitoringService.js";
 import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
+import { queueBrevoContactSync } from "../services/brevoContacts.js";
 
 function resolveActorHospitalId(req) {
   return req.user?.hospitalId || req.user?.hospital || null;
@@ -123,6 +124,8 @@ export const createPatient = async (req, res, next) => {
               invitedForMinorRegistration: true,
             },
           });
+
+          queueBrevoContactSync(guardian, { source: "MINOR_GUARDIAN_INVITE" });
         }
       }
 

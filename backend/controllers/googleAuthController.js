@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import AuditLog from "../models/AuditLog.js";
+import { queueBrevoContactSync } from "../services/brevoContacts.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -36,6 +37,7 @@ export const googleLogin = async (req, res) => {
         role: "PATIENT", // default for new users
         avatar: picture,
       });
+      queueBrevoContactSync(user, { source: "GOOGLE_LOGIN_CONTROLLER_REGISTER" });
     } else if (!user.googleId) {
       // Link existing account to Google
       user.googleId = googleId;
