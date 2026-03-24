@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import EyeIcon from "../../components/EyeIcon";
@@ -19,6 +19,7 @@ export default function IntegrationControlPlane() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [clientMeta, setClientMeta] = useState(null);
   const [govConfig, setGovConfig] = useState({
     sha: {
       baseUrl: "",
@@ -53,12 +54,15 @@ export default function IntegrationControlPlane() {
   const [govMessage, setGovMessage] = useState("");
   const modulesSectionRef = useRef(null);
   const credentialsSectionRef = useRef(null);
+  const requestRef = useRef(0);
 
   const scrollToSection = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const load = async () => {
+  const load = useCallback(async ({ preserveData = false } = {}) => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
     setLoading(true);
     setError("");
     try {
@@ -67,7 +71,9 @@ export default function IntegrationControlPlane() {
         getSystemSettings(),
         apiFetch("/api/profile"),
       ]);
-      setData(res || null);
+      if (requestRef.current !== requestId) return;
+      setData(res?.payload || null);
+      setClientMeta(res?.clientMeta || null);
       const incoming = settings?.governmentApis || {};
       setShowOnHover(Boolean(profile?.uiPreferences?.showSecretsOnHover));
       setGovConfig({
@@ -93,12 +99,13 @@ export default function IntegrationControlPlane() {
         },
       });
     } catch (err) {
+      if (requestRef.current !== requestId) return;
       setError(err?.message || "Failed to load integration control plane");
-      setData(null);
+      if (!preserveData) setData(null);
     } finally {
-      setLoading(false);
+      if (requestRef.current === requestId) setLoading(false);
     }
-  };
+  }, []);
 
   const saveGovConfig = async () => {
     setGovSaving(true);
@@ -106,7 +113,7 @@ export default function IntegrationControlPlane() {
     try {
       await updateSystemSettings({ governmentApis: govConfig });
       setGovMessage("Government API credentials saved.");
-      await load();
+      await load({ preserveData: true });
     } catch (err) {
       setGovMessage(err?.message || "Failed to save government API credentials.");
     } finally {
@@ -137,8 +144,12 @@ export default function IntegrationControlPlane() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    load({ preserveData: false });
+  }, [load]);
+
+  const hasData = Boolean(data);
+  const initialLoading = loading && !hasData;
+  const refreshing = loading && hasData;
 
   const controlPlanes = Array.isArray(data?.controlPlanes) ? data.controlPlanes : [];
   const providers = Array.isArray(data?.providers) ? data.providers : [];
@@ -160,15 +171,61 @@ export default function IntegrationControlPlane() {
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/payment-settings")}>
             Payment Settings
           </button>
-          <button type="button" className="btn-primary" onClick={load} disabled={loading}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => load({ preserveData: hasData })}
+            disabled={loading}
+          >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
 
-      {error ? <div className="card">{error}</div> : null}
+      <div className="premium-inline-note innovation-console-inline-state">
+        <span>
+          {refreshing
+            ? "Refreshing live rollout posture while the current control plane stays visible."
+            : clientMeta?.attempts > 1
+            ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+            : clientMeta?.loadedAt
+            ? `Live sync completed ${new Date(clientMeta.loadedAt).toLocaleString()}.`
+            : "Warm-start protection is ready for the first live pull."}
+        </span>
+        {refreshing ? <span className="action-pill">Live sync in progress</span> : null}
+      </div>
+
+      {initialLoading ? (
+        <section className="section">
+          <div className="card premium-card innovation-console-state-card">
+            <span className="developer-tool-eyebrow">Warm start</span>
+            <strong>Preparing live rollout posture</strong>
+            <p className="muted">
+              We are waking the backend and waiting for the first control-plane snapshot so this
+              page does not flash a false timeout on cold start.
+            </p>
+            <div className="innovation-console-skeleton-grid" aria-hidden="true">
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {error ? (
+        <div className="premium-inline-note innovation-console-inline-state innovation-console-inline-state-warn">
+          <span>{error}</span>
+          <button type="button" className="btn-secondary" onClick={() => load({ preserveData: hasData })}>
+            Retry now
+          </button>
+        </div>
+      ) : null}
       {govMessage ? <div className="card">{govMessage}</div> : null}
 
+      {hasData ? (
+        <>
       <section className="section">
         <h3>Rollout Snapshot</h3>
         <div className="grid info-grid">
@@ -543,6 +600,8 @@ export default function IntegrationControlPlane() {
           </div>
         </div>
       </section>
+        </>
+      ) : null}
     </div>
   );
 }

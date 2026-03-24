@@ -300,6 +300,35 @@ export default function InteropMarketplace() {
             </div>
           </section>
 
+          <section className="section">
+            <div className="innovation-console-brief-grid">
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Install posture</span>
+                <h3>Move from catalog to runtime faster</h3>
+                <p className="muted">
+                  {curatedApps.length} curated connector families are visible here, so rollout teams
+                  can move from discovery into install paths without losing operational context.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Runtime rail</span>
+                <h3>Keep live connectors observable</h3>
+                <p className="muted">
+                  {summary.activeConnectors ?? 0} active connectors are part of the current estate.
+                  Use this view to spot drift before it becomes a hospital-facing outage.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Mapping depth</span>
+                <h3>Message quality is a launch gate</h3>
+                <p className="muted">
+                  {summary.hl7Mappings ?? 0} live mappings are in scope. Strong mapping visibility is
+                  what turns a connector demo into a dependable production rollout.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section className="section revenue-alert-grid">
             <div className="card premium-card">
               <div className="card-header-actions">

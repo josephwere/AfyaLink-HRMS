@@ -1,22 +1,32 @@
 import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export const getSystemAdminMetrics = async () => {
   return apiFetch("/api/system-admin/metrics");
 };
 
 export const getIntegrationHubSummary = async () => {
-  return apiFetch("/api/system-admin/integration-hub");
+  return guardedConsoleFetch("/api/system-admin/integration-hub", {
+    warmupKey: "system-admin-integration-hub",
+  });
 };
 
 export const getIntegrationControlPlane = async () => {
-  return apiFetch("/api/system-admin/integration-control-plane");
+  return guardedConsoleFetch("/api/system-admin/integration-control-plane", {
+    warmupKey: "system-admin-integration-control-plane",
+  });
 };
 
 export const getCountyCommandCenterSummary = async (params = {}) => {
   const query = new URLSearchParams();
   if (params.region) query.set("region", params.region);
   const qs = query.toString();
-  return apiFetch(`/api/system-admin/county-command-center${qs ? `?${qs}` : ""}`);
+  return guardedConsoleFetch(
+    `/api/system-admin/county-command-center${qs ? `?${qs}` : ""}`,
+    {
+      warmupKey: "system-admin-county-command-center",
+    }
+  );
 };
 
 export const getRiskPolicy = async () => {

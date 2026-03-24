@@ -1,8 +1,10 @@
-import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export const getRevenueIntelligenceSnapshot = async (options = {}) => {
   const params = new URLSearchParams();
   if (options.hospitalId) params.set("hospitalId", String(options.hospitalId));
   const query = params.toString();
-  return apiFetch(`/api/financials/intelligence${query ? `?${query}` : ""}`);
+  return guardedConsoleFetch(`/api/financials/intelligence${query ? `?${query}` : ""}`, {
+    warmupKey: "revenue-intelligence",
+  });
 };

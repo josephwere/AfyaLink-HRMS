@@ -275,6 +275,35 @@ export default function DigitalHospitalTwin() {
             </div>
           </section>
 
+          <section className="section">
+            <div className="innovation-console-brief-grid">
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Capacity rail</span>
+                <h3>See pressure before queues harden</h3>
+                <p className="muted">
+                  {summary.activeConsultSlots ?? 0} consult slots and {summary.activeEmergencyCount ?? 0}
+                  {" "}emergency signals are already shaping hospital pressure in this twin.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Device rail</span>
+                <h3>Machines belong in the same picture</h3>
+                <p className="muted">
+                  {summary.onlineDevices ?? 0} online devices and {summary.deviceErrors ?? 0} device
+                  errors are visible next to beds and staffing, so operators can triage real bottlenecks.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Transfer rail</span>
+                <h3>Keep handovers and capacity linked</h3>
+                <p className="muted">
+                  Use the twin when transfers, occupancy, and emergency state need one shared decision
+                  frame instead of disconnected dashboards.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section className="section revenue-alert-grid">
             <div className="card premium-card">
               <div className="card-header-actions">

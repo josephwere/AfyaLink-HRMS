@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getIntegrationHubSummary } from "../../services/systemAdminApi";
@@ -16,30 +16,41 @@ export default function IntegrationHub() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [clientMeta, setClientMeta] = useState(null);
   const prioritySectionRef = useRef(null);
   const inventorySectionRef = useRef(null);
+  const requestRef = useRef(0);
 
   const scrollToSection = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const load = async () => {
+  const load = useCallback(async ({ preserveData = false } = {}) => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
     setLoading(true);
     setError("");
     try {
       const res = await getIntegrationHubSummary();
-      setData(res || null);
+      if (requestRef.current !== requestId) return;
+      setData(res?.payload || null);
+      setClientMeta(res?.clientMeta || null);
     } catch (err) {
+      if (requestRef.current !== requestId) return;
       setError(err?.message || "Failed to load integration hub");
-      setData(null);
+      if (!preserveData) setData(null);
     } finally {
-      setLoading(false);
+      if (requestRef.current === requestId) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    load({ preserveData: false });
+  }, [load]);
+
+  const hasData = Boolean(data);
+  const initialLoading = loading && !hasData;
+  const refreshing = loading && hasData;
 
   const modules = Array.isArray(data?.modules) ? data.modules : [];
   const connectors = Array.isArray(data?.connectors) ? data.connectors : [];
@@ -69,14 +80,60 @@ export default function IntegrationHub() {
               {action.label}
             </button>
           ))}
-          <button type="button" className="btn-primary" onClick={load} disabled={loading}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => load({ preserveData: hasData })}
+            disabled={loading}
+          >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
 
-      {error ? <div className="card">{error}</div> : null}
+      <div className="premium-inline-note innovation-console-inline-state">
+        <span>
+          {refreshing
+            ? "Refreshing live integration posture while the current workspace stays visible."
+            : clientMeta?.attempts > 1
+            ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+            : clientMeta?.loadedAt
+            ? `Live sync completed ${new Date(clientMeta.loadedAt).toLocaleString()}.`
+            : "Warm-start protection is ready for the first live pull."}
+        </span>
+        {refreshing ? <span className="action-pill">Live sync in progress</span> : null}
+      </div>
 
+      {initialLoading ? (
+        <section className="section">
+          <div className="card premium-card innovation-console-state-card">
+            <span className="developer-tool-eyebrow">Warm start</span>
+            <strong>Preparing live integration posture</strong>
+            <p className="muted">
+              We are waking the backend and waiting for the first connector summary so this page
+              does not flash a false timeout on cold start.
+            </p>
+            <div className="innovation-console-skeleton-grid" aria-hidden="true">
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {error ? (
+        <div className="premium-inline-note innovation-console-inline-state innovation-console-inline-state-warn">
+          <span>{error}</span>
+          <button type="button" className="btn-secondary" onClick={() => load({ preserveData: hasData })}>
+            Retry now
+          </button>
+        </div>
+      ) : null}
+
+      {hasData ? (
+        <>
       <section className="section">
         <h3>Coverage Snapshot</h3>
         <div className="grid info-grid">
@@ -217,6 +274,8 @@ export default function IntegrationHub() {
           </div>
         </div>
       </section>
+        </>
+      ) : null}
     </div>
   );
 }

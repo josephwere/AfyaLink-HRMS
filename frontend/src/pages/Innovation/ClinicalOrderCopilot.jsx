@@ -346,6 +346,35 @@ export default function ClinicalOrderCopilot() {
             </div>
           </section>
 
+          <section className="section">
+            <div className="innovation-console-brief-grid">
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Care lane</span>
+                <h3>Review before you route</h3>
+                <p className="muted">
+                  {summary.suggestionCount ?? 0} live suggestion bundles are waiting for a clinician
+                  or supervisor review. Keep this lane close when demand rises faster than staffing.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Safety rail</span>
+                <h3>Guardrails stay human-first</h3>
+                <p className="muted">
+                  Suggestions can accelerate prep, but they never auto-place orders. Confidence and
+                  recent patient context stay visible before anyone commits.
+                </p>
+              </div>
+              <div className="innovation-console-brief-card">
+                <span className="innovation-console-brief-badge">Revenue continuity</span>
+                <h3>Watch payer drag early</h3>
+                <p className="muted">
+                  {summary.pendingAuthorizations ?? 0} active authorization blockers are already
+                  visible here, so teams can fix payer friction before it stalls treatment flow.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section className="section revenue-alert-grid">
             <div className="card premium-card">
               <div className="card-header-actions">
