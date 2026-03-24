@@ -1,15 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
-import { useCan } from "../hooks/useCan";
 import { fetchMenu } from "../services/menuApi";
 import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
 import { useTheme } from "../utils/theme.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
+import { useUiPreferences } from "../utils/uiPreferences";
+import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
 import { listNotifications } from "../services/notificationsApi";
+import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import LegalLinks from "./LegalLinks";
+
+const RECENT_LIMIT = 6;
+const SIDEBAR_DEFAULT_WIDTH = 300;
+const SIDEBAR_MIN_WIDTH = 280;
+const SIDEBAR_MAX_WIDTH = 380;
 
 function NavIcon({ name }) {
   const { settings } = useSystemSettings();
@@ -33,6 +40,10 @@ function NavIcon({ name }) {
     ai: "🤖",
     appointments: "📅",
     printer: "🖨️",
+    shield: "🛡️",
+    account: "👤",
+    star: "★",
+    search: "⌘",
   };
 
   const custom = settings?.branding?.sidebarIcons?.[name];
@@ -44,46 +55,153 @@ function NavIcon({ name }) {
   );
 }
 
+function matchesQuery(label, query, translateText) {
+  if (!query) return true;
+  const source = String(label || "").toLowerCase();
+  const translated = String(translateText(label || "")).toLowerCase();
+  return source.includes(query) || translated.includes(query);
+}
+
+function dedupeByPath(items = []) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = String(item?.path || "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function scopedStorageKey(prefix, user) {
+  const scope = user?.id || user?.email || user?.role || "anonymous";
+  return `${prefix}_${scope}`;
+}
+
+function readStoredJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage quota failures for navigation preferences.
+  }
+}
+
+function readRecentItems(user) {
+  const parsed = readStoredJson(scopedStorageKey("afyalink_sidebar_recent", user), []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function writeRecentItems(user, items) {
+  writeStoredJson(scopedStorageKey("afyalink_sidebar_recent", user), items.slice(0, RECENT_LIMIT));
+}
+
+function readStarredPaths(user) {
+  const parsed = readStoredJson(scopedStorageKey("afyalink_sidebar_starred", user), []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function writeStarredPaths(user, paths) {
+  writeStoredJson(scopedStorageKey("afyalink_sidebar_starred", user), paths);
+}
+
+function readSidebarWidth(user) {
+  const value = Number(localStorage.getItem(scopedStorageKey("afyalink_sidebar_width", user)));
+  if (!Number.isFinite(value)) return SIDEBAR_DEFAULT_WIDTH;
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, value));
+}
+
+function writeSidebarWidth(user, value) {
+  try {
+    localStorage.setItem(scopedStorageKey("afyalink_sidebar_width", user), String(value));
+  } catch {
+    // Ignore storage failures for width preference.
+  }
+}
+
+function isActivePath(currentPath, targetPath) {
+  const current = String(currentPath || "").replace(/\/+$/, "") || "/";
+  const target = String(targetPath || "").replace(/\/+$/, "") || "/";
+  if (target === "/") return current === "/";
+  return (
+    current === target ||
+    current.startsWith(`${target}/`) ||
+    current.startsWith(`${target}#`) ||
+    current.startsWith(`${target}?`)
+  );
+}
+
+function buildFallbackSections({ homePath, normalizedRole, showAI }) {
+  return [
+    {
+      section: "Home",
+      items: [
+        { label: "Dashboard", path: homePath, icon: "home" },
+        { label: "Profile", path: "/profile", icon: "account" },
+        { label: "Notifications", path: "/notifications", icon: "notifications" },
+        { label: "Reports", path: "/reports", icon: "reports" },
+      ],
+    },
+    showAI
+      ? {
+          section: "AI",
+          items: [
+            { label: "Clinical Assistant", path: "/ai/medical", icon: "ai" },
+            { label: "AI Chatbot", path: "/ai/chatbot", icon: "ai" },
+          ],
+        }
+      : null,
+    {
+      section: "For You",
+      items: getQuickActions(normalizedRole).map((item) => ({ ...item, icon: item.icon || "home" })),
+    },
+  ].filter(Boolean);
+}
+
 export default function Sidebar({ open = true, onClose }) {
-  const { user, logout } = useAuth();
-  const { can } = useCan();
+  const {
+    user,
+    logout,
+    roleOverride,
+    strictImpersonation,
+    setRoleOverride,
+    setStrictImpersonation,
+    canRoleOverride,
+  } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { settings } = useSystemSettings();
   const { translateText } = useAppLanguage();
+  const { uiPreferences, setUiPreferences } = useUiPreferences();
+
   const appName = settings?.branding?.appName || "AfyaLink";
   const appTagline = settings?.branding?.tagline || null;
   const hospitalModules = settings?.hospitalCustomization?.modules || {};
   const showAI = hospitalModules.showAI !== false;
   const showReports = hospitalModules.showReports !== false;
   const showAnalytics = hospitalModules.showAnalytics !== false;
-  const navigate = useNavigate();
+
   const [dynamicMenu, setDynamicMenu] = useState([]);
   const [menuLoaded, setMenuLoaded] = useState(false);
+  const [navQuery, setNavQuery] = useState("");
+  const [recentItems, setRecentItems] = useState([]);
+  const [starredPaths, setStarredPaths] = useState([]);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
+  const [viewRole, setViewRole] = useState("");
 
-  useEffect(() => {
-    if (!user) return;
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    fetchMenu()
-      .then((res) => {
-        setDynamicMenu(res.menu || []);
-        setMenuLoaded(true);
-      })
-      .catch(() => {
-        setDynamicMenu([]);
-        setMenuLoaded(true);
-      });
-  }, [user]);
-
-  if (!user) return null;
-
-  const homePath = redirectByRole(user);
-  const normalizedRole = normalizeRole(user.role);
-  const canSelfService = !["SUPER_ADMIN", "SYSTEM_ADMIN", "GUEST", "PATIENT"].includes(
-    normalizedRole
-  );
+  const normalizedRole = normalizeRole(user?.role || "");
+  const navigationPrefs = uiPreferences?.navigation || {};
+  const homePath = user ? redirectByRole(user) : "/";
+  const showRoleChip = user?.actualRole && user.actualRole !== user.role;
   const canPharmacyOps = [
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
@@ -93,16 +211,68 @@ export default function Sidebar({ open = true, onClose }) {
     "PHARMACIST",
   ].includes(normalizedRole);
 
-  const UnverifiedBadge = () =>
-    !user.emailVerified ? <span className="badge-dot">!</span> : null;
+  const allowMenuItem = useCallback(
+    (item) => {
+      const path = String(item?.path || "");
+      if (!showAI && path.startsWith("/ai")) return false;
+      if (!showReports && (path === "/reports" || path.startsWith("/reports"))) return false;
+      if (!showAnalytics && (path === "/analytics" || path.startsWith("/analytics"))) return false;
+      return true;
+    },
+    [showAI, showReports, showAnalytics]
+  );
 
-  const allowMenuItem = (item) => {
-    const path = String(item?.path || "");
-    if (!showAI && path.startsWith("/ai")) return false;
-    if (!showReports && (path === "/reports" || path.startsWith("/reports"))) return false;
-    if (!showAnalytics && (path === "/analytics" || path.startsWith("/analytics"))) return false;
-    return true;
-  };
+  useEffect(() => {
+    if (!user) return;
+
+    fetchMenu()
+      .then((res) => {
+        setDynamicMenu(Array.isArray(res?.menu) ? res.menu : []);
+        setMenuLoaded(true);
+      })
+      .catch(() => {
+        setDynamicMenu([]);
+        setMenuLoaded(true);
+      });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    setRecentItems(Array.isArray(navigationPrefs?.recentItems) ? navigationPrefs.recentItems : readRecentItems(user));
+    setStarredPaths(Array.isArray(navigationPrefs?.starredPaths) ? navigationPrefs.starredPaths : readStarredPaths(user));
+    setSidebarWidth(
+      Number.isFinite(Number(navigationPrefs?.sidebarWidth))
+        ? Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Number(navigationPrefs.sidebarWidth)))
+        : readSidebarWidth(user)
+    );
+  }, [user?.id, user?.email, user?.role]);
+
+  useEffect(() => {
+    if (!canRoleOverride) return;
+    setViewRole(roleOverride || user?.actualRole || user?.role || "");
+  }, [canRoleOverride, roleOverride, user?.actualRole, user?.role]);
+
+  useEffect(() => {
+    if (!user) return;
+    writeStarredPaths(user, starredPaths);
+    setUiPreferences({
+      navigation: {
+        ...(uiPreferences?.navigation || {}),
+        starredPaths,
+      },
+    });
+  }, [setUiPreferences, starredPaths, uiPreferences?.navigation, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    writeSidebarWidth(user, sidebarWidth);
+    setUiPreferences({
+      navigation: {
+        ...(uiPreferences?.navigation || {}),
+        sidebarWidth,
+      },
+    });
+  }, [setUiPreferences, sidebarWidth, uiPreferences?.navigation, user]);
 
   useEffect(() => {
     if (!canPharmacyOps) {
@@ -127,876 +297,413 @@ export default function Sidebar({ open = true, onClose }) {
     return () => clearInterval(id);
   }, [canPharmacyOps]);
 
-  if (user.role === "GUEST") {
-    return (
-      <aside
-        className={`sidebar ${open ? "is-open" : "collapsed"}`}
-        onWheel={(e) => e.stopPropagation()}
-      >
-        <div className="sidebar-header sticky">
-          <div className="brand-mark">
-            {settings?.branding?.logo ? (
-              <span
-                className="brand-logo"
-                style={{ backgroundImage: `url(${settings.branding.logo})` }}
-              />
-            ) : (
-              appName
-            )}
-          </div>
-          <div className="brand-sub">{translateText(appTagline || "Demo Workspace")}</div>
-        </div>
-        <div className="sidebar-scroll">
-          <nav>
-            <ul>
-              <li>
-                <button type="button"
-                  className="nav-btn"
-                  onClick={() => {
-                    navigate("/guest");
-                    onClose?.();
-                  }}
-                >
-                  <NavIcon name="home" />
-                  {translateText("Demo Home")}
-                </button>
-              </li>
+  const handleSelect = useCallback(
+    (item) => {
+      const next = dedupeByPath([item, ...recentItems]).slice(0, RECENT_LIMIT);
+      setRecentItems(next);
+      writeRecentItems(user, next);
+      setUiPreferences({
+        navigation: {
+          ...(uiPreferences?.navigation || {}),
+          recentItems: next,
+        },
+      });
+      navigate(item.path);
+      onClose?.();
+    },
+    [navigate, onClose, recentItems, setUiPreferences, uiPreferences?.navigation, user]
+  );
 
-              <Section title="Demo">
-                {can("ai", "chat") && (
-                  <Item
-                    to="/ai/chatbot"
-                    icon="ai"
-                    onSelect={onClose}
-                  >
-                    AI Chatbot
-                  </Item>
-                )}
-                {can("ai", "medical") && (
-                  <Item
-                    to="/ai/medical"
-                    icon="ai"
-                    onSelect={onClose}
-                  >
-                    AI Assistant
-                  </Item>
-                )}
-              </Section>
-            </ul>
-          </nav>
-        </div>
+  const rawSections = useMemo(() => {
+    if (menuLoaded && dynamicMenu.length > 0) return dynamicMenu;
+    return buildFallbackSections({ homePath, normalizedRole, showAI });
+  }, [dynamicMenu, homePath, menuLoaded, normalizedRole, showAI]);
 
-        <div className="sidebar-footer sticky-footer">
-          <div className="footer-actions">
-            <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
-              <NavIcon name="reports" />
-              {translateText("Help")}
-            </button>
-            <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
-              <NavIcon name="settings" />
-              {translateText("Settings")}
-            </button>
-            <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
-              <NavIcon name="security" />
-              {translateText("Sign Out")}
-            </button>
-          </div>
-          <LegalLinks compact className="sidebar-legal-links" />
-          <div>{appName} • {translateText("Demo Mode")}</div>
-        </div>
-      </aside>
+  const menuSections = useMemo(
+    () =>
+      rawSections
+        .map((section) => ({
+          ...section,
+          items: (section.items || []).filter((item) => item?.path && allowMenuItem(item)),
+        }))
+        .filter((section) => section.items.length > 0),
+    [allowMenuItem, rawSections]
+  );
+
+  const filteredSections = useMemo(() => {
+    const query = navQuery.trim().toLowerCase();
+    if (!query) return menuSections;
+    return menuSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => matchesQuery(item.label, query, translateText)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [menuSections, navQuery, translateText]);
+
+  const quickLinks = useMemo(() => {
+    const links = dedupeByPath([
+      { label: "Home", path: homePath, icon: "home" },
+      { label: "Profile", path: "/profile", icon: "account" },
+      {
+        label: "Notifications",
+        path: "/notifications",
+        icon: "notifications",
+        badge: pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : "",
+      },
+      ...getQuickActionsForRole(normalizedRole),
+    ]);
+    return links.slice(0, 6);
+  }, [homePath, normalizedRole, pharmacyRiskAlertCount]);
+
+  const allKnownItems = useMemo(
+    () =>
+      dedupeByPath([
+        ...quickLinks,
+        ...menuSections.flatMap((section) => section.items),
+        ...getQuickActionsForRole(normalizedRole),
+      ]),
+    [menuSections, normalizedRole, quickLinks]
+  );
+
+  const recentVisible = useMemo(() => {
+    const allowedPaths = new Set(allKnownItems.map((item) => item.path));
+    return recentItems.filter((item) => allowedPaths.has(item.path));
+  }, [allKnownItems, recentItems]);
+
+  const starredVisible = useMemo(() => {
+    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
+    return starredPaths.map((path) => itemByPath.get(path)).filter(Boolean);
+  }, [allKnownItems, starredPaths]);
+
+  const toggleStarred = useCallback((item) => {
+    setStarredPaths((prev) =>
+      prev.includes(item.path) ? prev.filter((path) => path !== item.path) : [...prev, item.path]
     );
-  }
+  }, []);
 
+  const startResize = useCallback(
+    (event) => {
+      if (window.innerWidth <= 1024) return;
+      event.preventDefault();
+      const startX = event.clientX;
+      const startWidth = sidebarWidth;
+
+      const onMove = (moveEvent) => {
+        const next = Math.min(
+          SIDEBAR_MAX_WIDTH,
+          Math.max(SIDEBAR_MIN_WIDTH, startWidth + (moveEvent.clientX - startX))
+        );
+        setSidebarWidth(next);
+      };
+
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [sidebarWidth]
+  );
+
+  const openGlobalSearch = () => {
+    window.dispatchEvent(new CustomEvent("afyalink:open-command-palette"));
+    onClose?.();
+  };
+
+  const runRoleSwitch = () => {
+    if (!viewRole) return;
+    setRoleOverride(viewRole);
+    navigate(redirectByRole({ role: viewRole }));
+    onClose?.();
+  };
+
+  const resetRoleSwitch = () => {
+    const actual = user?.actualRole || user?.role;
+    setRoleOverride("");
+    setViewRole(actual || "");
+    navigate(redirectByRole({ role: actual }));
+    onClose?.();
+  };
+
+  if (!user) return null;
 
   return (
     <aside
       className={`sidebar ${open ? "is-open" : "collapsed"}`}
-      onWheel={(e) => e.stopPropagation()}
+      style={{ "--sidebar-width": `${sidebarWidth}px` }}
+      onWheel={(event) => event.stopPropagation()}
     >
-      <div className="sidebar-header sticky">
-        <div className="brand-mark">
-          {settings?.branding?.logo ? (
-            <span
-              className="brand-logo"
-              style={{ backgroundImage: `url(${settings.branding.logo})` }}
-            />
-          ) : (
-            appName
-          )}
-        </div>
-        <div className="brand-sub">{translateText(appTagline || `${user.role} Workspace`)}</div>
-      </div>
-      <div className="sidebar-scroll">
-        <nav>
-          <ul>
-            {menuLoaded &&
-              dynamicMenu.length > 0 &&
-              dynamicMenu.map((section) => (
-                <Section key={section.section} title={section.section}>
-                  {section.items.map((item, idx) =>
-                    item.path && allowMenuItem(item) ? (
-                      <Item
-                        key={item.path || `${section.section}-${idx}`}
-                        to={item.path}
-                        icon={item.icon || "admin"}
-                        onSelect={onClose}
-                      >
-                        {item.label}
-                      </Item>
-                    ) : (
-                      <li key={`${section.section}-${idx}`} className="nav-static">
-                        <span className="nav-btn">
-                          <NavIcon name={item.icon || "admin"} />
-                          {translateText(item.label)}
-                        </span>
-                      </li>
-                    )
-                  )}
-                </Section>
-              ))}
-
-            {menuLoaded && dynamicMenu.length === 0 && (
-              <>
-                {["SUPER_ADMIN", "DEVELOPER"].includes(normalizedRole) && (
-                  <Section title="All Dashboards">
-                    <Item to="/super-admin" icon="admin" onSelect={onClose}>
-                      Super Admin
-                    </Item>
-                    <Item to="/system-admin" icon="admin" onSelect={onClose}>
-                      System Admin
-                    </Item>
-                    <Item to="/hospital-admin" icon="admin" onSelect={onClose}>
-                      Hospital Admin
-                    </Item>
-                    <Item to="/hr-manager" icon="hr" onSelect={onClose}>
-                      HR Manager
-                    </Item>
-                    <Item to="/payroll-officer" icon="payroll" onSelect={onClose}>
-                      Payroll Officer
-                    </Item>
-                    <Item to="/doctor" icon="doctor" onSelect={onClose}>
-                      Doctor
-                    </Item>
-                    <Item to="/nurse" icon="nurse" onSelect={onClose}>
-                      Nurse
-                    </Item>
-                    <Item to="/lab-tech" icon="lab" onSelect={onClose}>
-                      Lab Tech
-                    </Item>
-                    <Item to="/pharmacy" icon="pharmacy" onSelect={onClose}>
-                      Pharmacist
-                    </Item>
-                    <Item to="/surgeon" icon="doctor" onSelect={onClose}>
-                      Surgeon
-                    </Item>
-                    <Item to="/radiologist" icon="staff" onSelect={onClose}>
-                      Radiologist
-                    </Item>
-                    <Item to="/therapist" icon="staff" onSelect={onClose}>
-                      Therapist
-                    </Item>
-                    <Item to="/receptionist" icon="staff" onSelect={onClose}>
-                      Receptionist
-                    </Item>
-                    <Item to="/staff" icon="staff" onSelect={onClose}>
-                      Shared Staff
-                    </Item>
-                    <Item to="/community-health-worker" icon="staff" onSelect={onClose}>
-                      Community Health Worker
-                    </Item>
-                    <Item to="/security-admin" icon="security" onSelect={onClose}>
-                      Security Admin
-                    </Item>
-                    <Item to="/security-officer" icon="security" onSelect={onClose}>
-                      Security Officer
-                    </Item>
-                    <Item to="/developer" icon="settings" onSelect={onClose}>
-                      Developer Console
-                    </Item>
-                    <Item
-                      to="/developer/queue-replay"
-                      icon="settings"
-                      onSelect={onClose}
-                    >
-                      Queue Replay
-                    </Item>
-                    <Item
-                      to="/developer/webhook-retry"
-                      icon="settings"
-                      onSelect={onClose}
-                    >
-                      Webhook Retry
-                    </Item>
-                    <Item
-                      to="/developer/decision-cockpit"
-                      icon="analytics"
-                      onSelect={onClose}
-                    >
-                      Decision Cockpit
-                    </Item>
-                    <Item
-                      to="/developer/provenance-verify"
-                      icon="security"
-                      onSelect={onClose}
-                    >
-                      Provenance Verify
-                    </Item>
-                    <Item
-                      to="/developer/ai-extraction-history"
-                      icon="ai"
-                      onSelect={onClose}
-                    >
-                      AI Extraction History
-                    </Item>
-                  </Section>
-                )}
-
-                <Section title="Home">
-                  <Item to="/analytics" icon="analytics" onSelect={onClose}>
-                    Insights
-                  </Item>
-                  <Item to="/reports" icon="reports" onSelect={onClose}>
-                    Reports
-                  </Item>
-                  {normalizedRole === "SYSTEM_ADMIN" && (
-                    <Item to="/system-admin" icon="admin" onSelect={onClose}>
-                      System Admin
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/abac" icon="security" onSelect={onClose}>
-                      ABAC Policies
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/mapping-studio" icon="settings" onSelect={onClose}>
-                      Mapping Studio
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "PAYROLL_OFFICER"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/nlp-analytics" icon="analytics" onSelect={onClose}>
-                      NLP Analytics
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "DOCTOR", "NURSE"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/clinical-intelligence" icon="ai" onSelect={onClose}>
-                      Clinical Intelligence
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/regulatory-reports" icon="reports" onSelect={onClose}>
-                      Regulatory Reports
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                    <Item to="/system-admin/compliance-center" icon="security" onSelect={onClose}>
-                      Compliance Center
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
-                    <Item
-                      to={
-                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
-                          ? "/hospital-admin/revenue-intelligence"
-                          : "/system-admin/revenue-intelligence"
-                      }
-                      icon="payroll"
-                      onSelect={onClose}
-                    >
-                      Revenue Intelligence
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "SURGEON"].includes(normalizeRole(user.role)) && (
-                    <Item
-                      to={
-                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
-                          ? "/hospital-admin/clinical-order-copilot"
-                          : ["DOCTOR", "SURGEON"].includes(normalizeRole(user.role))
-                          ? "/doctor/clinical-order-copilot"
-                          : "/system-admin/clinical-order-copilot"
-                      }
-                      icon="ai"
-                      onSelect={onClose}
-                    >
-                      Clinical Order Copilot
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
-                    <Item
-                      to={
-                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
-                          ? "/hospital-admin/digital-twin"
-                          : "/system-admin/digital-hospital-twin"
-                      }
-                      icon="analytics"
-                      onSelect={onClose}
-                    >
-                      Digital Hospital Twin
-                    </Item>
-                  )}
-                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
-                    <Item
-                      to={
-                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
-                          ? "/hospital-admin/interop-marketplace"
-                          : "/system-admin/interop-marketplace"
-                      }
-                      icon="settings"
-                      onSelect={onClose}
-                    >
-                      Interop Marketplace
-                    </Item>
-                  )}
-                  {normalizedRole === "DEVELOPER" && (
-                    <Item to="/developer" icon="settings" onSelect={onClose}>
-                      Developer Console
-                    </Item>
-                  )}
-                  {["SUPER_ADMIN", "SYSTEM_ADMIN"].includes(
-                    normalizeRole(user.role)
-                  ) && (
-                    <Item
-                      to="/super-admin/hospitals"
-                      icon="admin"
-                      onSelect={onClose}
-                    >
-                      Manage Hospitals
-                    </Item>
-                  )}
-                </Section>
-
-              <Section title="Human Resources">
-                <Item to="/hospital-admin" icon="admin" onSelect={onClose}>
-                  Hospital Admin
-                </Item>
-                <Item
-                  to="/hospital-admin/register-staff"
-                  icon="staff"
-                  onSelect={onClose}
-                >
-                  Register Staff
-                </Item>
-                <Item
-                  to="/hospital-admin/approvals"
-                  icon="notifications"
-                  onSelect={onClose}
-                >
-                  Approvals
-                </Item>
-                <Item
-                  to="/hospital-admin/staff"
-                  icon="staff"
-                  onSelect={onClose}
-                >
-                  Staff Management
-                </Item>
-                <Item
-                  to="/hospital-admin/machine-connectivity"
-                  icon="settings"
-                  onSelect={onClose}
-                >
-                  Machine Connectivity
-                </Item>
-                <Item
-                  to="/hospital-admin/machine-alerts"
-                  icon="notifications"
-                  onSelect={onClose}
-                >
-                  Machine Alerts
-                </Item>
-                <Item
-                  to="/hospital-admin/financials"
-                  icon="payroll"
-                  onSelect={onClose}
-                >
-                  Financials
-                </Item>
-                {["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                  <Item to="/hospital-admin/digital-twin" icon="analytics" onSelect={onClose}>
-                    Digital Twin
-                  </Item>
-                )}
-                {["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                  <Item to="/hospital-admin/interop-marketplace" icon="settings" onSelect={onClose}>
-                    Interop Marketplace
-                  </Item>
-                )}
-                <Item
-                  to="/hospital-admin/pharmacy-referrals"
-                  icon="pharmacy"
-                  onSelect={onClose}
-                >
-                  Pharmacy Referrals
-                </Item>
-                {canSelfService && (
-                  <Item
-                    to="/workforce/requests"
-                    icon="requests"
-                    onSelect={onClose}
-                  >
-                    My Requests
-                  </Item>
-                )}
-                <Item to="/staff" icon="staff" onSelect={onClose}>
-                  Staff Workspace
-                </Item>
-                <Item to="/hr-manager" icon="hr" onSelect={onClose}>
-                  HR Manager
-                </Item>
-                {can("inventory", "read") && (
-                  <Item to="/inventory" icon="inventory" onSelect={onClose}>
-                    Inventory
-                  </Item>
-                )}
-                {can("pharmacy", "read") && (
-                  <Item to="/pharmacy" icon="pharmacy" onSelect={onClose}>
-                    Pharmacy
-                  </Item>
-                )}
-              </Section>
-
-              <Section title="Talent">
-                <Item to="/admin/create-admin" icon="admin" onSelect={onClose}>
-                  Admin Access
-                </Item>
-                <Item to="/admin/super-assistants" icon="ai" onSelect={onClose}>
-                  Super Assistants
-                </Item>
-                <Item to="/admin/training-tracker" icon="analytics" onSelect={onClose}>
-                  Training Tracker
-                </Item>
-                <Item to="/admin/training-playbook" icon="reports" onSelect={onClose}>
-                  Training Playbook
-                </Item>
-                <Item to="/admin/launch-readiness" icon="analytics" onSelect={onClose}>
-                  Launch Readiness
-                </Item>
-                <Item to="/admin/sre-incidents" icon="notifications" onSelect={onClose}>
-                  SRE Incidents
-                </Item>
-                <Item to="/admin/support-tickets" icon="reports" onSelect={onClose}>
-                  Support Tickets
-                </Item>
-                <Item to="/admin/pilot-onboarding" icon="admin" onSelect={onClose}>
-                  Pilot Onboarding
-                </Item>
-                <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
-                  Audit Logs
-                </Item>
-                <Item to="/admin/ai-autofill-audit" icon="analytics" onSelect={onClose}>
-                  AI Autofill Audit
-                </Item>
-                <Item
-                  to="/notifications"
-                  icon="notifications"
-                  onSelect={onClose}
-                  badge={pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : ""}
-                >
-                  Notifications
-                </Item>
-              </Section>
-
-              <Section title="Workforce">
-                <Item to="/doctor" icon="doctor" onSelect={onClose}>
-                  Clinician Dashboard
-                </Item>
-                <Item to="/nurse" icon="nurse" onSelect={onClose}>
-                  Nursing Dashboard
-                </Item>
-                <Item to="/lab-tech" icon="lab" onSelect={onClose}>
-                  Lab Dashboard
-                </Item>
-                <Item to="/labtech/labs" icon="lab" onSelect={onClose}>
-                  Lab Tests
-                </Item>
-                <Item to="/doctor/appointments" icon="appointments" onSelect={onClose}>
-                  Appointments
-                </Item>
-              </Section>
-
-              {normalizedRole === "DOCTOR" && (
-                <Section title="Doctor Workspace">
-                  <Item to="/doctor/schedule" icon="appointments" onSelect={onClose}>
-                    My Schedule
-                  </Item>
-                  <Item to="/doctor/patients" icon="doctor" onSelect={onClose}>
-                    My Patients
-                  </Item>
-                  <Item to="/doctor/opd" icon="doctor" onSelect={onClose}>
-                    OPD Clinic
-                  </Item>
-                  <Item to="/doctor/ward" icon="staff" onSelect={onClose}>
-                    Inpatient Ward
-                  </Item>
-                  <Item to="/doctor/surgery" icon="reports" onSelect={onClose}>
-                    Surgery / Procedures
-                  </Item>
-                  <Item to="/doctor/lab-results" icon="lab" onSelect={onClose}>
-                    Lab Results
-                  </Item>
-                  <Item to="/doctor/prescriptions" icon="pharmacy" onSelect={onClose}>
-                    Prescriptions
-                  </Item>
-                  <Item to="/doctor/medical-records" icon="reports" onSelect={onClose}>
-                    Medical Records
-                  </Item>
-                  <Item to="/doctor/referrals" icon="reports" onSelect={onClose}>
-                    Referrals
-                  </Item>
-                  <Item to="/doctor/clinical-order-copilot" icon="ai" onSelect={onClose}>
-                    Clinical Order Copilot
-                  </Item>
-                  <Item to="/doctor/performance" icon="analytics" onSelect={onClose}>
-                    Performance
-                  </Item>
-                  <Item to="/doctor/cme" icon="doctor" onSelect={onClose}>
-                    CME & Certifications
-                  </Item>
-                  <Item to="/doctor/leave" icon="requests" onSelect={onClose}>
-                    Leave Requests
-                  </Item>
-                  <Item to="/doctor/reports-notes" icon="reports" onSelect={onClose}>
-                    Reports & Notes
-                  </Item>
-                  <Item to="/doctor/settings" icon="settings" onSelect={onClose}>
-                    Settings
-                  </Item>
-                </Section>
-              )}
-
-              {normalizedRole === "NURSE" && (
-                <Section title="Nurse Workspace">
-                  <Item to="/nurse/shift" icon="nurse" onSelect={onClose}>My Shift</Item>
-                  <Item to="/nurse/patients" icon="staff" onSelect={onClose}>Assigned Patients</Item>
-                  <Item to="/nurse/medication" icon="nurse" onSelect={onClose}>Medication Administration</Item>
-                  <Item to="/nurse/incidents" icon="notifications" onSelect={onClose}>Incident Reports</Item>
-                  <Item to="/nurse/vitals" icon="reports" onSelect={onClose}>Vitals Entry</Item>
-                  <Item to="/nurse/leave" icon="requests" onSelect={onClose}>Leave Requests</Item>
-                  <Item to="/nurse/performance" icon="analytics" onSelect={onClose}>Performance</Item>
-                </Section>
-              )}
-
-              {normalizedRole === "LAB_TECH" && (
-                <Section title="Lab Workspace">
-                  <Item to="/lab-tech/test-queue" icon="lab" onSelect={onClose}>Test Queue</Item>
-                  <Item to="/lab-tech/equipment" icon="lab" onSelect={onClose}>Equipment Logs</Item>
-                  <Item to="/lab-tech/samples" icon="lab" onSelect={onClose}>Sample Tracking</Item>
-                  <Item to="/lab-tech/qc" icon="analytics" onSelect={onClose}>Quality Control</Item>
-                  <Item to="/lab-tech/safety" icon="security" onSelect={onClose}>Safety Checklist</Item>
-                  <Item to="/lab-tech/archive" icon="reports" onSelect={onClose}>Reports Archive</Item>
-                </Section>
-              )}
-
-              {normalizedRole === "PHARMACIST" && (
-                <Section title="Pharmacy Workspace">
-                  <Item to="/pharmacy/queue" icon="pharmacy" onSelect={onClose}>Prescription Queue</Item>
-                  <Item to="/pharmacy/inventory" icon="inventory" onSelect={onClose}>Inventory</Item>
-                  <Item to="/pharmacy/controlled" icon="security" onSelect={onClose}>Controlled Drugs</Item>
-                  <Item to="/pharmacy/expiry" icon="notifications" onSelect={onClose}>Expiry Alerts</Item>
-                  <Item to="/pharmacy/suppliers" icon="reports" onSelect={onClose}>Supplier Orders</Item>
-                  <Item to="/pharmacy/reports" icon="reports" onSelect={onClose}>Reports</Item>
-                </Section>
-              )}
-
-              {normalizedRole === "PATIENT" && (
-                <Section title="Patient Workspace">
-                  <Item to="/patient/appointments" icon="appointments" onSelect={onClose}>My Appointments</Item>
-                  <Item to="/patient/medical-records" icon="reports" onSelect={onClose}>Medical Records</Item>
-                  <Item to="/patient/family-records" icon="staff" onSelect={onClose}>Family Records</Item>
-                  <Item to="/patient/family-timeline" icon="analytics" onSelect={onClose}>Family Timeline</Item>
-                  <Item to="/patient/prescriptions" icon="pharmacy" onSelect={onClose}>Prescriptions</Item>
-                  <Item to="/patient/lab-results" icon="lab" onSelect={onClose}>Lab Results</Item>
-                  <Item to="/patient/billing" icon="payroll" onSelect={onClose}>Billing</Item>
-                  <Item to="/patient/insurance" icon="reports" onSelect={onClose}>Insurance</Item>
-                  <Item to="/patient/feedback" icon="notifications" onSelect={onClose}>Feedback</Item>
-                </Section>
-              )}
-
-              <Section title="Payroll & Finance">
-                <Item to="/payments" icon="payroll" onSelect={onClose}>
-                  Payroll & Payments
-                </Item>
-                <Item to="/payments/full" icon="payroll" onSelect={onClose}>
-                  Payment Operations
-                </Item>
-                {normalizeRole(user.role) === "SUPER_ADMIN" && (
-                  <Item to="/admin/payment-settings" icon="payroll" onSelect={onClose}>
-                    Payment Settings
-                  </Item>
-                )}
-                <Item to="/payroll-officer" icon="payroll" onSelect={onClose}>
-                  Payroll Officer
-                </Item>
-              </Section>
-
-              <Section title="AI & Automation">
-                <Item to="/ai/medical" icon="ai" onSelect={onClose}>
-                  Clinical Assistant
-                </Item>
-                <Item to="/ai/triage" icon="ai" onSelect={onClose}>
-                  Triage
-                </Item>
-                <Item to="/ai/voice" icon="ai" onSelect={onClose}>
-                  Voice Dictation
-                </Item>
-                <Item to="/ai/extract" icon="ai" onSelect={onClose}>
-                  NeuroEdge Extract
-                </Item>
-                <Item to="/ai/chatbot" icon="ai" onSelect={onClose}>
-                  Support Chat
-                </Item>
-                <Item to="/ai/ws" icon="ai" onSelect={onClose}>
-                  Live AI Chat
-                </Item>
-              </Section>
-
-              <Section title="Security & Setup">
-                <Item to="/security-admin" icon="security" onSelect={onClose}>
-                  Security Admin
-                </Item>
-                <Item to="/security-officer" icon="security" onSelect={onClose}>
-                  Security Officer
-                </Item>
-                <Item to="/admin/realtime" icon="settings" onSelect={onClose}>
-                  Integrations
-                </Item>
-                <Item to="/admin/crdt-patients" icon="settings" onSelect={onClose}>
-                  Offline Sync
-                </Item>
-                {["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(normalizeRole(user.role)) && (
-                  <Item to="/admin/offline-ops" icon="analytics" onSelect={onClose}>
-                    Offline Ops Monitor
-                  </Item>
-                )}
-              </Section>
-
-              <Section title="Quick Actions">
-                {getQuickActions(normalizeRole(user.role)).map((a) => (
-                  <Item key={a.path} to={a.path} icon="home" onSelect={onClose}>
-                    {a.label}
-                  </Item>
-                ))}
-              </Section>
-
-                <Section title="Settings">
-                  {["SUPER_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
-                    <Item to="/super-admin/settings" icon="settings" onSelect={onClose}>
-                      System Settings
-                    </Item>
-                  )}
-                  <Item to="/profile" icon="settings" onSelect={onClose}>
-                    Account Settings
-                  </Item>
-                  <Item to="/reports" icon="reports" onSelect={onClose}>
-                    Help & Policies
-                  </Item>
-                  <Item to="/admin/print-center" icon="printer" onSelect={onClose}>
-                    Print Center
-                  </Item>
-                  {["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(normalizeRole(user.role)) && (
-                    <Item to="/admin/offline-ops" icon="analytics" onSelect={onClose}>
-                      Offline Ops Monitor
-                    </Item>
-                  )}
-                  <Item to="/admin/audit-logs" icon="admin" onSelect={onClose}>
-                    Activity Log
-                  </Item>
-                  <li className="theme-row">
-                    <button type="button"
-                      className={`nav-btn ${theme === "light" ? "active" : ""}`}
-                      onClick={() => setTheme("light")}
-                    >
-                      <NavIcon name="settings" />
-                      Light
-                    </button>
-                    <button type="button"
-                      className={`nav-btn ${theme === "dark" ? "active" : ""}`}
-                      onClick={() => setTheme("dark")}
-                    >
-                      <NavIcon name="settings" />
-                      Dark
-                    </button>
-                    <button type="button"
-                      className={`nav-btn ${theme === "system" ? "active" : ""}`}
-                      onClick={() => setTheme("system")}
-                    >
-                      <NavIcon name="settings" />
-                      {translateText("System")}
-                    </button>
-                  </li>
-                </Section>
-              </>
+      <div className="sidebar-header sticky sidebar-header-premium">
+        <div className="sidebar-brand-lockup">
+          <div className="brand-mark">
+            {settings?.branding?.logo ? (
+              <span className="brand-logo" style={{ backgroundImage: `url(${settings.branding.logo})` }} />
+            ) : (
+              appName
             )}
+          </div>
+          <div className="brand-sub">{translateText(appTagline || `${normalizedRole} Workspace`)}</div>
+        </div>
+        <div className="sidebar-role-row">
+          <span className="sidebar-role-chip">{translateText(normalizedRole.replaceAll("_", " "))}</span>
+          {showRoleChip ? (
+            <span className="sidebar-role-chip ghost">{translateText(`Viewing ${user.role}`)}</span>
+          ) : null}
+        </div>
+        {canRoleOverride ? (
+          <div className="sidebar-workspace-shell">
+            <label className="sidebar-search-label" htmlFor="sidebar-workspace-switcher">
+              {translateText("Workspace switcher")}
+            </label>
+            <select
+              id="sidebar-workspace-switcher"
+              className="sidebar-workspace-select"
+              value={viewRole}
+              onChange={(event) => setViewRole(event.target.value)}
+            >
+              {ROLE_VIEW_OPTIONS.map((role) => (
+                <option key={role} value={role}>
+                  {translateText(role)}
+                </option>
+              ))}
+            </select>
+            <label className="sidebar-inline-check">
+              <input
+                type="checkbox"
+                checked={Boolean(strictImpersonation)}
+                onChange={(event) => setStrictImpersonation(event.target.checked)}
+              />
+              <span>{translateText("Strict impersonation")}</span>
+            </label>
+            <div className="sidebar-workspace-actions">
+              <button type="button" className="btn-primary" onClick={runRoleSwitch}>
+                {translateText("Switch view")}
+              </button>
+              <button type="button" className="btn-secondary" onClick={resetRoleSwitch}>
+                {translateText("Reset")}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
 
-          </ul>
-        </nav>
+      <div className="sidebar-scroll">
+        <div className="sidebar-search-shell">
+          <label className="sidebar-search-label" htmlFor="sidebar-jump-search">
+            {translateText("Global search / command")}
+          </label>
+          <button type="button" className="sidebar-command-button" onClick={openGlobalSearch}>
+            <NavIcon name="search" />
+            <span>{translateText("Open command palette")}</span>
+          </button>
+          <input
+            id="sidebar-jump-search"
+            className="sidebar-search-input"
+            value={navQuery}
+            onChange={(event) => setNavQuery(event.target.value)}
+            placeholder={translateText("Filter grouped tools in this workspace")}
+          />
+        </div>
+
+        <SidebarCluster title="For You" hint={`${quickLinks.length} shortcuts`}>
+          <div className="sidebar-quick-panel">
+            {quickLinks.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                className={`sidebar-quick-button ${isActivePath(location.pathname, item.path) ? "active" : ""}`.trim()}
+                onClick={() => handleSelect(item)}
+              >
+                <NavIcon name={item.icon || "home"} />
+                <span>{translateText(item.label)}</span>
+                {item.badge ? <span className="notif-badge">{translateText(item.badge)}</span> : null}
+              </button>
+            ))}
+          </div>
+        </SidebarCluster>
+
+        {recentVisible.length > 0 ? (
+          <SidebarCluster title="Recent" hint={`${recentVisible.length} items`}>
+            {recentVisible.map((item) => (
+              <SidebarItem
+                key={`recent-${item.path}`}
+                item={item}
+                active={isActivePath(location.pathname, item.path)}
+                onSelect={handleSelect}
+                isStarred={starredPaths.includes(item.path)}
+                onToggleStar={toggleStarred}
+              />
+            ))}
+          </SidebarCluster>
+        ) : null}
+
+        {starredVisible.length > 0 ? (
+          <SidebarCluster title="Starred" hint={`${starredVisible.length} items`}>
+            {starredVisible.map((item) => (
+              <SidebarItem
+                key={`starred-${item.path}`}
+                item={item}
+                active={isActivePath(location.pathname, item.path)}
+                onSelect={handleSelect}
+                isStarred
+                onToggleStar={toggleStarred}
+              />
+            ))}
+          </SidebarCluster>
+        ) : null}
+
+        {filteredSections.map((section) => (
+          <SidebarCluster key={section.section} title={section.section} hint={`${section.items.length} tools`}>
+            {section.items.map((item) => (
+              <SidebarItem
+                key={`${section.section}-${item.path}`}
+                item={item}
+                active={isActivePath(location.pathname, item.path)}
+                onSelect={handleSelect}
+                badge={item.path === "/notifications" && pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : item.badge}
+                isStarred={starredPaths.includes(item.path)}
+                onToggleStar={toggleStarred}
+              />
+            ))}
+          </SidebarCluster>
+        ))}
+
+        {filteredSections.length === 0 ? (
+          <div className="sidebar-empty-note">
+            {translateText("No tools match this filter yet. Try a simpler keyword.")}
+          </div>
+        ) : null}
       </div>
 
       <div className="sidebar-footer sticky-footer">
-        <div className="footer-actions">
-          <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
-            <NavIcon name="reports" />
-            {translateText("Help")}
+        <div className="sidebar-utility-rail">
+          <button
+            type="button"
+            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/notifications") ? "active" : ""}`.trim()}
+            onClick={() => handleSelect({ label: "Notifications", path: "/notifications", icon: "notifications" })}
+          >
+            <NavIcon name="notifications" />
+            <span>{translateText("Notifications")}</span>
+            {pharmacyRiskAlertCount > 0 ? <span className="notif-badge">{pharmacyRiskAlertCount}</span> : null}
           </button>
-          <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
+          <button
+            type="button"
+            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, settingsPathForRole(normalizedRole)) ? "active" : ""}`.trim()}
+            onClick={() => handleSelect({ label: "Settings", path: settingsPathForRole(normalizedRole), icon: "settings" })}
+          >
             <NavIcon name="settings" />
-            {translateText("Settings")}
+            <span>{translateText("Settings")}</span>
           </button>
-          <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
-            <NavIcon name="security" />
-            {translateText("Sign Out")}
+          <button
+            type="button"
+            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/profile") ? "active" : ""}`.trim()}
+            onClick={() => handleSelect({ label: "Account", path: "/profile", icon: "account" })}
+          >
+            <NavIcon name="account" />
+            <span>{translateText("Account")}</span>
+          </button>
+          <button
+            type="button"
+            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/ai/chatbot") ? "active" : ""}`.trim()}
+            onClick={() => handleSelect({ label: "AI Assistant", path: "/ai/chatbot", icon: "ai" })}
+          >
+            <NavIcon name="ai" />
+            <span>{translateText("AI Assistant")}</span>
           </button>
         </div>
+
+        <div className="sidebar-theme-toggle" role="group" aria-label="Theme mode">
+          <button
+            type="button"
+            className={`sidebar-theme-btn ${theme === "light" ? "active" : ""}`.trim()}
+            onClick={() => setTheme("light")}
+          >
+            {translateText("Light")}
+          </button>
+          <button
+            type="button"
+            className={`sidebar-theme-btn ${theme === "dark" ? "active" : ""}`.trim()}
+            onClick={() => setTheme("dark")}
+          >
+            {translateText("Dark")}
+          </button>
+          <button
+            type="button"
+            className={`sidebar-theme-btn ${theme === "system" ? "active" : ""}`.trim()}
+            onClick={() => setTheme("system")}
+          >
+            {translateText("System")}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="nav-btn sidebar-signout-btn"
+          onClick={() => {
+            logout();
+            onClose?.();
+          }}
+        >
+          <NavIcon name="security" />
+          {translateText("Sign Out")}
+        </button>
         <LegalLinks compact className="sidebar-legal-links" />
-        <div>AfyaLink • {translateText("Secure")}</div>
+        <div>{appName} • {translateText("Secure")}</div>
       </div>
+
+      <button type="button" className="sidebar-resize-handle" onMouseDown={startResize} aria-label="Resize sidebar" />
     </aside>
   );
 }
 
-function Section({ title, children }) {
+function SidebarCluster({ title, hint = "", children }) {
   const { translateText } = useAppLanguage();
   return (
-    <>
-      <li className="section-title">{translateText(title)}</li>
-      {children}
-    </>
+    <section className="sidebar-cluster">
+      <div className="sidebar-cluster-head">
+        <div className="sidebar-cluster-title">{translateText(title)}</div>
+        {hint ? <span className="sidebar-cluster-hint">{translateText(hint)}</span> : null}
+      </div>
+      <div className="sidebar-cluster-list">{children}</div>
+    </section>
   );
 }
 
-function Item({ to, children, icon, onSelect, badge = "" }) {
-  const navigate = useNavigate();
+function SidebarItem({ item, active, onSelect, badge = "", isStarred = false, onToggleStar = null }) {
   const { translateText } = useAppLanguage();
   return (
-    <li>
-      <button type="button"
-        className="nav-btn"
-        onClick={() => {
-          navigate(to);
-          onSelect?.();
-        }}
-      >
-        <NavIcon name={icon} />
-        {typeof children === "string" ? translateText(children) : children}
-        {badge ? <span className="notif-badge">{typeof badge === "string" ? translateText(badge) : badge}</span> : null}
-      </button>
-    </li>
+    <div
+      className={`nav-btn sidebar-nav-btn ${active ? "active" : ""}`.trim()}
+      onClick={() => onSelect(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onSelect(item);
+      }}
+    >
+      <NavIcon name={item.icon || "admin"} />
+      <span className="sidebar-nav-copy">{translateText(item.label)}</span>
+      {badge ? <span className="notif-badge">{translateText(badge)}</span> : null}
+      {typeof onToggleStar === "function" ? (
+        <button
+          type="button"
+          className={`sidebar-star-btn ${isStarred ? "active" : ""}`.trim()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleStar(item);
+          }}
+          aria-label={isStarred ? translateText("Remove from starred") : translateText("Add to starred")}
+        >
+          {isStarred ? "★" : "☆"}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
 function getQuickActions(role) {
-  const requestActions = [
-    { label: "Request Leave", path: "/workforce/requests#leave" },
-    { label: "Request Overtime", path: "/workforce/requests#overtime" },
-    { label: "Request Shift", path: "/workforce/requests#shift" },
-  ];
-
-  const common = [
-    { label: "View Notifications", path: "/notifications" },
-    { label: "Open Reports", path: "/reports" },
-  ];
-
-  const roleActions = {
-    SUPER_ADMIN: [
-      { label: "Manage Hospitals", path: "/super-admin/hospitals" },
-      { label: "Create Admin", path: "/admin/create-admin" },
-      { label: "Super Assistants", path: "/admin/super-assistants" },
-      { label: "Audit Logs", path: "/admin/audit-logs" },
-      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-      { label: "SRE Incidents", path: "/admin/sre-incidents" },
-      { label: "Support Tickets", path: "/admin/support-tickets" },
-      { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
-      { label: "SLA Policies", path: "/hospital-admin/approvals#sla" },
-      { label: "Queue Insights", path: "/hospital-admin/approvals" },
-    ],
-    SYSTEM_ADMIN: [
-      { label: "Manage Hospitals", path: "/super-admin/hospitals" },
-      { label: "Super Assistants", path: "/admin/super-assistants" },
-      { label: "Audit Logs", path: "/admin/audit-logs" },
-      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-      { label: "SRE Incidents", path: "/admin/sre-incidents" },
-      { label: "Support Tickets", path: "/admin/support-tickets" },
-      { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
-      { label: "SLA Policies", path: "/hospital-admin/approvals#sla" },
-      { label: "Queue Insights", path: "/hospital-admin/approvals" },
-    ],
-    HOSPITAL_ADMIN: [
-      { label: "Open Approvals", path: "/hospital-admin" },
-      { label: "Inventory Review", path: "/inventory" },
-      { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-      { label: "SRE Incidents", path: "/admin/sre-incidents" },
-      { label: "Support Tickets", path: "/admin/support-tickets" },
-      { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
-      { label: "SLA Policies", path: "/hospital-admin/approvals#sla" },
-    ],
-    HR_MANAGER: [
-      { label: "Recruitment Pipeline", path: "/hr-manager" },
-      { label: "Performance Reviews", path: "/hr-manager" },
-      { label: "Support Tickets", path: "/admin/support-tickets" },
-      { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
-    ],
-    PAYROLL_OFFICER: [
-      { label: "Run Payroll", path: "/payroll-officer" },
-      { label: "Payment Operations", path: "/payments/full" },
-    ],
-    COMMUNITY_HEALTH_WORKER: [
-      { label: "My Households", path: "/community-health-worker" },
-      { label: "Field Reports", path: "/community-health-worker" },
-      { label: "Referrals", path: "/community-health-worker" },
-    ],
-    DOCTOR: [
-      { label: "Start Consult", path: "/doctor" },
-      { label: "Appointments", path: "/doctor/appointments" },
-    ],
-    NURSE: [
-      { label: "Start Round", path: "/nurse" },
-      { label: "Patient Tasks", path: "/nurse" },
-    ],
-    LAB_TECH: [
-      { label: "Lab Queue", path: "/lab-tech" },
-      { label: "Lab Tests", path: "/labtech/labs" },
-    ],
-    PHARMACIST: [
-      { label: "Dispense Queue", path: "/pharmacy" },
-      { label: "Inventory", path: "/inventory" },
-    ],
-    RADIOLOGIST: [],
-    THERAPIST: [],
-    RECEPTIONIST: [],
-    DEVELOPER: [
-      { label: "Integration Console", path: "/developer" },
-      { label: "SRE Incidents", path: "/admin/sre-incidents" },
-      { label: "Support Tickets", path: "/admin/support-tickets" },
-      { label: "Pilot Onboarding", path: "/admin/pilot-onboarding" },
-      { label: "SLA Policies", path: "/hospital-admin/approvals#sla" },
-      { label: "Queue Insights", path: "/hospital-admin/approvals" },
-    ],
-    PATIENT: [
-      { label: "Book Appointment", path: "/patient" },
-      { label: "Payments", path: "/payments" },
-    ],
-  };
-
-  const includeRequests = [
-    "HOSPITAL_ADMIN",
-    "HR_MANAGER",
-    "PAYROLL_OFFICER",
-    "DOCTOR",
-    "NURSE",
-    "LAB_TECH",
-    "PHARMACIST",
-    "COMMUNITY_HEALTH_WORKER",
-    "RADIOLOGIST",
-    "THERAPIST",
-    "RECEPTIONIST",
-    "SECURITY_ADMIN",
-    "SECURITY_OFFICER",
-  ].includes(role);
-
-  return [
-    ...(roleActions[role] || []),
-    ...(includeRequests ? requestActions : []),
-    ...common,
-  ];
+  return getQuickActionsForRole(role);
 }

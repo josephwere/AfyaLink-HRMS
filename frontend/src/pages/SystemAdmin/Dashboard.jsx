@@ -13,6 +13,7 @@ import { getDeveloperOverview, getTrustStatus, runWorkflowSlaScan } from "../../
 import { runStaffingForecast, runDigitalTwin } from "../../services/mlApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function SystemAdminDashboard() {
@@ -229,33 +230,66 @@ export default function SystemAdminDashboard() {
     }
   };
 
+  const readyControlModules =
+    controlPlane?.controlPlanes?.filter((row) => row.readiness === "READY").length ?? 0;
+  const pendingTransfers = transfers.filter((t) => t.status === "Pending").length;
+
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("System Admin Dashboard")}</h2>
-          <p className="muted">{translateText("Simple technical view for queues, integrations, and system health.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
-            {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/government-hospital-registry")}>{translateText("Gov Hospital Registry")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/hospital-verification-review")}>{translateText("Hospital Review Queue")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-hub")}>{translateText("Gov Integration Hub")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-control-plane")}>{translateText("Control Plane")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>{translateText("County Command")}</button>
-          <button type="button" className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>{translateText("Training Tracker")}</button>
-        </div>
-      </div>
+    <DashboardHomeShell
+      className="system-admin-dashboard-shell"
+      kicker="National operations"
+      title="System Admin Dashboard"
+      subtitle="Technical command across queues, integrations, compliance pressure, and national service health."
+      actions={[
+        {
+          label: runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan",
+          onClick: runSla,
+          disabled: runningSla,
+        },
+        { label: "Gov Hospital Registry", path: "/system-admin/government-hospital-registry", variant: "secondary" },
+        { label: "Control Plane", path: "/system-admin/integration-control-plane", variant: "secondary" },
+        { label: "County Command", path: "/system-admin/county-command-center", variant: "secondary" },
+        { label: "Compliance Center", path: "/system-admin/compliance-center", variant: "secondary" },
+      ]}
+      stats={[
+        { label: "Tracked hospitals", value: metrics?.hospitals ?? "—", note: "National footprint" },
+        { label: "Ready control modules", value: readyControlModules, note: "Operational rollout" },
+        { label: "Regions at risk", value: county?.summary?.regionsAtRisk ?? "—", note: "County watchlist" },
+        { label: "Policy denials (24h)", value: trust?.policyDenials24h ?? "—", note: "Decision pressure" },
+      ]}
+      contextCards={[
+        {
+          title: "Runtime posture",
+          subtitle: "Keep queues, control planes, and trust pressure in view.",
+          items: [
+            { label: "Integration active", value: devOverview?.queues?.integration?.active ?? "—" },
+            { label: "Queue waiting", value: devOverview?.queues?.integration?.waiting ?? "—" },
+            { label: "DLQ failed", value: devOverview?.queues?.dlq?.failed ?? "—", tone: Number(devOverview?.queues?.dlq?.failed || 0) > 0 ? "risk" : "good" },
+          ],
+          actions: [
+            { label: "Open Developer Console", path: "/developer", variant: "secondary" },
+            { label: "Open Queue Replay", path: "/developer/queue-replay", variant: "secondary" },
+          ],
+        },
+        {
+          title: "National watch",
+          subtitle: "Operational signals worth a system-level response.",
+          items: [
+            { label: "Pending transfers", value: pendingTransfers, tone: pendingTransfers > 0 ? "warn" : "good" },
+            { label: "Training completion %", value: training.completionRate },
+            { label: "Unlinked pharmacists", value: unlinkedPharmacists, tone: unlinkedPharmacists > 0 ? "warn" : "good" },
+          ],
+          actions: [
+            { label: "County Command Center", path: "/system-admin/county-command-center", variant: "secondary" },
+            { label: "Training Tracker", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
 
       {msg && <div className="card">{msg}</div>}
 
-      <section className="section">
-        <h3>{translateText("System Widgets")}</h3>
+      <DashboardSection title={translateText("System Widgets")} subtitle={translateText("Fast operational readouts across the national control surface.")}>
         <div className="grid info-grid">
           <StatCard title="CPU / Memory" value={devOverview?.queues?.integration?.active ?? "—"} onClick={() => navigate("/developer")} />
           <StatCard title="Req / Min" value={devOverview?.queues?.integration?.completed ?? "—"} onClick={() => navigate("/admin/realtime")} />
@@ -294,9 +328,17 @@ export default function SystemAdminDashboard() {
             onClick={() => navigate("/system-admin/county-command-center")}
           />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection
+        className="doctor-main-grid"
+        title={translateText("Transfer Continuity")}
+        subtitle={translateText("National overview of transfer volume and pending handovers.")}
+        actions={[
+          { label: "County Command Center", path: "/system-admin/county-command-center", variant: "secondary" },
+          { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center", variant: "secondary" },
+        ]}
+      >
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -348,10 +390,9 @@ export default function SystemAdminDashboard() {
             <div className="alert-item">{translateText("Review transfer bottlenecks in county command center.")}</div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>{translateText("Training Tracker")}</h3>
+      <DashboardSection title={translateText("Training Tracker")} subtitle={translateText("Adoption and operational readiness across system-linked teams.")}>
         <div className="grid info-grid">
           <StatCard title="Total Trainees" value={training.total} onClick={() => navigate("/admin/training-tracker")} />
           <StatCard title="Not Started" value={training.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
@@ -360,10 +401,9 @@ export default function SystemAdminDashboard() {
           <StatCard title="Overdue Not Started" value={training.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
           <StatCard title="Overdue In Progress" value={training.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>Technical Operations</h3>
+      <DashboardSection title="Technical Operations" subtitle="Primary national tools for integrations, audit, rollout, and AI oversight.">
         <div className="panel-grid">
           <button type="button" className="action-link" onClick={() => navigate("/developer")}>Error Logs</button>
           <button type="button" className="action-link" onClick={() => navigate("/developer")}>API Logs</button>
@@ -384,7 +424,7 @@ export default function SystemAdminDashboard() {
           <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>Integration Hub</button>
           <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=COMMUNITY_HEALTH_WORKER&status=IN_PROGRESS")}>Training Tracker Board</button>
         </div>
-      </section>
+      </DashboardSection>
 
       <section className="section">
         <h3>AI Intelligence Snapshot</h3>
@@ -535,6 +575,6 @@ export default function SystemAdminDashboard() {
           <button type="button" className="action-link" onClick={() => navigate("/notifications")}>Alerts</button>
         </div>
       </section>
-    </div>
+    </DashboardHomeShell>
   );
 }

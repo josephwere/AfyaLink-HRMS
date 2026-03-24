@@ -8,6 +8,7 @@ import { getSuperAdminDashboard } from "../../services/dashboardApi";
 import { getDeveloperOverview } from "../../services/developerApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
@@ -93,27 +94,75 @@ export default function Dashboard() {
       });
   }, []);
 
+  const pendingTransfers = transfers.filter((t) => t.status === "Pending").length;
+
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Super Admin Dashboard")}</h2>
-          <p className="muted">{translateText("Simple global view for hospitals, staff, security, and system status.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/super-admin/hospitals")}>{translateText("Hospitals")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/create-admin")}>{translateText("Role Management")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/super-assistants")}>{translateText("Super Assistants")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>{translateText("Global Payroll")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/settings")}>{translateText("System Settings")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/pharmacies")}>{translateText("Registered Pharmacies")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>{translateText("Training Tracker")}</button>
-        </div>
-      </div>
+    <DashboardHomeShell
+      className="super-admin-dashboard-shell"
+      shellKey="super-admin"
+      kicker="Founder workspace"
+      title="Super Admin Dashboard"
+      subtitle="Global control across hospitals, support teams, payroll, security posture, and system direction."
+      actions={[
+        { label: "Hospitals", path: "/super-admin/hospitals" },
+        { label: "Role Management", path: "/admin/create-admin", variant: "secondary" },
+        { label: "Super Assistants", path: "/admin/super-assistants", variant: "secondary" },
+        { label: "System Settings", path: "/super-admin/settings", variant: "secondary" },
+      ]}
+      stats={[
+        { label: "Hospitals", value: data?.totalHospitals ?? "—", note: "Global footprint" },
+        { label: "Total staff", value: data?.totalUsers ?? "—", note: "Cross-role workforce" },
+        { label: "Active patients", value: data?.totalPatients ?? "—", note: "Patient network reach" },
+        { label: "Pending transfers", value: pendingTransfers, note: "Continuity watch" },
+      ]}
+      brief={{
+        kicker: "Daily brief",
+        title: "What needs founder attention now",
+        body: "Start with the global health of hospitals, workforce readiness, pharmacy linkage, and cross-facility continuity.",
+        items: [
+          { label: "Workforce pending", value: ops?.queues?.workforce?.totalPending ?? "—", tone: Number(ops?.queues?.workforce?.totalPending || 0) > 0 ? "warn" : "good" },
+          { label: "Unlinked pharmacists", value: unlinkedPharmacists, tone: unlinkedPharmacists > 0 ? "warn" : "good" },
+          { label: "Training completion %", value: training.completionRate },
+        ],
+      }}
+      runway={[
+        { id: "founder-hospitals", title: "Manage hospitals", description: "Open registry, accreditation, and operational posture across all hospitals.", eyebrow: "Network", path: "/super-admin/hospitals", badge: "Live" },
+        { id: "founder-assistants", title: "Super assistant operations", description: "Review the human assistant layer, staffing, and support continuity.", eyebrow: "Operations", path: "/admin/super-assistants", badge: "Team" },
+        { id: "founder-payroll", title: "Global payroll", description: "Track cross-hospital finance, payouts, and revenue posture in one workspace.", eyebrow: "Finance", path: "/payments/full", badge: "Money" },
+        { id: "founder-settings", title: "System settings", description: "Tune global branding, AI behavior, and compliance-aware product controls.", eyebrow: "Platform", path: "/super-admin/settings", badge: "Control" },
+      ]}
+      pinnedTools={[
+        { id: "founder-pharmacies", title: "Registered pharmacies", description: "Check pharmacy network reach and linkage quality.", eyebrow: "Registry", path: "/super-admin/pharmacies", variant: "compact" },
+        { id: "founder-training", title: "Training tracker", description: "See workforce adoption and overdue training signals.", eyebrow: "Adoption", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "compact" },
+        { id: "founder-audit", title: "Audit logs", description: "Trace global changes before acting.", eyebrow: "Security", path: "/admin/audit-logs", variant: "compact" },
+      ]}
+      recentItems={[
+        { id: "founder-recent-transfers", title: "Transfer continuity", description: "Return to transfer queues and continuity monitoring.", eyebrow: "Continuity", path: "/system-admin/county-command-center", variant: "compact" },
+        { id: "founder-recent-payroll", title: "Payroll overview", description: "Re-open recent payroll and invoice oversight.", eyebrow: "Finance", path: "/payments/full", variant: "compact" },
+      ]}
+      savedViews={[
+        { id: "founder-view-hospital-review", title: "Hospital review queue", description: "Saved entry into verification and approval pressure.", eyebrow: "Saved view", path: "/system-admin/hospital-verification-review", variant: "compact" },
+        { id: "founder-view-training-overdue", title: "Training overdue", description: "Focus on overdue learning and readiness bottlenecks.", eyebrow: "Saved view", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "compact" },
+      ]}
+      contextCards={[
+        {
+          title: "Founder context",
+          subtitle: "Cross-platform signals that matter most at the top level.",
+          items: [
+            { label: "Payments this month", value: data?.paymentsThisMonth ?? "—" },
+            { label: "Invoices", value: data?.invoicesThisMonth ?? "—" },
+            { label: "Hospitals with pharmacists", value: data?.hospitalsWithPharmacists ?? "—" },
+          ],
+          actions: [
+            { label: "Open Registered Pharmacies", path: "/super-admin/pharmacies", variant: "secondary" },
+            { label: "Open Settings", path: "/super-admin/settings", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
       {msg && <div className="card">{msg}</div>}
 
-      <section className="section">
-        <h3>{translateText("Global Snapshot")}</h3>
+      <DashboardSection title={translateText("Global Snapshot")} subtitle={translateText("The top-level metrics that define platform reach and network health.")}>
         <div className="grid info-grid">
           <StatCard
             title="Total Hospitals"
@@ -138,9 +187,9 @@ export default function Dashboard() {
             onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
           />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -192,10 +241,9 @@ export default function Dashboard() {
             <div className="alert-item">{translateText("Escalate delays through county command center.")}</div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>Training Tracker</h3>
+      <DashboardSection title="Training Tracker" subtitle="Adoption and overdue-readiness pressure across the network.">
         <div className="grid info-grid">
           <StatCard title="Total Trainees" value={training.total} onClick={() => navigate("/admin/training-tracker")} />
           <StatCard title="Not Started" value={training.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
@@ -204,9 +252,9 @@ export default function Dashboard() {
           <StatCard title="Overdue Not Started" value={training.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
           <StatCard title="Overdue In Progress" value={training.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title="Executive runway" subtitle="Fast action surfaces for finance, audit, security, and operational control.">
         <div className="card doctor-schedule-card">
           <h3>Main Tasks</h3>
           <div className="panel-grid">
@@ -247,17 +295,16 @@ export default function Dashboard() {
             <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>{translateText("Open Alerts")}</button>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>{translateText("System Administration")}</h3>
+      <DashboardSection title={translateText("System Administration")} subtitle={translateText("Cross-platform management tools kept one click away.")}>
         <div className="action-list">
           <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>{translateText("Integration Hub")}</button>
           <button type="button" className="action-link" onClick={() => navigate("/admin/crdt-patients")}>{translateText("Offline Sync")}</button>
           <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>{translateText("Audit Trails")}</button>
           <button type="button" className="action-link" onClick={() => navigate("/reports")}>{translateText("Regulatory Reports")}</button>
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

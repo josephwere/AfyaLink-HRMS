@@ -364,6 +364,13 @@ const userSchema = new Schema(
 
     uiPreferences: {
       showSecretsOnHover: { type: Boolean, default: false },
+      locale: { type: String, default: "en" },
+      appLanguage: { type: String, default: "en" },
+      patientLanguage: { type: String, default: "en" },
+      navigation: { type: Schema.Types.Mixed, default: {} },
+      dashboardShelves: { type: Schema.Types.Mixed, default: {} },
+      commandPalette: { type: Schema.Types.Mixed, default: {} },
+      accessibility: { type: Schema.Types.Mixed, default: {} },
     },
 
     familyMonitoring: {

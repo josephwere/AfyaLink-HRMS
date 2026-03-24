@@ -13,6 +13,30 @@ import {
 import { buildFamilyTimelineForUser } from "../services/familyTimelineService.js";
 import { audit } from "../utils/audit.js";
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergePlainObjects(base = {}, patch = {}) {
+  const source = isPlainObject(base) ? base : {};
+  const incoming = isPlainObject(patch) ? patch : {};
+  const next = { ...source };
+
+  Object.entries(incoming).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      next[key] = [...value];
+      return;
+    }
+    if (isPlainObject(value)) {
+      next[key] = mergePlainObjects(source[key], value);
+      return;
+    }
+    next[key] = value;
+  });
+
+  return next;
+}
+
 // ==========================
 // GET PROFILE
 // ==========================
@@ -139,10 +163,7 @@ export const updateProfile = async (req, res) => {
     }
 
     if (uiPreferences && typeof uiPreferences === "object") {
-      user.uiPreferences = {
-        ...user.uiPreferences,
-        ...uiPreferences,
-      };
+      user.uiPreferences = mergePlainObjects(user.uiPreferences, uiPreferences);
     }
 
     if (familyMonitoringPreferences && typeof familyMonitoringPreferences === "object") {

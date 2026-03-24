@@ -176,6 +176,7 @@ export default function Navbar({ onToggleSidebar }) {
   const refreshIntervalMs = 15000;
   const logo = settings?.branding?.logo;
   const profileRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const isGuest = user?.role === "GUEST";
   const currentRole = String(user?.role || "").toUpperCase();
@@ -388,6 +389,7 @@ export default function Navbar({ onToggleSidebar }) {
       <div className="navbar-center">
         <div className="search-wrap topbar-search">
           <input
+            ref={searchInputRef}
             className="search-input"
             placeholder="Search people, tasks, reports, help"
             value={search}

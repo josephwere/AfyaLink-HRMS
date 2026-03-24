@@ -13,6 +13,7 @@ import { PatientLanguageProvider } from "./utils/patientLanguage.jsx";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import CommandPalette from "./components/CommandPalette";
 import FloatingAI from "./components/FloatingAI";
 import FirstLoginTour from "./components/FirstLoginTour";
 import RequireRole from "./components/RequireRole";
@@ -755,6 +756,7 @@ function AppLayout() {
           <Outlet />
         </main>
       </div>
+      {user && <CommandPalette />}
       {user && <FirstLoginTour />}
     </>
   );

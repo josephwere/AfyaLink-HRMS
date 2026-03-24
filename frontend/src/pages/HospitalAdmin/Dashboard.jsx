@@ -7,6 +7,7 @@ import { runStaffingForecast } from "../../services/mlApi";
 import apiFetch from "../../utils/apiFetch";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
@@ -155,33 +156,55 @@ export default function Dashboard() {
   }, [user?.hospital]);
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Hospital Admin Dashboard")}</h2>
-          <p className="muted">{translateText("Simple hospital view for staff, approvals, and daily operations.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/staff")}>{translateText("Staff Directory")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointments")}>{translateText("Appointment Ops")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/consultation-monitor")}>{translateText("Consultation Monitor")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/escalations")}>{translateText("Escalation Queue")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/appointment-analytics")}>{translateText("Appointment Analytics")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>{translateText("Leave Approvals")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/register-staff")}>{translateText("Recruitment Requests")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/recruitment-ads")}>{translateText("Recruitment Ads")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/commerce-config")}>{translateText("Insurance & Payments")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>{translateText("Transfer Continuity")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/financials")}>{translateText("Financials")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/machine-connectivity")}>{translateText("Machine Connectivity")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>{translateText("Branding & Customization")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/pharmacy-referrals")}>{translateText("Pharmacy Referrals")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>{translateText("Training Tracker")}</button>
-        </div>
-      </div>
+    <DashboardHomeShell
+      className="hospital-admin-dashboard-shell"
+      kicker="Hospital operations"
+      title="Hospital Admin Dashboard"
+      subtitle="Daily staffing, service delivery, approvals, and facility operations from one command surface."
+      actions={[
+        { label: "Staff Directory", path: "/hospital-admin/staff" },
+        { label: "Appointment Ops", path: "/hospital-admin/appointments", variant: "secondary" },
+        { label: "Consultation Monitor", path: "/hospital-admin/consultation-monitor", variant: "secondary" },
+        { label: "Escalation Queue", path: "/hospital-admin/escalations", variant: "secondary" },
+        { label: "Revenue Intelligence", path: "/hospital-admin/revenue-intelligence", variant: "secondary" },
+      ]}
+      stats={[
+        { label: "Staff count", value: data?.totalStaff ?? "—", note: "Facility workforce" },
+        { label: "Bed occupancy", value: `${data?.bedOccupancyRate ?? "—"}%`, note: `${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied` },
+        { label: "Pending approvals", value: data?.pendingRequests ?? "—", note: "Needs admin attention" },
+        { label: "Transfer backlog", value: transfers.filter((t) => t.status === "Pending").length, note: "Continuity watch" },
+      ]}
+      contextCards={[
+        {
+          title: "Operational pulse",
+          subtitle: "The signals most likely to move today's workload.",
+          items: [
+            { label: "Offline devices", value: machineStats.offline, tone: machineStats.offline > 0 ? "warn" : "good" },
+            { label: "Training completion %", value: trainingStats.completionRate },
+            { label: "Pharmacy risk", value: data?.pharmacyCoverageRisk ? "Active" : "Clear", tone: data?.pharmacyCoverageRisk ? "risk" : "good" },
+          ],
+          actions: [
+            { label: "Open Machine Connectivity", path: "/hospital-admin/machine-connectivity", variant: "secondary" },
+            { label: "Training Tracker", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "secondary" },
+          ],
+        },
+        {
+          title: "Staffing intelligence",
+          subtitle: "AI staffing pressure paired with operational action.",
+          items: [
+            { label: "Doctor gap", value: forecast?.forecast?.doctorGap ?? "—", tone: gapStatus(forecast?.forecast?.doctorGap) },
+            { label: "Nurse gap", value: forecast?.forecast?.nurseGap ?? "—", tone: gapStatus(forecast?.forecast?.nurseGap) },
+            { label: "Unlinked pharmacists", value: data?.unlinkedPharmacists ?? "—", tone: (data?.unlinkedPharmacists ?? 0) > 0 ? "warn" : "good" },
+          ],
+          actions: [
+            { label: "Recruitment Requests", path: "/hospital-admin/register-staff", variant: "secondary" },
+            { label: "Transfer Continuity", path: "/hospital-admin/transfer-command-center", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
 
-      <section className="section">
-        <h3>{translateText("Top Metrics")}</h3>
+      <DashboardSection title={translateText("Top Metrics")} subtitle={translateText("The key operational signals your facility team watches first.")}>
         <div className="grid info-grid">
           <StatCard title={translateText("Staff Count")} value={data?.totalStaff ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
           <StatCard
@@ -208,10 +231,9 @@ export default function Dashboard() {
             onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
           />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>{translateText("Training Tracker")}</h3>
+      <DashboardSection title={translateText("Training Tracker")} subtitle={translateText("Readiness, completion, and overdue learning signals across your hospital.")}>
         <div className="grid info-grid">
           <StatCard title={translateText("Total Trainees")} value={trainingStats.total} onClick={() => navigate("/admin/training-tracker")} />
           <StatCard title={translateText("Not Started")} value={trainingStats.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
@@ -220,10 +242,9 @@ export default function Dashboard() {
           <StatCard title={translateText("Overdue Not Started")} value={trainingStats.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
           <StatCard title={translateText("Overdue In Progress")} value={trainingStats.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>{translateText("AI Staffing Risk")}</h3>
+      <DashboardSection title={translateText("AI Staffing Risk")} subtitle={translateText("Forecast-driven hiring pressure and staffing gaps in one view.")}>
         <div className="grid info-grid">
           <StatCard title={translateText("Required Doctors")} value={forecast?.forecast?.requiredDoctors ?? "—"} trend={trend.requiredDoctors} subtitle={translateText("Auto-refresh 45s")} onClick={() => navigate("/hospital-admin/register-staff?role=doctor")} />
           <StatCard title={translateText("Required Nurses")} value={forecast?.forecast?.requiredNurses ?? "—"} trend={trend.requiredNurses} subtitle={translateText("Auto-refresh 45s")} onClick={() => navigate("/hospital-admin/register-staff?role=nurse")} />
@@ -250,9 +271,13 @@ export default function Dashboard() {
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
           />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection
+        className="doctor-main-grid"
+        title={translateText("Daily command")}
+        subtitle={translateText("Your operational runway for staffing, queues, finance, and internal alerts.")}
+      >
         <div className="card doctor-schedule-card">
           <h3>{translateText("Main Tasks")}</h3>
           <div className="panel-grid">
@@ -303,9 +328,13 @@ export default function Dashboard() {
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/approvals")}>{translateText("Incident Reports")}</button>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection
+        className="doctor-main-grid"
+        title={translateText("Transfer Continuity")}
+        subtitle={translateText("Recent transfers and handoff status.")}
+      >
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -359,7 +388,7 @@ export default function Dashboard() {
             <div className="alert-item">{translateText("Escalate pending transfers past 24h.")}</div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
       <section className="section">
         <h3>{translateText("Ward Escalations")}</h3>
@@ -500,6 +529,6 @@ export default function Dashboard() {
           </button>
         </div>
       </section>
-    </div>
+    </DashboardHomeShell>
   );
 }

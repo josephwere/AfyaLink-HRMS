@@ -5,6 +5,7 @@ import { useAuth } from "../../utils/auth";
 import { getPatientDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function Dashboard() {
@@ -92,33 +93,67 @@ export default function Dashboard() {
     };
   }, []);
 
-  return (
-    <div className="dashboard patient-dashboard-shell">
-      <div className="welcome-panel">
-        <div>
-          <h2>{t("dashboardTitle", "Patient Self-Service Portal")}</h2>
-          <p className="muted">{t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>{t("myAppointments", "My Appointments")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>{t("billing", "Billing")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/reports")}>{t("reports", "Reports")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>{t("familyRecords", "Family Records")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-timeline")}>{t("familyTimeline", "Family Timeline")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>{t("vacancyFeed", "Vacancy Feed")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>{t("profile", "Profile")}</button>
-        </div>
-      </div>
+  const linkedChildrenCount = Number(data?.familyMonitoring?.linkedMinorCount || 0);
+  const latestPrescriptionStatus = latestPrescription?.status || t("notAvailable", "Not available");
+  const latestReferralStatus = latestReferral?.status || t("notAvailable", "Not available");
+  const latestVisitStatus = latestVisit || latestEncounter ? t("ready", "Ready") : t("noneYet", "None yet");
 
-      <section className="section">
-        <h3>{t("topSummary", "Top Summary")}</h3>
+  return (
+    <DashboardHomeShell
+      className="patient-dashboard-shell"
+      kicker="Patient workspace"
+      title={t("dashboardTitle", "Patient Self-Service Portal")}
+      subtitle={t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}
+      actions={[
+        { label: t("myAppointments", "My Appointments"), path: "/patient/appointments" },
+        { label: t("billing", "Billing"), path: "/payments", variant: "secondary" },
+        { label: t("familyRecords", "Family Records"), path: "/patient/family-records", variant: "secondary" },
+        { label: t("profile", "Profile"), path: "/profile", variant: "secondary" },
+      ]}
+      stats={[
+        { label: t("upcomingAppointment", "Upcoming Appointment"), value: data?.upcomingAppointments ?? "—" },
+        { label: t("outstandingBill", "Outstanding Bill"), value: data?.unpaidInvoices ?? "—" },
+        { label: t("activePrescription", "Active Prescription"), value: data?.prescriptionsActive ?? "—" },
+        { label: t("labResults", "Lab Results"), value: data?.labResults ?? "—" },
+      ]}
+      contextCards={[
+        {
+          title: t("accountPulse", "Account Pulse"),
+          subtitle: t("quickSignalsForYourCareAndFamily", "Quick signals for your care and family tracking."),
+          items: [
+            { label: t("linkedChildren", "Linked Children"), value: linkedChildrenCount },
+            { label: t("prescriptionStatus", "Prescription Status"), value: latestPrescriptionStatus },
+            { label: t("referralStatus", "Referral Status"), value: latestReferralStatus },
+          ],
+          actions: [
+            { label: t("openFamilyTimeline", "Open Family Timeline"), path: "/patient/family-timeline", variant: "secondary" },
+            { label: t("openNotifications", "Open Notifications"), path: "/notifications", variant: "secondary" },
+          ],
+        },
+        {
+          title: t("careNext", "Care Next"),
+          subtitle: t("Focus on the next step, not just the latest data.", "Focus on the next step, not just the latest data."),
+          items: [
+            { label: t("latestVisit", "Latest Visit"), value: latestVisitStatus },
+            { label: t("messages", "Messages"), value: t("available", "Available") },
+            { label: t("feedback", "Feedback"), value: t("open", "Open") },
+          ],
+          actions: [
+            { label: t("messages", "Messages"), path: "/notifications", variant: "secondary" },
+            { label: t("feedback", "Feedback"), path: "/patient/feedback", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
+
+      <DashboardSection title={t("topSummary", "Top Summary")} subtitle={t("Your key patient signals at a glance.", "Your key patient signals at a glance.")}>
         <div className="grid info-grid patient-dashboard-summary-grid">
           <StatCard title={t("upcomingAppointment", "Upcoming Appointment")} value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/patient/appointments")} />
           <StatCard title={t("outstandingBill", "Outstanding Bill")} value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/patient/billing")} />
           <StatCard title={t("activePrescription", "Active Prescription")} value={data?.prescriptionsActive ?? "—"} onClick={() => navigate("/patient/prescriptions")} />
           <StatCard title={t("labResults", "Lab Results")} value={data?.labResults ?? "—"} onClick={() => navigate("/patient/lab-results")} />
         </div>
-      </section>
+      </DashboardSection>
 
       {booting ? (
         <section className="section">
@@ -263,9 +298,8 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title={t("healthTimeline", "Health Timeline")} subtitle={t("Move across your care history and active patient workflows.", "Move across your care history and active patient workflows.")}>
         <div className="card doctor-schedule-card">
-          <h3>{t("healthTimeline", "Health Timeline")}</h3>
           <div className="panel-grid">
             <button className="action-link" type="button" onClick={() => navigate("/patient/medical-records")}>{t("medicalRecords", "Medical Records")}</button>
             <button className="action-link" type="button" onClick={() => navigate("/reports")}>{t("reports", "Reports")}</button>
@@ -336,7 +370,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

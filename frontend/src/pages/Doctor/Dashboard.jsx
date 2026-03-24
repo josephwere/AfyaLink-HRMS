@@ -6,6 +6,7 @@ import { getDoctorDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { runBurnoutScore } from "../../services/mlApi";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
@@ -204,24 +205,71 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dashboard doctor-workspace">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Doctor Clinical Workspace")}</h2>
-          <p className="muted">{translateText("Welcome")}, Dr. {user?.name || translateText("Clinician")}. {translateText("Keep patient care fast and clear.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>{translateText("Open Patients")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>{translateText("Write Notes")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>{translateText("Complete Plan")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/ward-board")}>{translateText("Ward Board")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/escalations")}>{translateText("My Escalations")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/settings")}>{translateText("My Availability")}</button>
-        </div>
-      </div>
+    <DashboardHomeShell
+      className="doctor-workspace"
+      shellKey="doctor-dashboard"
+      kicker="Clinical workspace"
+      title="Doctor Clinical Workspace"
+      subtitle={`${translateText("Welcome")}, Dr. ${user?.name || translateText("Clinician")}. ${translateText("Keep patient care fast and clear.")}`}
+      actions={[
+        { label: "Open Patients", path: "/doctor/patients" },
+        { label: "Write Notes", path: "/doctor/opd", variant: "secondary" },
+        { label: "Complete Plan", path: "/doctor/prescriptions", variant: "secondary" },
+        { label: "Ward Board", path: "/doctor/ward-board", variant: "secondary" },
+      ]}
+      stats={[
+        { label: "Today’s Appointments", value: data?.appointmentsToday ?? "—", note: "Today's patient load" },
+        { label: "Inpatients Assigned", value: data?.activeEncounters ?? "—", note: "Active responsibility" },
+        { label: "Pending Lab Results", value: data?.pendingLabResults ?? "—", note: "Awaiting review" },
+        { label: "Open Escalations", value: data?.escalationSummary?.openCount ?? "—", note: "Needs clinician review" },
+      ]}
+      brief={{
+        kicker: "Daily brief",
+        title: "What needs clinical attention now",
+        body: "Start with today's appointments, escalation blockers, transfer continuity, and any rising wellbeing risk.",
+        items: [
+          { label: "Appointments today", value: data?.appointmentsToday ?? "—" },
+          { label: "Open escalations", value: data?.escalationSummary?.openCount ?? "—", tone: Number(data?.escalationSummary?.openCount || 0) > 0 ? "warn" : "good" },
+          { label: "Burnout band", value: burnout?.band ?? "—", tone: burnoutStatus(burnout?.score) },
+        ],
+      }}
+      runway={[
+        { id: "doctor-runway-patients", title: "Open patients", description: "Jump into patient-facing work without searching through the clinic queue.", eyebrow: "Patients", path: "/doctor/patients", badge: "Live" },
+        { id: "doctor-runway-notes", title: "Write notes", description: "Continue OPD documentation, closeout tasks, and consultation flow.", eyebrow: "Clinical", path: "/doctor/opd", badge: "OPD" },
+        { id: "doctor-runway-escalations", title: "Resolve escalations", description: "Work through nurse-raised blockers before they delay patient throughput.", eyebrow: "Escalations", path: "/doctor/escalations", badge: "Review" },
+        { id: "doctor-runway-transfers", title: "Transfer continuity", description: "Review handovers, transfer statuses, and inter-facility routing from one place.", eyebrow: "Continuity", path: "/doctor/transfers", badge: "Shared" },
+      ]}
+      pinnedTools={[
+        { id: "doctor-pin-schedule", title: "My schedule", description: "Open the day plan and appointment board fast.", eyebrow: "Pinned", path: "/doctor/schedule", variant: "compact" },
+        { id: "doctor-pin-availability", title: "My availability", description: "Keep clinic availability and consultation windows current.", eyebrow: "Pinned", path: "/doctor/settings", variant: "compact" },
+        { id: "doctor-pin-ward", title: "Ward board", description: "Switch into inpatient flow without changing context.", eyebrow: "Pinned", path: "/doctor/ward-board", variant: "compact" },
+      ]}
+      recentItems={[
+        { id: "doctor-recent-labs", title: "Pending labs", description: "Return to lab review quickly from the home surface.", eyebrow: "Recent", path: "/doctor/lab-results", variant: "compact" },
+        { id: "doctor-recent-prescriptions", title: "Prescriptions", description: "Resume prescribing and medication review work.", eyebrow: "Recent", path: "/doctor/prescriptions", variant: "compact" },
+      ]}
+      savedViews={[
+        { id: "doctor-view-escalations", title: "Escalations needing review", description: "A saved entry into unresolved nurse-raised blockers.", eyebrow: "Saved view", path: "/doctor/escalations", variant: "compact" },
+        { id: "doctor-view-transfers", title: "Transfer queue", description: "Open the doctor transfer view with one click.", eyebrow: "Saved view", path: "/doctor/transfers", variant: "compact" },
+      ]}
+      contextCards={[
+        {
+          title: "Clinical context",
+          subtitle: "Keep immediate patient pressure visible while you work the day.",
+          items: [
+            { label: "Surgeries scheduled", value: data?.upcomingAppointments ?? "—" },
+            { label: "License expiry (days)", value: data?.licenseExpiryDays ?? "—", tone: Number(data?.licenseExpiryDays || 999) < 30 ? "warn" : "good" },
+            { label: "Pending transfers", value: transferStats.pending, tone: transferStats.pending > 0 ? "warn" : "good" },
+          ],
+          actions: [
+            { label: "My Availability", path: "/doctor/settings", variant: "secondary" },
+            { label: "Open Transfers", path: "/doctor/transfers", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
 
-      <section className="section">
-        <h3>{translateText("Clinical KPIs")}</h3>
+      <DashboardSection title={translateText("Clinical KPIs")} subtitle={translateText("The high-level clinical signals that shape today's workload.")}>
         <div className="grid info-grid">
           {summary.map((s) => (
             <StatCard
@@ -233,10 +281,9 @@ export default function Dashboard() {
           ))}
           <StatCard title={translateText("Open Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/doctor/escalations")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>AI Wellbeing Signal</h3>
+      <DashboardSection title="AI Wellbeing Signal" subtitle="A lightweight wellbeing signal so clinical load never gets ignored.">
         <div className="grid info-grid">
           <StatCard
             title="Burnout Risk Score"
@@ -257,9 +304,9 @@ export default function Dashboard() {
             Open Clinical Intelligence
           </button>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title="Today’s schedule + alerts" subtitle="Appointments, current blockers, and the fastest action paths for the day.">
         <div className="card doctor-schedule-card">
           <h3>Today’s Schedule</h3>
           <div className="table-wrap">
@@ -355,9 +402,9 @@ export default function Dashboard() {
             {alerts.length === 0 && <div className="muted">No alerts</div>}
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title="Transfer continuity" subtitle="Recent transfers and handoff status.">
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -417,9 +464,9 @@ export default function Dashboard() {
             <div className="alert-item">If a transfer is pending over 24h, escalate in the command center.</div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
+      <DashboardSection title="Ward Escalations" subtitle="Nurse-raised blockers that still need clinician review.">
         <div className="card">
           <div className="card-header-actions">
             <div>
@@ -460,7 +507,7 @@ export default function Dashboard() {
             ) : null}
           </div>
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

@@ -36,6 +36,7 @@ export const StatCard = ({
   value,
   subtitle,
   trend,
+  variant = "medium",
   status = "neutral",
   why = "",
   badge = "",
@@ -53,7 +54,7 @@ export const StatCard = ({
 
   return (
     <div
-      className={`card premium-card stat stat-${status}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
+      className={`card premium-card stat stat-${status} stat-${variant}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
       onClick={typeof handleOpen === "function" ? handleOpen : undefined}
       role={typeof handleOpen === "function" ? "button" : undefined}
       tabIndex={typeof handleOpen === "function" ? 0 : undefined}
@@ -89,6 +90,53 @@ export const StatCard = ({
         </div>
       )}
       {subtitle && <div className="card-sub">{typeof subtitle === "string" ? translateText(subtitle) : subtitle}</div>}
+    </div>
+  );
+};
+
+export const ActionCard = ({
+  title,
+  description = "",
+  eyebrow = "",
+  badge = "",
+  variant = "medium",
+  controls = null,
+  footerLabel = "Open workflow",
+  path = "",
+  onClick = null,
+}) => {
+  const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
+
+  const handleOpen =
+    typeof onClick === "function" ? onClick : path ? () => navigate(path) : null;
+
+  return (
+    <div
+      className={`card premium-card action-card action-card-${variant}${handleOpen ? " stat-clickable" : ""}`}
+      onClick={handleOpen || undefined}
+      role={handleOpen ? "button" : undefined}
+      tabIndex={handleOpen ? 0 : undefined}
+      onKeyDown={
+        handleOpen
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") handleOpen();
+            }
+          : undefined
+      }
+    >
+      <div className="action-card-head">
+        <div>
+          {eyebrow ? <div className="action-card-eyebrow">{translateText(eyebrow)}</div> : null}
+          <div className="action-card-title">{translateText(title)}</div>
+        </div>
+        <div className="action-card-head-right">
+          {controls ? <div className="action-card-controls" onClick={(event) => event.stopPropagation()}>{controls}</div> : null}
+          {badge ? <span className="stat-badge stat-badge-neutral">{translateText(badge)}</span> : null}
+        </div>
+      </div>
+      {description ? <p className="action-card-description">{translateText(description)}</p> : null}
+      <div className="action-card-footer">{translateText(footerLabel)}</div>
     </div>
   );
 };

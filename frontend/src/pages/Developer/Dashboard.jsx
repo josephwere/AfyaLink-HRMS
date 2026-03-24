@@ -7,6 +7,7 @@ import {
   runWorkflowSlaScan,
 } from "../../services/developerApi";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 const toneToBadge = {
@@ -128,61 +129,75 @@ export default function DeveloperDashboard() {
   }, [data]);
 
   return (
-    <div className="dashboard developer-console-page">
-      <section className="welcome-panel premium-card developer-console-hero">
-        <div className="developer-console-hero-copy">
-          <div className="developer-console-kicker">Dev Routing AI</div>
-          <h2>Developer Routing AI Console</h2>
-          <p className="muted">
-            Queue health, trust posture, routing resilience, and developer recovery actions in one premium control plane.
-          </p>
-          <div className="welcome-actions">
-            <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
-              {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
-            </button>
-            <button type="button" className="btn-secondary" onClick={load}>
-              Refresh Signals
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/decision-cockpit")}>
-              Open Decision Cockpit
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>
-              Open Queue Replay
-            </button>
-          </div>
-        </div>
-
-        <div className="developer-console-hero-meta">
-          <div className={`developer-console-pulse ${routingTone}`}>
-            <span>{translateText("Queue pulse")}</span>
-            <strong>{translateText(toneToBadge[routingTone])}</strong>
-            <small>{queuePressure} blocked or waiting signals</small>
-          </div>
-          <div className={`developer-console-pulse ${trustTone}`}>
-            <span>{translateText("Trust posture")}</span>
-            <strong>{translateText(toneToBadge[trustTone])}</strong>
-            <small>{trustPressure} denials or step-ups in the last 24h</small>
-          </div>
-          <div className={`developer-console-pulse ${workflowTone}`}>
-            <span>{translateText("Workflow pressure")}</span>
-            <strong>{translateText(toneToBadge[workflowTone])}</strong>
-            <small>{workflowPending} approvals still waiting</small>
-          </div>
-          <div className="developer-console-pulse neutral">
-            <span>{translateText("Last SLA scan")}</span>
-            <strong>{lastScan?.lastScanAt ? formatTime(lastScan.lastScanAt) : "Not run yet"}</strong>
-            <small>
-              {lastScan
-                ? `L1 ${lastScan.escalationsL1 || 0} • L2 ${lastScan.escalationsL2 || 0}`
-                : "Run once to pin routing risk and workforce breaches."}
-            </small>
-          </div>
-        </div>
-      </section>
-
+    <DashboardHomeShell
+      className="developer-console-page"
+      shellKey="developer-console"
+      kicker="Dev Routing AI"
+      title="Developer Routing AI Console"
+      subtitle="Queue health, trust posture, routing resilience, and developer recovery actions in one premium control plane."
+      actions={[
+        { label: runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan", onClick: runSla, disabled: runningSla },
+        { label: "Refresh Signals", onClick: load, variant: "secondary" },
+        { label: "Open Decision Cockpit", path: "/developer/decision-cockpit", variant: "secondary" },
+        { label: "Open Queue Replay", path: "/developer/queue-replay", variant: "secondary" },
+      ]}
+      stats={[
+        { label: "Queue pulse", value: translateText(toneToBadge[routingTone]), note: `${queuePressure} blocked or waiting signals` },
+        { label: "Trust posture", value: translateText(toneToBadge[trustTone]), note: `${trustPressure} denials or step-ups` },
+        { label: "Workflow pressure", value: translateText(toneToBadge[workflowTone]), note: `${workflowPending} approvals waiting` },
+        { label: "Last SLA scan", value: lastScan?.lastScanAt ? formatTime(lastScan.lastScanAt) : "Not run yet", note: lastScan ? `L1 ${lastScan.escalationsL1 || 0} • L2 ${lastScan.escalationsL2 || 0}` : "Pin routing risk" },
+      ]}
+      brief={{
+        kicker: "Daily brief",
+        title: "What needs routing attention now",
+        body: "Start with queue backlog, trust drift, and webhook turbulence before the issues age into clinical or operations impact.",
+        items: [
+          { label: "Queue pressure", value: queuePressure, tone: routingTone },
+          { label: "Trust pressure", value: trustPressure, tone: trustTone },
+          { label: "Workflow pending", value: workflowPending, tone: workflowTone },
+        ],
+      }}
+      runway={[
+        { id: "dev-queue-replay", title: "Replay queues", description: "Inspect dead letters, failed jobs, and stuck routing payloads before they spill downstream.", eyebrow: "Queues", path: "/developer/queue-replay", badge: "Replay" },
+        { id: "dev-webhook-retry", title: "Retry webhooks", description: "Recover connector deliveries and unblock event paths without leaving the console.", eyebrow: "Integrations", path: "/developer/webhook-retry", badge: "Retry" },
+        { id: "dev-decision-cockpit", title: "Decision cockpit", description: "Watch anomalies, policy denials, and workload spikes in one focused response cockpit.", eyebrow: "Trust", path: "/developer/decision-cockpit", badge: "Watch" },
+        { id: "dev-provenance", title: "Verify provenance", description: "Confirm signed payload integrity before widening automation or export behavior.", eyebrow: "Safety", path: "/developer/provenance-verify", badge: "Verify" },
+      ]}
+      pinnedTools={[
+        { id: "dev-tool-integrations", title: "Integration monitor", description: "Track connectors and live queue buildup in real time.", eyebrow: "Pinned", path: "/admin/realtime", variant: "compact" },
+        { id: "dev-tool-audit", title: "Audit logs", description: "Trace actor changes before replaying or widening automation.", eyebrow: "Pinned", path: "/admin/audit-logs", variant: "compact" },
+        { id: "dev-tool-flags", title: "Feature flags", description: "Tune rollout posture without leaving the console.", eyebrow: "Pinned", path: "/super-admin/settings", variant: "compact" },
+      ]}
+      recentItems={[
+        { id: "dev-recent-webhooks", title: "Recent webhook signals", description: "Return to inbound connector turbulence fast.", eyebrow: "Recent", path: "/developer/webhook-retry", variant: "compact" },
+        { id: "dev-recent-clinical", title: "Clinical intelligence", description: "Cross-check routing pressure against clinical-system signals.", eyebrow: "Recent", path: "/system-admin/clinical-intelligence", variant: "compact" },
+      ]}
+      savedViews={[
+        { id: "dev-view-dlq", title: "Dead-letter jobs", description: "Jump into the failed durable jobs queue directly.", eyebrow: "Saved view", path: "/developer/queue-replay", variant: "compact" },
+        { id: "dev-view-trust", title: "Trust drift", description: "Open the trust-heavy decision workflow quickly.", eyebrow: "Saved view", path: "/developer/decision-cockpit", variant: "compact" },
+      ]}
+      contextCards={[
+        {
+          title: "AI routing context",
+          subtitle: "Keep the console anchored in trust and operational state.",
+          items: [
+            { label: "Policy denials (24h)", value: trust?.policyDenials24h ?? "—", tone: Number(trust?.policyDenials24h || 0) > 0 ? "warn" : "good" },
+            { label: "Consent denials (24h)", value: trust?.consentDenials24h ?? "—", tone: Number(trust?.consentDenials24h || 0) > 0 ? "risk" : "good" },
+            { label: "Ledger writes (24h)", value: trust?.ledgerWrites24h ?? "—" },
+          ],
+          actions: [
+            { label: "Open Provenance Verify", path: "/developer/provenance-verify", variant: "secondary" },
+            { label: "Open Decision Cockpit", path: "/developer/decision-cockpit", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
       {msg && <div className="premium-inline-note">{msg}</div>}
 
-      <section className="section">
+      <DashboardSection
+        title="Routing Pressure"
+        subtitle="The most important queues and backlogs affecting delivery, retries, and workflow continuity."
+      >
         <div className="card-header-actions">
           <div>
             <h3>Routing Pressure</h3>
@@ -206,9 +221,13 @@ export default function DeveloperDashboard() {
           <StatCard title="Failed Jobs" value={data?.queues?.background?.byStatus?.FAILED ?? 0} subtitle="Retryable durable jobs" status={Number(data?.queues?.background?.byStatus?.FAILED || 0) > 0 ? "warn" : "good"} onClick={() => navigate("/developer/queue-replay")} />
           <StatCard title="Dead-letter Jobs" value={data?.queues?.background?.byStatus?.DEAD_LETTER ?? 0} subtitle="Needs operator replay" status={Number(data?.queues?.background?.byStatus?.DEAD_LETTER || 0) > 0 ? "risk" : "good"} onClick={() => navigate("/developer/queue-replay")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
+      <DashboardSection
+        title="Trust + Policy Rail"
+        subtitle="Signals that tell us whether exports, access, consent, and high-risk login flows are behaving safely."
+        actions={[{ label: "Open Provenance Verify", path: "/developer/provenance-verify", variant: "secondary" }]}
+      >
         <div className="card-header-actions">
           <div>
             <h3>Trust + Policy Rail</h3>
@@ -225,9 +244,9 @@ export default function DeveloperDashboard() {
           <StatCard title="Risk Step-Ups (24h)" value={trust?.highRiskStepUps24h ?? "—"} subtitle="Login or access step-up events" status={Number(trust?.highRiskStepUps24h || 0) > 0 ? "warn" : "good"} onClick={() => navigate("/developer/decision-cockpit")} />
           <StatCard title="Active Consents" value={trust?.activeConsents ?? "—"} subtitle="Consent grants currently usable" onClick={() => navigate("/developer/provenance-verify")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section developer-console-grid">
+      <DashboardSection className="developer-console-grid" title="Transfer continuity + webhook signals" subtitle="Live routing continuity paired with the latest integration events.">
         <div className="card premium-card developer-console-table-card">
           <div className="card-header-actions">
             <div>
@@ -341,9 +360,9 @@ export default function DeveloperDashboard() {
             </div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
+      <DashboardSection title="Engineering Tools" subtitle="Shortcut into the recovery, observability, and AI tooling the routing team uses every day.">
         <div className="card-header-actions">
           <div>
             <h3>Engineering Tools</h3>
@@ -370,7 +389,7 @@ export default function DeveloperDashboard() {
             </button>
           ))}
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }
