@@ -79,27 +79,6 @@ const clearStepUpOtp = async (userId) => {
   await delOtp(key);
 };
 
-const send2FACode = async (user, otp) => {
-  try {
-    if (user.email) {
-      await sendEmail({
-        to: user.email,
-        subject: "Your AfyaLink Security Code",
-        html: emailTemplate("Security Code", `<h1>${otp}</h1>`),
-      });
-      return;
-    }
-    if (user.phone) {
-      await sendSMS({
-        to: user.phone,
-        message: `Your AfyaLink security code is ${otp}`,
-      });
-    }
-  } catch (_e) {
-    // Do not break auth flow if delivery channel is temporarily unavailable.
-  }
-};
-
 const persistRiskAssessment = async (user, risk) => {
   if (!user || !risk) return;
   try {
@@ -127,6 +106,97 @@ const emailTemplate = (title, body) => `
     </div>
   </div>
 `;
+
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const securityCodeEmailTemplate = ({ otp, userName = "", expiresMinutes = 5 }) => {
+  const safeName = escapeHtml(userName || "there");
+  const safeOtp = escapeHtml(otp);
+  const safeExpiry = escapeHtml(expiresMinutes);
+
+  return `
+    <div style="margin:0;padding:32px 16px;background:#eef4ff;font-family:Arial,sans-serif;color:#0f172a;">
+      <div style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,0.12);border:1px solid rgba(148,163,184,0.18);">
+        <div style="padding:28px 32px;background:linear-gradient(135deg,#0f766e,#2563eb);color:#ffffff;">
+          <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,0.16);font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
+            AfyaLink security check
+          </div>
+          <h1 style="margin:16px 0 8px;font-size:28px;line-height:1.15;color:#ffffff;">Your sign-in code</h1>
+          <p style="margin:0;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.88);">
+            Use this one-time code to finish signing in securely.
+          </p>
+        </div>
+
+        <div style="padding:32px;">
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#334155;">
+            Hi ${safeName},
+          </p>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#334155;">
+            We received a sign-in request for your AfyaLink HRMS account. Enter this code on the verification screen:
+          </p>
+
+          <div style="margin:0 0 24px;padding:22px 18px;border-radius:20px;background:linear-gradient(180deg,#eff6ff,#f8fafc);border:1px solid rgba(37,99,235,0.16);text-align:center;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2563eb;margin-bottom:8px;">
+              One-time security code
+            </div>
+            <div style="font-size:34px;letter-spacing:0.28em;font-weight:800;color:#0f172a;">
+              ${safeOtp}
+            </div>
+            <div style="margin-top:10px;font-size:13px;color:#64748b;">
+              Expires in ${safeExpiry} minutes
+            </div>
+          </div>
+
+          <div style="display:grid;gap:12px;margin:0 0 24px;">
+            <div style="padding:16px 18px;border-radius:16px;background:#f8fafc;border:1px solid rgba(148,163,184,0.18);">
+              <strong style="display:block;font-size:14px;color:#0f172a;margin-bottom:6px;">Using an authenticator app?</strong>
+              <span style="font-size:14px;line-height:1.55;color:#475569;">
+                You can enter your current authenticator code instead of this email code if your account is set up for it.
+              </span>
+            </div>
+            <div style="padding:16px 18px;border-radius:16px;background:#f8fafc;border:1px solid rgba(148,163,184,0.18);">
+              <strong style="display:block;font-size:14px;color:#0f172a;margin-bottom:6px;">Didn’t request this?</strong>
+              <span style="font-size:14px;line-height:1.55;color:#475569;">
+                You can ignore this email. If the request wasn’t yours, reset your password and review your security settings.
+              </span>
+            </div>
+          </div>
+
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
+            AfyaLink HRMS • Secure Healthcare Systems
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const send2FACode = async (user, otp) => {
+  try {
+    if (user.email) {
+      await sendEmail({
+        to: user.email,
+        subject: "Your AfyaLink Security Code",
+        html: securityCodeEmailTemplate({ otp, userName: user.name, expiresMinutes: 5 }),
+      });
+      return;
+    }
+    if (user.phone) {
+      await sendSMS({
+        to: user.phone,
+        message: `Your AfyaLink security code is ${otp}`,
+      });
+    }
+  } catch (_e) {
+    // Do not break auth flow if delivery channel is temporarily unavailable.
+  }
+};
 
 /* ======================================================
    REGISTER
@@ -1077,7 +1147,7 @@ export const resend2FA = async (req, res) => {
     await sendEmail({
       to: user.email,
       subject: "Your AfyaLink Security Code",
-      html: emailTemplate("Security Code", `<h1>${otp}</h1>`),
+      html: securityCodeEmailTemplate({ otp, userName: user.name, expiresMinutes: 5 }),
     });
 
     await AuditLog.create({
