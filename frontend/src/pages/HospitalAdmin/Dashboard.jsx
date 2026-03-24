@@ -11,7 +11,7 @@ import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { translateText } = useAppLanguage();
+  const { t, translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [forecast, setForecast] = useState(null);
@@ -55,6 +55,11 @@ export default function Dashboard() {
     return "risk";
   };
   const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
+  const formatInlineStatus = (value, total, key) => `${value}/${total} ${translateText(key)}`;
+  const formatWardOccupancy = (occupied, total, available) =>
+    `${occupied}/${total} ${translateText("occupied")} • ${available} ${translateText("available")}`;
+  const formatGapReason = (count) =>
+    t("Gap {count}; >3 requires urgent staffing intervention.", "", { count: Number(count || 0) });
 
   const loadForecast = async () => {
     try {
@@ -182,7 +187,7 @@ export default function Dashboard() {
           <StatCard
             title={translateText("Bed Occupancy")}
             value={`${data?.bedOccupancyRate ?? "—"}%`}
-            subtitle={`${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied`}
+            subtitle={formatInlineStatus(data?.occupiedBeds ?? 0, data?.totalBeds ?? 0, "occupied")}
             onClick={() => navigate("/admin/beds")}
           />
           <StatCard title={translateText("Shift Coverage %")} value={data?.openShifts ?? "—"} onClick={() => navigate("/workforce/requests#shift")} />
@@ -191,15 +196,15 @@ export default function Dashboard() {
           <StatCard title={translateText("Active Consultation Calls")} value={data?.activeConsultationCalls ?? "—"} onClick={() => navigate("/hospital-admin/appointments")} />
           <StatCard title={translateText("Open Ward Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/hospital-admin/consultation-monitor")} />
           <StatCard
-            title="Unlinked Pharmacists"
+            title={translateText("Unlinked Pharmacists")}
             value={data?.unlinkedPharmacists ?? "—"}
             onClick={() => navigate("/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist")}
           />
           <StatCard
-            title="Training Completion %"
+            title={translateText("Training Completion %")}
             value={trainingStats.completionRate}
             trend={trend.trainingCompletion}
-            subtitle={`${trainingStats.completed}/${trainingStats.total} completed`}
+            subtitle={formatInlineStatus(trainingStats.completed, trainingStats.total, "completed")}
             onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
           />
         </div>
@@ -208,12 +213,12 @@ export default function Dashboard() {
       <section className="section">
         <h3>{translateText("Training Tracker")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Total Trainees" value={trainingStats.total} onClick={() => navigate("/admin/training-tracker")} />
-          <StatCard title="Not Started" value={trainingStats.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
-          <StatCard title="In Progress" value={trainingStats.inProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
-          <StatCard title="Completed" value={trainingStats.completed} onClick={() => navigate("/admin/training-tracker?status=COMPLETED")} />
-          <StatCard title="Overdue Not Started" value={trainingStats.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
-          <StatCard title="Overdue In Progress" value={trainingStats.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
+          <StatCard title={translateText("Total Trainees")} value={trainingStats.total} onClick={() => navigate("/admin/training-tracker")} />
+          <StatCard title={translateText("Not Started")} value={trainingStats.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
+          <StatCard title={translateText("In Progress")} value={trainingStats.inProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
+          <StatCard title={translateText("Completed")} value={trainingStats.completed} onClick={() => navigate("/admin/training-tracker?status=COMPLETED")} />
+          <StatCard title={translateText("Overdue Not Started")} value={trainingStats.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
+          <StatCard title={translateText("Overdue In Progress")} value={trainingStats.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
         </div>
       </section>
 
@@ -229,7 +234,7 @@ export default function Dashboard() {
             subtitle={translateText("Auto-refresh 45s")}
             status={gapStatus(forecast?.forecast?.doctorGap)}
             badge={badgeFromStatus(gapStatus(forecast?.forecast?.doctorGap))}
-            why={`Gap ${forecast?.forecast?.doctorGap ?? 0}; >3 requires urgent staffing intervention.`}
+            why={formatGapReason(forecast?.forecast?.doctorGap)}
             onClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=doctor")}
           />
@@ -240,7 +245,7 @@ export default function Dashboard() {
             subtitle={translateText("Auto-refresh 45s")}
             status={gapStatus(forecast?.forecast?.nurseGap)}
             badge={badgeFromStatus(gapStatus(forecast?.forecast?.nurseGap))}
-            why={`Gap ${forecast?.forecast?.nurseGap ?? 0}; >3 requires urgent staffing intervention.`}
+            why={formatGapReason(forecast?.forecast?.nurseGap)}
             onClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
             onBadgeClick={() => navigate("/hospital-admin/register-staff?role=nurse")}
           />
@@ -373,7 +378,7 @@ export default function Dashboard() {
                     <strong>{item.patientName}</strong>
                     <div className="muted" style={{ marginTop: 4 }}>
                       {item.resolvedAt ? translateText("Resolved") : translateText("Needs follow-up")}
-                      {item.missingRequirements?.length ? ` • Missing: ${item.missingRequirements.join(", ")}` : ""}
+                      {item.missingRequirements?.length ? ` • ${translateText("Missing")}: ${item.missingRequirements.join(", ")}` : ""}
                     </div>
                   </div>
                   <div className={`action-pill${item.resolvedAt ? "" : " warning"}`}>
@@ -408,7 +413,7 @@ export default function Dashboard() {
                 key={ward.ward}
                 title={ward.ward}
                 value={`${ward.occupancyRate}%`}
-                subtitle={`${ward.occupied}/${ward.total} occupied • ${ward.available} available`}
+                subtitle={formatWardOccupancy(ward.occupied, ward.total, ward.available)}
                 onClick={() => navigate("/hospital-admin/ward-board")}
               />
             ))
@@ -442,7 +447,7 @@ export default function Dashboard() {
                     ) : null}
                     {event?.metadata?.ward || event?.metadata?.number ? (
                       <div className="muted">
-                        Bed: {[event?.metadata?.ward, event?.metadata?.number].filter(Boolean).join(" - ")}
+                        {translateText("Bed")}: {[event?.metadata?.ward, event?.metadata?.number].filter(Boolean).join(" - ")}
                       </div>
                     ) : null}
                     {event?.metadata?.note ? <div>{event.metadata.note}</div> : null}
@@ -450,7 +455,7 @@ export default function Dashboard() {
                 );
               })
             ) : (
-              <div className="card muted">No bed movement events yet.</div>
+              <div className="card muted">{translateText("No bed movement events yet.")}</div>
             )}
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/ward-board")}>
               {translateText("Open Bed Operations")}
