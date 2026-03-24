@@ -21,11 +21,15 @@ import {
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
-function DismissibleSection({ sectionKey, title, open, onClose, onOpen, children, className = "" }) {
+function DismissibleSection({ title, children, className = "", eyebrow = "", aside = null }) {
   return (
     <div className={`card profile-card dismissible-section ${className}`.trim()}>
       <div className="dismissible-head">
-        <h3>{title}</h3>
+        <div>
+          {eyebrow ? <div className="profile-panel-eyebrow">{eyebrow}</div> : null}
+          <h3>{title}</h3>
+        </div>
+        {aside}
       </div>
       {children}
     </div>
@@ -58,6 +62,22 @@ export default function Profile() {
     "GOVERNMENT_AUDITOR",
     "GOVERNMENT_INSPECTOR",
     "GOVERNMENT_ANALYST",
+  ].includes(actualRole);
+  const isPatientProfile = ["PATIENT", "GUEST"].includes(actualRole);
+  const isStaffProfile = !["PATIENT", "GUEST"].includes(actualRole);
+  const isAdminProfile = [
+    "SUPER_ADMIN",
+    "SYSTEM_ADMIN",
+    "HOSPITAL_ADMIN",
+    "DEVELOPER",
+    "GOVERNMENT_ADMIN",
+    "GOVERNMENT_REGULATOR",
+    "GOVERNMENT_AUDITOR",
+    "GOVERNMENT_INSPECTOR",
+    "GOVERNMENT_ANALYST",
+    "HR_MANAGER",
+    "PAYROLL_OFFICER",
+    "SECURITY_ADMIN",
   ].includes(actualRole);
 
   const [loading, setLoading] = useState(true);
@@ -182,32 +202,10 @@ export default function Profile() {
   const [showSecretsOnHover, setShowSecretsOnHover] = useState(false);
   const [uiPrefSaving, setUiPrefSaving] = useState(false);
   const [uiPrefMsg, setUiPrefMsg] = useState("");
-  const [openSections, setOpenSections] = useState({
-    roleSwitcher: false,
-    verificationStatus: false,
-    phoneNationalId: false,
-    basicInfo: false,
-    employmentInfo: false,
-    credentialsInfo: false,
-    financialInfo: false,
-    insuranceProfile: false,
-    familyMonitoring: false,
-    systemData: false,
-    roleChecklist: false,
-    trainingGuide: false,
-    twoFactor: false,
-    password: false,
-    accessibility: false,
-    adminPreferences: false,
-  });
+  const [activeSection, setActiveSection] = useState("");
   const [trainingRole, setTrainingRole] = useState("");
   const [trainingMsg, setTrainingMsg] = useState("");
   const [trainingView, setTrainingView] = useState("FULL");
-
-  const closeSection = (sectionKey) =>
-    setOpenSections((prev) => ({ ...prev, [sectionKey]: false }));
-  const openSection = (sectionKey) =>
-    setOpenSections((prev) => ({ ...prev, [sectionKey]: true }));
 
   useEffect(() => {
     restoreCooldown();
@@ -1585,42 +1583,981 @@ export default function Profile() {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  const profileSections = useMemo(() => {
+    const sections = [
+      canRoleOverride
+        ? {
+            key: "roleSwitcher",
+            group: "Administration",
+            title: "Role View Switcher",
+            description: "Preview any role experience from one account without leaving your profile.",
+            badge: strictImpersonation ? "Strict mode" : "Founder view",
+          }
+        : null,
+      {
+        key: "verificationStatus",
+        group: "Account",
+        title: "Verification Status",
+        description: "Check the trust state of your email and phone before you change anything else.",
+        badge: emailVerified && phoneVerified ? "Ready" : "Attention",
+      },
+      {
+        key: "phoneNationalId",
+        group: "Account",
+        title: "Phone & National ID",
+        description: "Verify your phone, national ID, and professional license from one place.",
+        badge: phoneVerified ? "Phone verified" : "OTP needed",
+      },
+      {
+        key: "basicInfo",
+        group: "Account",
+        title: "Personal Information",
+        description: "Manage your demographic profile and emergency contact details.",
+        badge: basic.dateOfBirth || basic.nationality ? "Configured" : "Incomplete",
+      },
+      {
+        key: "twoFactor",
+        group: "Access & Security",
+        title: "Two-Factor Authentication",
+        description: "Control OTP and authenticator protection for sign-in.",
+        badge: twoFAEnabled ? twoFAMethod : "Disabled",
+      },
+      {
+        key: "password",
+        group: "Access & Security",
+        title: "Password & Login",
+        description: "Update your password or create a backup password for direct sign-in.",
+        badge: hasPassword ? "Password ready" : "Set password",
+      },
+      {
+        key: "accessibility",
+        group: "Preferences",
+        title: "Display & Accessibility",
+        description: "Choose your app language and tune text, spacing, and input density.",
+        badge: selectedLanguageLabel,
+      },
+      canManageGovPrefs
+        ? {
+            key: "adminPreferences",
+            group: "Administration",
+            title: "Admin Preferences",
+            description: "Control privileged interface behavior such as secret visibility.",
+            badge: showSecretsOnHover ? "Hover reveal on" : "Standard",
+          }
+        : null,
+      {
+        key: "insuranceProfile",
+        group: "Care & Coverage",
+        title: "Insurance Profile",
+        description: "Maintain your active insurer, member number, and benefit status.",
+        badge: insurance.status || "Pending",
+      },
+      isPatientProfile || linkedMinors.length
+        ? {
+            key: "familyMonitoring",
+            group: "Care & Coverage",
+            title: "Family & Minor Monitoring",
+            description: "Link children or dependents and manage parent or guardian visibility.",
+            badge: linkedMinors.length ? `${linkedMinors.length} linked` : "No links",
+          }
+        : null,
+      isStaffProfile
+        ? {
+            key: "employmentInfo",
+            group: "Professional",
+            title: "Employment Information",
+            description: "Update employment type, reporting line, location, and contract dates.",
+            badge: employment.department || "Pending",
+          }
+        : null,
+      isStaffProfile
+        ? {
+            key: "credentialsInfo",
+            group: "Professional",
+            title: "Credentials & Professional Data",
+            description: "Keep licenses, specialization, CME credits, and certifications up to date.",
+            badge: credentials.specialization || "Incomplete",
+          }
+        : null,
+      isStaffProfile
+        ? {
+            key: "financialInfo",
+            group: "Professional",
+            title: "Financial Information",
+            description: "Maintain payroll-linked banking, tax, pension, and salary details.",
+            badge: financial.bankName || "Pending",
+          }
+        : null,
+      isStaffProfile || isAdminProfile
+        ? {
+            key: "systemData",
+            group: "Administration",
+            title: "System Data",
+            description: "Review access lifecycle, internal status, and account availability settings.",
+            badge: systemProfile.status || "Active",
+          }
+        : null,
+      isStaffProfile
+        ? {
+            key: "roleChecklist",
+            group: "Professional",
+            title: "Role Checklist",
+            description: "Use a role-specific readiness checklist to keep profile completeness on track.",
+            badge: actualRole,
+          }
+        : null,
+      isStaffProfile || canRoleOverride
+        ? {
+            key: "trainingGuide",
+            group: "Professional",
+            title: "Training Notes",
+            description: "Open the role playbook, export training notes, and print onboarding guides.",
+            badge: resolvedTrainingRole,
+          }
+        : null,
+    ].filter(Boolean);
 
-  return (
-    <div className="profile-container">
-      {canRoleOverride && (
-        <DismissibleSection
-          sectionKey="roleSwitcher"
-          title="Role View Switcher"
-          open={openSections.roleSwitcher}
-          onClose={closeSection}
-          onOpen={openSection}
-          className="profile-hero-card"
-        >
-          <p className="muted">
-            Use this to switch and test account types.
-            Your actual account stays <strong>{user?.actualRole || user?.role}</strong>.
-          </p>
-          <label className="profile-inline-check" style={{ marginBottom: 12 }}>
-            <input
-              type="checkbox"
-              checked={Boolean(strictImpersonation)}
-              onChange={(e) => setStrictImpersonation(e.target.checked)}
+    return sections;
+  }, [
+    actualRole,
+    basic.dateOfBirth,
+    basic.nationality,
+    canManageGovPrefs,
+    canRoleOverride,
+    credentials.specialization,
+    emailVerified,
+    employment.department,
+    financial.bankName,
+    hasPassword,
+    insurance.status,
+    isAdminProfile,
+    isPatientProfile,
+    isStaffProfile,
+    linkedMinors.length,
+    phoneVerified,
+    resolvedTrainingRole,
+    selectedLanguageLabel,
+    showSecretsOnHover,
+    strictImpersonation,
+    systemProfile.status,
+    twoFAEnabled,
+    twoFAMethod,
+  ]);
+
+  const groupedProfileSections = useMemo(
+    () =>
+      profileSections.reduce((groups, section) => {
+        groups[section.group] = groups[section.group] || [];
+        groups[section.group].push(section);
+        return groups;
+      }, {}),
+    [profileSections]
+  );
+
+  useEffect(() => {
+    if (!profileSections.length) return;
+    if (!activeSection || !profileSections.some((section) => section.key === activeSection)) {
+      setActiveSection(profileSections[0].key);
+    }
+  }, [activeSection, profileSections]);
+
+  const summaryCards = [
+    {
+      label: "Account role",
+      value: roleOverride || actualRole || "User",
+      meta: roleOverride ? `Viewing ${roleOverride}` : "Signed-in role",
+    },
+    {
+      label: "Verification",
+      value: emailVerified && phoneVerified ? "Complete" : "Needs action",
+      meta: emailVerified ? "Email ready" : "Verify email",
+    },
+    {
+      label: "Security",
+      value: twoFAEnabled ? `2FA ${twoFAMethod}` : "Password only",
+      meta: hasPassword ? "Backup login ready" : "Set password",
+    },
+    {
+      label: isPatientProfile ? "Family coverage" : "Workspace language",
+      value: isPatientProfile ? `${linkedMinors.length} linked` : selectedLanguageLabel,
+      meta: isPatientProfile ? "Managed from this profile" : "Applies across the app",
+    },
+  ];
+
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "roleSwitcher":
+        return (
+          <DismissibleSection
+            title="Role View Switcher"
+            eyebrow="Administration"
+            className="profile-hero-card"
+            aside={<span className="action-pill">{strictImpersonation ? "Strict role" : "Founder mode"}</span>}
+          >
+            <p className="muted">
+              Use this to switch and test account types. Your actual account stays{" "}
+              <strong>{user?.actualRole || user?.role}</strong>.
+            </p>
+            <label className="profile-inline-check" style={{ marginBottom: 12 }}>
+              <input
+                type="checkbox"
+                checked={Boolean(strictImpersonation)}
+                onChange={(e) => setStrictImpersonation(e.target.checked)}
+              />
+              <span>Lock to exact role permissions (strict impersonation)</span>
+            </label>
+            <p className="muted" style={{ marginTop: 0 }}>
+              {strictImpersonation
+                ? "Strict mode: access is limited to the switched role."
+                : "Full access mode: founder and developer elevated permissions remain active while viewing another role."}
+            </p>
+            <div className="profile-row profile-actions-row">
+              <select value={viewRole} onChange={(e) => setViewRole(e.target.value)}>
+                {viewableRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setRoleOverride(viewRole);
+                  navigate(redirectByRole({ role: viewRole }));
+                }}
+              >
+                Switch Role View
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  const actual = user?.actualRole || user?.role;
+                  setRoleOverride("");
+                  setViewRole(actual);
+                  navigate(redirectByRole({ role: actual }));
+                }}
+              >
+                Reset to My Role
+              </button>
+            </div>
+          </DismissibleSection>
+        );
+      case "verificationStatus":
+        return (
+          <DismissibleSection
+            title="Verification Status"
+            eyebrow="Account"
+            aside={<span className={`action-pill ${emailVerified && phoneVerified ? "ok" : ""}`}>{emailVerified && phoneVerified ? "Ready" : "Attention"}</span>}
+          >
+            <div className="profile-status-grid">
+              <div className={`profile-status-pill ${emailVerified ? "ok" : "warn"}`}>
+                <strong>Email:</strong> {emailVerified ? "Verified" : "Not verified"}
+              </div>
+              <div className={`profile-status-pill ${phoneVerified ? "ok" : "warn"}`}>
+                <strong>Phone:</strong> {phoneVerified ? "Verified" : "Not verified"}
+              </div>
+            </div>
+          </DismissibleSection>
+        );
+      case "phoneNationalId":
+        return (
+          <DismissibleSection
+            title="Phone & National ID"
+            eyebrow="Account"
+            aside={<span className="action-pill">{phoneVerified ? "Phone verified" : "Phone OTP"}</span>}
+          >
+            <p className="muted">
+              {phoneVerified
+                ? "Your phone number is verified."
+                : "Verify your phone number to keep your account active."}
+            </p>
+
+            <CountryPhoneInput
+              countryLabel="Phone country"
+              phoneLabel="Phone number"
+              countryCode={phoneCountry}
+              localNumber={phoneLocal}
+              onCountryCodeChange={setPhoneCountry}
+              onLocalNumberChange={setPhoneLocal}
             />
-            <span>
-              Lock to exact role permissions (strict impersonation)
-            </span>
-          </label>
-          <p className="muted" style={{ marginTop: 0 }}>
-            {strictImpersonation
-              ? "Strict mode: access is limited to the switched role."
-              : "Full access mode: founder/developer elevated permissions remain active while viewing another role."}
-          </p>
-          <div className="profile-row profile-actions-row">
+            <div className="profile-row profile-actions-row">
+              <button
+                type="button"
+                className="primary"
+                onClick={requestPhoneOtp}
+                disabled={phoneBusy || !(phoneLocal || "").trim()}
+              >
+                {phoneBusy ? "Sending..." : "Send OTP"}
+              </button>
+
+              <input
+                value={phoneOtp}
+                onChange={(e) => setPhoneOtp(e.target.value)}
+                placeholder="Enter OTP"
+                style={{ maxWidth: 220 }}
+              />
+              <button
+                type="button"
+                className="success"
+                onClick={verifyPhoneOtp}
+                disabled={phoneBusy || !phoneOtp.trim()}
+              >
+                {phoneBusy ? "Verifying..." : "Verify"}
+              </button>
+            </div>
+            {phoneMsg && <p style={{ marginTop: 8 }}>{phoneMsg}</p>}
+
+            <hr style={{ margin: "18px 0" }} />
+
+            <label>National ID Number</label>
+            <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
+
+            <label>National ID Country</label>
+            <select value={idCountry} onChange={(e) => setIdCountry(e.target.value)}>
+              <option value="">Select country</option>
+              {countries.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.name} ({country.code})
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="primary"
+              onClick={saveNationalId}
+              disabled={idSaving}
+              style={{ marginTop: 8 }}
+            >
+              {idSaving ? "Saving..." : "Save National ID"}
+            </button>
+            {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
+
+            <hr style={{ margin: "18px 0" }} />
+
+            <label>Professional License Number</label>
+            <input
+              value={licenseNumber}
+              onChange={(e) => setLicenseNumber(e.target.value)}
+              placeholder="e.g. KMPDC-123456"
+            />
+
+            <label>License Expiry Date</label>
+            <input type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} />
+
+            <button
+              type="button"
+              className="primary"
+              onClick={saveLicense}
+              disabled={licenseSaving}
+              style={{ marginTop: 8 }}
+            >
+              {licenseSaving ? "Saving..." : "Save License"}
+            </button>
+            {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
+          </DismissibleSection>
+        );
+      case "accessibility":
+        return (
+          <DismissibleSection
+            title="Display & Accessibility"
+            eyebrow="Preferences"
+            aside={<span className="action-pill">{selectedLanguageLabel}</span>}
+          >
+            <div className="display-settings-hero">
+              <div>
+                <div className="display-settings-kicker">Personal workspace</div>
+                <strong>Set your app language once here and tune readability for the entire signed-in experience.</strong>
+                <p className="muted">
+                  Changes apply immediately across your sidebar, dashboards, cards, forms, and the rest of your account.
+                </p>
+              </div>
+              <div className="display-settings-status">
+                <span className="action-pill">Current language: {selectedLanguageLabel}</span>
+                <span className="action-pill">Live preview enabled</span>
+              </div>
+            </div>
+
+            <div className="display-settings-grid">
+              <div className="display-settings-card profile-language-setting">
+                <div className="display-settings-card-head">
+                  <div>
+                    <h4>Preferred app language</h4>
+                    <p className="muted">
+                      This controls the sidebar, dashboard, cards, and the rest of the signed-in app.
+                    </p>
+                  </div>
+                  <span className="action-pill">Account wide</span>
+                </div>
+                <LanguageSwitcher className="profile-language-switcher" />
+              </div>
+
+              <div className="display-settings-card">
+                <div className="display-settings-card-head">
+                  <div>
+                    <h4>Reading comfort</h4>
+                    <p className="muted">
+                      Fine-tune spacing and text density so the product stays easy to scan on any screen.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="display-settings-controls">
+                  <label className="display-settings-control">
+                    <span>Text size</span>
+                    <select
+                      value={a11yPrefs.textSize}
+                      onChange={(e) => updateA11yPref("textSize", e.target.value)}
+                    >
+                      <option value="small">Small</option>
+                      <option value="normal">Normal</option>
+                      <option value="large">Large</option>
+                      <option value="extra-large">Extra Large</option>
+                    </select>
+                  </label>
+
+                  <label className="display-settings-control">
+                    <span>Text spacing</span>
+                    <select
+                      value={a11yPrefs.textSpacing}
+                      onChange={(e) => updateA11yPref("textSpacing", e.target.value)}
+                    >
+                      <option value="compact">Compact</option>
+                      <option value="normal">Normal</option>
+                      <option value="relaxed">Relaxed</option>
+                    </select>
+                  </label>
+
+                  <label className="display-settings-control">
+                    <span>Input size</span>
+                    <select
+                      value={a11yPrefs.inputSize}
+                      onChange={(e) => updateA11yPref("inputSize", e.target.value)}
+                    >
+                      <option value="compact">Compact</option>
+                      <option value="normal">Normal</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-row profile-actions-row">
+              <button type="button" className="secondary" onClick={resetA11yPrefs}>
+                Reset Display Defaults
+              </button>
+            </div>
+          </DismissibleSection>
+        );
+      case "adminPreferences":
+        return (
+          <DismissibleSection
+            title="Admin Preferences"
+            eyebrow="Administration"
+            aside={<span className="action-pill">{showSecretsOnHover ? "Hover reveal" : "Standard"}</span>}
+          >
+            <p className="muted">Control admin-only UI behavior across the platform.</p>
+            <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+              <input
+                type="checkbox"
+                checked={showSecretsOnHover}
+                onChange={(e) => updateShowSecretsPref(e.target.checked)}
+                disabled={uiPrefSaving}
+              />
+              Show sensitive tokens on hover (Integration Control Plane)
+            </label>
+            {uiPrefMsg ? <p style={{ marginTop: 8 }}>{uiPrefMsg}</p> : null}
+          </DismissibleSection>
+        );
+      case "basicInfo":
+        return (
+          <DismissibleSection
+            title="Personal Information"
+            eyebrow="Account"
+            aside={<span className="action-pill">{sectionSaving.basicInfo ? "Saving" : "Profile data"}</span>}
+          >
+            <label>Gender</label>
+            <select value={basic.gender} onChange={(e) => setBasic({ ...basic, gender: e.target.value })}>
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+              <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+            </select>
+            <label>Date of Birth</label>
+            <input
+              type="date"
+              value={basic.dateOfBirth}
+              onChange={(e) => setBasic({ ...basic, dateOfBirth: e.target.value })}
+            />
+            <label>Nationality</label>
             <select
-              value={viewRole}
-              onChange={(e) => setViewRole(e.target.value)}
+              value={basic.nationality}
+              onChange={(e) => setBasic({ ...basic, nationality: e.target.value })}
+            >
+              <option value="">Select country</option>
+              {countries.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.name} ({country.code})
+                </option>
+              ))}
+            </select>
+            <label>Address</label>
+            <input value={basic.address} onChange={(e) => setBasic({ ...basic, address: e.target.value })} />
+            <label>Emergency Contact Name</label>
+            <input value={basic.emergencyName} onChange={(e) => setBasic({ ...basic, emergencyName: e.target.value })} />
+            <label>Emergency Contact Relationship</label>
+            <input
+              value={basic.emergencyRelationship}
+              onChange={(e) => setBasic({ ...basic, emergencyRelationship: e.target.value })}
+            />
+            <label>Emergency Contact Phone</label>
+            <input
+              value={basic.emergencyPhone}
+              onChange={(e) => setBasic({ ...basic, emergencyPhone: e.target.value })}
+            />
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("basicInfo")}
+              disabled={Boolean(sectionSaving.basicInfo)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.basicInfo ? "Saving..." : "Save Basic Info"}
+            </button>
+            {sectionMsg.basicInfo && <p style={{ marginTop: 8 }}>{sectionMsg.basicInfo}</p>}
+          </DismissibleSection>
+        );
+      case "employmentInfo":
+        return (
+          <DismissibleSection
+            title="Employment Information"
+            eyebrow="Professional"
+            aside={<span className="action-pill">{employment.department || "Staff profile"}</span>}
+          >
+            <label>Employee ID</label>
+            <input
+              value={employment.employeeId}
+              onChange={(e) => setEmployment({ ...employment, employeeId: e.target.value })}
+            />
+            <label>Department</label>
+            <input
+              value={employment.department}
+              onChange={(e) => setEmployment({ ...employment, department: e.target.value })}
+            />
+            <label>Reporting Manager</label>
+            <input
+              value={employment.reportingManager}
+              onChange={(e) => setEmployment({ ...employment, reportingManager: e.target.value })}
+            />
+            <label>Employment Type</label>
+            <select
+              value={employment.employmentType}
+              onChange={(e) => setEmployment({ ...employment, employmentType: e.target.value })}
+            >
+              <option value="">Select</option>
+              <option value="FULL_TIME">Full-time</option>
+              <option value="LOCUM">Locum</option>
+              <option value="CONTRACT">Contract</option>
+              <option value="PART_TIME">Part-time</option>
+              <option value="INTERN">Intern</option>
+            </select>
+            <label>Hire Date</label>
+            <input
+              type="date"
+              value={employment.hireDate}
+              onChange={(e) => setEmployment({ ...employment, hireDate: e.target.value })}
+            />
+            <label>Contract Start</label>
+            <input
+              type="date"
+              value={employment.contractStart}
+              onChange={(e) => setEmployment({ ...employment, contractStart: e.target.value })}
+            />
+            <label>Contract End</label>
+            <input
+              type="date"
+              value={employment.contractEnd}
+              onChange={(e) => setEmployment({ ...employment, contractEnd: e.target.value })}
+            />
+            <label>Work Location</label>
+            <input
+              value={employment.workLocation}
+              onChange={(e) => setEmployment({ ...employment, workLocation: e.target.value })}
+            />
+            <label>Branch</label>
+            <input value={employment.branch} onChange={(e) => setEmployment({ ...employment, branch: e.target.value })} />
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("employmentInfo")}
+              disabled={Boolean(sectionSaving.employmentInfo)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.employmentInfo ? "Saving..." : "Save Employment Info"}
+            </button>
+            {sectionMsg.employmentInfo && <p style={{ marginTop: 8 }}>{sectionMsg.employmentInfo}</p>}
+          </DismissibleSection>
+        );
+      case "credentialsInfo":
+        return (
+          <DismissibleSection
+            title="Credentials & Professional Data"
+            eyebrow="Professional"
+            aside={<span className="action-pill">{credentials.specialization || "Pending"}</span>}
+          >
+            <label>Specialization</label>
+            <input
+              value={credentials.specialization}
+              onChange={(e) => setCredentials({ ...credentials, specialization: e.target.value })}
+            />
+            <label>Sub-specialization</label>
+            <input
+              value={credentials.subSpecialization}
+              onChange={(e) => setCredentials({ ...credentials, subSpecialization: e.target.value })}
+            />
+            <label>Certifications (comma-separated)</label>
+            <input
+              value={credentials.certifications}
+              onChange={(e) => setCredentials({ ...credentials, certifications: e.target.value })}
+            />
+            <label>Education History (comma-separated)</label>
+            <input
+              value={credentials.educationHistory}
+              onChange={(e) => setCredentials({ ...credentials, educationHistory: e.target.value })}
+            />
+            <label>CME Credits</label>
+            <input
+              type="number"
+              value={credentials.cmeCredits}
+              onChange={(e) => setCredentials({ ...credentials, cmeCredits: e.target.value })}
+            />
+            <label>Research Publications</label>
+            <input
+              type="number"
+              value={credentials.researchPublications}
+              onChange={(e) => setCredentials({ ...credentials, researchPublications: e.target.value })}
+            />
+            <label>Test Authorization Level</label>
+            <input
+              value={credentials.testAuthorizationLevel}
+              onChange={(e) => setCredentials({ ...credentials, testAuthorizationLevel: e.target.value })}
+            />
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("credentialsInfo")}
+              disabled={Boolean(sectionSaving.credentialsInfo)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.credentialsInfo ? "Saving..." : "Save Credentials"}
+            </button>
+            {sectionMsg.credentialsInfo && <p style={{ marginTop: 8 }}>{sectionMsg.credentialsInfo}</p>}
+          </DismissibleSection>
+        );
+      case "financialInfo":
+        return (
+          <DismissibleSection
+            title="Financial Information"
+            eyebrow="Professional"
+            aside={<span className="action-pill">{financial.bankName || "Payroll"}</span>}
+          >
+            <label>Bank Name</label>
+            <input value={financial.bankName} onChange={(e) => setFinancial({ ...financial, bankName: e.target.value })} />
+            <label>Bank Account Name</label>
+            <input
+              value={financial.bankAccountName}
+              onChange={(e) => setFinancial({ ...financial, bankAccountName: e.target.value })}
+            />
+            <label>Bank Account Number</label>
+            <input
+              value={financial.bankAccountNumber}
+              onChange={(e) => setFinancial({ ...financial, bankAccountNumber: e.target.value })}
+            />
+            <label>Bank Branch</label>
+            <input value={financial.bankBranch} onChange={(e) => setFinancial({ ...financial, bankBranch: e.target.value })} />
+            <label>Tax ID</label>
+            <input value={financial.taxId} onChange={(e) => setFinancial({ ...financial, taxId: e.target.value })} />
+            <label>Pension Info</label>
+            <input
+              value={financial.pensionInfo}
+              onChange={(e) => setFinancial({ ...financial, pensionInfo: e.target.value })}
+            />
+            <label>Salary Structure</label>
+            <input
+              value={financial.salaryStructure}
+              onChange={(e) => setFinancial({ ...financial, salaryStructure: e.target.value })}
+            />
+            <label>Allowances</label>
+            <input
+              type="number"
+              value={financial.allowances}
+              onChange={(e) => setFinancial({ ...financial, allowances: e.target.value })}
+            />
+            <label>Deductions</label>
+            <input
+              type="number"
+              value={financial.deductions}
+              onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
+            />
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("financialInfo")}
+              disabled={Boolean(sectionSaving.financialInfo)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.financialInfo ? "Saving..." : "Save Financial Info"}
+            </button>
+            {sectionMsg.financialInfo && <p style={{ marginTop: 8 }}>{sectionMsg.financialInfo}</p>}
+          </DismissibleSection>
+        );
+      case "insuranceProfile":
+        return (
+          <DismissibleSection
+            title="Insurance Profile"
+            eyebrow="Care & Coverage"
+            aside={<span className="action-pill">{insurance.status}</span>}
+          >
+            <label>Provider Code</label>
+            <input
+              value={insurance.providerCode}
+              onChange={(e) => setInsurance({ ...insurance, providerCode: e.target.value.toUpperCase() })}
+              placeholder="SHA, NHIF, PRIVATE_X"
+            />
+            <label>Provider Name</label>
+            <input value={insurance.providerName} onChange={(e) => setInsurance({ ...insurance, providerName: e.target.value })} />
+            <label>Member Number</label>
+            <input value={insurance.memberNumber} onChange={(e) => setInsurance({ ...insurance, memberNumber: e.target.value })} />
+            <label>Balance</label>
+            <input type="number" value={insurance.balance} onChange={(e) => setInsurance({ ...insurance, balance: e.target.value })} />
+            <label>Currency</label>
+            <input
+              value={insurance.currency}
+              onChange={(e) => setInsurance({ ...insurance, currency: e.target.value.toUpperCase() })}
+            />
+            <label>Status</label>
+            <select value={insurance.status} onChange={(e) => setInsurance({ ...insurance, status: e.target.value })}>
+              <option value="PENDING">Pending</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("insuranceProfile")}
+              disabled={Boolean(sectionSaving.insuranceProfile)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.insuranceProfile ? "Saving..." : "Save Insurance Profile"}
+            </button>
+            {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
+          </DismissibleSection>
+        );
+      case "familyMonitoring":
+        return (
+          <DismissibleSection
+            title="Family & Minor Monitoring"
+            eyebrow="Care & Coverage"
+            aside={<span className="action-pill">{linkedMinors.length ? `${linkedMinors.length} linked` : "No links"}</span>}
+          >
+            <p className="muted">
+              Link minors under 18 to your account so their appointments, encounters, and medical record trail can be monitored from one parent or guardian login.
+            </p>
+            <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+              <input
+                type="checkbox"
+                checked={familyPrefs.receiveMinorAlerts}
+                onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, receiveMinorAlerts: e.target.checked }))}
+              />
+              Receive alerts for linked children
+            </label>
+            <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={familyPrefs.showDailyMinorSummary}
+                onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, showDailyMinorSummary: e.target.checked }))}
+              />
+              Show linked children summary on patient dashboards
+            </label>
+            <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
+              <button type="button" className="secondary" onClick={saveFamilyPreferences} disabled={familyBusy}>
+                {familyBusy ? "Saving..." : "Save Family Preferences"}
+              </button>
+              <button type="button" className="secondary" onClick={refreshFamilyMonitoring} disabled={familyBusy}>
+                Refresh Linked Children
+              </button>
+            </div>
+
+            <hr style={{ margin: "18px 0" }} />
+
+            <label>Child name</label>
+            <input
+              value={familySearch.q}
+              onChange={(e) => setFamilySearch((prev) => ({ ...prev, q: e.target.value }))}
+              placeholder="Enter first or last name"
+            />
+            <label>Child date of birth</label>
+            <input
+              type="date"
+              value={familySearch.dob}
+              onChange={(e) => setFamilySearch((prev) => ({ ...prev, dob: e.target.value }))}
+            />
+            <label>Relationship</label>
+            <select
+              value={familySearch.relationship}
+              onChange={(e) => setFamilySearch((prev) => ({ ...prev, relationship: e.target.value }))}
+            >
+              <option value="PARENT">Parent</option>
+              <option value="GUARDIAN">Guardian</option>
+              <option value="CAREGIVER">Caregiver</option>
+            </select>
+            <label>Notes</label>
+            <input
+              value={familySearch.notes}
+              onChange={(e) => setFamilySearch((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Optional note for the care team"
+            />
+            <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
+              <button type="button" className="primary" onClick={searchMinorProfiles} disabled={familyBusy}>
+                {familyBusy ? "Working..." : "Find Child Profile"}
+              </button>
+            </div>
+            {familyMsg ? <p style={{ marginTop: 8 }}>{familyMsg}</p> : null}
+
+            {familyResults.length ? (
+              <div style={{ marginTop: 14 }}>
+                <h4 style={{ marginBottom: 8 }}>Matching Minor Profiles</h4>
+                <div className="panel-grid">
+                  {familyResults.map((item) => (
+                    <div key={item.patientId} className="card">
+                      <strong>{item.name}</strong>
+                      <p className="muted" style={{ marginTop: 6 }}>
+                        Age {item.age ?? "—"} • {item.gender || "Unspecified"} • {item.hospitalName || "Hospital not set"}
+                      </p>
+                      <p className="muted">DOB: {item.dob ? String(item.dob).slice(0, 10) : "-"}</p>
+                      <button
+                        type="button"
+                        className={item.alreadyLinked ? "secondary" : "primary"}
+                        disabled={familyBusy || item.alreadyLinked}
+                        onClick={() => linkMinorProfile(item.patientId)}
+                      >
+                        {item.alreadyLinked ? "Already Linked" : "Link to My Account"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 18 }}>
+              <h4 style={{ marginBottom: 8 }}>Linked Children</h4>
+              {linkedMinors.length ? (
+                <div className="panel-grid">
+                  {linkedMinors.map((item) => (
+                    <div key={item.patientId} className="card">
+                      <div className="profile-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                        <div>
+                          <strong>{item.name}</strong>
+                          <p className="muted" style={{ marginTop: 6 }}>
+                            {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
+                          </p>
+                          {item.consentPolicy ? (
+                            <p className="muted" style={{ marginTop: 6 }}>
+                              {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
+                                ? `Teen shared access active (${item.consentPolicy.countryCode}).`
+                                : `Parent proxy access active (${item.consentPolicy.countryCode}).`}
+                            </p>
+                          ) : null}
+                        </div>
+                        <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
+                          Remove
+                        </button>
+                      </div>
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
+                      </p>
+                      <p className="muted">
+                        Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
+                          ? "Detailed teen clinical notes are hidden in shared-access mode."
+                          : item.latestDiagnosis || "No diagnosis captured yet"}
+                      </p>
+                      <p className="muted">
+                        Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}
+                      </p>
+                      {item.notes ? <p className="muted">Notes: {item.notes}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted">No linked children yet.</p>
+              )}
+            </div>
+          </DismissibleSection>
+        );
+      case "systemData":
+        return (
+          <DismissibleSection
+            title="System Data"
+            eyebrow="Administration"
+            aside={<span className="action-pill">{systemProfile.status}</span>}
+          >
+            <label>Status</label>
+            <select
+              value={systemProfile.status}
+              onChange={(e) => setSystemProfile({ ...systemProfile, status: e.target.value })}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="ON_LEAVE">On Leave</option>
+            </select>
+            <label>Access Expiration</label>
+            <input
+              type="date"
+              value={systemProfile.accessExpiresAt}
+              onChange={(e) => setSystemProfile({ ...systemProfile, accessExpiresAt: e.target.value })}
+            />
+            <button
+              type="button"
+              className="primary"
+              onClick={() => saveExtendedProfile("systemData")}
+              disabled={Boolean(sectionSaving.systemData)}
+              style={{ marginTop: 8 }}
+            >
+              {sectionSaving.systemData ? "Saving..." : "Save System Data"}
+            </button>
+            {sectionMsg.systemData && <p style={{ marginTop: 8 }}>{sectionMsg.systemData}</p>}
+          </DismissibleSection>
+        );
+      case "roleChecklist":
+        return (
+          <DismissibleSection
+            title={`Role-Specific Profile Checklist (${user?.role})`}
+            eyebrow="Professional"
+            aside={<span className="action-pill">{user?.role}</span>}
+          >
+            <ul>
+              {(roleProfileHints[user?.role] || roleProfileHints.GUEST).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </DismissibleSection>
+        );
+      case "trainingGuide":
+        return (
+          <DismissibleSection
+            title="AfyaLink Training Notes"
+            eyebrow="Professional"
+            aside={<span className="action-pill">{resolvedTrainingRole}</span>}
+          >
+            <p className="muted">Use these notes to train this role quickly and consistently.</p>
+            <label>Training Role</label>
+            <select
+              value={resolvedTrainingRole}
+              onChange={(e) => setTrainingRole(e.target.value)}
+              disabled={!canRoleOverride}
             >
               {viewableRoles.map((role) => (
                 <option key={role} value={role}>
@@ -1628,1063 +2565,301 @@ export default function Profile() {
                 </option>
               ))}
             </select>
-            <button type="button"
-              className="primary"
-              onClick={() => {
-                setRoleOverride(viewRole);
-                navigate(redirectByRole({ role: viewRole }));
-              }}
-            >
-              Switch Role View
-            </button>
-            <button type="button"
-              className="secondary"
-              onClick={() => {
-                const actual = user?.actualRole || user?.role;
-                setRoleOverride("");
-                setViewRole(actual);
-                navigate(redirectByRole({ role: actual }));
-              }}
-            >
-              Reset to My Role
-            </button>
-          </div>
-        </DismissibleSection>
-      )}
-
-      {/* ============================
-         EMAIL VERIFICATION
-      ============================ */}
-      {renderVerificationWarning()}
-
-      <div className="profile-content-grid">
-        {/* ============================
-           VERIFICATION STATUS
-        ============================ */}
-        <DismissibleSection
-          sectionKey="verificationStatus"
-          title="Verification Status"
-          open={openSections.verificationStatus}
-          onClose={closeSection}
-          onOpen={openSection}
-        >
-          <div className="profile-status-grid">
-            <div className={`profile-status-pill ${emailVerified ? "ok" : "warn"}`}>
-              <strong>Email:</strong> {emailVerified ? "Verified" : "Not verified"}
+            {!canRoleOverride && (
+              <p className="muted" style={{ marginTop: 6 }}>
+                Training notes are locked to your account role.
+              </p>
+            )}
+            <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
+              <select value={trainingView} onChange={(e) => setTrainingView(e.target.value)}>
+                <option value="FULL">Show Full Guide</option>
+                <option value="WEEK">Show 7-Day Plan</option>
+              </select>
+              <button type="button" className="secondary" onClick={copyTrainingNotes}>
+                Copy Training Notes
+              </button>
+              <DownloadMenu
+                label="Download Notes"
+                options={[
+                  { value: "txt", label: "Download .txt", onClick: () => exportTrainingNotes("txt") },
+                  { value: "doc", label: "Download .doc (Word)", onClick: () => exportTrainingNotes("doc") },
+                  { value: "html", label: "Download .html", onClick: () => exportTrainingNotes("html") },
+                  { value: "pdf", label: "Export PDF", onClick: () => exportTrainingNotes("pdf") },
+                ]}
+              />
+              <button type="button" className="secondary" onClick={printTrainingNotes}>
+                Print Notes
+              </button>
             </div>
-            <div className={`profile-status-pill ${phoneVerified ? "ok" : "warn"}`}>
-              <strong>Phone:</strong> {phoneVerified ? "Verified" : "Not verified"}
+            <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
+              <button type="button" className="secondary" onClick={copyMasterTrainingNotes}>
+                Copy Full Playbook
+              </button>
+              <DownloadMenu
+                label="Download Full Playbook"
+                options={[
+                  { value: "txt", label: "Download .txt", onClick: () => exportMasterTrainingNotes("txt") },
+                  { value: "doc", label: "Download .doc (Word)", onClick: () => exportMasterTrainingNotes("doc") },
+                  { value: "html", label: "Download .html", onClick: () => exportMasterTrainingNotes("html") },
+                  { value: "pdf", label: "Export PDF", onClick: () => exportMasterTrainingNotes("pdf") },
+                ]}
+              />
+              <button type="button" className="secondary" onClick={printMasterTrainingNotes}>
+                Print Full Playbook
+              </button>
             </div>
-          </div>
-        </DismissibleSection>
-
-        {/* ============================
-           PHONE + NATIONAL ID
-        ============================ */}
-        <DismissibleSection
-          sectionKey="phoneNationalId"
-          title="Phone & National ID"
-          open={openSections.phoneNationalId}
-          onClose={closeSection}
-          onOpen={openSection}
-        >
-          <p className="muted">
-            {phoneVerified
-              ? "Your phone number is verified."
-              : "Verify your phone number to keep your account active."}
-          </p>
-
-          <CountryPhoneInput
-            countryLabel="Phone country"
-            phoneLabel="Phone number"
-            countryCode={phoneCountry}
-            localNumber={phoneLocal}
-            onCountryCodeChange={setPhoneCountry}
-            onLocalNumberChange={setPhoneLocal}
-          />
-          <div className="profile-row profile-actions-row">
-            <button type="button"
-              className="primary"
-              onClick={requestPhoneOtp}
-              disabled={phoneBusy || !(phoneLocal || "").trim()}
-            >
-              {phoneBusy ? "Sending..." : "Send OTP"}
-            </button>
-
-            <input
-              value={phoneOtp}
-              onChange={(e) => setPhoneOtp(e.target.value)}
-              placeholder="Enter OTP"
-              style={{ maxWidth: 220 }}
-            />
-            <button type="button"
-              className="success"
-              onClick={verifyPhoneOtp}
-              disabled={phoneBusy || !phoneOtp.trim()}
-            >
-              {phoneBusy ? "Verifying..." : "Verify"}
-            </button>
-          </div>
-          {phoneMsg && <p style={{ marginTop: 8 }}>{phoneMsg}</p>}
-
-          <hr style={{ margin: "18px 0" }} />
-
-          <label>National ID Number</label>
-          <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
-
-          <label>National ID Country</label>
-          <select value={idCountry} onChange={(e) => setIdCountry(e.target.value)}>
-            <option value="">Select country</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name} ({country.code})
-              </option>
-            ))}
-          </select>
-          <button type="button"
-            className="primary"
-            onClick={saveNationalId}
-            disabled={idSaving}
-            style={{ marginTop: 8 }}
-          >
-            {idSaving ? "Saving..." : "Save National ID"}
-          </button>
-          {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
-
-          <hr style={{ margin: "18px 0" }} />
-
-          <label>Professional License Number</label>
-          <input
-            value={licenseNumber}
-            onChange={(e) => setLicenseNumber(e.target.value)}
-            placeholder="e.g. KMPDC-123456"
-          />
-
-          <label>License Expiry Date</label>
-          <input
-            type="date"
-            value={licenseExpiry}
-            onChange={(e) => setLicenseExpiry(e.target.value)}
-          />
-
-          <button type="button"
-            className="primary"
-            onClick={saveLicense}
-            disabled={licenseSaving}
-            style={{ marginTop: 8 }}
-          >
-            {licenseSaving ? "Saving..." : "Save License"}
-          </button>
-          {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
-        </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="accessibility"
-        title="Display & Accessibility"
-        open={openSections.accessibility}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <div className="display-settings-hero">
-          <div>
-            <div className="display-settings-kicker">Personal workspace</div>
-            <strong>Set your app language once here and tune readability for the entire signed-in experience.</strong>
-            <p className="muted">
-              Changes apply immediately across your sidebar, dashboards, cards, forms, and the rest of your account.
-            </p>
-          </div>
-          <div className="display-settings-status">
-            <span className="action-pill">Current language: {selectedLanguageLabel}</span>
-            <span className="action-pill">Live preview enabled</span>
-          </div>
-        </div>
-
-        <div className="display-settings-grid">
-          <div className="display-settings-card profile-language-setting">
-            <div className="display-settings-card-head">
-              <div>
-                <h4>Preferred app language</h4>
-                <p className="muted">
-                  This controls the sidebar, dashboard, cards, and the rest of the signed-in app.
-                </p>
-              </div>
-              <span className="action-pill">Account wide</span>
-            </div>
-            <LanguageSwitcher className="profile-language-switcher" />
-          </div>
-
-          <div className="display-settings-card">
-            <div className="display-settings-card-head">
-              <div>
-                <h4>Reading comfort</h4>
-                <p className="muted">
-                  Fine-tune spacing and text density so the product stays easy to scan on any screen.
-                </p>
-              </div>
+            {trainingMsg && <p className="muted">{trainingMsg}</p>}
+            <div className="subtle-banner" style={{ marginTop: 10 }}>
+              <strong>Goal:</strong> {trainingGuide.goal}
             </div>
 
-            <div className="display-settings-controls">
-              <label className="display-settings-control">
-                <span>Text size</span>
-                <select
-                  value={a11yPrefs.textSize}
-                  onChange={(e) => updateA11yPref("textSize", e.target.value)}
-                >
-                  <option value="small">Small</option>
-                  <option value="normal">Normal</option>
-                  <option value="large">Large</option>
-                  <option value="extra-large">Extra Large</option>
-                </select>
-              </label>
-
-              <label className="display-settings-control">
-                <span>Text spacing</span>
-                <select
-                  value={a11yPrefs.textSpacing}
-                  onChange={(e) => updateA11yPref("textSpacing", e.target.value)}
-                >
-                  <option value="compact">Compact</option>
-                  <option value="normal">Normal</option>
-                  <option value="relaxed">Relaxed</option>
-                </select>
-              </label>
-
-              <label className="display-settings-control">
-                <span>Input size</span>
-                <select
-                  value={a11yPrefs.inputSize}
-                  onChange={(e) => updateA11yPref("inputSize", e.target.value)}
-                >
-                  <option value="compact">Compact</option>
-                  <option value="normal">Normal</option>
-                  <option value="large">Large</option>
-                </select>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-row profile-actions-row">
-          <button type="button" className="secondary" onClick={resetA11yPrefs}>
-            Reset Display Defaults
-          </button>
-        </div>
-      </DismissibleSection>
-
-      {canManageGovPrefs ? (
-        <DismissibleSection
-          sectionKey="adminPreferences"
-          title="Admin Preferences"
-          open={openSections.adminPreferences}
-          onClose={closeSection}
-          onOpen={openSection}
-        >
-          <p className="muted">
-            Control admin-only UI behavior across the platform.
-          </p>
-          <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-            <input
-              type="checkbox"
-              checked={showSecretsOnHover}
-              onChange={(e) => updateShowSecretsPref(e.target.checked)}
-              disabled={uiPrefSaving}
-            />
-            Show sensitive tokens on hover (Integration Control Plane)
-          </label>
-          {uiPrefMsg ? <p style={{ marginTop: 8 }}>{uiPrefMsg}</p> : null}
-        </DismissibleSection>
-      ) : null}
-
-      <DismissibleSection
-        sectionKey="basicInfo"
-        title="Basic Information"
-        open={openSections.basicInfo}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <label>Gender</label>
-        <select
-          value={basic.gender}
-          onChange={(e) => setBasic({ ...basic, gender: e.target.value })}
-        >
-          <option value="">Select</option>
-          <option value="MALE">Male</option>
-          <option value="FEMALE">Female</option>
-          <option value="OTHER">Other</option>
-          <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
-        </select>
-        <label>Date of Birth</label>
-        <input
-          type="date"
-          value={basic.dateOfBirth}
-          onChange={(e) => setBasic({ ...basic, dateOfBirth: e.target.value })}
-        />
-        <label>Nationality</label>
-        <select
-          value={basic.nationality}
-          onChange={(e) => setBasic({ ...basic, nationality: e.target.value })}
-        >
-          <option value="">Select country</option>
-          {countries.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.name} ({country.code})
-            </option>
-          ))}
-        </select>
-        <label>Address</label>
-        <input
-          value={basic.address}
-          onChange={(e) => setBasic({ ...basic, address: e.target.value })}
-        />
-        <label>Emergency Contact Name</label>
-        <input
-          value={basic.emergencyName}
-          onChange={(e) => setBasic({ ...basic, emergencyName: e.target.value })}
-        />
-        <label>Emergency Contact Relationship</label>
-        <input
-          value={basic.emergencyRelationship}
-          onChange={(e) =>
-            setBasic({ ...basic, emergencyRelationship: e.target.value })
-          }
-        />
-        <label>Emergency Contact Phone</label>
-        <input
-          value={basic.emergencyPhone}
-          onChange={(e) => setBasic({ ...basic, emergencyPhone: e.target.value })}
-        />
-        <button
-          type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("basicInfo")}
-          disabled={Boolean(sectionSaving.basicInfo)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.basicInfo ? "Saving..." : "Save Basic Info"}
-        </button>
-        {sectionMsg.basicInfo && <p style={{ marginTop: 8 }}>{sectionMsg.basicInfo}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="employmentInfo"
-        title="Employment Information"
-        open={openSections.employmentInfo}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        
-        <label>Employee ID</label>
-        <input
-          value={employment.employeeId}
-          onChange={(e) => setEmployment({ ...employment, employeeId: e.target.value })}
-        />
-        <label>Department</label>
-        <input
-          value={employment.department}
-          onChange={(e) => setEmployment({ ...employment, department: e.target.value })}
-        />
-        <label>Reporting Manager</label>
-        <input
-          value={employment.reportingManager}
-          onChange={(e) =>
-            setEmployment({ ...employment, reportingManager: e.target.value })
-          }
-        />
-        <label>Employment Type</label>
-        <select
-          value={employment.employmentType}
-          onChange={(e) =>
-            setEmployment({ ...employment, employmentType: e.target.value })
-          }
-        >
-          <option value="">Select</option>
-          <option value="FULL_TIME">Full-time</option>
-          <option value="LOCUM">Locum</option>
-          <option value="CONTRACT">Contract</option>
-          <option value="PART_TIME">Part-time</option>
-          <option value="INTERN">Intern</option>
-        </select>
-        <label>Hire Date</label>
-        <input
-          type="date"
-          value={employment.hireDate}
-          onChange={(e) => setEmployment({ ...employment, hireDate: e.target.value })}
-        />
-        <label>Contract Start</label>
-        <input
-          type="date"
-          value={employment.contractStart}
-          onChange={(e) =>
-            setEmployment({ ...employment, contractStart: e.target.value })
-          }
-        />
-        <label>Contract End</label>
-        <input
-          type="date"
-          value={employment.contractEnd}
-          onChange={(e) => setEmployment({ ...employment, contractEnd: e.target.value })}
-        />
-        <label>Work Location</label>
-        <input
-          value={employment.workLocation}
-          onChange={(e) => setEmployment({ ...employment, workLocation: e.target.value })}
-        />
-        <label>Branch</label>
-        <input
-          value={employment.branch}
-          onChange={(e) => setEmployment({ ...employment, branch: e.target.value })}
-        />
-        <button
-          type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("employmentInfo")}
-          disabled={Boolean(sectionSaving.employmentInfo)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.employmentInfo ? "Saving..." : "Save Employment Info"}
-        </button>
-        {sectionMsg.employmentInfo && <p style={{ marginTop: 8 }}>{sectionMsg.employmentInfo}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="credentialsInfo"
-        title="Credentials & Professional Data"
-        open={openSections.credentialsInfo}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <label>Specialization</label>
-        <input
-          value={credentials.specialization}
-          onChange={(e) =>
-            setCredentials({ ...credentials, specialization: e.target.value })
-          }
-        />
-        <label>Sub-specialization</label>
-        <input
-          value={credentials.subSpecialization}
-          onChange={(e) =>
-            setCredentials({ ...credentials, subSpecialization: e.target.value })
-          }
-        />
-        <label>Certifications (comma-separated)</label>
-        <input
-          value={credentials.certifications}
-          onChange={(e) =>
-            setCredentials({ ...credentials, certifications: e.target.value })
-          }
-        />
-        <label>Education History (comma-separated)</label>
-        <input
-          value={credentials.educationHistory}
-          onChange={(e) =>
-            setCredentials({ ...credentials, educationHistory: e.target.value })
-          }
-        />
-        <label>CME Credits</label>
-        <input
-          type="number"
-          value={credentials.cmeCredits}
-          onChange={(e) => setCredentials({ ...credentials, cmeCredits: e.target.value })}
-        />
-        <label>Research Publications</label>
-        <input
-          type="number"
-          value={credentials.researchPublications}
-          onChange={(e) =>
-            setCredentials({ ...credentials, researchPublications: e.target.value })
-          }
-        />
-        <label>Test Authorization Level</label>
-        <input
-          value={credentials.testAuthorizationLevel}
-          onChange={(e) =>
-            setCredentials({ ...credentials, testAuthorizationLevel: e.target.value })
-          }
-        />
-        <button
-          type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("credentialsInfo")}
-          disabled={Boolean(sectionSaving.credentialsInfo)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.credentialsInfo ? "Saving..." : "Save Credentials"}
-        </button>
-        {sectionMsg.credentialsInfo && <p style={{ marginTop: 8 }}>{sectionMsg.credentialsInfo}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="financialInfo"
-        title="Financial Information"
-        open={openSections.financialInfo}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <label>Bank Name</label>
-        <input
-          value={financial.bankName}
-          onChange={(e) => setFinancial({ ...financial, bankName: e.target.value })}
-        />
-        <label>Bank Account Name</label>
-        <input
-          value={financial.bankAccountName}
-          onChange={(e) =>
-            setFinancial({ ...financial, bankAccountName: e.target.value })
-          }
-        />
-        <label>Bank Account Number</label>
-        <input
-          value={financial.bankAccountNumber}
-          onChange={(e) =>
-            setFinancial({ ...financial, bankAccountNumber: e.target.value })
-          }
-        />
-        <label>Bank Branch</label>
-        <input
-          value={financial.bankBranch}
-          onChange={(e) => setFinancial({ ...financial, bankBranch: e.target.value })}
-        />
-        <label>Tax ID</label>
-        <input
-          value={financial.taxId}
-          onChange={(e) => setFinancial({ ...financial, taxId: e.target.value })}
-        />
-        <label>Pension Info</label>
-        <input
-          value={financial.pensionInfo}
-          onChange={(e) => setFinancial({ ...financial, pensionInfo: e.target.value })}
-        />
-        <label>Salary Structure</label>
-        <input
-          value={financial.salaryStructure}
-          onChange={(e) =>
-            setFinancial({ ...financial, salaryStructure: e.target.value })
-          }
-        />
-        <label>Allowances</label>
-        <input
-          type="number"
-          value={financial.allowances}
-          onChange={(e) => setFinancial({ ...financial, allowances: e.target.value })}
-        />
-        <label>Deductions</label>
-        <input
-          type="number"
-          value={financial.deductions}
-          onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
-        />
-        <button
-          type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("financialInfo")}
-          disabled={Boolean(sectionSaving.financialInfo)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.financialInfo ? "Saving..." : "Save Financial Info"}
-        </button>
-        {sectionMsg.financialInfo && <p style={{ marginTop: 8 }}>{sectionMsg.financialInfo}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="insuranceProfile"
-        title="Insurance Profile"
-        open={openSections.insuranceProfile}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <label>Provider Code</label>
-        <input
-          value={insurance.providerCode}
-          onChange={(e) => setInsurance({ ...insurance, providerCode: e.target.value.toUpperCase() })}
-          placeholder="SHA, NHIF, PRIVATE_X"
-        />
-        <label>Provider Name</label>
-        <input
-          value={insurance.providerName}
-          onChange={(e) => setInsurance({ ...insurance, providerName: e.target.value })}
-        />
-        <label>Member Number</label>
-        <input
-          value={insurance.memberNumber}
-          onChange={(e) => setInsurance({ ...insurance, memberNumber: e.target.value })}
-        />
-        <label>Balance</label>
-        <input
-          type="number"
-          value={insurance.balance}
-          onChange={(e) => setInsurance({ ...insurance, balance: e.target.value })}
-        />
-        <label>Currency</label>
-        <input
-          value={insurance.currency}
-          onChange={(e) => setInsurance({ ...insurance, currency: e.target.value.toUpperCase() })}
-        />
-        <label>Status</label>
-        <select
-          value={insurance.status}
-          onChange={(e) => setInsurance({ ...insurance, status: e.target.value })}
-        >
-          <option value="PENDING">Pending</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
-        </select>
-        <button
-          type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("insuranceProfile")}
-          disabled={Boolean(sectionSaving.insuranceProfile)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.insuranceProfile ? "Saving..." : "Save Insurance Profile"}
-        </button>
-        {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="familyMonitoring"
-        title="Family & Minor Monitoring"
-        open={openSections.familyMonitoring}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <p className="muted">
-          Link minors under 18 to your account so their appointments, encounters, and medical record trail can be monitored from one parent or guardian login.
-        </p>
-        <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-          <input
-            type="checkbox"
-            checked={familyPrefs.receiveMinorAlerts}
-            onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, receiveMinorAlerts: e.target.checked }))}
-          />
-          Receive alerts for linked children
-        </label>
-        <label className="muted" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginTop: 8 }}>
-          <input
-            type="checkbox"
-            checked={familyPrefs.showDailyMinorSummary}
-            onChange={(e) => setFamilyPrefs((prev) => ({ ...prev, showDailyMinorSummary: e.target.checked }))}
-          />
-          Show linked children summary on patient dashboards
-        </label>
-        <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
-          <button type="button" className="secondary" onClick={saveFamilyPreferences} disabled={familyBusy}>
-            {familyBusy ? "Saving..." : "Save Family Preferences"}
-          </button>
-          <button type="button" className="secondary" onClick={refreshFamilyMonitoring} disabled={familyBusy}>
-            Refresh Linked Children
-          </button>
-        </div>
-
-        <hr style={{ margin: "18px 0" }} />
-
-        <label>Child name</label>
-        <input
-          value={familySearch.q}
-          onChange={(e) => setFamilySearch((prev) => ({ ...prev, q: e.target.value }))}
-          placeholder="Enter first or last name"
-        />
-        <label>Child date of birth</label>
-        <input
-          type="date"
-          value={familySearch.dob}
-          onChange={(e) => setFamilySearch((prev) => ({ ...prev, dob: e.target.value }))}
-        />
-        <label>Relationship</label>
-        <select
-          value={familySearch.relationship}
-          onChange={(e) => setFamilySearch((prev) => ({ ...prev, relationship: e.target.value }))}
-        >
-          <option value="PARENT">Parent</option>
-          <option value="GUARDIAN">Guardian</option>
-          <option value="CAREGIVER">Caregiver</option>
-        </select>
-        <label>Notes</label>
-        <input
-          value={familySearch.notes}
-          onChange={(e) => setFamilySearch((prev) => ({ ...prev, notes: e.target.value }))}
-          placeholder="Optional note for the care team"
-        />
-        <div className="profile-row profile-actions-row" style={{ marginTop: 10 }}>
-          <button type="button" className="primary" onClick={searchMinorProfiles} disabled={familyBusy}>
-            {familyBusy ? "Working..." : "Find Child Profile"}
-          </button>
-        </div>
-        {familyMsg ? <p style={{ marginTop: 8 }}>{familyMsg}</p> : null}
-
-        {familyResults.length ? (
-          <div style={{ marginTop: 14 }}>
-            <h4 style={{ marginBottom: 8 }}>Matching Minor Profiles</h4>
-            <div className="panel-grid">
-              {familyResults.map((item) => (
-                <div key={item.patientId} className="card">
-                  <strong>{item.name}</strong>
-                  <p className="muted" style={{ marginTop: 6 }}>
-                    Age {item.age ?? "—"} • {item.gender || "Unspecified"} • {item.hospitalName || "Hospital not set"}
-                  </p>
-                  <p className="muted">
-                    DOB: {item.dob ? String(item.dob).slice(0, 10) : "-"}
-                  </p>
-                  <button
-                    type="button"
-                    className={item.alreadyLinked ? "secondary" : "primary"}
-                    disabled={familyBusy || item.alreadyLinked}
-                    onClick={() => linkMinorProfile(item.patientId)}
-                  >
-                    {item.alreadyLinked ? "Already Linked" : "Link to My Account"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 18 }}>
-          <h4 style={{ marginBottom: 8 }}>Linked Children</h4>
-          {linkedMinors.length ? (
-            <div className="panel-grid">
-              {linkedMinors.map((item) => (
-                <div key={item.patientId} className="card">
-                  <div className="profile-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                    <div>
-                      <strong>{item.name}</strong>
-                      <p className="muted" style={{ marginTop: 6 }}>
-                        {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
-                      </p>
-                      {item.consentPolicy ? (
-                        <p className="muted" style={{ marginTop: 6 }}>
-                          {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
-                            ? `Teen shared access active (${item.consentPolicy.countryCode}).`
-                            : `Parent proxy access active (${item.consentPolicy.countryCode}).`}
-                        </p>
-                      ) : null}
-                    </div>
-                    <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
-                      Remove
-                    </button>
-                  </div>
-                  <p className="muted" style={{ marginTop: 8 }}>
-                    Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
-                  </p>
-                  <p className="muted">
-                    Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
-                      ? "Detailed teen clinical notes are hidden in shared-access mode."
-                      : item.latestDiagnosis || "No diagnosis captured yet"}
-                  </p>
-                  <p className="muted">
-                    Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}
-                  </p>
-                  {item.notes ? <p className="muted">Notes: {item.notes}</p> : null}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">No linked children yet.</p>
-          )}
-        </div>
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="systemData"
-        title="System Data"
-        open={openSections.systemData}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <label>Status</label>
-        <select
-          value={systemProfile.status}
-          onChange={(e) =>
-            setSystemProfile({ ...systemProfile, status: e.target.value })
-          }
-        >
-          <option value="ACTIVE">Active</option>
-          <option value="SUSPENDED">Suspended</option>
-          <option value="ON_LEAVE">On Leave</option>
-        </select>
-        <label>Access Expiration</label>
-        <input
-          type="date"
-          value={systemProfile.accessExpiresAt}
-          onChange={(e) =>
-            setSystemProfile({ ...systemProfile, accessExpiresAt: e.target.value })
-          }
-        />
-        <button type="button"
-          className="primary"
-          onClick={() => saveExtendedProfile("systemData")}
-          disabled={Boolean(sectionSaving.systemData)}
-          style={{ marginTop: 8 }}
-        >
-          {sectionSaving.systemData ? "Saving..." : "Save System Data"}
-        </button>
-        {sectionMsg.systemData && <p style={{ marginTop: 8 }}>{sectionMsg.systemData}</p>}
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="roleChecklist"
-        title={`Role-Specific Profile Checklist (${user?.role})`}
-        open={openSections.roleChecklist}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <ul>
-          {(roleProfileHints[user?.role] || roleProfileHints.GUEST).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </DismissibleSection>
-
-      <DismissibleSection
-        sectionKey="trainingGuide"
-        title="AfyaLink Training Notes"
-        open={openSections.trainingGuide}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <p className="muted">
-          Use these notes to train this role quickly and consistently.
-        </p>
-        <label>Training Role</label>
-        <select
-          value={resolvedTrainingRole}
-          onChange={(e) => setTrainingRole(e.target.value)}
-          disabled={!canRoleOverride}
-        >
-          {viewableRoles.map((role) => (
-            <option key={role} value={role}>
-              {role}
-            </option>
-          ))}
-        </select>
-        {!canRoleOverride && (
-          <p className="muted" style={{ marginTop: 6 }}>
-            Training notes are locked to your account role.
-          </p>
-        )}
-        <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
-          <select value={trainingView} onChange={(e) => setTrainingView(e.target.value)}>
-            <option value="FULL">Show Full Guide</option>
-            <option value="WEEK">Show 7-Day Plan</option>
-          </select>
-          <button type="button" className="secondary" onClick={copyTrainingNotes}>
-            Copy Training Notes
-          </button>
-          <DownloadMenu
-            label="Download Notes"
-            options={[
-              { value: "txt", label: "Download .txt", onClick: () => exportTrainingNotes("txt") },
-              { value: "doc", label: "Download .doc (Word)", onClick: () => exportTrainingNotes("doc") },
-              { value: "html", label: "Download .html", onClick: () => exportTrainingNotes("html") },
-              { value: "pdf", label: "Export PDF", onClick: () => exportTrainingNotes("pdf") },
-            ]}
-          />
-          <button type="button" className="secondary" onClick={printTrainingNotes}>
-            Print Notes
-          </button>
-        </div>
-        <div className="profile-row profile-actions-row" style={{ marginTop: 8 }}>
-          <button type="button" className="secondary" onClick={copyMasterTrainingNotes}>
-            Copy Full Playbook
-          </button>
-          <DownloadMenu
-            label="Download Full Playbook"
-            options={[
-              { value: "txt", label: "Download .txt", onClick: () => exportMasterTrainingNotes("txt") },
-              { value: "doc", label: "Download .doc (Word)", onClick: () => exportMasterTrainingNotes("doc") },
-              { value: "html", label: "Download .html", onClick: () => exportMasterTrainingNotes("html") },
-              { value: "pdf", label: "Export PDF", onClick: () => exportMasterTrainingNotes("pdf") },
-            ]}
-          />
-          <button type="button" className="secondary" onClick={printMasterTrainingNotes}>
-            Print Full Playbook
-          </button>
-        </div>
-        {trainingMsg && <p className="muted">{trainingMsg}</p>}
-        <div className="subtle-banner" style={{ marginTop: 10 }}>
-          <strong>Goal:</strong> {trainingGuide.goal}
-        </div>
-
-        {trainingView === "FULL" && (
-          <>
-            <h4>First Hour</h4>
-            <ul>
-              {(trainingGuide.firstHour || []).map((item) => (
-                <li key={`fh-${item}`}>{item}</li>
-              ))}
-            </ul>
-
-            <h4>Daily Routine</h4>
-            <ul>
-              {(trainingGuide.daily || []).map((item) => (
-                <li key={`dy-${item}`}>{item}</li>
-              ))}
-            </ul>
-
-            <h4>Safety Rules</h4>
-            <ul>
-              {(trainingGuide.safety || []).map((item) => (
-                <li key={`sf-${item}`}>{item}</li>
-              ))}
-            </ul>
-
-            <h4>Key Metrics</h4>
-            <ul>
-              {(trainingGuide.kpi || []).map((item) => (
-                <li key={`kp-${item}`}>{item}</li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {trainingView === "WEEK" && (
-          <>
-            <h4>7-Day Onboarding Plan</h4>
-            {weeklyTrainingPlan.map((w) => (
-              <div key={w.day} className="card" style={{ marginTop: 8 }}>
-                <strong>{w.day}: {w.title}</strong>
-                <ul style={{ marginTop: 6 }}>
-                  {w.focus.map((item) => (
-                    <li key={`${w.day}-${item}`}>{item}</li>
+            {trainingView === "FULL" && (
+              <>
+                <h4>First Hour</h4>
+                <ul>
+                  {(trainingGuide.firstHour || []).map((item) => (
+                    <li key={`fh-${item}`}>{item}</li>
                   ))}
                 </ul>
+
+                <h4>Daily Routine</h4>
+                <ul>
+                  {(trainingGuide.daily || []).map((item) => (
+                    <li key={`dy-${item}`}>{item}</li>
+                  ))}
+                </ul>
+
+                <h4>Safety Rules</h4>
+                <ul>
+                  {(trainingGuide.safety || []).map((item) => (
+                    <li key={`sf-${item}`}>{item}</li>
+                  ))}
+                </ul>
+
+                <h4>Key Metrics</h4>
+                <ul>
+                  {(trainingGuide.kpi || []).map((item) => (
+                    <li key={`kp-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {trainingView === "WEEK" && (
+              <>
+                <h4>7-Day Onboarding Plan</h4>
+                {weeklyTrainingPlan.map((w) => (
+                  <div key={w.day} className="card" style={{ marginTop: 8 }}>
+                    <strong>
+                      {w.day}: {w.title}
+                    </strong>
+                    <ul style={{ marginTop: 6 }}>
+                      {w.focus.map((item) => (
+                        <li key={`${w.day}-${item}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </>
+            )}
+          </DismissibleSection>
+        );
+      case "twoFactor":
+        return (
+          <DismissibleSection
+            title="Two-Factor Authentication (2FA)"
+            eyebrow="Access & Security"
+            aside={<span className="action-pill">{twoFAEnabled ? twoFAMethod : "Disabled"}</span>}
+          >
+            <p>
+              {twoFAEnabled
+                ? "2FA is enabled. You’ll be asked for a code at login."
+                : "2FA is disabled. Your account uses password only."}
+            </p>
+            <p className="muted">Current method: {twoFAMethod}</p>
+            <button type="button" className={twoFAEnabled ? "danger" : "success"} onClick={toggle2FA}>
+              {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
+            </button>
+            <div style={{ marginTop: 12 }}>
+              <button type="button" className="btn-secondary" onClick={setupTotp} disabled={twoFABusy}>
+                Setup Google Authenticator
+              </button>
+            </div>
+            {totpSecret && (
+              <div className="subtle-banner" style={{ marginTop: 10 }}>
+                <div>
+                  <strong>Authenticator secret:</strong> {totpSecret}
+                </div>
+                {totpUrl ? (
+                  <div className="muted" style={{ wordBreak: "break-all" }}>
+                    {totpUrl}
+                  </div>
+                ) : null}
               </div>
-            ))}
-          </>
-        )}
-      </DismissibleSection>
+            )}
+            {(totpSecret || twoFAMethod === "TOTP") && (
+              <div style={{ marginTop: 10 }}>
+                <label>Authenticator code</label>
+                <input value={totpCode} onChange={(e) => setTotpCode(e.target.value)} placeholder="6-digit code" />
+                <div className="actions-row mt-8">
+                  <button type="button" className="btn-primary" onClick={verifyTotp} disabled={twoFABusy}>
+                    Verify Authenticator
+                  </button>
+                  {twoFAMethod === "TOTP" && (
+                    <button type="button" className="btn-secondary" onClick={disableTotp} disabled={twoFABusy}>
+                      Disable Authenticator
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {recoveryCodes.length > 0 && (
+              <div className="subtle-banner" style={{ marginTop: 10 }}>
+                <strong>Recovery codes (store securely):</strong>
+                <div style={{ marginTop: 6 }}>{recoveryCodes.join(" • ")}</div>
+              </div>
+            )}
+            {twoFAMsg ? <p className="muted" style={{ marginTop: 8 }}>{twoFAMsg}</p> : null}
+          </DismissibleSection>
+        );
+      case "password":
+        return (
+          <DismissibleSection
+            title="Password & Login"
+            eyebrow="Access & Security"
+            aside={<span className="action-pill">{hasPassword ? "Password ready" : "Set password"}</span>}
+          >
+            {pwError && <div className="auth-error">{pwError}</div>}
+            {pwMessage && <div className="auth-success">{pwMessage}</div>}
+            {actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword && (
+              <div className="subtle-banner" style={{ marginBottom: 12 }}>
+                <strong>Set a password for backup login.</strong>
+                <div style={{ marginTop: 6 }}>
+                  Your account is currently Google-only. Create a password here to enable email or phone login as well.
+                </div>
+              </div>
+            )}
+
+            <form className="form" onSubmit={handlePasswordChange}>
+              {!(actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword) && (
+                <PasswordInput
+                  label="Current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+              )}
+
+              <PasswordInput
+                label={
+                  actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+                    ? "Create password"
+                    : "New password"
+                }
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                showStrength
+              />
+
+              <PasswordInput
+                label="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+
+              <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>
+                {pwLoading
+                  ? "Updating..."
+                  : actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+                    ? "Set password"
+                    : "Change password"}
+              </button>
+            </form>
+          </DismissibleSection>
+        );
+      default:
+        return (
+          <div className="card premium-card profile-settings-empty">
+            <h3>Choose a settings category</h3>
+            <p className="muted">Pick a section from the left to open the matching profile workspace.</p>
+          </div>
+        );
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="profile-container profile-settings-home">
+        <div className="card premium-card profile-settings-loading">
+          <div className="profile-panel-eyebrow">Settings Home</div>
+          <h2>Loading your workspace</h2>
+          <p className="muted">Pulling your account, security, and role-specific settings.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="profile-container profile-settings-home">
+      {renderVerificationWarning()}
+
+      <section className="card premium-card profile-settings-hero">
+        <div className="profile-settings-hero-copy">
+          <div className="profile-panel-eyebrow">Settings Home</div>
+          <h1>{user?.name || "Your profile workspace"}</h1>
+          <p className="muted">
+            Open one focused settings panel at a time. Everything here applies immediately to your account and keeps the profile experience cleaner than a long stacked page.
+          </p>
+        </div>
+        <div className="profile-settings-hero-pills">
+          <span className="action-pill">{roleOverride ? `Viewing ${roleOverride}` : actualRole}</span>
+          <span className="action-pill">{authProvider === "google" ? "Google sign-in" : "Local sign-in"}</span>
+          <span className="action-pill">{selectedLanguageLabel}</span>
+        </div>
+      </section>
+
+      <div className="profile-settings-summary-grid">
+        {summaryCards.map((item) => (
+          <div key={item.label} className="card profile-settings-summary-card">
+            <span className="profile-settings-summary-label">{item.label}</span>
+            <strong>{item.value}</strong>
+            <p className="muted">{item.meta}</p>
+          </div>
+        ))}
       </div>
 
-      {/* ============================
-         2FA SECTION
-      ============================ */}
-      <DismissibleSection
-        sectionKey="twoFactor"
-        title="Two-Factor Authentication (2FA)"
-        open={openSections.twoFactor}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-        <p>
-          {twoFAEnabled
-            ? "2FA is enabled. You’ll be asked for a code at login."
-            : "2FA is disabled. Your account uses password only."}
-        </p>
-        <p className="muted">Current method: {twoFAMethod}</p>
-        <button type="button"
-          className={twoFAEnabled ? "danger" : "success"}
-          onClick={toggle2FA}
-        >
-          {twoFAEnabled ? "Disable 2FA" : "Enable 2FA"}
-        </button>
-        <div style={{ marginTop: 12 }}>
-          <button type="button" className="btn-secondary" onClick={setupTotp} disabled={twoFABusy}>
-            Setup Google Authenticator
-          </button>
-        </div>
-        {totpSecret && (
-          <div className="subtle-banner" style={{ marginTop: 10 }}>
-            <div>
-              <strong>Authenticator secret:</strong> {totpSecret}
-            </div>
-            {totpUrl ? (
-              <div className="muted" style={{ wordBreak: "break-all" }}>
-                {totpUrl}
+      <div className="profile-settings-shell">
+        <aside className="card profile-settings-nav">
+          {Object.entries(groupedProfileSections).map(([group, sections]) => (
+            <div key={group} className="profile-settings-nav-group">
+              <div className="profile-settings-nav-title">{group}</div>
+              <div className="profile-settings-nav-list">
+                {sections.map((section) => (
+                  <button
+                    key={section.key}
+                    type="button"
+                    className={`profile-settings-nav-button ${activeSection === section.key ? "active" : ""}`.trim()}
+                    onClick={() => setActiveSection(section.key)}
+                  >
+                    <span className="profile-settings-nav-button-head">
+                      <strong>{section.title}</strong>
+                      <span className="action-pill">{section.badge}</span>
+                    </span>
+                    <span className="profile-settings-nav-button-copy">{section.description}</span>
+                  </button>
+                ))}
               </div>
-            ) : null}
-          </div>
-        )}
-        {(totpSecret || twoFAMethod === "TOTP") && (
-          <div style={{ marginTop: 10 }}>
-            <label>Authenticator code</label>
-            <input
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value)}
-              placeholder="6-digit code"
-            />
-            <div className="actions-row mt-8">
-              <button type="button" className="btn-primary" onClick={verifyTotp} disabled={twoFABusy}>
-                Verify Authenticator
-              </button>
-              {twoFAMethod === "TOTP" && (
-                <button type="button" className="btn-secondary" onClick={disableTotp} disabled={twoFABusy}>
-                  Disable Authenticator
-                </button>
-              )}
             </div>
-          </div>
-        )}
-        {recoveryCodes.length > 0 && (
-          <div className="subtle-banner" style={{ marginTop: 10 }}>
-            <strong>Recovery codes (store securely):</strong>
-            <div style={{ marginTop: 6 }}>
-              {recoveryCodes.join(" • ")}
-            </div>
-          </div>
-        )}
-        {twoFAMsg ? <p className="muted" style={{ marginTop: 8 }}>{twoFAMsg}</p> : null}
-      </DismissibleSection>
+          ))}
+        </aside>
 
-      {/* ============================
-         CHANGE PASSWORD SECTION
-      ============================ */}
-      <DismissibleSection
-        sectionKey="password"
-        title="Change Password"
-        open={openSections.password}
-        onClose={closeSection}
-        onOpen={openSection}
-      >
-
-        {pwError && <div className="auth-error">{pwError}</div>}
-        {pwMessage && <div className="auth-success">{pwMessage}</div>}
-        {actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword && (
-          <div className="subtle-banner" style={{ marginBottom: 12 }}>
-            <strong>Set a password for backup login.</strong>
-            <div style={{ marginTop: 6 }}>
-              Your account is currently Google-only. Create a password here to enable
-              email/phone login as well.
-            </div>
-          </div>
-        )}
-
-        <form className="form" onSubmit={handlePasswordChange}>
-          {!(actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword) && (
-            <PasswordInput
-              label="Current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          )}
-
-          <PasswordInput
-            label={actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
-              ? "Create password"
-              : "New password"}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-            showStrength
-          />
-
-          <PasswordInput
-            label="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-          />
-
-          <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>
-            {pwLoading ? "Updating..." : (actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
-              ? "Set password"
-              : "Change password")}
-          </button>
-        </form>
-      </DismissibleSection>
+        <section className="profile-settings-stage">{renderActiveSection()}</section>
+      </div>
 
       {error && <p style={{ color: "red", marginTop: 16 }}>{error}</p>}
     </div>
