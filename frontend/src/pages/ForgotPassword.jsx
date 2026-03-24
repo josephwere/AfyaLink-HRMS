@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
-import LanguageSwitcher from "../components/LanguageSwitcher";
 import PasswordInput from "../components/PasswordInput";
 import { apiFetch } from "../utils/apiFetch";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
@@ -141,7 +140,6 @@ export default function ForgotPassword() {
 
   return (
     <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
-      <LanguageSwitcher compact className="auth-language-switcher" />
       <form className="auth-card" onSubmit={isEmailMode ? submitEmail : phoneCodeSent ? submitPhoneReset : requestPhoneResetCode}>
         {settings?.branding?.logo && (
           <div

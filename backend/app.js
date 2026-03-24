@@ -144,6 +144,7 @@ import staffTransferRoutes from "./routes/staffTransferRoutes.js";
 import geoRoutes from "./routes/geoRoutes.js";
 import claimsRoutes from "./routes/claimsRoutes.js";
 import unifiedAssistantRoutes from "./routes/unifiedAssistantRoutes.js";
+import platformInnovationRoutes from "./routes/platformInnovationRoutes.js";
 
 
 
@@ -287,6 +288,7 @@ app.use("/api/support", supportRoutes);
 app.use("/api/customization-requests", customizationRequestRoutes);
 app.use("/api/staff-transfers", staffTransferRoutes);
 app.use("/api/unified-assistant", unifiedAssistantRoutes);
+app.use("/api/platform-innovation", platformInnovationRoutes);
 
 
 /* ======================================================

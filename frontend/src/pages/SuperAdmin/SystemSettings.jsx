@@ -11,6 +11,7 @@ import {
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
+import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -899,20 +900,24 @@ export default function SystemSettings() {
             }
           />
           <label>AI Floating Icon</label>
-          {form.ai.icon ? (
+          {form.ai.icon || DEFAULT_AI_ICON ? (
             <div className="row" style={{ alignItems: "center", gap: "10px" }}>
               <img
-                src={form.ai.icon}
+                src={form.ai.icon || DEFAULT_AI_ICON}
                 alt="AI icon"
                 style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }}
               />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setForm((f) => ({ ...f, ai: { ...f.ai, icon: "" } }))}
-              >
-                Remove Icon
-              </button>
+              {form.ai.icon ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setForm((f) => ({ ...f, ai: { ...f.ai, icon: "" } }))}
+                >
+                  Remove Icon
+                </button>
+              ) : (
+                <span className="muted">Default NeuroEdge icon in use</span>
+              )}
             </div>
           ) : null}
           <input

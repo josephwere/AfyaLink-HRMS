@@ -4,10 +4,8 @@ import { usePatientLanguage } from "../utils/patientLanguage.jsx";
 export default function PatientLanguageBar({ title = "", subtitle = "", actions = null }) {
   const {
     language,
-    setLanguage,
     t,
     options,
-    allowLanguageSwitch,
     whatsappSupport,
     voiceFirstIntake,
     helpLine,
@@ -27,18 +25,6 @@ export default function PatientLanguageBar({ title = "", subtitle = "", actions 
       </div>
 
       <div className="patient-language-controls">
-        {allowLanguageSwitch ? (
-          <label className="patient-language-select">
-            <span>{t("languageLabel", "Language")}</span>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-              {options.map((option) => (
-                <option key={option.code} value={option.code}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
         {actions ? <div className="patient-language-actions">{actions}</div> : null}
       </div>
     </div>

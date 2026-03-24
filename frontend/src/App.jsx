@@ -158,6 +158,9 @@ const RegulatoryReports = lazy(() => import("./pages/SystemAdmin/RegulatoryRepor
 const ComplianceCenter = lazy(() => import("./pages/SystemAdmin/ComplianceCenter"));
 const ClinicalIntelligence = lazy(() => import("./pages/SystemAdmin/ClinicalIntelligence"));
 const RevenueIntelligence = lazy(() => import("./pages/SystemAdmin/RevenueIntelligence"));
+const ClinicalOrderCopilot = lazy(() => import("./pages/Innovation/ClinicalOrderCopilot"));
+const DigitalHospitalTwin = lazy(() => import("./pages/Innovation/DigitalHospitalTwin"));
+const InteropMarketplace = lazy(() => import("./pages/Innovation/InteropMarketplace"));
 const SystemMigrations = lazy(() => import("./pages/SystemAdmin/Migrations"));
 const ConnectorSdk = lazy(() => import("./pages/SystemAdmin/ConnectorSdk"));
 const IntegrationHub = lazy(() => import("./pages/SystemAdmin/IntegrationHub"));
@@ -1339,6 +1342,30 @@ export default function App() {
             }
           />
           <Route
+            path="/system-admin/clinical-order-copilot"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ClinicalOrderCopilot />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/digital-hospital-twin"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <DigitalHospitalTwin />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/interop-marketplace"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <InteropMarketplace />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/system-admin/clinical-intelligence"
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "DOCTOR", "NURSE"]}>
@@ -1547,6 +1574,30 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
                 <RevenueIntelligence />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/clinical-order-copilot"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ClinicalOrderCopilot />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/digital-twin"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <DigitalHospitalTwin />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/interop-marketplace"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <InteropMarketplace />
               </RequireRole>
             }
           />
@@ -2102,6 +2153,14 @@ export default function App() {
             element={
               <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}>
                 <DoctorSettings />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/doctor/clinical-order-copilot"
+            element={
+              <RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}>
+                <ClinicalOrderCopilot />
               </RequireRole>
             }
           />

@@ -9,7 +9,6 @@ import { triggerAction } from "../services/actionApi";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { globalSearch } from "../services/searchApi";
-import LanguageSwitcher from "./LanguageSwitcher";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -467,7 +466,6 @@ export default function Navbar({ onToggleSidebar }) {
       </div>
 
       <div className="navbar-right">
-        <LanguageSwitcher compact className="navbar-language-switcher" />
         <div className="profile-wrap">
           <button type="button"
             className="icon-btn ghost"

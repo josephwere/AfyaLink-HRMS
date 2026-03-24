@@ -6815,12 +6815,127 @@ button.card.stat {
   gap: 10px;
 }
 
+.profile-language-setting {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.profile-language-setting strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #0f172a;
+}
+
+.profile-language-switcher {
+  justify-self: start;
+}
+
 .revenue-intelligence-shell .info-grid,
 .compliance-center-shell .info-grid,
 .clinical-order-copilot-shell .info-grid,
 .digital-hospital-twin-shell .info-grid,
 .interop-marketplace-shell .info-grid {
   align-items: stretch;
+}
+
+.innovation-console-page {
+  display: grid;
+  gap: 22px;
+}
+
+.innovation-console-hero {
+  border-radius: 30px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--app-accent-2) 16%, transparent) 0, transparent 34%),
+    radial-gradient(circle at bottom left, color-mix(in oklab, var(--app-accent) 12%, transparent) 0, transparent 40%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 251, 0.94));
+  box-shadow:
+    0 30px 64px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.innovation-console-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.9fr);
+  gap: 20px;
+}
+
+.innovation-console-hero-copy {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.innovation-console-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.innovation-console-pulse {
+  display: grid;
+  gap: 8px;
+  min-height: 118px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.innovation-console-pulse span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.innovation-console-pulse strong {
+  font-size: 28px;
+  line-height: 1.05;
+  color: #0f172a;
+}
+
+.innovation-console-pulse small {
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.innovation-console-pulse.good {
+  background:
+    radial-gradient(circle at top right, rgba(52, 211, 153, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.92);
+  border-color: rgba(16, 185, 129, 0.18);
+}
+
+.innovation-console-pulse.warn {
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.92);
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
+.innovation-console-pulse.risk {
+  background:
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.92);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.innovation-console-pulse.neutral {
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.92);
+  border-color: rgba(96, 165, 250, 0.18);
 }
 
 .revenue-alert-grid,
@@ -6928,6 +7043,19 @@ button.card.stat {
 
   .patient-language-actions {
     justify-content: flex-start;
+  }
+
+  .profile-language-switcher {
+    width: 100%;
+  }
+
+  .innovation-console-hero-layout,
+  .innovation-console-hero-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .innovation-console-pulse {
+    min-height: unset;
   }
 
   .family-timeline-item {

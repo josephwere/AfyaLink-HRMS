@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { chatAssistant, clearAssistantMemory, getAssistantContext } from "../../services/assistantApi";
 import { useAuth } from "../../utils/auth";
+import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
 
 export default function Chatbot() {
   const { settings } = useSystemSettings();
@@ -19,7 +20,7 @@ export default function Chatbot() {
 
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
-  const aiIcon = settings?.ai?.icon || settings?.branding?.appIcon || "";
+  const aiIcon = settings?.ai?.icon || settings?.branding?.appIcon || DEFAULT_AI_ICON;
 
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;

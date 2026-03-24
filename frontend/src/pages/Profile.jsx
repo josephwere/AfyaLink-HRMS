@@ -7,9 +7,11 @@ import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import PasswordInput from "../components/PasswordInput";
 import DownloadMenu from "../components/DownloadMenu";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes";
 import { exportRichTextDocument } from "../utils/fileExport";
 import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
+import { useAppLanguage } from "../utils/appLanguage.jsx";
 import {
   applyAccessibilityPrefs,
   getDefaultAccessibilityPrefs,
@@ -39,8 +41,11 @@ export default function Profile() {
     setRoleOverride,
     setStrictImpersonation,
   } = useAuth();
+  const { language, options: languageOptions } = useAppLanguage();
   const navigate = useNavigate();
   const [viewRole, setViewRole] = useState("");
+  const selectedLanguageLabel =
+    languageOptions.find((item) => item.code === language)?.label || String(language || "en").toUpperCase();
 
   const viewableRoles = ROLE_VIEW_OPTIONS;
   const actualRole = user?.actualRole || user?.role;
@@ -1781,8 +1786,18 @@ export default function Profile() {
         onOpen={openSection}
       >
         <p className="muted">
-          Adjust text and input size for better readability. Changes apply immediately across your account.
+          Set your app language once here and adjust text and input size for better readability. Changes apply immediately across your account.
         </p>
+
+        <div className="profile-language-setting">
+          <div>
+            <strong>Preferred app language</strong>
+            <p className="muted">
+              Current language: {selectedLanguageLabel}. This controls the sidebar, dashboard, cards, and the rest of the signed-in app.
+            </p>
+          </div>
+          <LanguageSwitcher className="profile-language-switcher" />
+        </div>
 
         <label>Text size</label>
         <select

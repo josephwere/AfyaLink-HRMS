@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
-import LanguageSwitcher from "../components/LanguageSwitcher";
 import { apiFetch } from "../utils/apiFetch";
 import { useAuth } from "../utils/auth";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
@@ -156,7 +155,6 @@ export default function TwoFactor() {
 
   return (
     <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
-      <LanguageSwitcher compact className="auth-language-switcher" />
       <div className="auth-card auth-card-wide auth-card-2fa">
         {settings?.branding?.logo ? (
           <div

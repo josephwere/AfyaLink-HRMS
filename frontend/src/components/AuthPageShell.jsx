@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
-import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function AuthPageShell({ children, className = "" }) {
   const { settings } = useSystemSettings();
@@ -14,7 +13,6 @@ export default function AuthPageShell({ children, className = "" }) {
 
   return (
     <div className={`auth-bg ${backgroundReady} ${className}`.trim()}>
-      <LanguageSwitcher compact className="auth-language-switcher" />
       {children}
     </div>
   );
