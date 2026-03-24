@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { useAuth } from "../../utils/auth";
 import { getNurseDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 
 export default function NurseDashboard() {
-  const { user } = useAuth();
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -29,22 +28,70 @@ export default function NurseDashboard() {
   }, []);
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Nurse Clinical Operations")}</h2>
-          <p className="muted">{translateText("Daily nursing tasks in one clear workspace.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>{translateText("Open Shift")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/vitals")}>{translateText("Record Vitals")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/medication")}>{translateText("Give Medication")}</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/ward-board")}>{translateText("Ward Board")}</button>
-        </div>
-      </div>
-
-      <section className="section">
-        <h3>{translateText("Nursing Snapshot")}</h3>
+    <DashboardHomeShell
+      className="nurse-dashboard-shell"
+      shellKey="nurse-dashboard"
+      kicker={translateText("Clinical workspace")}
+      title={translateText("Nurse Clinical Operations")}
+      subtitle={translateText("Daily nursing tasks, patient handoff, and ward continuity from one clear workspace.")}
+      actions={[
+        { label: translateText("Open Shift"), path: "/nurse/shift" },
+        { label: translateText("Record Vitals"), path: "/nurse/vitals", variant: "secondary" },
+        { label: translateText("Give Medication"), path: "/nurse/medication", variant: "secondary" },
+        { label: translateText("Ward Board"), path: "/nurse/ward-board", variant: "secondary" },
+      ]}
+      stats={[
+        { label: translateText("Shift Info"), value: translateText("Active"), note: translateText("Current nursing shift") },
+        { label: translateText("Assigned Patients"), value: data?.patientsTotal ?? "—", note: translateText("Current workload") },
+        { label: translateText("Medication Due Alerts"), value: data?.pendingLabOrders ?? "—", note: translateText("Needs action") },
+        { label: translateText("Open Escalations"), value: data?.escalationSummary?.openCount ?? "—", note: translateText("Continuity watch") },
+      ]}
+      brief={{
+        kicker: translateText("Daily brief"),
+        title: translateText("What nursing needs to move first"),
+        body: translateText("Start with medication timing, ward-board blockers, and transfer handoff continuity."),
+        items: [
+          { label: translateText("Medication Due Alerts"), value: data?.pendingLabOrders ?? "—", tone: Number(data?.pendingLabOrders || 0) > 0 ? "warn" : "good" },
+          { label: translateText("Leave Pending"), value: data?.pendingRequests?.leave ?? "—" },
+          { label: translateText("Pending transfers"), value: transfers.filter((t) => t.status === "Pending").length, tone: transfers.some((t) => t.status === "Pending") ? "warn" : "good" },
+        ],
+      }}
+      runway={[
+        { id: "nurse-runway-patients", title: translateText("Patient task list"), description: translateText("Open the patients who need bedside action, review, or follow-up next."), eyebrow: translateText("Patients"), path: "/nurse/patients", badge: translateText("Live") },
+        { id: "nurse-runway-meds", title: translateText("Medication administration"), description: translateText("Work through medication timing and bedside delivery without leaving the workspace."), eyebrow: translateText("Meds"), path: "/nurse/medication", badge: translateText("Due") },
+        { id: "nurse-runway-vitals", title: translateText("Vitals entry"), description: translateText("Capture new vitals and keep the ward view current for clinicians."), eyebrow: translateText("Monitoring"), path: "/nurse/vitals", badge: translateText("Open") },
+        { id: "nurse-runway-transfers", title: translateText("Transfer continuity"), description: translateText("Review handoff status and close any missing transfer details quickly."), eyebrow: translateText("Continuity"), path: "/hospital-admin/transfer-command-center", badge: `${transfers.filter((t) => t.status === "Pending").length}` },
+      ]}
+      pinnedTools={[
+        { id: "nurse-tool-ward", title: translateText("Ward Board"), description: translateText("Keep bed-side flow and pending requests close."), eyebrow: translateText("Pinned"), path: "/nurse/ward-board", variant: "compact" },
+        { id: "nurse-tool-incidents", title: translateText("Incident Reports"), description: translateText("Open safety and escalation reporting without hunting through menus."), eyebrow: translateText("Pinned"), path: "/nurse/incidents", variant: "compact" },
+        { id: "nurse-tool-requests", title: translateText("My Requests"), description: translateText("Jump back into leave and staffing requests fast."), eyebrow: translateText("Pinned"), path: "/workforce/requests", variant: "compact" },
+      ]}
+      recentItems={[
+        { id: "nurse-recent-shift", title: translateText("Shift workspace"), description: translateText("Re-open your live nursing shift and handoff context."), eyebrow: translateText("Recent"), path: "/nurse/shift", variant: "compact" },
+        { id: "nurse-recent-transfer", title: translateText("Transfer continuity"), description: translateText("Return to transfer updates and pending handoff issues."), eyebrow: translateText("Recent"), path: "/hospital-admin/transfer-command-center", variant: "compact" },
+      ]}
+      savedViews={[
+        { id: "nurse-saved-escalations", title: translateText("Open escalations"), description: translateText("Saved view for unresolved patient and discharge blockers."), eyebrow: translateText("Saved view"), path: "/nurse/patients", variant: "compact" },
+        { id: "nurse-saved-vitals", title: translateText("Vitals round"), description: translateText("Saved entry into the next bedside documentation flow."), eyebrow: translateText("Saved view"), path: "/nurse/vitals", variant: "compact" },
+      ]}
+      contextCards={[
+        {
+          title: translateText("Ward context"),
+          subtitle: translateText("The signals most likely to shape the next nursing hour."),
+          items: [
+            { label: translateText("Pending requests"), value: data?.pendingRequests?.total ?? "—" },
+            { label: translateText("Open escalations"), value: data?.escalationSummary?.openCount ?? "—", tone: Number(data?.escalationSummary?.openCount || 0) > 0 ? "warn" : "good" },
+            { label: translateText("Critical alerts"), value: data?.appointmentsToday ?? "—" },
+          ],
+          actions: [
+            { label: translateText("Ward Board"), path: "/nurse/ward-board", variant: "secondary" },
+            { label: translateText("Transfer Command Center"), path: "/hospital-admin/transfer-command-center", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
+      <DashboardSection title={translateText("Nursing Snapshot")} subtitle={translateText("Key workload and continuity signals for the shift.")}>
         <div className="grid info-grid">
           <StatCard title={translateText("Shift Info")} value={translateText("Active")} onClick={() => navigate("/nurse/shift")} />
           <StatCard title={translateText("Assigned Patients")} value={data?.patientsTotal ?? "—"} onClick={() => navigate("/nurse/patients")} />
@@ -52,11 +99,10 @@ export default function NurseDashboard() {
           <StatCard title={translateText("Pending Requests")} value={data?.pendingRequests?.total ?? "—"} onClick={() => navigate("/nurse/ward-board")} />
           <StatCard title={translateText("Open Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/nurse/patients")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title={translateText("Main Tasks")} subtitle={translateText("The core nursing workflows you return to throughout the shift.")}>
         <div className="card doctor-schedule-card">
-          <h3>{translateText("Main Tasks")}</h3>
           <div className="panel-grid">
             <button className="action-link" type="button" onClick={() => navigate("/nurse/patients")}>{translateText("Patient Task List")}</button>
             <button className="action-link" type="button" onClick={() => navigate("/nurse/medication")}>{translateText("Medication Administration")}</button>
@@ -74,9 +120,9 @@ export default function NurseDashboard() {
             <button className="btn-secondary" type="button" onClick={() => navigate("/workforce/requests")}>{translateText("Open My Requests")}</button>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -130,9 +176,9 @@ export default function NurseDashboard() {
             <div className="alert-item">{translateText("Escalate missing consent to the command center.")}</div>
           </div>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
+      <DashboardSection title={translateText("Escalation Board")} subtitle={translateText("Blocked discharge and transfer issues waiting for clinician action.")}>
         <div className="card">
           <div className="card-header-actions">
             <div>
@@ -173,7 +219,7 @@ export default function NurseDashboard() {
             ) : null}
           </div>
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

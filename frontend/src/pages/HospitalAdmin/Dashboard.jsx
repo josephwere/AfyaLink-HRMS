@@ -158,6 +158,7 @@ export default function Dashboard() {
   return (
     <DashboardHomeShell
       className="hospital-admin-dashboard-shell"
+      shellKey="hospital-admin"
       kicker="Hospital operations"
       title="Hospital Admin Dashboard"
       subtitle="Daily staffing, service delivery, approvals, and facility operations from one command surface."
@@ -173,6 +174,102 @@ export default function Dashboard() {
         { label: "Bed occupancy", value: `${data?.bedOccupancyRate ?? "—"}%`, note: `${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied` },
         { label: "Pending approvals", value: data?.pendingRequests ?? "—", note: "Needs admin attention" },
         { label: "Transfer backlog", value: transfers.filter((t) => t.status === "Pending").length, note: "Continuity watch" },
+      ]}
+      runway={[
+        {
+          id: "hospital-runway-approvals",
+          title: "Clear pending approvals",
+          description: "Handle the requests that are slowing staffing, access, and operational flow.",
+          eyebrow: "Approvals",
+          path: "/hospital-admin/approvals",
+          badge: `${data?.pendingRequests ?? 0}`,
+        },
+        {
+          id: "hospital-runway-appointments",
+          title: "Open appointment ops",
+          description: "Review doctor assignments, queue pressure, and clinic movement from one surface.",
+          eyebrow: "Flow",
+          path: "/hospital-admin/appointments",
+          badge: `${data?.pendingAssignments ?? 0}`,
+        },
+        {
+          id: "hospital-runway-escalations",
+          title: "Review ward escalations",
+          description: "Resolve the issues delaying consultations, discharge, or transfer handoff.",
+          eyebrow: "Escalations",
+          path: "/hospital-admin/consultation-monitor",
+          badge: `${data?.escalationSummary?.openCount ?? 0}`,
+        },
+        {
+          id: "hospital-runway-revenue",
+          title: "Revenue intelligence",
+          description: "Keep claims, invoices, and collection signals visible before they become finance drag.",
+          eyebrow: "Finance",
+          path: "/hospital-admin/revenue-intelligence",
+          badge: "Live",
+        },
+      ]}
+      pinnedTools={[
+        {
+          id: "hospital-tool-staff",
+          title: "Staff directory",
+          description: "Jump straight into the workforce roster and staffing controls.",
+          eyebrow: "People",
+          path: "/hospital-admin/staff",
+          variant: "compact",
+        },
+        {
+          id: "hospital-tool-machines",
+          title: "Machine connectivity",
+          description: "Check device uptime, offline stations, and integration drift.",
+          eyebrow: "Devices",
+          path: "/hospital-admin/machine-connectivity",
+          variant: "compact",
+        },
+        {
+          id: "hospital-tool-transfers",
+          title: "Transfer command center",
+          description: "Open inter-facility routing and continuity handoff workflows.",
+          eyebrow: "Continuity",
+          path: "/hospital-admin/transfer-command-center",
+          variant: "compact",
+        },
+      ]}
+      recentItems={[
+        {
+          id: "hospital-recent-training",
+          title: "Training tracker",
+          description: "Return to readiness gaps, overdue learning, and completion monitoring.",
+          eyebrow: "Adoption",
+          path: "/admin/training-tracker?status=IN_PROGRESS",
+          variant: "compact",
+        },
+        {
+          id: "hospital-recent-consults",
+          title: "Consultation monitor",
+          description: "Re-open call handling, escalation visibility, and bedside coordination.",
+          eyebrow: "Clinical ops",
+          path: "/hospital-admin/consultation-monitor",
+          variant: "compact",
+        },
+      ]}
+      savedViews={[
+        {
+          id: "hospital-view-approval-queue",
+          title: "Pending approval queue",
+          description: "Saved entry into the decisions that need hospital-admin attention first.",
+          eyebrow: "Saved view",
+          path: "/hospital-admin/approvals?status=PENDING",
+          variant: "compact",
+        },
+        {
+          id: "hospital-view-staff-gap",
+          title: "Staffing gap pressure",
+          description: "Saved view into staff registration and workforce shortage follow-up.",
+          eyebrow: "Saved view",
+          path: "/hospital-admin/register-staff",
+          variant: "compact",
+        },
       ]}
       contextCards={[
         {

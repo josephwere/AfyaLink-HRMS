@@ -181,6 +181,8 @@ export default function Profile() {
     showDailyMinorSummary: true,
   });
   const [linkedMinors, setLinkedMinors] = useState([]);
+  const [linkedMinorCount, setLinkedMinorCount] = useState(0);
+  const [familyLoaded, setFamilyLoaded] = useState(false);
   const [familySearch, setFamilySearch] = useState({
     q: "",
     dob: "",
@@ -263,11 +265,12 @@ export default function Profile() {
   -------------------------- */
   const loadStatus = async () => {
     try {
-      const data2FA = await apiFetch("/api/2fa/status");
+      const [data2FA, me] = await Promise.all([
+        apiFetch("/api/2fa/status"),
+        apiFetch("/api/profile"),
+      ]);
       setTwoFAEnabled(Boolean(data2FA?.enabled));
       setTwoFAMethod(data2FA?.method || "OTP");
-
-      const me = await apiFetch("/api/profile");
       setEmailVerified(Boolean(me?.emailVerified));
       setPhoneVerified(Boolean(me?.phoneVerified));
       setAuthProvider(me?.authProvider || "local");
@@ -341,7 +344,9 @@ export default function Profile() {
         receiveMinorAlerts: me?.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
         showDailyMinorSummary: me?.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
       });
-      setLinkedMinors(Array.isArray(me?.linkedMinorSummaries) ? me.linkedMinorSummaries : []);
+      setLinkedMinorCount(Number(me?.familyMonitoring?.linkedMinorCount || 0));
+      setLinkedMinors([]);
+      setFamilyLoaded(false);
       setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
     } catch {
       setError("Unable to load security settings");
@@ -502,14 +507,34 @@ export default function Profile() {
     }
   };
 
-  const refreshFamilyMonitoring = async () => {
-    const data = await apiFetch("/api/profile/family");
-    setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
-    setFamilyPrefs({
-      receiveMinorAlerts: data?.preferences?.receiveMinorAlerts !== false,
-      showDailyMinorSummary: data?.preferences?.showDailyMinorSummary !== false,
-    });
+  const refreshFamilyMonitoring = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setFamilyBusy(true);
+      setFamilyMsg("");
+    }
+    try {
+      const data = await apiFetch("/api/profile/family");
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setLinkedMinors(items);
+      setLinkedMinorCount(items.length);
+      setFamilyPrefs({
+        receiveMinorAlerts: data?.preferences?.receiveMinorAlerts !== false,
+        showDailyMinorSummary: data?.preferences?.showDailyMinorSummary !== false,
+      });
+      setFamilyLoaded(true);
+    } catch (err) {
+      setFamilyMsg(err?.message || "Failed to load family monitoring.");
+    } finally {
+      if (!silent) {
+        setFamilyBusy(false);
+      }
+    }
   };
+
+  useEffect(() => {
+    if (activeSection !== "familyMonitoring" || familyLoaded) return;
+    refreshFamilyMonitoring({ silent: false });
+  }, [activeSection, familyLoaded]);
 
   const searchMinorProfiles = async () => {
     if (!familySearch.q.trim() || !familySearch.dob) {
@@ -548,7 +573,10 @@ export default function Profile() {
           notes: familySearch.notes,
         },
       });
-      setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setLinkedMinors(items);
+      setLinkedMinorCount(items.length);
+      setFamilyLoaded(true);
       setFamilyResults((prev) =>
         prev.map((item) =>
           item.patientId === patientId ? { ...item, alreadyLinked: true } : item
@@ -569,7 +597,10 @@ export default function Profile() {
       const data = await apiFetch(`/api/profile/family/minors/${patientId}`, {
         method: "DELETE",
       });
-      setLinkedMinors(Array.isArray(data?.items) ? data.items : []);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setLinkedMinors(items);
+      setLinkedMinorCount(items.length);
+      setFamilyLoaded(true);
       setFamilyResults((prev) =>
         prev.map((item) =>
           item.patientId === patientId ? { ...item, alreadyLinked: false } : item
@@ -1652,13 +1683,13 @@ export default function Profile() {
         description: "Maintain your active insurer, member number, and benefit status.",
         badge: insurance.status || "Pending",
       },
-      isPatientProfile || linkedMinors.length
+      isPatientProfile || linkedMinorCount
         ? {
             key: "familyMonitoring",
             group: "Care & Coverage",
             title: "Family & Minor Monitoring",
             description: "Link children or dependents and manage parent or guardian visibility.",
-            badge: linkedMinors.length ? `${linkedMinors.length} linked` : "No links",
+            badge: linkedMinorCount ? `${linkedMinorCount} linked` : "No links",
           }
         : null,
       isStaffProfile
@@ -1733,7 +1764,7 @@ export default function Profile() {
     isAdminProfile,
     isPatientProfile,
     isStaffProfile,
-    linkedMinors.length,
+    linkedMinorCount,
     phoneVerified,
     resolvedTrainingRole,
     selectedLanguageLabel,
@@ -1779,7 +1810,7 @@ export default function Profile() {
     },
     {
       label: isPatientProfile ? "Family coverage" : "Workspace language",
-      value: isPatientProfile ? `${linkedMinors.length} linked` : selectedLanguageLabel,
+      value: isPatientProfile ? `${linkedMinorCount} linked` : selectedLanguageLabel,
       meta: isPatientProfile ? "Managed from this profile" : "Applies across the app",
     },
   ];
@@ -2361,7 +2392,7 @@ export default function Profile() {
           <DismissibleSection
             title="Family & Minor Monitoring"
             eyebrow="Care & Coverage"
-            aside={<span className="action-pill">{linkedMinors.length ? `${linkedMinors.length} linked` : "No links"}</span>}
+            aside={<span className="action-pill">{linkedMinorCount ? `${linkedMinorCount} linked` : "No links"}</span>}
           >
             <p className="muted">
               Link minors under 18 to your account so their appointments, encounters, and medical record trail can be monitored from one parent or guardian login.

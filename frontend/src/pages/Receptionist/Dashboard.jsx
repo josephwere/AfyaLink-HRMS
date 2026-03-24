@@ -4,6 +4,7 @@ import { StatCard } from "../../components/Cards";
 import { getReceptionistDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 
 export default function ReceptionistDashboard() {
   const navigate = useNavigate();
@@ -27,42 +28,80 @@ export default function ReceptionistDashboard() {
   }, []);
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Receptionist Dashboard")}</h2>
-          <p className="muted">{translateText("Simple front desk view for booking and patient check-in.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>
-            {translateText("My Requests")}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate("/receptionist/booking-desk")}
-            data-ai-action="open-booking-desk"
-            data-ai-label="Open Booking Desk"
-            data-ai-aliases="front desk booking|open booking workflow|go to booking desk"
-            data-ai-help="Navigate to the receptionist booking desk workflow."
-          >
-            {translateText("Booking Desk")}
-          </button>
-        </div>
-      </div>
-
-      <section className="section">
-        <h3>{translateText("Front Desk Summary")}</h3>
+    <DashboardHomeShell
+      className="receptionist-dashboard-shell"
+      shellKey="receptionist-dashboard"
+      kicker={translateText("Front desk workspace")}
+      title={translateText("Receptionist Dashboard")}
+      subtitle={translateText("Booking, check-in, continuity handoff, and front-desk communication in one clear workspace.")}
+      actions={[
+        { label: translateText("My Requests"), path: "/workforce/requests" },
+        {
+          label: translateText("Booking Desk"),
+          path: "/receptionist/booking-desk",
+          variant: "secondary",
+        },
+      ]}
+      stats={[
+        { label: translateText("Appointments Today"), value: data?.appointmentsToday ?? "—", note: translateText("Front-desk workload") },
+        { label: translateText("Patients Total"), value: data?.patientsTotal ?? "—", note: translateText("Check-in scope") },
+        { label: translateText("Unread Notifications"), value: data?.unreadNotifications ?? "—", note: translateText("Requires follow-up") },
+        { label: translateText("My Pending Requests"), value: data?.myPendingRequests ?? "—", note: translateText("Open staff requests") },
+      ]}
+      brief={{
+        kicker: translateText("Daily brief"),
+        title: translateText("What the front desk should move first"),
+        body: translateText("Start with bookings, incoming patients, and transfer arrivals that need quick handoff coordination."),
+        items: [
+          { label: translateText("Appointments Today"), value: data?.appointmentsToday ?? "—" },
+          { label: translateText("Unread Notifications"), value: data?.unreadNotifications ?? "—", tone: Number(data?.unreadNotifications || 0) > 0 ? "warn" : "good" },
+          { label: translateText("Pending transfers"), value: transfers.filter((t) => t.status === "Pending").length, tone: transfers.some((t) => t.status === "Pending") ? "warn" : "good" },
+        ],
+      }}
+      runway={[
+        { id: "reception-runway-booking", title: translateText("Fast hospital booking"), description: translateText("Open the main booking flow and keep patient arrivals moving without delay."), eyebrow: translateText("Booking"), path: "/receptionist/booking-desk", badge: translateText("Live") },
+        { id: "reception-runway-messages", title: translateText("Front desk messages"), description: translateText("Check notifications, service updates, and request follow-up in one place."), eyebrow: translateText("Messages"), path: "/notifications", badge: `${data?.unreadNotifications ?? 0}` },
+        { id: "reception-runway-transfers", title: translateText("Transfer continuity"), description: translateText("Review transfer arrivals and handoff status before patients hit the desk."), eyebrow: translateText("Continuity"), path: "/hospital-admin/transfer-command-center", badge: `${transfers.filter((t) => t.status === "Pending").length}` },
+        { id: "reception-runway-requests", title: translateText("My requests"), description: translateText("Open your leave and staffing requests without leaving the workspace shell."), eyebrow: translateText("Requests"), path: "/workforce/requests", badge: `${data?.myPendingRequests ?? 0}` },
+      ]}
+      pinnedTools={[
+        { id: "reception-tool-booking", title: translateText("Booking Desk"), description: translateText("Keep the main patient arrival and scheduling desk close."), eyebrow: translateText("Pinned"), path: "/receptionist/booking-desk", variant: "compact" },
+        { id: "reception-tool-notifications", title: translateText("Notifications"), description: translateText("Return to updates and patient-facing messages quickly."), eyebrow: translateText("Pinned"), path: "/notifications", variant: "compact" },
+        { id: "reception-tool-transfers", title: translateText("Transfer Command Center"), description: translateText("Open continuity handoff workflows when arrivals need routing support."), eyebrow: translateText("Pinned"), path: "/hospital-admin/transfer-command-center", variant: "compact" },
+      ]}
+      recentItems={[
+        { id: "reception-recent-booking", title: translateText("Booking workflow"), description: translateText("Re-open the desk you were using most recently."), eyebrow: translateText("Recent"), path: "/receptionist/booking-desk", variant: "compact" },
+        { id: "reception-recent-messages", title: translateText("Front desk messages"), description: translateText("Jump back into the last messages and notifications you reviewed."), eyebrow: translateText("Recent"), path: "/notifications", variant: "compact" },
+      ]}
+      savedViews={[
+        { id: "reception-saved-pending", title: translateText("Pending handoffs"), description: translateText("Saved view for transfer arrivals and waiting continuity actions."), eyebrow: translateText("Saved view"), path: "/hospital-admin/transfer-command-center", variant: "compact" },
+      ]}
+      contextCards={[
+        {
+          title: translateText("Front desk context"),
+          subtitle: translateText("The signals most likely to shape the next arrivals."),
+          items: [
+            { label: translateText("Patients Total"), value: data?.patientsTotal ?? "—" },
+            { label: translateText("Unread Notifications"), value: data?.unreadNotifications ?? "—", tone: Number(data?.unreadNotifications || 0) > 0 ? "warn" : "good" },
+            { label: translateText("Pending transfers"), value: transfers.filter((t) => t.status === "Pending").length, tone: transfers.some((t) => t.status === "Pending") ? "warn" : "good" },
+          ],
+          actions: [
+            { label: translateText("Booking Desk"), path: "/receptionist/booking-desk", variant: "secondary" },
+            { label: translateText("Notifications"), path: "/notifications", variant: "secondary" },
+          ],
+        },
+      ]}
+    >
+      <DashboardSection title={translateText("Front Desk Summary")} subtitle={translateText("The core booking and check-in signals at a glance.")}>
         <div className="grid info-grid">
           <StatCard title={translateText("Appointments Today")} value={data?.appointmentsToday ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
           <StatCard title={translateText("Patients Total")} value={data?.patientsTotal ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
           <StatCard title={translateText("Unread Notifications")} value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
           <StatCard title={translateText("My Pending Requests")} value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>{translateText("Main Tasks")}</h3>
+      <DashboardSection title={translateText("Main Tasks")} subtitle={translateText("Open the key front-desk workflows without context switching.")}>
         <div className="panel-grid">
           <button
             type="button"
@@ -87,9 +126,9 @@ export default function ReceptionistDashboard() {
             {translateText("Front Desk Messages")}
           </button>
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section doctor-main-grid">
+      <DashboardSection className="doctor-main-grid" title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -157,7 +196,7 @@ export default function ReceptionistDashboard() {
             <div className="alert-item">{translateText("Notify clinicians when transfer arrivals are on-site.")}</div>
           </div>
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

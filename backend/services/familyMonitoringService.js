@@ -32,7 +32,12 @@ function toName(row) {
   return [row?.firstName, row?.lastName].filter(Boolean).join(" ").trim() || "Child patient";
 }
 
-async function findNationalIdAnchoredMinorIds({ user, hospitalId = null }) {
+function getMinorCutoffDate() {
+  const now = new Date();
+  return new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
+}
+
+async function findNationalIdAnchoredMinorIds({ user, hospitalId = null, minorsOnly = false }) {
   const parentNationalIdNumber = String(user?.nationalIdNumber || "").trim().toUpperCase();
   if (!parentNationalIdNumber) return [];
 
@@ -44,8 +49,28 @@ async function findNationalIdAnchoredMinorIds({ user, hospitalId = null }) {
   if (user?.nationalIdCountry) {
     where["familyGroup.parentNationalIdCountry"] = String(user.nationalIdCountry).trim().toUpperCase();
   }
+  if (minorsOnly) {
+    where.dob = { $gt: getMinorCutoffDate() };
+  }
 
   return Patient.find(where).distinct("_id");
+}
+
+export async function countLinkedMinorsForUser(userOrId) {
+  const user =
+    userOrId && typeof userOrId === "object" && userOrId._id
+      ? userOrId
+      : await User.findById(userOrId).select(
+          "nationalIdNumber nationalIdCountry familyMonitoring.linkedMinorPatients"
+        );
+  if (!user) return 0;
+
+  const activeLinks = (user.familyMonitoring?.linkedMinorPatients || []).filter(
+    (link) => String(link?.status || "ACTIVE").toUpperCase() === "ACTIVE" && link?.patient
+  );
+  const anchoredIds = await findNationalIdAnchoredMinorIds({ user, minorsOnly: true });
+
+  return new Set([...activeLinks.map((link) => String(link.patient)), ...anchoredIds.map(String)]).size;
 }
 
 export async function resolvePatientIdsForUser(userId, hospitalId = null, options = {}) {
@@ -93,21 +118,22 @@ export async function buildLinkedMinorSummariesForUser(userId) {
     "nationalIdNumber nationalIdCountry familyMonitoring.linkedMinorPatients"
   );
   if (!user) return [];
-  const systemSettings = await getSystemSettingsDoc({ lean: true });
 
   const activeLinks = (user.familyMonitoring?.linkedMinorPatients || []).filter(
     (link) => String(link?.status || "ACTIVE").toUpperCase() === "ACTIVE" && link?.patient
   );
   const explicitLinkMap = new Map(activeLinks.map((link) => [String(link.patient), link]));
-  const anchoredIds = await findNationalIdAnchoredMinorIds({ user });
+  const anchoredIds = await findNationalIdAnchoredMinorIds({ user, minorsOnly: true });
   const patientIds = [...new Set([...activeLinks.map((link) => link.patient), ...anchoredIds].map(String))];
   if (!patientIds.length) return [];
   const now = new Date();
+  const systemSettings = await getSystemSettingsDoc({ lean: true });
 
   const [patients, appointmentStats, encounterStats, prescriptionStats] = await Promise.all([
     Patient.find({ _id: { $in: patientIds }, active: true })
       .populate("hospital", "name")
-      .select("firstName lastName dob gender hospital medicalRecords metadata guardianLinks familyGroup updatedAt"),
+      .select("firstName lastName dob gender hospital medicalRecords familyGroup updatedAt countryId")
+      .lean(),
     Appointment.aggregate([
       { $match: { patient: { $in: patientIds }, status: { $ne: "Cancelled" } } },
       { $sort: { scheduledAt: -1, createdAt: -1 } },

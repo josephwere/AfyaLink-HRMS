@@ -101,6 +101,7 @@ export default function Dashboard() {
   return (
     <DashboardHomeShell
       className="patient-dashboard-shell"
+      shellKey="patient-dashboard"
       kicker="Patient workspace"
       title={t("dashboardTitle", "Patient Self-Service Portal")}
       subtitle={t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}
@@ -115,6 +116,114 @@ export default function Dashboard() {
         { label: t("outstandingBill", "Outstanding Bill"), value: data?.unpaidInvoices ?? "—" },
         { label: t("activePrescription", "Active Prescription"), value: data?.prescriptionsActive ?? "—" },
         { label: t("labResults", "Lab Results"), value: data?.labResults ?? "—" },
+      ]}
+      runway={[
+        {
+          id: "patient-runway-appointments",
+          title: t("reviewUpcomingAppointments", "Review upcoming appointments"),
+          description: t(
+            "Keep your scheduled visits, confirmations, and clinic timing in one place.",
+            "Keep your scheduled visits, confirmations, and clinic timing in one place."
+          ),
+          eyebrow: t("care", "Care"),
+          path: "/patient/appointments",
+          badge: `${data?.upcomingAppointments ?? 0}`,
+        },
+        {
+          id: "patient-runway-billing",
+          title: t("checkBillingAndInsurance", "Check billing and insurance"),
+          description: t(
+            "Open outstanding bills, insurance posture, and payment follow-up without digging.",
+            "Open outstanding bills, insurance posture, and payment follow-up without digging."
+          ),
+          eyebrow: t("coverage", "Coverage"),
+          path: "/patient/billing",
+          badge: `${data?.unpaidInvoices ?? 0}`,
+        },
+        {
+          id: "patient-runway-family",
+          title: t("trackFamilyRecords", "Track family records"),
+          description: t(
+            "See linked children, family care history, and guardian monitoring from one view.",
+            "See linked children, family care history, and guardian monitoring from one view."
+          ),
+          eyebrow: t("family", "Family"),
+          path: "/patient/family-records",
+          badge: `${linkedChildrenCount}`,
+        },
+        {
+          id: "patient-runway-feedback",
+          title: t("shareFeedback", "Share feedback"),
+          description: t(
+            "Send questions, service feedback, or follow-up requests from your patient workspace.",
+            "Send questions, service feedback, or follow-up requests from your patient workspace."
+          ),
+          eyebrow: t("support", "Support"),
+          path: "/patient/feedback",
+          badge: t("open", "Open"),
+        },
+      ]}
+      pinnedTools={[
+        {
+          id: "patient-tool-records",
+          title: t("medicalRecords", "Medical Records"),
+          description: t("Open your care history, reports, and visit context quickly.", "Open your care history, reports, and visit context quickly."),
+          eyebrow: t("records", "Records"),
+          path: "/patient/medical-records",
+          variant: "compact",
+        },
+        {
+          id: "patient-tool-family-timeline",
+          title: t("familyTimeline", "Family Timeline"),
+          description: t("Move from one family care event to the next without losing context.", "Move from one family care event to the next without losing context."),
+          eyebrow: t("family", "Family"),
+          path: "/patient/family-timeline",
+          variant: "compact",
+        },
+        {
+          id: "patient-tool-vacancies",
+          title: t("vacancyFeed", "Vacancy Feed"),
+          description: t("Keep hospital opportunities and announcements close to your home view.", "Keep hospital opportunities and announcements close to your home view."),
+          eyebrow: t("community", "Community"),
+          path: "/careers",
+          variant: "compact",
+        },
+      ]}
+      recentItems={[
+        {
+          id: "patient-recent-reports",
+          title: t("reports", "Reports"),
+          description: t("Return to recent clinical documents, summaries, and supporting reports.", "Return to recent clinical documents, summaries, and supporting reports."),
+          eyebrow: t("recent", "Recent"),
+          path: "/patient/reports",
+          variant: "compact",
+        },
+        {
+          id: "patient-recent-messages",
+          title: t("messages", "Messages"),
+          description: t("Re-open notifications, updates, and daily wellness quotes quickly.", "Re-open notifications, updates, and daily wellness quotes quickly."),
+          eyebrow: t("recent", "Recent"),
+          path: "/notifications",
+          variant: "compact",
+        },
+      ]}
+      savedViews={[
+        {
+          id: "patient-view-bills",
+          title: t("outstandingBillsView", "Outstanding bills"),
+          description: t("Saved entry into the billing items that still need your attention.", "Saved entry into the billing items that still need your attention."),
+          eyebrow: t("savedView", "Saved view"),
+          path: "/patient/billing",
+          variant: "compact",
+        },
+        {
+          id: "patient-view-family",
+          title: t("familyCareView", "Family care view"),
+          description: t("Saved entry into linked children, monitoring, and care continuity.", "Saved entry into linked children, monitoring, and care continuity."),
+          eyebrow: t("savedView", "Saved view"),
+          path: "/patient/family-records",
+          variant: "compact",
+        },
       ]}
       contextCards={[
         {

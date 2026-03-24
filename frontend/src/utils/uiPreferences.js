@@ -32,12 +32,13 @@ export function useUiPreferences() {
   const pendingPrefsRef = useRef(null);
 
   const flushUiPreferences = useCallback(
-    async (prefs = pendingPrefsRef.current) => {
+    async (prefs = pendingPrefsRef.current, requestOptions = {}) => {
       if (!user || !prefs) return false;
       try {
         await apiFetch("/api/profile", {
           method: "PUT",
           body: { uiPreferences: prefs },
+          ...requestOptions,
         });
         pendingPrefsRef.current = null;
         return true;
@@ -68,12 +69,36 @@ export function useUiPreferences() {
 
       saveTimeoutRef.current = setTimeout(() => {
         flushUiPreferences(next);
-      }, Number(options.debounceMs || 450));
+      }, Number(options.debounceMs || 300));
 
       return next;
     },
     [flushUiPreferences, patchUser, user]
   );
+
+  useEffect(() => {
+    const flushPending = () => {
+      if (!pendingPrefsRef.current) return;
+      flushUiPreferences(pendingPrefsRef.current, {
+        keepalive: true,
+        timeoutMs: 4000,
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushPending();
+      }
+    };
+
+    window.addEventListener("pagehide", flushPending);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flushPending);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [flushUiPreferences]);
 
   useEffect(
     () => () => {

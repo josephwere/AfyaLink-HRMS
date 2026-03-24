@@ -7,6 +7,7 @@ import { normalizeRole } from "../utils/normalizeRole.js";
 import { getVerificationWarning } from "../services/verificationReminderService.js";
 import {
   buildLinkedMinorSummariesForUser,
+  countLinkedMinorsForUser,
   isMinorDob,
   searchMinorPatientsForGuardian,
 } from "../services/familyMonitoringService.js";
@@ -37,17 +38,47 @@ function mergePlainObjects(base = {}, patch = {}) {
   return next;
 }
 
+function flattenForSet(basePath, value, target) {
+  if (!basePath || !isPlainObject(target)) return;
+  if (!isPlainObject(value)) {
+    target[basePath] = value;
+    return;
+  }
+
+  Object.entries(value).forEach(([key, child]) => {
+    const nextPath = `${basePath}.${key}`;
+    if (Array.isArray(child) || !isPlainObject(child)) {
+      target[nextPath] = child;
+      return;
+    }
+    flattenForSet(nextPath, child, target);
+  });
+}
+
+function isPreferenceOnlyUpdate(payload = {}) {
+  const entries = Object.entries(payload).filter(([, value]) => value !== undefined);
+  if (!entries.length) return false;
+  return entries.every(([key, value]) => {
+    if (key === "uiPreferences") return isPlainObject(value);
+    if (key === "familyMonitoringPreferences") return isPlainObject(value);
+    return false;
+  });
+}
+
 // ==========================
 // GET PROFILE
 // ==========================
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("+password -__v");
+    const includeFamily = String(req.query.includeFamily || "").trim() === "1";
+    const user = await User.findById(req.user.id).select(
+      "+password -__v -refreshTokens -verificationRemindersSent"
+    ).lean();
     if (!user) return res.status(404).json({ message: "User not found" });
     const verificationWarning = getVerificationWarning(user);
-    const linkedMinorSummaries = await buildLinkedMinorSummariesForUser(user._id);
-    const profile = user.toObject();
-    profile.hasPassword = Boolean(user.password);
+    const linkedMinorCount = await countLinkedMinorsForUser(user);
+    const profile = { ...user };
+    profile.hasPassword = Boolean(profile.password);
     delete profile.password;
     profile.systemProfile = profile.systemProfile || {};
     profile.systemProfile.lastActivityAt = user.updatedAt || user.createdAt;
@@ -69,7 +100,11 @@ export const getProfile = async (req, res) => {
       receiveMinorAlerts: profile.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
       showDailyMinorSummary: profile.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
     };
-    profile.linkedMinorSummaries = linkedMinorSummaries;
+    profile.familyMonitoring.linkedMinorCount = linkedMinorCount;
+
+    if (includeFamily) {
+      profile.linkedMinorSummaries = await buildLinkedMinorSummariesForUser(user._id);
+    }
 
     res.json({ ...profile, verificationWarning });
   } catch (err) {
@@ -103,6 +138,54 @@ export const updateProfile = async (req, res) => {
       uiPreferences,
       familyMonitoringPreferences,
     } = req.body;
+
+    if (isPreferenceOnlyUpdate(req.body)) {
+      const set = {};
+      if (isPlainObject(uiPreferences)) {
+        flattenForSet("uiPreferences", uiPreferences, set);
+      }
+      if (isPlainObject(familyMonitoringPreferences)) {
+        flattenForSet("familyMonitoring.preferences", familyMonitoringPreferences, set);
+      }
+
+      if (!Object.keys(set).length) {
+        return res.status(400).json({ message: "No profile changes supplied" });
+      }
+
+      const updated = await User.findByIdAndUpdate(
+        req.user.id,
+        { $set: set },
+        {
+          new: true,
+          projection: {
+            uiPreferences: 1,
+            familyMonitoring: 1,
+            updatedAt: 1,
+          },
+        }
+      ).lean();
+
+      if (!updated) return res.status(404).json({ message: "User not found" });
+
+      return res.json({
+        message: "Profile updated successfully",
+        user: {
+          _id: updated._id,
+          updatedAt: updated.updatedAt,
+          uiPreferences: updated.uiPreferences || {},
+          familyMonitoring: {
+            ...(updated.familyMonitoring || {}),
+            preferences: {
+              receiveMinorAlerts:
+                updated.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
+              showDailyMinorSummary:
+                updated.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
+            },
+          },
+        },
+      });
+    }
+
     const user = await User.findById(req.user.id).select("+twoFactorSecret +twoFactorTempSecret");
     if (!user) return res.status(404).json({ message: "User not found" });
 
