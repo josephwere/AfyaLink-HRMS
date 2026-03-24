@@ -5,8 +5,10 @@ import { getHRDashboard } from "../../services/dashboardApi";
 import { runBurnoutScore, runCausalImpact } from "../../services/mlApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function HRManagerDashboard() {
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [burnout, setBurnout] = useState(null);
@@ -224,9 +226,9 @@ export default function HRManagerDashboard() {
         <div className="card doctor-alerts-card">
           <h3>Alerts</h3>
           <div className="alert-stack">
-            <div className="action-pill">Pending Requests: {data?.pendingRequests?.total ?? "—"}</div>
-            <div className="action-pill">Incomplete Staff: {data?.incompleteStaff ?? "—"}</div>
-            <div className="action-pill">Inactive Staff: {data?.inactiveStaff ?? "—"}</div>
+            <div className="action-pill">{translateText("Pending Requests")}: {data?.pendingRequests?.total ?? "—"}</div>
+            <div className="action-pill">{translateText("Incomplete Staff")}: {data?.incompleteStaff ?? "—"}</div>
+            <div className="action-pill">{translateText("Inactive Staff")}: {data?.inactiveStaff ?? "—"}</div>
           </div>
         </div>
       </section>

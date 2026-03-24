@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAppLanguage } from "../utils/appLanguage.jsx";
 
 export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = [], panels = [], children }) {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [actionMessage, setActionMessage] = useState("");
   const hasChildren = Boolean(children);
   const meta = [
-    { label: "Actions", value: actions.length || "—" },
-    { label: "Signals", value: kpis.length || "—" },
-    { label: "Panels", value: panels.length || "—" },
-    { label: "Depth", value: hasChildren ? "Expanded" : "Guided" },
+    { label: translateText("Actions"), value: actions.length || "—" },
+    { label: translateText("Signals"), value: kpis.length || "—" },
+    { label: translateText("Panels"), value: panels.length || "—" },
+    { label: translateText("Depth"), value: translateText(hasChildren ? "Expanded" : "Guided") },
   ];
 
   const runAction = (action) => {
@@ -24,20 +26,20 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
         setActionMessage("");
         return;
       }
-      setActionMessage(`"${action?.label || "Action"}" is not configured yet for this module.`);
+      setActionMessage(`"${translateText(action?.label || "Action")}" ${translateText("is not configured yet for this module.")}`);
     } catch {
-      setActionMessage(`"${action?.label || "Action"}" failed to run. Please try again.`);
+      setActionMessage(`"${translateText(action?.label || "Action")}" ${translateText("failed to run. Please try again.")}`);
     }
   };
 
   return (
     <div className="dashboard premium-shell doctor-workspace module-workspace">
       <section className="premium-card premium-shell-head module-workspace-hero">
-        <div className="premium-shell-kicker">Focused workspace</div>
+        <div className="premium-shell-kicker">{translateText("Focused workspace")}</div>
         <div className="card-header-actions">
           <div>
-            <h1 className="premium-shell-title">{title}</h1>
-            <p className="premium-shell-subtitle">{subtitle}</p>
+            <h1 className="premium-shell-title">{translateText(title)}</h1>
+            <p className="premium-shell-subtitle">{translateText(subtitle)}</p>
           </div>
           <div className="premium-shell-meta">
             {meta.map((item) => (
@@ -57,7 +59,7 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
                 className={a.variant === "primary" ? "btn-primary" : "btn-secondary"}
                 onClick={() => runAction(a)}
               >
-                {a.label}
+                {translateText(a.label)}
               </button>
             ))}
           </div>
@@ -68,7 +70,7 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
 
       {kpis.length > 0 && (
         <section className="section">
-          <h3>Summary</h3>
+          <h3>{translateText("Summary")}</h3>
           <div className="grid info-grid module-kpi-grid">
             {kpis.map((k) => (
               <button
@@ -84,9 +86,9 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
                 }}
                 disabled={!k.path && typeof k.onClick !== "function"}
               >
-                <div className="card-title">{k.title}</div>
+                <div className="card-title">{translateText(k.title)}</div>
                 <div className="card-value">{k.value}</div>
-                {k.subtitle && <div className="card-sub">{k.subtitle}</div>}
+                {k.subtitle && <div className="card-sub">{translateText(k.subtitle)}</div>}
               </button>
             ))}
           </div>
@@ -95,12 +97,12 @@ export default function ModuleWorkspace({ title, subtitle, actions = [], kpis = 
 
       {panels.length > 0 && (
         <section className="section">
-          <h3>Workspace</h3>
+          <h3>{translateText("Workspace")}</h3>
           <div className="panel-grid module-panel-grid">
             {panels.map((p) => (
               <div className="panel doctor-panel premium-card module-panel-card" key={p.title}>
-                <h4>{p.title}</h4>
-                <p className="muted">{p.body}</p>
+                <h4>{translateText(p.title)}</h4>
+                <p className="muted">{translateText(p.body)}</p>
               </div>
             ))}
           </div>

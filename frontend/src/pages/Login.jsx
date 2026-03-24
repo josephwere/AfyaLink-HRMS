@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
 import LegalLinks from "../components/LegalLinks";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
@@ -122,6 +123,7 @@ export default function Login() {
   -------------------------- */
   return (
     <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
+      <LanguageSwitcher compact className="auth-language-switcher" />
       <form className="auth-card" onSubmit={handleSubmit}>
         {settings?.branding?.logo && (
           <div

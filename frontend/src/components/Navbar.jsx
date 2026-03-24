@@ -7,7 +7,9 @@ import { getSearchCatalog } from "../config/searchCatalog";
 import { useTheme } from "../utils/theme.jsx";
 import { triggerAction } from "../services/actionApi";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { globalSearch } from "../services/searchApi";
+import LanguageSwitcher from "./LanguageSwitcher";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -156,6 +158,7 @@ export default function Navbar({ onToggleSidebar }) {
   const location = useLocation();
   const { cycleTheme } = useTheme();
   const { settings } = useSystemSettings();
+  const { translateText } = useAppLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
@@ -180,7 +183,14 @@ export default function Navbar({ onToggleSidebar }) {
   const homePath = user ? redirectByRole(user) : "/";
   const canManageAds = ["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(currentRole);
   const adsPath = canManageAds ? "/hospital-admin/recruitment-ads" : "/careers";
-  const catalog = useMemo(() => getSearchCatalog(user), [user]);
+  const catalog = useMemo(
+    () =>
+      getSearchCatalog(user).map((item) => ({
+        ...item,
+        translatedLabel: translateText(item.label),
+      })),
+    [translateText, user]
+  );
 
   const unreadCount = useMemo(
     () => notifItems.filter((n) => !n.read).length,
@@ -191,8 +201,16 @@ export default function Navbar({ onToggleSidebar }) {
     const q = search.trim().toLowerCase();
     if (!q) return [];
     return catalog
-      .filter((item) => item.label.toLowerCase().includes(q))
-      .slice(0, 8);
+      .filter((item) => {
+        const english = String(item.label || "").toLowerCase();
+        const translated = String(item.translatedLabel || "").toLowerCase();
+        return english.includes(q) || translated.includes(q);
+      })
+      .slice(0, 8)
+      .map(({ translatedLabel, ...item }) => ({
+        ...item,
+        label: translatedLabel || item.label,
+      }));
   }, [catalog, search]);
 
   useEffect(() => {
@@ -211,13 +229,13 @@ export default function Navbar({ onToggleSidebar }) {
       globalSearch({ q: query, limit: 6 })
         .then((data) => {
           const hospitals = (data?.hospitals || []).map((h) => ({
-            label: `Hospital: ${h.name}${h.code ? ` (${h.code})` : ""}`,
+            label: translateText(`Hospital: ${h.name}${h.code ? ` (${h.code})` : ""}`),
             path: canViewHospitals
               ? `/super-admin/hospitals?q=${encodeURIComponent(h.name || h.code || "")}`
               : homePath,
           }));
           const workers = (data?.workers || []).map((w) => ({
-            label: `${w.name} • ${w.role}`,
+            label: `${w.name} • ${translateText(String(w.role || ""))}`,
             path: canViewWorkers
               ? `/hospital-admin/staff?q=${encodeURIComponent(w.name || w.email || "")}`
               : "/profile",
@@ -229,7 +247,7 @@ export default function Navbar({ onToggleSidebar }) {
     }, 250);
 
     return () => clearTimeout(id);
-  }, [search, user, homePath]);
+  }, [homePath, search, translateText, user]);
 
   const results = useMemo(() => {
     const seen = new Set();
@@ -449,6 +467,7 @@ export default function Navbar({ onToggleSidebar }) {
       </div>
 
       <div className="navbar-right">
+        <LanguageSwitcher compact className="navbar-language-switcher" />
         <div className="profile-wrap">
           <button type="button"
             className="icon-btn ghost"
@@ -599,7 +618,7 @@ export default function Navbar({ onToggleSidebar }) {
             <span className="avatar">{user?.name?.[0] || "U"}</span>
             <span className="profile-meta">
               <span className="profile-name">{user?.name || "User"}</span>
-              <span className="profile-role">{user?.role || "User"}</span>
+              <span className="profile-role">{translateText(String(user?.role || "User"))}</span>
             </span>
           </button>
 
@@ -645,7 +664,7 @@ export default function Navbar({ onToggleSidebar }) {
                   >
                     {ROLE_VIEW_OPTIONS.map((role) => (
                       <option key={role} value={role}>
-                        {role}
+                        {translateText(role)}
                       </option>
                     ))}
                   </select>

@@ -8,9 +8,11 @@ import { getSuperAdminDashboard } from "../../services/dashboardApi";
 import { getDeveloperOverview } from "../../services/developerApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [ops, setOps] = useState(null);
@@ -238,22 +240,22 @@ export default function Dashboard() {
         <div className="card doctor-alerts-card">
           <h3>Alerts</h3>
           <div className="alert-stack">
-            <div className="action-pill">Active Sessions: {data?.activeHospitals ?? "—"}</div>
-            <div className="action-pill">Pending Requests: {data?.pendingRequests ?? "—"}</div>
-            <div className="action-pill">Invoices: {data?.invoicesThisMonth ?? "—"}</div>
-            <div className="action-pill">Hospitals With Pharmacists: {data?.hospitalsWithPharmacists ?? "—"}</div>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>Open Alerts</button>
+            <div className="action-pill">{translateText("Active Sessions")}: {data?.activeHospitals ?? "—"}</div>
+            <div className="action-pill">{translateText("Pending Requests")}: {data?.pendingRequests ?? "—"}</div>
+            <div className="action-pill">{translateText("Invoices")}: {data?.invoicesThisMonth ?? "—"}</div>
+            <div className="action-pill">{translateText("Hospitals With Pharmacists")}: {data?.hospitalsWithPharmacists ?? "—"}</div>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>{translateText("Open Alerts")}</button>
           </div>
         </div>
       </section>
 
       <section className="section">
-        <h3>System Administration</h3>
+        <h3>{translateText("System Administration")}</h3>
         <div className="action-list">
-          <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>Integration Hub</button>
-          <button type="button" className="action-link" onClick={() => navigate("/admin/crdt-patients")}>Offline Sync</button>
-          <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Trails</button>
-          <button type="button" className="action-link" onClick={() => navigate("/reports")}>Regulatory Reports</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>{translateText("Integration Hub")}</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/crdt-patients")}>{translateText("Offline Sync")}</button>
+          <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>{translateText("Audit Trails")}</button>
+          <button type="button" className="action-link" onClick={() => navigate("/reports")}>{translateText("Regulatory Reports")}</button>
         </div>
       </section>
     </div>

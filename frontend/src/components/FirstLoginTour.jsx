@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
+import { useAppLanguage } from "../utils/appLanguage.jsx";
 
 const COMMON_STEPS = [
   {
@@ -175,6 +176,7 @@ const ROLE_STEPS = {
 
 export default function FirstLoginTour() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
@@ -212,26 +214,26 @@ export default function FirstLoginTour() {
   return (
     <div className="tour-backdrop" role="dialog" aria-modal="true">
       <div className="tour-modal">
-        <button type="button" className="tour-close" onClick={close} aria-label="Close">
+        <button type="button" className="tour-close" onClick={close} aria-label={translateText("Close")}>
           ×
         </button>
         <div className="muted" style={{ marginBottom: 8 }}>
-          Step {index + 1} of {steps.length}
+          {translateText(`Step ${index + 1} of ${steps.length}`)}
         </div>
-        <h3>{current.title}</h3>
-        <p className="muted">{current.description}</p>
+        <h3>{translateText(current.title)}</h3>
+        <p className="muted">{translateText(current.description)}</p>
         <ul className="tour-list">
           {current.bullets?.map((b) => (
-            <li key={b}>{b}</li>
+            <li key={b}>{translateText(b)}</li>
           ))}
         </ul>
         <div className="tour-actions">
           <button type="button" className="btn-secondary" onClick={close}>
-            Skip Tour
+            {translateText("Skip Tour")}
           </button>
           {canGoBack && (
             <button type="button" className="btn-secondary" onClick={() => setIndex((v) => Math.max(0, v - 1))}>
-              Back
+              {translateText("Back")}
             </button>
           )}
           {ctaPath && (
@@ -240,21 +242,21 @@ export default function FirstLoginTour() {
               className="btn-secondary"
               onClick={() => navigate(ctaPath)}
             >
-              {current.ctaLabel || "Open"}
+              {translateText(current.ctaLabel || "Open")}
             </button>
           )}
           {!isLast ? (
             <button type="button" className="btn-primary" onClick={() => setIndex((v) => v + 1)}>
-              Next
+              {translateText("Next")}
             </button>
           ) : (
             <button type="button" className="btn-primary" onClick={close}>
-              Finish
+              {translateText("Finish")}
             </button>
           )}
         </div>
         <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-          You can reopen this guide from Help if needed.
+          {translateText("You can reopen this guide from Help if needed.")}
         </div>
       </div>
     </div>

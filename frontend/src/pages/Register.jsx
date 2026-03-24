@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PasswordInput from "../components/PasswordInput";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import LegalLinks from "../components/LegalLinks";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
@@ -136,6 +137,7 @@ export default function Register() {
   -------------------------- */
   return (
     <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
+      <LanguageSwitcher compact className="auth-language-switcher" />
       <form className="auth-card" onSubmit={handleSubmit}>
         {settings?.branding?.logo && (
           <div

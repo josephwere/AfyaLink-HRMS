@@ -9,6 +9,7 @@ import AppErrorBoundary from "./components/AppErrorBoundary";
 import { AuthProvider } from "./utils/auth";
 import { ThemeProvider } from "./utils/theme.jsx";
 import { SystemSettingsProvider } from "./utils/systemSettings.jsx";
+import { AppLanguageProvider } from "./utils/appLanguage.jsx";
 import "./styles.css";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -20,9 +21,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <ThemeProvider>
           <SystemSettingsProvider>
             <AuthProvider>
-              <AppErrorBoundary>
-                <App />
-              </AppErrorBoundary>
+              <AppLanguageProvider>
+                <AppErrorBoundary>
+                  <App />
+                </AppErrorBoundary>
+              </AppLanguageProvider>
             </AuthProvider>
           </SystemSettingsProvider>
         </ThemeProvider>

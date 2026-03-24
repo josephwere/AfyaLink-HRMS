@@ -1181,13 +1181,13 @@ export default function SystemSettings() {
       </section>
 
       <section className="section">
-        <h3>Patient Self-Service Language & Channels</h3>
+        <h3>App Language, Localization & Channels</h3>
         <div className="card form">
           <p className="muted">
-            These controls shape multilingual patient pages, voice-first intake hints, and WhatsApp-aware support messaging.
+            These controls shape multilingual experiences across the entire app, including dashboards, sidebars, patient pages, and public entry screens.
           </p>
           <label>
-            Default patient language
+            Default app language
             <select
               value={form.patientSelfService.defaultLanguage}
               onChange={(e) =>
@@ -1208,7 +1208,7 @@ export default function SystemSettings() {
             </select>
           </label>
           <label>
-            Enabled patient languages
+            Enabled languages
             <div className="settings-inline-checks">
               {patientLanguageOptions.map((option) => {
                 const enabled = (form.patientSelfService.enabledLanguages || []).includes(option.code);
@@ -1253,7 +1253,7 @@ export default function SystemSettings() {
                 }))
               }
             />
-            Allow patients to switch language themselves
+            Allow users to switch language themselves
           </label>
           <label>
             <input
@@ -1309,7 +1309,7 @@ export default function SystemSettings() {
             onClick={() => saveCard("patientSelfService")}
             disabled={loading || savingCard === "patientSelfService"}
           >
-            {savingCard === "patientSelfService" ? "Saving..." : "Save Patient Self-Service"}
+            {savingCard === "patientSelfService" ? "Saving..." : "Save Language & Channels"}
           </button>
         </div>
       </section>

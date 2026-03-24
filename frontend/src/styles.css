@@ -6274,7 +6274,10 @@ button.card.stat {
 }
 
 .revenue-intelligence-shell .info-grid,
-.compliance-center-shell .info-grid {
+.compliance-center-shell .info-grid,
+.clinical-order-copilot-shell .info-grid,
+.digital-hospital-twin-shell .info-grid,
+.interop-marketplace-shell .info-grid {
   align-items: stretch;
 }
 
@@ -6291,6 +6294,12 @@ button.card.stat {
   display: grid;
   gap: 12px;
   margin-top: 12px;
+}
+
+.signal-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .revenue-action-card,
@@ -6316,6 +6325,34 @@ button.card.stat {
 
 .compliance-hold-card.compact {
   padding: 14px 16px;
+}
+
+.compact-card {
+  padding: 16px 18px;
+}
+
+.twin-ward-grid,
+.marketplace-app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.twin-ward-card,
+.marketplace-app-card {
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+  padding: 16px 18px;
+}
+
+[data-theme="dark"] .twin-ward-card,
+[data-theme="dark"] .marketplace-app-card {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.78);
+  box-shadow: 0 24px 54px rgba(2, 6, 23, 0.34);
 }
 
 .settings-inline-checks {
@@ -6363,5 +6400,65 @@ button.card.stat {
   .family-timeline-time {
     white-space: normal;
     text-align: left;
+  }
+}
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.language-switcher-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+}
+
+.language-switcher select {
+  min-width: 116px;
+  border: none;
+  background: transparent;
+  color: var(--text, #0f172a);
+  font-weight: 700;
+  outline: none;
+}
+
+.language-switcher.compact {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.language-switcher.compact .language-switcher-label {
+  font-size: 0.72rem;
+}
+
+.auth-language-switcher {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 40;
+}
+
+.navbar-language-switcher {
+  margin-right: 10px;
+}
+
+@media (max-width: 900px) {
+  .auth-language-switcher {
+    top: 14px;
+    right: 14px;
+  }
+
+  .navbar-language-switcher {
+    display: none;
   }
 }

@@ -7,6 +7,7 @@ import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
 import { useTheme } from "../utils/theme.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { listNotifications } from "../services/notificationsApi";
 import LegalLinks from "./LegalLinks";
 
@@ -48,6 +49,7 @@ export default function Sidebar({ open = true, onClose }) {
   const { can } = useCan();
   const { theme, setTheme } = useTheme();
   const { settings } = useSystemSettings();
+  const { translateText } = useAppLanguage();
   const appName = settings?.branding?.appName || "AfyaLink";
   const appTagline = settings?.branding?.tagline || null;
   const hospitalModules = settings?.hospitalCustomization?.modules || {};
@@ -142,7 +144,7 @@ export default function Sidebar({ open = true, onClose }) {
               appName
             )}
           </div>
-          <div className="brand-sub">{appTagline || "Demo Workspace"}</div>
+          <div className="brand-sub">{translateText(appTagline || "Demo Workspace")}</div>
         </div>
         <div className="sidebar-scroll">
           <nav>
@@ -156,7 +158,7 @@ export default function Sidebar({ open = true, onClose }) {
                   }}
                 >
                   <NavIcon name="home" />
-                  Demo Home
+                  {translateText("Demo Home")}
                 </button>
               </li>
 
@@ -188,19 +190,19 @@ export default function Sidebar({ open = true, onClose }) {
           <div className="footer-actions">
             <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
               <NavIcon name="reports" />
-              Help
+              {translateText("Help")}
             </button>
             <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
               <NavIcon name="settings" />
-              Settings
+              {translateText("Settings")}
             </button>
             <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
               <NavIcon name="security" />
-              Sign Out
+              {translateText("Sign Out")}
             </button>
           </div>
           <LegalLinks compact className="sidebar-legal-links" />
-          <div>{appName} • Demo Mode</div>
+          <div>{appName} • {translateText("Demo Mode")}</div>
         </div>
       </aside>
     );
@@ -223,7 +225,7 @@ export default function Sidebar({ open = true, onClose }) {
             appName
           )}
         </div>
-        <div className="brand-sub">{appTagline || `${user.role} Workspace`}</div>
+        <div className="brand-sub">{translateText(appTagline || `${user.role} Workspace`)}</div>
       </div>
       <div className="sidebar-scroll">
         <nav>
@@ -246,7 +248,7 @@ export default function Sidebar({ open = true, onClose }) {
                       <li key={`${section.section}-${idx}`} className="nav-static">
                         <span className="nav-btn">
                           <NavIcon name={item.icon || "admin"} />
-                          {item.label}
+                          {translateText(item.label)}
                         </span>
                       </li>
                     )
@@ -405,6 +407,47 @@ export default function Sidebar({ open = true, onClose }) {
                       Revenue Intelligence
                     </Item>
                   )}
+                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "SURGEON"].includes(normalizeRole(user.role)) && (
+                    <Item
+                      to={
+                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
+                          ? "/hospital-admin/clinical-order-copilot"
+                          : ["DOCTOR", "SURGEON"].includes(normalizeRole(user.role))
+                          ? "/doctor/clinical-order-copilot"
+                          : "/system-admin/clinical-order-copilot"
+                      }
+                      icon="ai"
+                      onSelect={onClose}
+                    >
+                      Clinical Order Copilot
+                    </Item>
+                  )}
+                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
+                    <Item
+                      to={
+                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
+                          ? "/hospital-admin/digital-twin"
+                          : "/system-admin/digital-hospital-twin"
+                      }
+                      icon="analytics"
+                      onSelect={onClose}
+                    >
+                      Digital Hospital Twin
+                    </Item>
+                  )}
+                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
+                    <Item
+                      to={
+                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
+                          ? "/hospital-admin/interop-marketplace"
+                          : "/system-admin/interop-marketplace"
+                      }
+                      icon="settings"
+                      onSelect={onClose}
+                    >
+                      Interop Marketplace
+                    </Item>
+                  )}
                   {normalizedRole === "DEVELOPER" && (
                     <Item to="/developer" icon="settings" onSelect={onClose}>
                       Developer Console
@@ -469,6 +512,16 @@ export default function Sidebar({ open = true, onClose }) {
                 >
                   Financials
                 </Item>
+                {["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
+                  <Item to="/hospital-admin/digital-twin" icon="analytics" onSelect={onClose}>
+                    Digital Twin
+                  </Item>
+                )}
+                {["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
+                  <Item to="/hospital-admin/interop-marketplace" icon="settings" onSelect={onClose}>
+                    Interop Marketplace
+                  </Item>
+                )}
                 <Item
                   to="/hospital-admin/pharmacy-referrals"
                   icon="pharmacy"
@@ -590,6 +643,9 @@ export default function Sidebar({ open = true, onClose }) {
                   </Item>
                   <Item to="/doctor/referrals" icon="reports" onSelect={onClose}>
                     Referrals
+                  </Item>
+                  <Item to="/doctor/clinical-order-copilot" icon="ai" onSelect={onClose}>
+                    Clinical Order Copilot
                   </Item>
                   <Item to="/doctor/performance" icon="analytics" onSelect={onClose}>
                     Performance
@@ -766,7 +822,7 @@ export default function Sidebar({ open = true, onClose }) {
                       onClick={() => setTheme("system")}
                     >
                       <NavIcon name="settings" />
-                      System
+                      {translateText("System")}
                     </button>
                   </li>
                 </Section>
@@ -781,28 +837,29 @@ export default function Sidebar({ open = true, onClose }) {
         <div className="footer-actions">
           <button type="button" className="nav-btn" onClick={() => { navigate("/reports"); onClose?.(); }}>
             <NavIcon name="reports" />
-            Help
+            {translateText("Help")}
           </button>
           <button type="button" className="nav-btn" onClick={() => { navigate("/profile"); onClose?.(); }}>
             <NavIcon name="settings" />
-            Settings
+            {translateText("Settings")}
           </button>
           <button type="button" className="nav-btn" onClick={() => { logout(); onClose?.(); }}>
             <NavIcon name="security" />
-            Sign Out
+            {translateText("Sign Out")}
           </button>
         </div>
         <LegalLinks compact className="sidebar-legal-links" />
-        <div>AfyaLink • Secure</div>
+        <div>AfyaLink • {translateText("Secure")}</div>
       </div>
     </aside>
   );
 }
 
 function Section({ title, children }) {
+  const { translateText } = useAppLanguage();
   return (
     <>
-      <li className="section-title">{title}</li>
+      <li className="section-title">{translateText(title)}</li>
       {children}
     </>
   );
@@ -810,6 +867,7 @@ function Section({ title, children }) {
 
 function Item({ to, children, icon, onSelect, badge = "" }) {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   return (
     <li>
       <button type="button"
@@ -820,8 +878,8 @@ function Item({ to, children, icon, onSelect, badge = "" }) {
         }}
       >
         <NavIcon name={icon} />
-        {children}
-        {badge ? <span className="notif-badge">{badge}</span> : null}
+        {typeof children === "string" ? translateText(children) : children}
+        {badge ? <span className="notif-badge">{typeof badge === "string" ? translateText(badge) : badge}</span> : null}
       </button>
     </li>
   );
