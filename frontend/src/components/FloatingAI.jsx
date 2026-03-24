@@ -176,6 +176,13 @@ export default function FloatingAI() {
   const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
   const aiLocked = !canUseAI || !isAuthenticated;
   const hasIcon = Boolean(aiIcon) && iconOk;
+  const launcherLabel = open ? `Hide ${aiName}` : `${aiName} ${greeting}`;
+  const launcherInitials = String(aiName || "AI")
+    .split(/\s+/)
+    .map((part) => part?.[0] || "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "AI";
   // Open only when user clicks the floating button.
 
   const recommendedStarterPackIds = useMemo(() => {
@@ -1372,20 +1379,24 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
     <>
       <button
         type="button"
-        className={`ai-float${hasIcon ? " ai-float-icon-only" : ""}`}
+        className={`ai-float ai-float-icon-only${hasIcon ? "" : " ai-float-fallback-only"}${open ? " is-open" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
-        title={aiName}
+        title={launcherLabel}
+        aria-label={launcherLabel}
+        aria-expanded={open}
+        data-label={launcherLabel}
         style={{ position: "fixed", right: 20, bottom: 20, zIndex: 2147483647 }}
         ref={floatButtonRef}
       >
-        {hasIcon ? (
-          <span className="ai-float-icon" aria-hidden="true">
+        <span className={`ai-float-icon${hasIcon ? "" : " ai-float-icon-fallback"}`} aria-hidden="true">
+          {hasIcon ? (
             <img src={aiIcon} alt="" onError={() => setIconOk(false)} />
-          </span>
-        ) : null}
-        {hasIcon ? <span className="sr-only">{aiName}</span> : null}
-        {!hasIcon ? <span className="ai-float-badge">{aiName}</span> : null}
-        {!hasIcon ? <span className="ai-float-sub">{open ? "Hide" : greeting}</span> : null}
+          ) : (
+            <span className="ai-float-monogram">{launcherInitials}</span>
+          )}
+        </span>
+        <span className="ai-float-presence" aria-hidden="true" />
+        <span className="sr-only">{launcherLabel}</span>
       </button>
 
       {open && (
