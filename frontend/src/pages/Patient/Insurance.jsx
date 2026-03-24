@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientInsurance() {
@@ -57,14 +56,6 @@ export default function PatientInsurance() {
           </button>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("insuranceTitle", "Insurance & Hospital Services")}
-        subtitle={t(
-          "insuranceSubtitle",
-          "View your insurance balance/profile and find hospitals with supported insurance and payment channels."
-        )}
-      />
 
       <section className="section">
         <h3>{t("myInsuranceProfile", "My Insurance Profile")}</h3>

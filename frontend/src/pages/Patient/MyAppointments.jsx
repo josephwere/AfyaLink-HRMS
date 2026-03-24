@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import ConsultationRoom from "../../components/ConsultationRoom";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
@@ -323,14 +322,6 @@ export default function MyAppointments() {
           <p className="muted">{t("appointmentsSubtitle", "Choose your nearest hospital, book the right consultation mode, and follow active calls from one patient workspace.")}</p>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("appointmentsTitle", "Appointments & Nearby Hospitals")}
-        subtitle={t(
-          "appointmentsSubtitle",
-          "Choose your nearest hospital, book the right consultation mode, and follow active calls from one patient workspace."
-        )}
-      />
 
       {msg && <div className="card">{msg}</div>}
       {callMsg && <div className="card">{callMsg}</div>}

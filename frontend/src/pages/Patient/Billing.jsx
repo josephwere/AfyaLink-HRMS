@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import { listMyReports } from "../../services/reportsApi";
 import { StatCard } from "../../components/Cards";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientBilling() {
@@ -68,14 +67,6 @@ export default function PatientBilling() {
           </button>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("billingDocumentsTitle", "Billing & Care Documents")}
-        subtitle={t(
-          "billingDocumentsSubtitle",
-          "View invoice summaries and clinical reports from your own profile and any linked minors you monitor."
-        )}
-      />
 
       {msg ? (
         <section className="section">

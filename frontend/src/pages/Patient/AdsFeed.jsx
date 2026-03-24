@@ -6,7 +6,6 @@ import {
   listRecruitmentApplications,
   trackRecruitmentAdEvent,
 } from "../../services/recruitmentAdsApi";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 const emptyApplicationForm = {
@@ -154,14 +153,6 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
           </div>
         </div>
 
-        <PatientLanguageBar
-          title={t("careersLanguageTitle", "Candidate Language & Access")}
-          subtitle={t(
-            "careersLanguageSubtitle",
-            "Switch language before browsing public campaigns so the same premium AfyaLink experience feels familiar from discovery through application."
-          )}
-        />
-
         <section className="section">
           <div className="grid info-grid">
             <div className="card premium-card">
@@ -202,14 +193,6 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
             </p>
           </div>
         </div>
-
-        <PatientLanguageBar
-          title={t("careerVacancyFeed", "Career & Vacancy Feed")}
-          subtitle={t(
-            "careerVacancyFeedSubtitle",
-            "View premium hospital vacancies, see campaign banners and benefits, then apply directly inside AfyaLink."
-          )}
-        />
 
         <section className="section">
           <div className="card premium-card">

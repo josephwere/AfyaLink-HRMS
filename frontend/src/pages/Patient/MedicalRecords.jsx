@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientMedicalRecords() {
@@ -41,11 +40,6 @@ export default function PatientMedicalRecords() {
           </button>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("medicalRecordsTitle", "Medical Records")}
-        subtitle={t("medicalRecordsSubtitle", "Your visit history, diagnosis trail, and encounter summaries.")}
-      />
 
       {msg ? (
         <section className="section">

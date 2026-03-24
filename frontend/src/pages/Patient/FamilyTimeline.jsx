@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getMyFamilyTimeline } from "../../services/patientApi";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 function formatWhen(value) {
@@ -80,14 +79,6 @@ export default function FamilyTimeline() {
           </button>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("familyTimelineTitle", "Family Timeline")}
-        subtitle={t(
-          "familyTimelineSubtitle",
-          "One longitudinal care stream across the parent account, children, spouse, dependents, claims, visits, transfers, and matched vaccine events."
-        )}
-      />
 
       {msg ? (
         <section className="section">

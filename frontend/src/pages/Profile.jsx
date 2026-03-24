@@ -1785,50 +1785,84 @@ export default function Profile() {
         onClose={closeSection}
         onOpen={openSection}
       >
-        <p className="muted">
-          Set your app language once here and adjust text and input size for better readability. Changes apply immediately across your account.
-        </p>
-
-        <div className="profile-language-setting">
+        <div className="display-settings-hero">
           <div>
-            <strong>Preferred app language</strong>
+            <div className="display-settings-kicker">Personal workspace</div>
+            <strong>Set your app language once here and tune readability for the entire signed-in experience.</strong>
             <p className="muted">
-              Current language: {selectedLanguageLabel}. This controls the sidebar, dashboard, cards, and the rest of the signed-in app.
+              Changes apply immediately across your sidebar, dashboards, cards, forms, and the rest of your account.
             </p>
           </div>
-          <LanguageSwitcher className="profile-language-switcher" />
+          <div className="display-settings-status">
+            <span className="action-pill">Current language: {selectedLanguageLabel}</span>
+            <span className="action-pill">Live preview enabled</span>
+          </div>
         </div>
 
-        <label>Text size</label>
-        <select
-          value={a11yPrefs.textSize}
-          onChange={(e) => updateA11yPref("textSize", e.target.value)}
-        >
-          <option value="small">Small</option>
-          <option value="normal">Normal</option>
-          <option value="large">Large</option>
-          <option value="extra-large">Extra Large</option>
-        </select>
+        <div className="display-settings-grid">
+          <div className="display-settings-card profile-language-setting">
+            <div className="display-settings-card-head">
+              <div>
+                <h4>Preferred app language</h4>
+                <p className="muted">
+                  This controls the sidebar, dashboard, cards, and the rest of the signed-in app.
+                </p>
+              </div>
+              <span className="action-pill">Account wide</span>
+            </div>
+            <LanguageSwitcher className="profile-language-switcher" />
+          </div>
 
-        <label>Text spacing</label>
-        <select
-          value={a11yPrefs.textSpacing}
-          onChange={(e) => updateA11yPref("textSpacing", e.target.value)}
-        >
-          <option value="compact">Compact</option>
-          <option value="normal">Normal</option>
-          <option value="relaxed">Relaxed</option>
-        </select>
+          <div className="display-settings-card">
+            <div className="display-settings-card-head">
+              <div>
+                <h4>Reading comfort</h4>
+                <p className="muted">
+                  Fine-tune spacing and text density so the product stays easy to scan on any screen.
+                </p>
+              </div>
+            </div>
 
-        <label>Input size</label>
-        <select
-          value={a11yPrefs.inputSize}
-          onChange={(e) => updateA11yPref("inputSize", e.target.value)}
-        >
-          <option value="compact">Compact</option>
-          <option value="normal">Normal</option>
-          <option value="large">Large</option>
-        </select>
+            <div className="display-settings-controls">
+              <label className="display-settings-control">
+                <span>Text size</span>
+                <select
+                  value={a11yPrefs.textSize}
+                  onChange={(e) => updateA11yPref("textSize", e.target.value)}
+                >
+                  <option value="small">Small</option>
+                  <option value="normal">Normal</option>
+                  <option value="large">Large</option>
+                  <option value="extra-large">Extra Large</option>
+                </select>
+              </label>
+
+              <label className="display-settings-control">
+                <span>Text spacing</span>
+                <select
+                  value={a11yPrefs.textSpacing}
+                  onChange={(e) => updateA11yPref("textSpacing", e.target.value)}
+                >
+                  <option value="compact">Compact</option>
+                  <option value="normal">Normal</option>
+                  <option value="relaxed">Relaxed</option>
+                </select>
+              </label>
+
+              <label className="display-settings-control">
+                <span>Input size</span>
+                <select
+                  value={a11yPrefs.inputSize}
+                  onChange={(e) => updateA11yPref("inputSize", e.target.value)}
+                >
+                  <option value="compact">Compact</option>
+                  <option value="normal">Normal</option>
+                  <option value="large">Large</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
 
         <div className="profile-row profile-actions-row">
           <button type="button" className="secondary" onClick={resetA11yPrefs}>

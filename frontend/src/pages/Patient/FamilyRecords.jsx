@@ -4,7 +4,6 @@ import apiFetch from "../../utils/apiFetch";
 import { StatCard } from "../../components/Cards";
 import { listMyReports } from "../../services/reportsApi";
 import { selfRegisterMinorPatient } from "../../services/patientApi";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function FamilyRecords() {
@@ -130,11 +129,6 @@ export default function FamilyRecords() {
           </button>
         </div>
       </div>
-
-      <PatientLanguageBar
-        title={t("familyRecordsTitle", "Family Records")}
-        subtitle={t("familyRecordsSubtitle", "Parent-facing view of linked minor care records, reports, and recent encounter activity.")}
-      />
 
       {msg ? (
         <section className="section">

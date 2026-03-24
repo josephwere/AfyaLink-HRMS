@@ -6815,24 +6815,189 @@ button.card.stat {
   gap: 10px;
 }
 
-.profile-language-setting {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 18px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.82);
+.patient-dashboard-summary-grid .card.stat {
+  min-height: 132px;
 }
 
-.profile-language-setting strong {
+.patient-dashboard-shell .doctor-main-grid {
+  align-items: start;
+}
+
+.patient-dashboard-loading-grid {
+  align-items: stretch;
+}
+
+.patient-dashboard-loading-card {
+  min-height: 172px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(
+      110deg,
+      rgba(226, 232, 240, 0.62) 8%,
+      rgba(255, 255, 255, 0.92) 18%,
+      rgba(226, 232, 240, 0.62) 33%
+    );
+  background-size: 220% 100%;
+  animation: innovation-console-shimmer 1.4s linear infinite;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.display-settings-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 252, 0.95));
+  box-shadow:
+    0 24px 56px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.display-settings-hero strong {
   display: block;
   margin-bottom: 6px;
   color: #0f172a;
+  font-size: 1.02rem;
+}
+
+.display-settings-kicker {
+  margin-bottom: 8px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--app-accent, #2563eb);
+}
+
+.display-settings-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.display-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.display-settings-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.display-settings-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.display-settings-card h4 {
+  margin: 0 0 6px;
+  color: #0f172a;
+}
+
+.display-settings-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.display-settings-control {
+  display: grid;
+  gap: 8px;
+}
+
+.display-settings-control span {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.display-settings-control select,
+.profile-language-switcher.language-switcher select {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.98);
+  color: #0f172a;
+  font-weight: 600;
+  padding: 0 14px;
+  box-shadow: none;
+  appearance: auto;
+}
+
+.profile-language-setting {
+  margin-bottom: 0;
 }
 
 .profile-language-switcher {
-  justify-self: start;
+  width: 100%;
+}
+
+.profile-language-switcher.language-switcher {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  align-items: stretch;
+}
+
+.profile-language-switcher .language-switcher-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .display-settings-hero,
+[data-theme="dark"] .display-settings-card {
+  border-color: rgba(148, 163, 184, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 34%),
+    rgba(15, 23, 42, 0.82);
+  box-shadow: 0 24px 54px rgba(2, 6, 23, 0.34);
+}
+
+[data-theme="dark"] .display-settings-hero strong,
+[data-theme="dark"] .display-settings-card h4,
+[data-theme="dark"] .display-settings-control span,
+[data-theme="dark"] .profile-language-switcher .language-switcher-label {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .display-settings-control select,
+[data-theme="dark"] .profile-language-switcher.language-switcher select {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
 }
 
 .revenue-intelligence-shell .info-grid,

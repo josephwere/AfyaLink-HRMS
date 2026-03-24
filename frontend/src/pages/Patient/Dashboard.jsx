@@ -5,13 +5,13 @@ import { useAuth } from "../../utils/auth";
 import { getPatientDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
-import PatientLanguageBar from "../../components/PatientLanguageBar";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
+  const [booting, setBooting] = useState(true);
   const [data, setData] = useState(null);
   const [latestVisit, setLatestVisit] = useState(null);
   const [latestEncounter, setLatestEncounter] = useState(null);
@@ -19,38 +19,81 @@ export default function Dashboard() {
   const [latestReferral, setLatestReferral] = useState(null);
 
   useEffect(() => {
-    getPatientDashboard().then(setData).catch(() => setData(null));
-    apiFetch("/api/appointments?limit=10")
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
+    let active = true;
+
+    async function loadDashboard() {
+      setBooting(true);
+
+      const [
+        dashboardResult,
+        appointmentsResult,
+        encountersResult,
+        prescriptionsResult,
+        referralsResult,
+      ] = await Promise.allSettled([
+        getPatientDashboard(),
+        apiFetch("/api/appointments?limit=10"),
+        apiFetch("/api/encounters?limit=1"),
+        apiFetch("/api/pharmacy/prescriptions"),
+        listPharmacyReferrals({ limit: 20 }),
+      ]);
+
+      if (!active) return;
+
+      setData(dashboardResult.status === "fulfilled" ? dashboardResult.value : null);
+
+      if (appointmentsResult.status === "fulfilled") {
+        const rows = Array.isArray(appointmentsResult.value?.items)
+          ? appointmentsResult.value.items
+          : [];
         const latestCompleted = rows.find(
-          (item) => item?.metadata?.consultationSummary || item?.notes || item?.status === "Completed"
+          (item) =>
+            item?.metadata?.consultationSummary ||
+            item?.notes ||
+            item?.status === "Completed"
         );
         setLatestVisit(latestCompleted || null);
-      })
-      .catch(() => setLatestVisit(null));
-    apiFetch("/api/encounters?limit=1")
-      .then((rows) => {
-        const items = Array.isArray(rows) ? rows : [];
+      } else {
+        setLatestVisit(null);
+      }
+
+      if (encountersResult.status === "fulfilled") {
+        const items = Array.isArray(encountersResult.value) ? encountersResult.value : [];
         setLatestEncounter(items[0] || null);
-      })
-      .catch(() => setLatestEncounter(null));
-    apiFetch("/api/pharmacy/prescriptions")
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
+      } else {
+        setLatestEncounter(null);
+      }
+
+      if (prescriptionsResult.status === "fulfilled") {
+        const rows = Array.isArray(prescriptionsResult.value?.items)
+          ? prescriptionsResult.value.items
+          : [];
         setLatestPrescription(rows[0] || null);
-      })
-      .catch(() => setLatestPrescription(null));
-    listPharmacyReferrals({ limit: 20 })
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
+      } else {
+        setLatestPrescription(null);
+      }
+
+      if (referralsResult.status === "fulfilled") {
+        const rows = Array.isArray(referralsResult.value?.items)
+          ? referralsResult.value.items
+          : [];
         setLatestReferral(rows[0] || null);
-      })
-      .catch(() => setLatestReferral(null));
+      } else {
+        setLatestReferral(null);
+      }
+
+      setBooting(false);
+    }
+
+    loadDashboard();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
-    <div className="dashboard">
+    <div className="dashboard patient-dashboard-shell">
       <div className="welcome-panel">
         <div>
           <h2>{t("dashboardTitle", "Patient Self-Service Portal")}</h2>
@@ -67,14 +110,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <PatientLanguageBar
-        title={t("dashboardTitle", "Patient Self-Service Portal")}
-        subtitle={t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}
-      />
-
       <section className="section">
         <h3>{t("topSummary", "Top Summary")}</h3>
-        <div className="grid info-grid">
+        <div className="grid info-grid patient-dashboard-summary-grid">
           <StatCard title={t("upcomingAppointment", "Upcoming Appointment")} value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/patient/appointments")} />
           <StatCard title={t("outstandingBill", "Outstanding Bill")} value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/patient/billing")} />
           <StatCard title={t("activePrescription", "Active Prescription")} value={data?.prescriptionsActive ?? "—"} onClick={() => navigate("/patient/prescriptions")} />
@@ -82,7 +120,16 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {data?.familyMonitoring?.linkedMinorCount ? (
+      {booting ? (
+        <section className="section">
+          <div className="grid info-grid patient-dashboard-loading-grid" aria-hidden="true">
+            <div className="card premium-card patient-dashboard-loading-card" />
+            <div className="card premium-card patient-dashboard-loading-card" />
+          </div>
+        </section>
+      ) : null}
+
+      {!booting && data?.familyMonitoring?.linkedMinorCount ? (
         <section className="section">
           <div className="welcome-panel">
             <div>
@@ -170,7 +217,7 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      {latestPrescription ? (
+      {!booting && latestPrescription ? (
         <section className="section">
           <div className="card premium-card">
             <h3>{t("latestPrescriptionStatus", "Latest Prescription Status")}</h3>
@@ -195,7 +242,7 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      {latestReferral ? (
+      {!booting && latestReferral ? (
         <section className="section">
           <div className="card premium-card">
             <h3>{t("latestPharmacyReferral", "Latest Pharmacy Referral")}</h3>
