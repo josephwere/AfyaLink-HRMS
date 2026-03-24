@@ -51,12 +51,19 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
   const loadAds = async () => {
     setLoading(true);
     try {
-      const [adsData, appData] = await Promise.all([
-        listRecruitmentAds({ q, limit: 100, source }),
-        listRecruitmentApplications({ mine: 1, limit: 200 }),
-      ]);
+      const requests = [listRecruitmentAds({ q, limit: 100, source })];
+      if (variant !== "public") {
+        requests.push(listRecruitmentApplications({ mine: 1, limit: 200 }));
+      }
+      const [adsData, appData] = await Promise.all(requests);
       setAds(Array.isArray(adsData?.items) ? adsData.items : []);
-      setApplications(Array.isArray(appData?.items) ? appData.items : []);
+      setApplications(
+        variant === "public"
+          ? []
+          : Array.isArray(appData?.items)
+          ? appData.items
+          : []
+      );
     } catch (e) {
       setMsg(e?.message || "Failed to load vacancies");
       setAds([]);
