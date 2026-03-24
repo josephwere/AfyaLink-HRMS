@@ -1,7 +1,10 @@
 import Hospital from "../models/Hospital.js";
 import AuditLog from "../models/AuditLog.js";
+import { recordSettingsRevision } from "../services/settingsRevisionService.js";
+import { persistHospitalCustomizationAssets } from "../services/settingsAssetService.js";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import SettingsRevision from "../models/SettingsRevision.js";
 
 function resolveHospitalId(req) {
   const role = String(req.user?.role || "").toUpperCase();
@@ -297,7 +300,7 @@ export const updateHospitalCustomization = async (req, res) => {
     if (!hospitalId) {
       return res.status(400).json({ message: "hospitalId is required for this role" });
     }
-    const payload = req.body?.customization || {};
+    const rawPayload = req.body?.customization || {};
 
     const hospital = await Hospital.findById(hospitalId);
     if (!hospital) {
@@ -306,6 +309,12 @@ export const updateHospitalCustomization = async (req, res) => {
     if (hospital.active === false) {
       return res.status(403).json({ message: "Cannot customize deactivated hospital" });
     }
+
+    const payload = await persistHospitalCustomizationAssets({
+      req,
+      hospitalId: hospital._id,
+      customizationPatch: rawPayload,
+    });
 
     const current = hospital.customization?.toObject?.() || hospital.customization || {};
     const next = {
@@ -337,6 +346,27 @@ export const updateHospitalCustomization = async (req, res) => {
     hospital.customization = next;
     await hospital.save();
 
+    try {
+      await recordSettingsRevision({
+        scope: "HOSPITAL",
+        scopeId: String(hospital._id),
+        hospitalId: hospital._id,
+        actorId: req.user?._id || null,
+        actorRole: req.user?.role || "",
+        source: "hospital-customization",
+        snapshot: {
+          customization: hospital.customization?.toObject?.() || hospital.customization || {},
+          branding: hospital.customization?.branding || {},
+          theme: hospital.customization?.theme || {},
+          modules: hospital.customization?.modules || {},
+          clinical: hospital.customization?.clinical || {},
+          updatedAt: hospital.customization?.updatedAt || new Date(),
+        },
+      });
+    } catch {
+      // Revision history should not block the main customization save path.
+    }
+
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
@@ -356,4 +386,112 @@ export const updateHospitalCustomization = async (req, res) => {
     console.error(err);
     return res.status(500).json({ message: "Failed to update hospital customization" });
   }
+};
+
+function summarizeHospitalCustomizationRevision(revision) {
+  const snapshot = revision?.snapshot || {};
+  return {
+    _id: revision?._id,
+    createdAt: revision?.createdAt || null,
+    actorRole: revision?.actorRole || "",
+    source: revision?.source || "",
+    sections: [
+      snapshot.branding ? "branding" : null,
+      snapshot.theme ? "theme" : null,
+      snapshot.modules ? "modules" : null,
+      snapshot.clinical ? "clinical" : null,
+    ].filter(Boolean),
+  };
+}
+
+export const getHospitalCustomizationHistory = async (req, res) => {
+  const hospitalId = resolveHospitalId(req);
+  if (!hospitalId) {
+    return res.status(400).json({ message: "hospitalId is required for this role" });
+  }
+
+  const revisions = await SettingsRevision.find({
+    scope: "HOSPITAL",
+    scopeId: String(hospitalId),
+  })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+
+  return res.json({
+    items: revisions.map(summarizeHospitalCustomizationRevision),
+  });
+};
+
+export const restoreHospitalCustomizationRevision = async (req, res) => {
+  const hospitalId = resolveHospitalId(req);
+  if (!hospitalId) {
+    return res.status(400).json({ message: "hospitalId is required for this role" });
+  }
+
+  const revision = await SettingsRevision.findOne({
+    _id: req.params.revisionId,
+    scope: "HOSPITAL",
+    scopeId: String(hospitalId),
+  }).lean();
+
+  if (!revision?.snapshot) {
+    return res.status(404).json({ message: "Customization revision not found" });
+  }
+
+  const hospital = await Hospital.findById(hospitalId);
+  if (!hospital) {
+    return res.status(404).json({ message: "Hospital not found" });
+  }
+
+  const restoredCustomization = await persistHospitalCustomizationAssets({
+    req,
+    hospitalId: hospital._id,
+    customizationPatch: revision.snapshot.customization || revision.snapshot,
+  });
+
+  hospital.customization = {
+    ...(restoredCustomization || {}),
+    updatedBy: req.user?._id || hospital.customization?.updatedBy,
+    updatedAt: new Date(),
+  };
+  await hospital.save();
+
+  try {
+    await recordSettingsRevision({
+      scope: "HOSPITAL",
+      scopeId: String(hospital._id),
+      hospitalId: hospital._id,
+      actorId: req.user?._id || null,
+      actorRole: req.user?.role || "",
+      source: `hospital-customization-restore:${req.params.revisionId}`,
+      snapshot: {
+        customization: hospital.customization?.toObject?.() || hospital.customization || {},
+        branding: hospital.customization?.branding || {},
+        theme: hospital.customization?.theme || {},
+        modules: hospital.customization?.modules || {},
+        clinical: hospital.customization?.clinical || {},
+        updatedAt: hospital.customization?.updatedAt || new Date(),
+      },
+    });
+  } catch {
+    // ignore revision errors during restore
+  }
+
+  await AuditLog.create({
+    actorId: req.user._id,
+    actorRole: req.user.role,
+    action: "RESTORE_HOSPITAL_CUSTOMIZATION",
+    resource: "Hospital",
+    resourceId: hospital._id,
+    hospital: hospital._id,
+    ip: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  return res.json({
+    success: true,
+    restoredRevisionId: req.params.revisionId,
+    customization: hospital.customization || {},
+  });
 };

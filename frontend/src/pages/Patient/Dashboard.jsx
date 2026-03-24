@@ -5,9 +5,12 @@ import { useAuth } from "../../utils/auth";
 import { getPatientDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = usePatientLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [latestVisit, setLatestVisit] = useState(null);
@@ -50,26 +53,32 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Patient Self-Service Portal</h2>
-          <p className="muted">Simple patient view for appointments, results, bills, and insurance.</p>
+          <h2>{t("dashboardTitle", "Patient Self-Service Portal")}</h2>
+          <p className="muted">{t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>My Appointments</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>Billing</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/reports")}>Reports</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>Family Records</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>Profile</button>
+          <button className="btn-primary" type="button" onClick={() => navigate("/patient/appointments")}>{t("myAppointments", "My Appointments")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/payments")}>{t("billing", "Billing")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/reports")}>{t("reports", "Reports")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>{t("familyRecords", "Family Records")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-timeline")}>{t("familyTimeline", "Family Timeline")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>{t("vacancyFeed", "Vacancy Feed")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>{t("profile", "Profile")}</button>
         </div>
       </div>
 
+      <PatientLanguageBar
+        title={t("dashboardTitle", "Patient Self-Service Portal")}
+        subtitle={t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}
+      />
+
       <section className="section">
-        <h3>Top Summary</h3>
+        <h3>{t("topSummary", "Top Summary")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Upcoming Appointment" value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/patient/appointments")} />
-          <StatCard title="Outstanding Bill" value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/patient/billing")} />
-          <StatCard title="Active Prescription" value={data?.prescriptionsActive ?? "—"} onClick={() => navigate("/patient/prescriptions")} />
-          <StatCard title="Lab Results" value={data?.labResults ?? "—"} onClick={() => navigate("/patient/lab-results")} />
+          <StatCard title={t("upcomingAppointment", "Upcoming Appointment")} value={data?.upcomingAppointments ?? "—"} onClick={() => navigate("/patient/appointments")} />
+          <StatCard title={t("outstandingBill", "Outstanding Bill")} value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/patient/billing")} />
+          <StatCard title={t("activePrescription", "Active Prescription")} value={data?.prescriptionsActive ?? "—"} onClick={() => navigate("/patient/prescriptions")} />
+          <StatCard title={t("labResults", "Lab Results")} value={data?.labResults ?? "—"} onClick={() => navigate("/patient/lab-results")} />
         </div>
       </section>
 
@@ -79,39 +88,45 @@ export default function Dashboard() {
             <div>
               <h3>Family Monitoring</h3>
               <p className="muted">
-                Linked minor records are visible here so a parent or guardian can trace each child’s care from one account.
+                {t(
+                  "familyMonitoringSubtitle",
+                  "Linked minor records are visible here so a parent or guardian can trace each child’s care from one account."
+                )}
               </p>
             </div>
             <div className="welcome-actions">
               <button className="btn-primary" type="button" onClick={() => navigate("/patient/family-records")}>
-                Open Family Records
+                {t("openFamilyRecords", "Open Family Records")}
+              </button>
+              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-timeline")}>
+                {t("openFamilyTimeline", "Open Family Timeline")}
               </button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/profile")}>
-                Manage Linked Children
+                {t("manageLinkedChildren", "Manage Linked Children")}
               </button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/notifications?category=WELLNESS")}>
-                Open Daily Quotes
+                {t("openDailyQuotes", "Open Daily Quotes")}
               </button>
             </div>
           </div>
           <div className="grid info-grid">
             <StatCard
-              title="Linked Children"
+              title={t("linkedChildren", "Linked Children")}
               value={data.familyMonitoring.linkedMinorCount}
               onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
-              title="Upcoming Child Visits"
+              title={t("upcomingChildVisits", "Upcoming Child Visits")}
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.upcomingAppointments || 0), 0)}
               onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
-              title="Tracked Encounters"
+              title={t("trackedEncounters", "Tracked Encounters")}
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.totalEncounters || 0), 0)}
               onClick={() => navigate("/patient/family-records")}
             />
             <StatCard
-              title="Active Child Prescriptions"
+              title={t("activeChildPrescriptions", "Active Child Prescriptions")}
               value={data.familyMonitoring.linkedMinors.reduce((sum, item) => sum + Number(item?.activePrescriptions || 0), 0)}
               onClick={() => navigate("/patient/family-records")}
             />
@@ -158,7 +173,7 @@ export default function Dashboard() {
       {latestPrescription ? (
         <section className="section">
           <div className="card premium-card">
-            <h3>Latest Prescription Status</h3>
+            <h3>{t("latestPrescriptionStatus", "Latest Prescription Status")}</h3>
             <p>
               <strong>{latestPrescription.summary || latestPrescription?.appointment?.serviceType || "Prescription"}</strong>
             </p>
@@ -170,10 +185,10 @@ export default function Dashboard() {
             ) : null}
             <div className="doctor-actions-row" style={{ marginTop: 10 }}>
               <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
-                Open Prescriptions
+                {t("openPrescriptions", "Open Prescriptions")}
               </button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
-                Open Notifications
+                {t("openNotifications", "Open Notifications")}
               </button>
             </div>
           </div>
@@ -183,7 +198,7 @@ export default function Dashboard() {
       {latestReferral ? (
         <section className="section">
           <div className="card premium-card">
-            <h3>Latest Pharmacy Referral</h3>
+            <h3>{t("latestPharmacyReferral", "Latest Pharmacy Referral")}</h3>
             <p>
               <strong>{latestReferral?.pharmacy?.name || "Pharmacy Referral"}</strong>
             </p>
@@ -191,10 +206,10 @@ export default function Dashboard() {
             {latestReferral.reason ? <p className="muted">{latestReferral.reason}</p> : null}
             <div className="doctor-actions-row" style={{ marginTop: 10 }}>
               <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
-                Open Referral Progress
+                {t("openReferralProgress", "Open Referral Progress")}
               </button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
-                Open Notifications
+                {t("openNotifications", "Open Notifications")}
               </button>
             </div>
           </div>
@@ -203,19 +218,19 @@ export default function Dashboard() {
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Health Timeline</h3>
+          <h3>{t("healthTimeline", "Health Timeline")}</h3>
           <div className="panel-grid">
-            <button className="action-link" type="button" onClick={() => navigate("/patient/medical-records")}>Medical Records</button>
-            <button className="action-link" type="button" onClick={() => navigate("/reports")}>Reports</button>
-            <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>Prescriptions</button>
-            <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>Lab Results</button>
-            <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>Insurance</button>
-            <button className="action-link" type="button" onClick={() => navigate("/patient/transfers")}>Transfer Consents</button>
-            <button className="action-link" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>Vacancy Feed</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/medical-records")}>{t("medicalRecords", "Medical Records")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/reports")}>{t("reports", "Reports")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/prescriptions")}>{t("prescriptions", "Prescriptions")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/lab-results")}>{t("labResults", "Lab Results")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/insurance")}>{t("insurance", "Insurance")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/patient/transfers")}>{t("transferConsents", "Transfer Consents")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/careers?src=PATIENT_DASHBOARD")}>{t("vacancyFeed", "Vacancy Feed")}</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Latest Visit Summary</h3>
+          <h3>{t("latestVisitSummary", "Latest Visit Summary")}</h3>
           {latestVisit || latestEncounter ? (
             <div className="alert-stack">
               <div className="card">

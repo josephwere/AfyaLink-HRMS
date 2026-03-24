@@ -10,6 +10,11 @@ import { integrationQueue, integrationDLQ } from "../services/integrationQueue.j
 import { notificationQueue } from "../services/queue.js";
 import { webhookQueue } from "../services/webhookQueue.js";
 import { checkWorkflowSLA } from "../services/workflowSlaService.js";
+import {
+  getBackgroundJobSummary,
+  listBackgroundJobs,
+  requeueBackgroundJob,
+} from "../services/backgroundJobService.js";
 
 async function getQueueCounts(queue) {
   if (!queue?.getJobCounts) return null;
@@ -31,6 +36,7 @@ export const getDeveloperOverview = async (_req, res) => {
       dlqCounts,
       notificationCounts,
       webhookCounts,
+      backgroundJobs,
       leavePending,
       overtimePending,
       shiftPending,
@@ -41,6 +47,7 @@ export const getDeveloperOverview = async (_req, res) => {
         safeRun(() => getQueueCounts(integrationDLQ), {}),
         safeRun(() => getQueueCounts(notificationQueue), {}),
         safeRun(() => getQueueCounts(webhookQueue), {}),
+        safeRun(() => getBackgroundJobSummary(), { byStatus: {}, byType: [] }),
         safeRun(() => LeaveRequest.countDocuments({ status: "PENDING" }), 0),
         safeRun(() => OvertimeRequest.countDocuments({ status: "PENDING" }), 0),
         safeRun(() => ShiftRequest.countDocuments({ status: "PENDING" }), 0),
@@ -92,6 +99,7 @@ export const getDeveloperOverview = async (_req, res) => {
         dlq: dlqCounts || {},
         notifications: notificationCounts || {},
         webhook: webhookCounts || {},
+        background: backgroundJobs || { byStatus: {}, byType: [] },
         workforce: {
           leavePending,
           overtimePending,
@@ -109,6 +117,33 @@ export const getDeveloperOverview = async (_req, res) => {
   } catch (err) {
     console.error("Developer overview error:", err);
     res.status(500).json({ message: "Failed to load developer overview" });
+  }
+};
+
+export const getBackgroundJobs = async (req, res) => {
+  try {
+    const jobs = await listBackgroundJobs({
+      status: req.query.status || "",
+      queue: req.query.queue || "",
+      limit: req.query.limit || 50,
+    });
+    return res.json({ items: jobs });
+  } catch (err) {
+    console.error("Background jobs list error:", err);
+    return res.status(500).json({ message: "Failed to load background jobs" });
+  }
+};
+
+export const retryBackgroundJob = async (req, res) => {
+  try {
+    const job = await requeueBackgroundJob(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Background job not found" });
+    }
+    return res.json({ ok: true, job });
+  } catch (err) {
+    console.error("Background job replay error:", err);
+    return res.status(500).json({ message: "Failed to replay background job" });
   }
 };
 

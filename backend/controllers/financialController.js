@@ -11,6 +11,7 @@ import AuditLog from "../models/AuditLog.js";
 import { evaluateClaim } from "../services/claimFraudEngine.js";
 import { appendClaimAudit } from "../services/claimAuditService.js";
 import { decrypt, encrypt } from "../services/cryptoService.js";
+import { getRevenueIntelligenceSnapshot } from "../services/revenueIntelligenceService.js";
 import { stableStringify, signPayload } from "../utils/claimSignature.js";
 
 function resolveHospital(req) {
@@ -23,6 +24,29 @@ function resolveHospital(req) {
   }
   return req.user?.hospital || req.user?.hospitalId || null;
 }
+
+function resolveRevenueHospital(req) {
+  const role = normalizeRole(req.user?.role || "");
+  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) {
+    return req.query?.hospitalId || null;
+  }
+  return resolveHospital(req);
+}
+
+export const getRevenueIntelligence = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const hospitalId = resolveRevenueHospital(req);
+    if (!hospitalId && !["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) {
+      return res.status(400).json({ message: "Hospital context required" });
+    }
+
+    const snapshot = await getRevenueIntelligenceSnapshot({ hospitalId });
+    return res.json(snapshot);
+  } catch (err) {
+    return next(err);
+  }
+};
 
 export const createInvoice = async (req, res, next) => {
   try {

@@ -387,6 +387,24 @@ export default function Sidebar({ open = true, onClose }) {
                       Regulatory Reports
                     </Item>
                   )}
+                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"].includes(normalizeRole(user.role)) && (
+                    <Item to="/system-admin/compliance-center" icon="security" onSelect={onClose}>
+                      Compliance Center
+                    </Item>
+                  )}
+                  {["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role)) && (
+                    <Item
+                      to={
+                        ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(normalizeRole(user.role))
+                          ? "/hospital-admin/revenue-intelligence"
+                          : "/system-admin/revenue-intelligence"
+                      }
+                      icon="payroll"
+                      onSelect={onClose}
+                    >
+                      Revenue Intelligence
+                    </Item>
+                  )}
                   {normalizedRole === "DEVELOPER" && (
                     <Item to="/developer" icon="settings" onSelect={onClose}>
                       Developer Console
@@ -630,6 +648,7 @@ export default function Sidebar({ open = true, onClose }) {
                   <Item to="/patient/appointments" icon="appointments" onSelect={onClose}>My Appointments</Item>
                   <Item to="/patient/medical-records" icon="reports" onSelect={onClose}>Medical Records</Item>
                   <Item to="/patient/family-records" icon="staff" onSelect={onClose}>Family Records</Item>
+                  <Item to="/patient/family-timeline" icon="analytics" onSelect={onClose}>Family Timeline</Item>
                   <Item to="/patient/prescriptions" icon="pharmacy" onSelect={onClose}>Prescriptions</Item>
                   <Item to="/patient/lab-results" icon="lab" onSelect={onClose}>Lab Results</Item>
                   <Item to="/patient/billing" icon="payroll" onSelect={onClose}>Billing</Item>

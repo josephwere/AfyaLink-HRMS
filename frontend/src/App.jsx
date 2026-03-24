@@ -1,5 +1,5 @@
 import "./theme-d.css";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "./utils/auth";
@@ -8,6 +8,8 @@ import SocketProvider from "./utils/socket";
 import { redirectByRole } from "./utils/redirectByRole";
 import { useSystemSettings } from "./utils/systemSettings.jsx";
 import { applyAccessibilityPrefs, loadAccessibilityPrefs } from "./utils/accessibilityPrefs";
+import { prefetchRoutesForRole } from "./utils/routePrefetch";
+import { PatientLanguageProvider } from "./utils/patientLanguage.jsx";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -22,178 +24,226 @@ import { pushOfflineClientMetrics } from "./services/offlineOpsApi";
 /* =======================
    PUBLIC / AUTH
 ======================= */
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import VerifyEmail from "./pages/VerifyEmail";
-import VerifySuccess from "./pages/VerifySuccess";
-import Unauthorized from "./pages/Unauthorized";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import CareersLanding from "./pages/CareersLanding";
-import TermsOfService from "./pages/Legal/TermsOfService";
-import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
-import TwoFactor from "./pages/TwoFactor";
-import StepUp from "./pages/StepUp";
-import GuestDashboard from "./pages/GuestDashboard";
-import Profile from "./pages/Profile";
-import Analytics from "./pages/Analytics/Index";
-import Reports from "./pages/Reports/Index";
-import Inventory from "./pages/Inventory/Index";
-import PaymentsPage from "./pages/Payments/PaymentsPage";
-import PaymentsPageFull from "./pages/Payments/PaymentsFull";
-import MedicalAssistant from "./pages/AI/MedicalAssistant";
-import Triage from "./pages/AI/Triage";
-import VoiceDictation from "./pages/AI/VoiceDictation";
-import Chatbot from "./pages/AI/Chatbot";
-import NeuroEdgeExtract from "./pages/AI/NeuroEdgeExtract";
-import AIChatWS from "./components/AIChatWS";
-import DoctorAppointments from "./pages/Doctor/Appointments";
-import DoctorTransfers from "./pages/Doctor/Transfers";
-import MySchedule from "./pages/Doctor/MySchedule";
-import MyPatients from "./pages/Doctor/MyPatients";
-import OPDWorkspace from "./pages/Doctor/OPDWorkspace";
-import InpatientWard from "./pages/Doctor/InpatientWard";
-import SurgeryProcedures from "./pages/Doctor/SurgeryProcedures";
-import LabResults from "./pages/Doctor/LabResults";
-import Prescriptions from "./pages/Doctor/Prescriptions";
-import MedicalRecords from "./pages/Doctor/MedicalRecords";
-import Referrals from "./pages/Doctor/Referrals";
-import DoctorPerformance from "./pages/Doctor/Performance";
-import CMECertifications from "./pages/Doctor/CMECertifications";
-import DoctorLeaveRequests from "./pages/Doctor/LeaveRequests";
-import DoctorReportsNotes from "./pages/Doctor/ReportsNotes";
-import DoctorSettings from "./pages/Doctor/DoctorSettings";
-import LabTests from "./pages/LabTech/LabTests";
-import NurseMyShift from "./pages/Nurse/MyShift";
-import NurseAssignedPatients from "./pages/Nurse/AssignedPatients";
-import NurseMedicationAdministration from "./pages/Nurse/MedicationAdministration";
-import NurseIncidentReports from "./pages/Nurse/IncidentReports";
-import NurseVitalsEntry from "./pages/Nurse/VitalsEntry";
-import NurseLeaveRequests from "./pages/Nurse/LeaveRequests";
-import NursePerformance from "./pages/Nurse/Performance";
-import LabTestQueue from "./pages/LabTech/TestQueue";
-import LabEquipmentLogs from "./pages/LabTech/EquipmentLogs";
-import LabSampleTracking from "./pages/LabTech/SampleTracking";
-import LabQualityControl from "./pages/LabTech/QualityControl";
-import LabSafetyChecklist from "./pages/LabTech/SafetyChecklist";
-import LabReportsArchive from "./pages/LabTech/ReportsArchive";
-import PharmacyQueue from "./pages/Pharmacy/PrescriptionQueue";
-import PharmacyInventory from "./pages/Pharmacy/InventoryPage";
-import PharmacyControlled from "./pages/Pharmacy/ControlledDrugs";
-import PharmacyExpiry from "./pages/Pharmacy/ExpiryAlerts";
-import PharmacySuppliers from "./pages/Pharmacy/SupplierOrders";
-import PharmacyReports from "./pages/Pharmacy/ReportsPage";
-import PatientAppointments from "./pages/Patient/MyAppointments";
-import PatientMedicalRecords from "./pages/Patient/MedicalRecords";
-import PatientFamilyRecords from "./pages/Patient/FamilyRecords";
-import PatientPrescriptions from "./pages/Patient/Prescriptions";
-import PatientLabResults from "./pages/Patient/LabResults";
-import PatientBilling from "./pages/Patient/Billing";
-import PatientInsurance from "./pages/Patient/Insurance";
-import PatientTransfers from "./pages/Patient/Transfers";
-import PatientFeedback from "./pages/Patient/Feedback";
-import PatientHospitals from "./pages/Patient/Hospitals";
-import PatientAdsFeed from "./pages/Patient/AdsFeed";
-import RealTimeIntegrations from "./pages/Admin/RealTimeIntegrations";
-import CRDTPatientEditor from "./pages/Admin/CRDTPatientEditor";
-import NotificationsPage from "./pages/Admin/NotificationsPage";
-import PaymentSettings from "./pages/Admin/PaymentSettings";
-import AccessControl from "./pages/Admin/AccessControl";
-import PrintCenter from "./pages/Admin/PrintCenter";
-import OfflineOps from "./pages/Admin/OfflineOps";
-import LaunchReadiness from "./pages/Admin/LaunchReadiness";
-import SreIncidentOps from "./pages/Admin/SreIncidentOps";
-import SupportTickets from "./pages/Admin/SupportTickets";
-import PilotOnboardingOps from "./pages/Admin/PilotOnboardingOps";
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const VerifySuccess = lazy(() => import("./pages/VerifySuccess"));
+const Unauthorized = lazy(() => import("./pages/Unauthorized"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const CareersLanding = lazy(() => import("./pages/CareersLanding"));
+const TermsOfService = lazy(() => import("./pages/Legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/Legal/PrivacyPolicy"));
+const TwoFactor = lazy(() => import("./pages/TwoFactor"));
+const StepUp = lazy(() => import("./pages/StepUp"));
+const GuestDashboard = lazy(() => import("./pages/GuestDashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Analytics = lazy(() => import("./pages/Analytics/Index"));
+const Reports = lazy(() => import("./pages/Reports/Index"));
+const Inventory = lazy(() => import("./pages/Inventory/Index"));
+const PaymentsPage = lazy(() => import("./pages/Payments/PaymentsPage"));
+const PaymentsPageFull = lazy(() => import("./pages/Payments/PaymentsFull"));
+const MedicalAssistant = lazy(() => import("./pages/AI/MedicalAssistant"));
+const Triage = lazy(() => import("./pages/AI/Triage"));
+const VoiceDictation = lazy(() => import("./pages/AI/VoiceDictation"));
+const Chatbot = lazy(() => import("./pages/AI/Chatbot"));
+const NeuroEdgeExtract = lazy(() => import("./pages/AI/NeuroEdgeExtract"));
+const AIChatWS = lazy(() => import("./components/AIChatWS"));
+const DoctorAppointments = lazy(() => import("./pages/Doctor/Appointments"));
+const DoctorTransfers = lazy(() => import("./pages/Doctor/Transfers"));
+const MySchedule = lazy(() => import("./pages/Doctor/MySchedule"));
+const MyPatients = lazy(() => import("./pages/Doctor/MyPatients"));
+const OPDWorkspace = lazy(() => import("./pages/Doctor/OPDWorkspace"));
+const InpatientWard = lazy(() => import("./pages/Doctor/InpatientWard"));
+const SurgeryProcedures = lazy(() => import("./pages/Doctor/SurgeryProcedures"));
+const LabResults = lazy(() => import("./pages/Doctor/LabResults"));
+const Prescriptions = lazy(() => import("./pages/Doctor/Prescriptions"));
+const MedicalRecords = lazy(() => import("./pages/Doctor/MedicalRecords"));
+const Referrals = lazy(() => import("./pages/Doctor/Referrals"));
+const DoctorPerformance = lazy(() => import("./pages/Doctor/Performance"));
+const CMECertifications = lazy(() => import("./pages/Doctor/CMECertifications"));
+const DoctorLeaveRequests = lazy(() => import("./pages/Doctor/LeaveRequests"));
+const DoctorReportsNotes = lazy(() => import("./pages/Doctor/ReportsNotes"));
+const DoctorSettings = lazy(() => import("./pages/Doctor/DoctorSettings"));
+const LabTests = lazy(() => import("./pages/LabTech/LabTests"));
+const NurseMyShift = lazy(() => import("./pages/Nurse/MyShift"));
+const NurseAssignedPatients = lazy(() => import("./pages/Nurse/AssignedPatients"));
+const NurseMedicationAdministration = lazy(() => import("./pages/Nurse/MedicationAdministration"));
+const NurseIncidentReports = lazy(() => import("./pages/Nurse/IncidentReports"));
+const NurseVitalsEntry = lazy(() => import("./pages/Nurse/VitalsEntry"));
+const NurseLeaveRequests = lazy(() => import("./pages/Nurse/LeaveRequests"));
+const NursePerformance = lazy(() => import("./pages/Nurse/Performance"));
+const LabTestQueue = lazy(() => import("./pages/LabTech/TestQueue"));
+const LabEquipmentLogs = lazy(() => import("./pages/LabTech/EquipmentLogs"));
+const LabSampleTracking = lazy(() => import("./pages/LabTech/SampleTracking"));
+const LabQualityControl = lazy(() => import("./pages/LabTech/QualityControl"));
+const LabSafetyChecklist = lazy(() => import("./pages/LabTech/SafetyChecklist"));
+const LabReportsArchive = lazy(() => import("./pages/LabTech/ReportsArchive"));
+const PharmacyQueue = lazy(() => import("./pages/Pharmacy/PrescriptionQueue"));
+const PharmacyInventory = lazy(() => import("./pages/Pharmacy/InventoryPage"));
+const PharmacyControlled = lazy(() => import("./pages/Pharmacy/ControlledDrugs"));
+const PharmacyExpiry = lazy(() => import("./pages/Pharmacy/ExpiryAlerts"));
+const PharmacySuppliers = lazy(() => import("./pages/Pharmacy/SupplierOrders"));
+const PharmacyReports = lazy(() => import("./pages/Pharmacy/ReportsPage"));
+const PatientAppointments = lazy(() => import("./pages/Patient/MyAppointments"));
+const PatientMedicalRecords = lazy(() => import("./pages/Patient/MedicalRecords"));
+const PatientFamilyRecords = lazy(() => import("./pages/Patient/FamilyRecords"));
+const PatientFamilyTimeline = lazy(() => import("./pages/Patient/FamilyTimeline"));
+const PatientPrescriptions = lazy(() => import("./pages/Patient/Prescriptions"));
+const PatientLabResults = lazy(() => import("./pages/Patient/LabResults"));
+const PatientBilling = lazy(() => import("./pages/Patient/Billing"));
+const PatientInsurance = lazy(() => import("./pages/Patient/Insurance"));
+const PatientTransfers = lazy(() => import("./pages/Patient/Transfers"));
+const PatientFeedback = lazy(() => import("./pages/Patient/Feedback"));
+const PatientHospitals = lazy(() => import("./pages/Patient/Hospitals"));
+const PatientAdsFeed = lazy(() => import("./pages/Patient/AdsFeed"));
+const RealTimeIntegrations = lazy(() => import("./pages/Admin/RealTimeIntegrations"));
+const CRDTPatientEditor = lazy(() => import("./pages/Admin/CRDTPatientEditor"));
+const NotificationsPage = lazy(() => import("./pages/Admin/NotificationsPage"));
+const PaymentSettings = lazy(() => import("./pages/Admin/PaymentSettings"));
+const AccessControl = lazy(() => import("./pages/Admin/AccessControl"));
+const PrintCenter = lazy(() => import("./pages/Admin/PrintCenter"));
+const OfflineOps = lazy(() => import("./pages/Admin/OfflineOps"));
+const LaunchReadiness = lazy(() => import("./pages/Admin/LaunchReadiness"));
+const SreIncidentOps = lazy(() => import("./pages/Admin/SreIncidentOps"));
+const SupportTickets = lazy(() => import("./pages/Admin/SupportTickets"));
+const PilotOnboardingOps = lazy(() => import("./pages/Admin/PilotOnboardingOps"));
 
 /* =======================
    DASHBOARDS
 ======================= */
-import DoctorDashboard from "./pages/Doctor/Dashboard";
-import PatientDashboard from "./pages/Patient/Dashboard";
-import NurseDashboard from "./pages/Nurse/Dashboard";
-import LabTechDashboard from "./pages/LabTech/Dashboard";
-import PharmacyDashboard from "./pages/Pharmacy/Index";
-import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
-import SuperAdminHospitals from "./pages/SuperAdmin/Hospitals";
-import SuperAdminSystemSettings from "./pages/SuperAdmin/SystemSettings";
-import SuperAdminPharmacies from "./pages/SuperAdmin/Pharmacies";
-import HospitalAdminDashboard from "./pages/HospitalAdmin/Dashboard";
-import HospitalAdminRegisterStaff from "./pages/HospitalAdmin/RegisterStaff";
-import HospitalAdminApprovals from "./pages/HospitalAdmin/Approvals";
-import HospitalAdminStaffManagement from "./pages/HospitalAdmin/StaffManagement";
-import HospitalAdminCommerceConfig from "./pages/HospitalAdmin/CommerceConfig";
-import HospitalAdminFinancials from "./pages/HospitalAdmin/Financials";
-import HospitalAdminAppointments from "./pages/HospitalAdmin/Appointments";
-import HospitalAdminConsultationMonitor from "./pages/HospitalAdmin/ConsultationMonitor";
-import HospitalAdminEscalationQueue from "./pages/HospitalAdmin/EscalationQueue";
-import HospitalAdminAppointmentAnalytics from "./pages/HospitalAdmin/AppointmentAnalytics";
-import HospitalAdminRecruitmentAds from "./pages/HospitalAdmin/RecruitmentAds";
-import HospitalCustomization from "./pages/HospitalAdmin/Customization";
-import HospitalAdminMachineConnectivity from "./pages/HospitalAdmin/MachineConnectivity";
-import HospitalAdminMachineAlerts from "./pages/HospitalAdmin/MachineAlerts";
-import HospitalAdminPharmacyReferrals from "./pages/HospitalAdmin/PharmacyReferrals";
-import HospitalAdminStaffTransfers from "./pages/HospitalAdmin/StaffTransfers";
-import HospitalAdminTransferCommandCenter from "./pages/HospitalAdmin/TransferCommandCenter";
-import ClaimsDashboard from "./pages/HospitalAdmin/ClaimsDashboard";
-import SecurityOfficerDashboard from "./pages/Security/OfficerDashboard";
-import SecurityAdminDashboard from "./pages/Security/AdminDashboard";
-import StaffDashboard from "./pages/Staff/Dashboard";
-import RadiologistDashboard from "./pages/Radiologist/Dashboard";
-import TherapistDashboard from "./pages/Therapist/Dashboard";
-import ReceptionistDashboard from "./pages/Receptionist/Dashboard";
-import ReceptionistBookingDesk from "./pages/Receptionist/BookingDesk";
-import SurgeonDashboard from "./pages/Surgeon/Dashboard";
-import HRManagerDashboard from "./pages/HRManager/Dashboard";
-import PayrollOfficerDashboard from "./pages/PayrollOfficer/Dashboard";
-import DeveloperDashboard from "./pages/Developer/Dashboard";
-import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
-import AbacPolicies from "./pages/SystemAdmin/AbacPolicies";
-import MappingStudio from "./pages/SystemAdmin/MappingStudio";
-import NlpAnalytics from "./pages/SystemAdmin/NlpAnalytics";
-import RegulatoryReports from "./pages/SystemAdmin/RegulatoryReports";
-import ClinicalIntelligence from "./pages/SystemAdmin/ClinicalIntelligence";
-import SystemMigrations from "./pages/SystemAdmin/Migrations";
-import ConnectorSdk from "./pages/SystemAdmin/ConnectorSdk";
-import IntegrationHub from "./pages/SystemAdmin/IntegrationHub";
-import IntegrationControlPlane from "./pages/SystemAdmin/IntegrationControlPlane";
-import CountyCommandCenter from "./pages/SystemAdmin/CountyCommandCenter";
-import PharmacyAccessAudit from "./pages/SystemAdmin/PharmacyAccessAudit";
-import GovernmentHospitalRegistryPage from "./pages/SystemAdmin/GovernmentHospitalRegistry";
-import PatientIdentityRegistryPage from "./pages/SystemAdmin/PatientIdentityRegistry";
-import ClaimRules from "./pages/SystemAdmin/ClaimRules";
-import HospitalVerificationReview from "./pages/SystemAdmin/HospitalVerificationReview";
-import FraudGuard from "./pages/SystemAdmin/FraudGuard";
-import GovernmentClaimsDashboard from "./pages/SystemAdmin/GovernmentClaimsDashboard";
-import UnifiedAssistantDashboard from "./pages/SystemAdmin/UnifiedAssistantDashboard";
-import CommunicationCenter from "./pages/Communication/Center";
-import MyRequests from "./pages/Workforce/MyRequests";
-import QueueReplay from "./pages/Developer/QueueReplay";
-import WebhookRetry from "./pages/Developer/WebhookRetry";
-import DecisionCockpit from "./pages/Developer/DecisionCockpit";
-import ProvenanceVerify from "./pages/Developer/ProvenanceVerify";
-import AIExtractionHistory from "./pages/Developer/AIExtractionHistory";
-import CommunityHealthWorkerDashboard from "./pages/CommunityHealthWorker/Dashboard";
-import TriageOpsDashboard from "./pages/Operations/TriageOpsDashboard";
-import IcuOpsDashboard from "./pages/Operations/IcuOpsDashboard";
-import TheatreOpsDashboard from "./pages/Operations/TheatreOpsDashboard";
-import ImagingOpsDashboard from "./pages/Operations/ImagingOpsDashboard";
-import EmergencyCommandDashboard from "./pages/Operations/EmergencyCommandDashboard";
-import NeonatalIcuDashboard from "./pages/Operations/NeonatalIcuDashboard";
-import DialysisOpsDashboard from "./pages/Operations/DialysisOpsDashboard";
-import OncologyDaycareDashboard from "./pages/Operations/OncologyDaycareDashboard";
+const DoctorDashboard = lazy(() => import("./pages/Doctor/Dashboard"));
+const PatientDashboard = lazy(() => import("./pages/Patient/Dashboard"));
+const NurseDashboard = lazy(() => import("./pages/Nurse/Dashboard"));
+const LabTechDashboard = lazy(() => import("./pages/LabTech/Dashboard"));
+const PharmacyDashboard = lazy(() => import("./pages/Pharmacy/Index"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdmin/Dashboard"));
+const SuperAdminHospitals = lazy(() => import("./pages/SuperAdmin/Hospitals"));
+const SuperAdminSystemSettings = lazy(() => import("./pages/SuperAdmin/SystemSettings"));
+const SuperAdminPharmacies = lazy(() => import("./pages/SuperAdmin/Pharmacies"));
+const HospitalAdminDashboard = lazy(() => import("./pages/HospitalAdmin/Dashboard"));
+const HospitalAdminRegisterStaff = lazy(() => import("./pages/HospitalAdmin/RegisterStaff"));
+const HospitalAdminApprovals = lazy(() => import("./pages/HospitalAdmin/Approvals"));
+const HospitalAdminStaffManagement = lazy(() => import("./pages/HospitalAdmin/StaffManagement"));
+const HospitalAdminCommerceConfig = lazy(() => import("./pages/HospitalAdmin/CommerceConfig"));
+const HospitalAdminFinancials = lazy(() => import("./pages/HospitalAdmin/Financials"));
+const HospitalAdminAppointments = lazy(() => import("./pages/HospitalAdmin/Appointments"));
+const HospitalAdminConsultationMonitor = lazy(() => import("./pages/HospitalAdmin/ConsultationMonitor"));
+const HospitalAdminEscalationQueue = lazy(() => import("./pages/HospitalAdmin/EscalationQueue"));
+const HospitalAdminAppointmentAnalytics = lazy(() => import("./pages/HospitalAdmin/AppointmentAnalytics"));
+const HospitalAdminRecruitmentAds = lazy(() => import("./pages/HospitalAdmin/RecruitmentAds"));
+const HospitalCustomization = lazy(() => import("./pages/HospitalAdmin/Customization"));
+const HospitalAdminMachineConnectivity = lazy(() => import("./pages/HospitalAdmin/MachineConnectivity"));
+const HospitalAdminMachineAlerts = lazy(() => import("./pages/HospitalAdmin/MachineAlerts"));
+const HospitalAdminPharmacyReferrals = lazy(() => import("./pages/HospitalAdmin/PharmacyReferrals"));
+const HospitalAdminStaffTransfers = lazy(() => import("./pages/HospitalAdmin/StaffTransfers"));
+const HospitalAdminTransferCommandCenter = lazy(() => import("./pages/HospitalAdmin/TransferCommandCenter"));
+const ClaimsDashboard = lazy(() => import("./pages/HospitalAdmin/ClaimsDashboard"));
+const SecurityOfficerDashboard = lazy(() => import("./pages/Security/OfficerDashboard"));
+const SecurityAdminDashboard = lazy(() => import("./pages/Security/AdminDashboard"));
+const StaffDashboard = lazy(() => import("./pages/Staff/Dashboard"));
+const RadiologistDashboard = lazy(() => import("./pages/Radiologist/Dashboard"));
+const TherapistDashboard = lazy(() => import("./pages/Therapist/Dashboard"));
+const ReceptionistDashboard = lazy(() => import("./pages/Receptionist/Dashboard"));
+const ReceptionistBookingDesk = lazy(() => import("./pages/Receptionist/BookingDesk"));
+const SurgeonDashboard = lazy(() => import("./pages/Surgeon/Dashboard"));
+const HRManagerDashboard = lazy(() => import("./pages/HRManager/Dashboard"));
+const PayrollOfficerDashboard = lazy(() => import("./pages/PayrollOfficer/Dashboard"));
+const DeveloperDashboard = lazy(() => import("./pages/Developer/Dashboard"));
+const SystemAdminDashboard = lazy(() => import("./pages/SystemAdmin/Dashboard"));
+const AbacPolicies = lazy(() => import("./pages/SystemAdmin/AbacPolicies"));
+const MappingStudio = lazy(() => import("./pages/SystemAdmin/MappingStudio"));
+const NlpAnalytics = lazy(() => import("./pages/SystemAdmin/NlpAnalytics"));
+const RegulatoryReports = lazy(() => import("./pages/SystemAdmin/RegulatoryReports"));
+const ComplianceCenter = lazy(() => import("./pages/SystemAdmin/ComplianceCenter"));
+const ClinicalIntelligence = lazy(() => import("./pages/SystemAdmin/ClinicalIntelligence"));
+const RevenueIntelligence = lazy(() => import("./pages/SystemAdmin/RevenueIntelligence"));
+const SystemMigrations = lazy(() => import("./pages/SystemAdmin/Migrations"));
+const ConnectorSdk = lazy(() => import("./pages/SystemAdmin/ConnectorSdk"));
+const IntegrationHub = lazy(() => import("./pages/SystemAdmin/IntegrationHub"));
+const IntegrationControlPlane = lazy(() => import("./pages/SystemAdmin/IntegrationControlPlane"));
+const CountyCommandCenter = lazy(() => import("./pages/SystemAdmin/CountyCommandCenter"));
+const PharmacyAccessAudit = lazy(() => import("./pages/SystemAdmin/PharmacyAccessAudit"));
+const GovernmentHospitalRegistryPage = lazy(() => import("./pages/SystemAdmin/GovernmentHospitalRegistry"));
+const PatientIdentityRegistryPage = lazy(() => import("./pages/SystemAdmin/PatientIdentityRegistry"));
+const ClaimRules = lazy(() => import("./pages/SystemAdmin/ClaimRules"));
+const HospitalVerificationReview = lazy(() => import("./pages/SystemAdmin/HospitalVerificationReview"));
+const FraudGuard = lazy(() => import("./pages/SystemAdmin/FraudGuard"));
+const GovernmentClaimsDashboard = lazy(() => import("./pages/SystemAdmin/GovernmentClaimsDashboard"));
+const UnifiedAssistantDashboard = lazy(() => import("./pages/SystemAdmin/UnifiedAssistantDashboard"));
+const CommunicationCenter = lazy(() => import("./pages/Communication/Center"));
+const MyRequests = lazy(() => import("./pages/Workforce/MyRequests"));
+const QueueReplay = lazy(() => import("./pages/Developer/QueueReplay"));
+const WebhookRetry = lazy(() => import("./pages/Developer/WebhookRetry"));
+const DecisionCockpit = lazy(() => import("./pages/Developer/DecisionCockpit"));
+const ProvenanceVerify = lazy(() => import("./pages/Developer/ProvenanceVerify"));
+const AIExtractionHistory = lazy(() => import("./pages/Developer/AIExtractionHistory"));
+const CommunityHealthWorkerDashboard = lazy(() => import("./pages/CommunityHealthWorker/Dashboard"));
+const TriageOpsDashboard = lazy(() => import("./pages/Operations/TriageOpsDashboard"));
+const IcuOpsDashboard = lazy(() => import("./pages/Operations/IcuOpsDashboard"));
+const TheatreOpsDashboard = lazy(() => import("./pages/Operations/TheatreOpsDashboard"));
+const ImagingOpsDashboard = lazy(() => import("./pages/Operations/ImagingOpsDashboard"));
+const EmergencyCommandDashboard = lazy(() => import("./pages/Operations/EmergencyCommandDashboard"));
+const NeonatalIcuDashboard = lazy(() => import("./pages/Operations/NeonatalIcuDashboard"));
+const DialysisOpsDashboard = lazy(() => import("./pages/Operations/DialysisOpsDashboard"));
+const OncologyDaycareDashboard = lazy(() => import("./pages/Operations/OncologyDaycareDashboard"));
 
 /* =======================
    ADMIN
 ======================= */
-import AdminDashboard from "./pages/Admin/Dashboard";
-import AuditLogs from "./pages/Admin/AuditLogs";
-import AIAutofillAudit from "./pages/Admin/AIAutofillAudit";
-import CreateAdmin from "./pages/Admin/CreateAdmin";
-import SuperAssistants from "./pages/Admin/SuperAssistants";
-import TrainingTracker from "./pages/Admin/TrainingTracker";
-import TrainingPlaybook from "./pages/Admin/TrainingPlaybook";
-import Beds from "./pages/Admin/Beds";
+const AdminDashboard = lazy(() => import("./pages/Admin/Dashboard"));
+const AuditLogs = lazy(() => import("./pages/Admin/AuditLogs"));
+const AIAutofillAudit = lazy(() => import("./pages/Admin/AIAutofillAudit"));
+const CreateAdmin = lazy(() => import("./pages/Admin/CreateAdmin"));
+const SuperAssistants = lazy(() => import("./pages/Admin/SuperAssistants"));
+const TrainingTracker = lazy(() => import("./pages/Admin/TrainingTracker"));
+const TrainingPlaybook = lazy(() => import("./pages/Admin/TrainingPlaybook"));
+const Beds = lazy(() => import("./pages/Admin/Beds"));
+
+function RouteLoadingFallback() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "32px 20px",
+        background:
+          "radial-gradient(circle at top, rgba(14,165,233,0.12), transparent 35%), linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%)",
+      }}
+    >
+      <div
+        style={{
+          width: "min(420px, 100%)",
+          padding: "28px 24px",
+          borderRadius: "24px",
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(148,163,184,0.18)",
+          boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
+          textAlign: "center",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            width: 56,
+            height: 56,
+            margin: "0 auto 18px",
+            borderRadius: "50%",
+            border: "4px solid rgba(14,165,233,0.18)",
+            borderTopColor: "#0ea5e9",
+            animation: "afyalinkSpin 0.9s linear infinite",
+          }}
+        />
+        <h2 style={{ margin: "0 0 8px", fontSize: "1.1rem", color: "#0f172a" }}>Loading your workspace</h2>
+        <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
+          We’re opening the next screen and only loading the code that page actually needs.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function RootEntry() {
   const { user, loading } = useAuth();
@@ -230,6 +280,14 @@ function PublicOnly({ children }) {
   return children;
 }
 
+function PatientSelfServiceRoute({ children }) {
+  return (
+    <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+      <PatientLanguageProvider>{children}</PatientLanguageProvider>
+    </RequireRole>
+  );
+}
+
 /* =====================================================
    APP LAYOUT (PROTECTED)
 ===================================================== */
@@ -261,6 +319,11 @@ function AppLayout() {
     if (!user) return;
     applyAccessibilityPrefs(loadAccessibilityPrefs(user));
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.role) return;
+    prefetchRoutesForRole(user.role);
+  }, [user?.role]);
 
   const roleDashboardEndpoint = (role) => {
     switch (role) {
@@ -701,6 +764,7 @@ export default function App() {
   return (
     <SocketProvider>
       <AppErrorBoundary>
+        <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
         {/* ============ PUBLIC ROUTES ============ */}
         <Route path="/" element={<RootEntry />} />
@@ -724,7 +788,14 @@ export default function App() {
         <Route path="/verify-success" element={<VerifySuccess />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/careers" element={<CareersLanding />} />
+        <Route
+          path="/careers"
+          element={
+            <PatientLanguageProvider>
+              <CareersLanding />
+            </PatientLanguageProvider>
+          }
+        />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/2fa" element={<TwoFactor />} />
@@ -746,9 +817,9 @@ export default function App() {
           <Route
             path="/patient"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientDashboard />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
@@ -762,89 +833,97 @@ export default function App() {
           <Route
             path="/patient/appointments"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientAppointments />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/medical-records"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientMedicalRecords />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/family-records"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientFamilyRecords />
-              </RequireRole>
+              </PatientSelfServiceRoute>
+            }
+          />
+          <Route
+            path="/patient/family-timeline"
+            element={
+              <PatientSelfServiceRoute>
+                <PatientFamilyTimeline />
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/prescriptions"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientPrescriptions />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/lab-results"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientLabResults />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/billing"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientBilling />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/insurance"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientInsurance />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/transfers"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientTransfers />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/hospitals"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientHospitals />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/feedback"
             element={
-              <RequireRole roles={["PATIENT", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientFeedback />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
           <Route
             path="/patient/ads"
             element={
-              <RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}>
+              <PatientSelfServiceRoute>
                 <PatientAdsFeed />
-              </RequireRole>
+              </PatientSelfServiceRoute>
             }
           />
 
@@ -1244,6 +1323,22 @@ export default function App() {
             }
           />
           <Route
+            path="/system-admin/compliance-center"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <ComplianceCenter />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/system-admin/revenue-intelligence"
+            element={
+              <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <RevenueIntelligence />
+              </RequireRole>
+            }
+          />
+          <Route
             path="/system-admin/clinical-intelligence"
             element={
               <RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "DOCTOR", "NURSE"]}>
@@ -1444,6 +1539,14 @@ export default function App() {
             element={
               <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN"]}>
                 <ClaimsDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/hospital-admin/revenue-intelligence"
+            element={
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}>
+                <RevenueIntelligence />
               </RequireRole>
             }
           />
@@ -2019,6 +2122,7 @@ export default function App() {
         {/* ============ 404 ============ */}
         <Route path="*" element={<div>404 — Page not found</div>} />
         </Routes>
+        </Suspense>
         <FloatingAI />
       </AppErrorBoundary>
     </SocketProvider>

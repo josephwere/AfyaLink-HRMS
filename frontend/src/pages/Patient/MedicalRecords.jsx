@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientMedicalRecords() {
   const navigate = useNavigate();
+  const { t } = usePatientLanguage();
   const [encounters, setEncounters] = useState([]);
   const [msg, setMsg] = useState("");
 
@@ -20,21 +23,29 @@ export default function PatientMedicalRecords() {
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
         <div>
-          <h2>Medical Records</h2>
-          <p className="muted">Your visit history, diagnosis trail, and encounter summaries.</p>
+          <h2>{t("medicalRecordsTitle", "Medical Records")}</h2>
+          <p className="muted">{t("medicalRecordsSubtitle", "Your visit history, diagnosis trail, and encounter summaries.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => window.print()}>
-            Download Record
+            {t("downloadRecord", "Download Record")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-records")}>
-            Family Records
+            {t("familyRecords", "Family Records")}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-timeline")}>
+            {t("familyTimeline", "Family Timeline")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>
-            Open Reports
+            {t("reports", "Reports")}
           </button>
         </div>
       </div>
+
+      <PatientLanguageBar
+        title={t("medicalRecordsTitle", "Medical Records")}
+        subtitle={t("medicalRecordsSubtitle", "Your visit history, diagnosis trail, and encounter summaries.")}
+      />
 
       {msg ? (
         <section className="section">
@@ -46,10 +57,10 @@ export default function PatientMedicalRecords() {
         <div className="card">
           <div className="card-header-actions">
             <div>
-              <h3>Encounter Timeline</h3>
-              <p className="muted">Real encounter history across active and closed visits.</p>
+              <h3>{t("encounterTimeline", "Encounter Timeline")}</h3>
+              <p className="muted">{t("encounterTimelineSubtitle", "Real encounter history across active and closed visits.")}</p>
             </div>
-            <div className="action-pill">{encounters.length} visits</div>
+            <div className="action-pill">{encounters.length} {t("visits", "visits")}</div>
           </div>
 
           {encounters.length ? (
@@ -87,7 +98,7 @@ export default function PatientMedicalRecords() {
               ))}
             </div>
           ) : (
-            <div className="muted">No encounter history yet.</div>
+            <div className="muted">{t("noEncounterHistory", "No encounter history yet.")}</div>
           )}
         </div>
       </section>

@@ -1,6 +1,10 @@
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 import { getIO } from "../utils/socket.js";
 import { getEmailProviderInfo } from "../utils/mailer.js";
+import { recordSettingsRevision } from "../services/settingsRevisionService.js";
+import { persistSystemSettingsAssets } from "../services/settingsAssetService.js";
+import { getObjectStorageStatus } from "../services/objectStorageService.js";
+import SettingsRevision from "../models/SettingsRevision.js";
 
 function splitCsv(value) {
   return String(value || "")
@@ -45,13 +49,35 @@ export const getPublicBranding = async (_req, res) => {
           "FREE",
       },
     },
+    patientSelfService: {
+      defaultLanguage: doc?.patientSelfService?.defaultLanguage || "en",
+      enabledLanguages: Array.isArray(doc?.patientSelfService?.enabledLanguages)
+        ? doc.patientSelfService.enabledLanguages
+        : ["en", "sw", "fr"],
+      allowLanguageSwitch: doc?.patientSelfService?.allowLanguageSwitch !== false,
+      voiceFirstIntake: doc?.patientSelfService?.voiceFirstIntake === true,
+      whatsappSupport: doc?.patientSelfService?.whatsappSupport === true,
+      helpLine: doc?.patientSelfService?.helpLine || "",
+    },
     updatedAt: doc?.updatedAt || null,
   });
 };
 
 export const updateSystemSettings = async (req, res) => {
-  const { branding, ai, monetization, communications, clinical, governmentApis } = req.body || {};
+  let {
+    branding,
+    ai,
+    monetization,
+    communications,
+    clinical,
+    governmentApis,
+    revenueCycle,
+    patientSelfService,
+    compliance,
+  } = req.body || {};
   const doc = await getSystemSettingsDoc();
+
+  ({ branding, ai } = await persistSystemSettingsAssets({ req, branding, ai }));
 
   if (branding) {
     if (branding.sidebarIcons) {
@@ -112,6 +138,33 @@ export const updateSystemSettings = async (req, res) => {
       },
     };
   }
+  if (revenueCycle) {
+    doc.revenueCycle = {
+      ...doc.revenueCycle,
+      ...revenueCycle,
+    };
+  }
+  if (patientSelfService) {
+    doc.patientSelfService = {
+      ...doc.patientSelfService,
+      ...patientSelfService,
+      enabledLanguages: Array.isArray(patientSelfService.enabledLanguages)
+        ? [...new Set(patientSelfService.enabledLanguages.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean))]
+        : doc.patientSelfService?.enabledLanguages || ["en", "sw", "fr"],
+    };
+  }
+  if (compliance) {
+    doc.compliance = {
+      ...doc.compliance,
+      ...compliance,
+      privacyTemplates: {
+        ...(doc.compliance?.privacyTemplates?.toObject?.() ||
+          doc.compliance?.privacyTemplates ||
+          {}),
+        ...(compliance.privacyTemplates || {}),
+      },
+    };
+  }
   if (governmentApis) {
     const existing = doc.governmentApis || {};
     doc.governmentApis = {
@@ -130,6 +183,19 @@ export const updateSystemSettings = async (req, res) => {
   await doc.save();
 
   try {
+    await recordSettingsRevision({
+      scope: "SYSTEM",
+      scopeId: doc.key || "GLOBAL",
+      actorId: req.user?.id || req.user?._id || null,
+      actorRole: req.user?.role || "",
+      source: "system-settings",
+      snapshot: doc.toObject({ flattenMaps: true }),
+    });
+  } catch {
+    // Revision history should not block the main settings save path.
+  }
+
+  try {
     const io = getIO();
     io.emit("system-settings:updated", {
       updatedAt: doc.updatedAt || new Date().toISOString(),
@@ -138,6 +204,9 @@ export const updateSystemSettings = async (req, res) => {
       monetizationChanged: Boolean(monetization),
       communicationsChanged: Boolean(communications),
       clinicalChanged: Boolean(clinical),
+      revenueCycleChanged: Boolean(revenueCycle),
+      patientSelfServiceChanged: Boolean(patientSelfService),
+      complianceChanged: Boolean(compliance),
       governmentApisChanged: Boolean(governmentApis),
       actorId: req.user?.id || null,
       actorRole: req.user?.role || null,
@@ -148,6 +217,112 @@ export const updateSystemSettings = async (req, res) => {
 
   res.set("Cache-Control", "no-store");
   res.json({ success: true, settings: doc });
+};
+
+function summarizeSystemSettingsRevision(revision) {
+  const snapshot = revision?.snapshot || {};
+  return {
+    _id: revision?._id,
+    createdAt: revision?.createdAt || null,
+    actorRole: revision?.actorRole || "",
+    source: revision?.source || "",
+    sections: [
+      snapshot.branding ? "branding" : null,
+      snapshot.ai ? "ai" : null,
+      snapshot.communications ? "communications" : null,
+      snapshot.clinical ? "clinical" : null,
+      snapshot.revenueCycle ? "revenueCycle" : null,
+      snapshot.patientSelfService ? "patientSelfService" : null,
+      snapshot.compliance ? "compliance" : null,
+      snapshot.governmentApis ? "governmentApis" : null,
+      snapshot.monetization ? "monetization" : null,
+    ].filter(Boolean),
+  };
+}
+
+export const getSystemSettingsHistory = async (_req, res) => {
+  const revisions = await SettingsRevision.find({
+    scope: "SYSTEM",
+    scopeId: "GLOBAL",
+  })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+
+  res.set("Cache-Control", "no-store");
+  res.json({
+    items: revisions.map(summarizeSystemSettingsRevision),
+  });
+};
+
+export const restoreSystemSettingsRevision = async (req, res) => {
+  const revision = await SettingsRevision.findOne({
+    _id: req.params.revisionId,
+    scope: "SYSTEM",
+    scopeId: "GLOBAL",
+  }).lean();
+
+  if (!revision?.snapshot) {
+    return res.status(404).json({ message: "Settings revision not found" });
+  }
+
+  let snapshot = { ...revision.snapshot };
+  const persistedAssets = await persistSystemSettingsAssets({
+    req,
+    branding: snapshot.branding,
+    ai: snapshot.ai,
+  });
+  snapshot = {
+    ...snapshot,
+    branding: persistedAssets.branding,
+    ai: persistedAssets.ai,
+  };
+
+  const doc = await getSystemSettingsDoc();
+  doc.branding = snapshot.branding || {};
+  doc.ai = snapshot.ai || {};
+  doc.communications = snapshot.communications || {};
+  doc.clinical = snapshot.clinical || {};
+  doc.revenueCycle = snapshot.revenueCycle || {};
+  doc.patientSelfService = snapshot.patientSelfService || {};
+  doc.compliance = snapshot.compliance || {};
+  doc.governmentApis = snapshot.governmentApis || {};
+  doc.monetization = snapshot.monetization || {};
+  doc.migrations = snapshot.migrations || {};
+  await doc.save();
+
+  try {
+    await recordSettingsRevision({
+      scope: "SYSTEM",
+      scopeId: doc.key || "GLOBAL",
+      actorId: req.user?.id || req.user?._id || null,
+      actorRole: req.user?.role || "",
+      source: `system-settings-restore:${req.params.revisionId}`,
+      snapshot: doc.toObject({ flattenMaps: true }),
+    });
+  } catch {
+    // Revision history should not block restore.
+  }
+
+  try {
+    const io = getIO();
+    io.emit("system-settings:updated", {
+      updatedAt: doc.updatedAt || new Date().toISOString(),
+      restoreRevisionId: req.params.revisionId,
+      actorId: req.user?.id || null,
+      actorRole: req.user?.role || null,
+      restored: true,
+    });
+  } catch {
+    // ignore socket issues
+  }
+
+  res.set("Cache-Control", "no-store");
+  return res.json({
+    success: true,
+    restoredRevisionId: req.params.revisionId,
+    settings: doc,
+  });
 };
 
 export const getEmailDeliveryHealth = async (_req, res) => {
@@ -212,6 +387,29 @@ export const getEmailDeliveryHealth = async (_req, res) => {
       configured: sendGridConfigured,
     },
     recommendations: missing,
+    checkedAt: new Date().toISOString(),
+  });
+};
+
+export const getAssetDeliveryHealth = async (_req, res) => {
+  const storage = getObjectStorageStatus();
+
+  res.set("Cache-Control", "no-store");
+  res.json({
+    status: storage.configured ? "healthy" : "warning",
+    provider: storage.provider,
+    configured: storage.configured,
+    publicBaseUrl: storage.publicBaseUrl || "",
+    recommendations:
+      storage.provider === "local"
+        ? [
+            "Local asset storage is active. Configure Cloudinary for globally cached CDN delivery and cross-redeploy durability.",
+          ]
+        : storage.configured
+          ? []
+          : [
+              "Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to enable CDN-backed branding delivery.",
+            ],
     checkedAt: new Date().toISOString(),
   });
 };

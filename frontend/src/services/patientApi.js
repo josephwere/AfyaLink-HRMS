@@ -32,3 +32,10 @@ export const verifyFamilyAnchorApprovalOtp = (payload) =>
     method: "POST",
     body: payload,
   });
+
+export const getMyFamilyTimeline = (options = {}) => {
+  const params = new URLSearchParams();
+  if (options.limit) params.set("limit", String(options.limit));
+  const query = params.toString();
+  return apiFetch(`/api/profile/family/timeline${query ? `?${query}` : ""}`);
+};

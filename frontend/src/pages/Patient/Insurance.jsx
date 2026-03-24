@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientInsurance() {
   const navigate = useNavigate();
+  const { t } = usePatientLanguage();
   const [profile, setProfile] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [q, setQ] = useState("");
@@ -34,75 +37,86 @@ export default function PatientInsurance() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Insurance & Hospital Services</h2>
+          <h2>{t("insuranceTitle", "Insurance & Hospital Services")}</h2>
           <p className="muted">
-            View your insurance balance/profile and find hospitals with supported insurance and payment channels.
+            {t(
+              "insuranceSubtitle",
+              "View your insurance balance/profile and find hospitals with supported insurance and payment channels."
+            )}
           </p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-secondary" onClick={() => navigate("/patient/hospitals")}>
-            Browse Hospitals
+            {t("browseHospitals", "Browse Hospitals")}
           </button>
           <button type="button" className="btn-primary" onClick={() => navigate("/patient/appointments")}>
-            Book Appointment
+            {t("bookAppointment", "Book Appointment")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/payments")}>
-            Pay Bills
+            {t("payBills", "Pay Bills")}
           </button>
         </div>
       </div>
 
+      <PatientLanguageBar
+        title={t("insuranceTitle", "Insurance & Hospital Services")}
+        subtitle={t(
+          "insuranceSubtitle",
+          "View your insurance balance/profile and find hospitals with supported insurance and payment channels."
+        )}
+      />
+
       <section className="section">
-        <h3>My Insurance Profile</h3>
+        <h3>{t("myInsuranceProfile", "My Insurance Profile")}</h3>
         <div className="card premium-card">
           <div className="grid info-grid">
             <div>
-              <strong>Provider</strong>
+              <strong>{t("provider", "Provider")}</strong>
               <p className="muted">
                 {profile?.insuranceProfile?.providerName || profile?.insuranceProfile?.providerCode || "Not set"}
               </p>
             </div>
             <div>
-              <strong>Member Number</strong>
+              <strong>{t("memberNumber", "Member Number")}</strong>
               <p className="muted">{profile?.insuranceProfile?.memberNumber || "Not set"}</p>
             </div>
             <div>
-              <strong>Balance</strong>
+              <strong>{t("balance", "Balance")}</strong>
               <p className="muted">
                 {(profile?.insuranceProfile?.currency || "KES")} {Number(profile?.insuranceProfile?.balance || 0).toLocaleString()}
               </p>
             </div>
             <div>
-              <strong>Status</strong>
+              <strong>{t("status", "Status")}</strong>
               <p className="muted">{profile?.insuranceProfile?.status || "PENDING"}</p>
             </div>
           </div>
           <button type="button" className="btn-secondary" onClick={() => navigate("/profile")}>
-            Update Insurance Profile
+            {t("updateInsuranceProfile", "Update Insurance Profile")}
           </button>
         </div>
       </section>
 
       <section className="section">
-        <h3>Hospitals on AfyaLink</h3>
+        <h3>{t("hospitalsOnAfyaLink", "Hospitals on AfyaLink")}</h3>
         <div className="card premium-card">
-          <label>Search hospital</label>
+          <label>{t("searchHospital", "Search hospital")}</label>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Hospital name, code or address"
+            placeholder={t("hospitalSearchPlaceholder", "Hospital name, code or address")}
           />
           {loading ? (
-            <p className="muted">Loading hospitals...</p>
+            <p className="muted">{t("loadingHospitals", "Loading hospitals...")}</p>
           ) : (
             <div className="table-wrap">
               <table className="table premium-table">
                 <thead>
                   <tr>
-                    <th>Hospital</th>
-                    <th>Insurance</th>
-                    <th>Payment Channels</th>
-                    <th>Actions</th>
+                    <th>{t("searchHospital", "Hospital")}</th>
+                    <th>{t("insurance", "Insurance")}</th>
+                    <th>{t("paymentChannels", "Payment Channels")}</th>
+                    <th>{t("actions", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -125,10 +139,10 @@ export default function PatientInsurance() {
                       <td>
                         <div className="row-actions">
                           <button type="button" className="btn-secondary" onClick={() => navigate(`/patient/appointments?hospitalId=${h._id}`)}>
-                            Book
+                            {t("book", "Book")}
                           </button>
                           <button type="button" className="btn-secondary" onClick={() => navigate(`/payments?hospitalId=${h._id}`)}>
-                            Pay Bill
+                            {t("payBill", "Pay Bill")}
                           </button>
                         </div>
                       </td>
@@ -136,7 +150,7 @@ export default function PatientInsurance() {
                   ))}
                   {hospitals.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="muted">No hospitals found.</td>
+                      <td colSpan={4} className="muted">{t("noHospitalsFound", "No hospitals found.")}</td>
                     </tr>
                   )}
                 </tbody>

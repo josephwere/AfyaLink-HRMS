@@ -1,10 +1,11 @@
 .verify-page {
-  min-height: 100vh;
+  min-height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f4f6f8;
-  padding: 16px;
+  background: transparent;
+  padding: 12px 0;
 }
 
 .card {
@@ -15,6 +16,10 @@
   max-width: 380px;
   width: 100%;
   box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.verify-card {
+  max-width: 420px;
 }
 
 .success {

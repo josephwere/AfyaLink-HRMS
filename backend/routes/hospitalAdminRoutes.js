@@ -1,6 +1,8 @@
 import express from "express";
 import {
   getHospitalConfig,
+  getHospitalCustomizationHistory,
+  restoreHospitalCustomizationRevision,
   updateHospitalFeatures,
   updateHospitalCommerceConfig,
   updateHospitalCustomization,
@@ -39,6 +41,20 @@ router.put(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
   updateHospitalCustomization
+);
+
+router.get(
+  "/customization/history",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  getHospitalCustomizationHistory
+);
+
+router.post(
+  "/customization/restore/:revisionId",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
+  restoreHospitalCustomizationRevision
 );
 
 export default router;

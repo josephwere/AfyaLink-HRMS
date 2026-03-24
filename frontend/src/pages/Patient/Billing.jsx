@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import { listMyReports } from "../../services/reportsApi";
 import { StatCard } from "../../components/Cards";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function PatientBilling() {
   const navigate = useNavigate();
+  const { t } = usePatientLanguage();
   const [encounters, setEncounters] = useState([]);
   const [reports, setReports] = useState([]);
   const [msg, setMsg] = useState("");
@@ -39,26 +42,40 @@ export default function PatientBilling() {
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
         <div>
-          <h2>Billing & Care Documents</h2>
+          <h2>{t("billingDocumentsTitle", "Billing & Care Documents")}</h2>
           <p className="muted">
-            View invoice summaries and clinical reports from your own profile and any linked minors you monitor.
+            {t(
+              "billingDocumentsSubtitle",
+              "View invoice summaries and clinical reports from your own profile and any linked minors you monitor."
+            )}
           </p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/payments")}>
-            Open Payments
+            {t("openPayments", "Open Payments")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-records")}>
-            Family Records
+            {t("familyRecords", "Family Records")}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-timeline")}>
+            {t("familyTimeline", "Family Timeline")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>
-            Open Reports
+            {t("reports", "Reports")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/profile")}>
-            Manage Linked Children
+            {t("manageLinkedChildren", "Manage Linked Children")}
           </button>
         </div>
       </div>
+
+      <PatientLanguageBar
+        title={t("billingDocumentsTitle", "Billing & Care Documents")}
+        subtitle={t(
+          "billingDocumentsSubtitle",
+          "View invoice summaries and clinical reports from your own profile and any linked minors you monitor."
+        )}
+      />
 
       {msg ? (
         <section className="section">
@@ -79,8 +96,13 @@ export default function PatientBilling() {
         <div className="card">
           <div className="card-header-actions">
             <div>
-              <h3>Invoice Summary</h3>
-              <p className="muted">Encounter-linked invoice trail for your profile and any linked child records.</p>
+              <h3>{t("invoiceSummary", "Invoice Summary")}</h3>
+              <p className="muted">
+                {t(
+                  "encounterInvoiceTrail",
+                  "Encounter-linked invoice trail for your profile and any linked child records."
+                )}
+              </p>
             </div>
             <div className="action-pill">{outstandingInvoices.length} outstanding</div>
           </div>
@@ -98,10 +120,10 @@ export default function PatientBilling() {
                   </p>
                   <div className="doctor-actions-row" style={{ marginTop: 10 }}>
                     <button type="button" className="btn-secondary" onClick={() => navigate("/payments")}>
-                      Pay / Checkout
+                      {t("payCheckout", "Pay / Checkout")}
                     </button>
                     <button type="button" className="btn-secondary" onClick={() => navigate("/patient/medical-records")}>
-                      Open Encounter
+                      {t("openEncounter", "Open Encounter")}
                     </button>
                   </div>
                 </div>
@@ -119,8 +141,13 @@ export default function PatientBilling() {
         <div className="card">
           <div className="card-header-actions">
             <div>
-              <h3>Clinical Reports</h3>
-              <p className="muted">Medical and continuity reports available to your account, including linked minors.</p>
+              <h3>{t("clinicalReports", "Clinical Reports")}</h3>
+              <p className="muted">
+                {t(
+                  "clinicalReportsSubtitle",
+                  "Medical and continuity reports available to your account, including linked minors."
+                )}
+              </p>
             </div>
             <div className="action-pill">{reports.length} reports</div>
           </div>
@@ -152,7 +179,7 @@ export default function PatientBilling() {
             </div>
           ) : (
             <div className="muted" style={{ marginTop: 12 }}>
-              No reports available yet.
+              {t("noReportsYet", "No reports available yet.")}
             </div>
           )}
         </div>

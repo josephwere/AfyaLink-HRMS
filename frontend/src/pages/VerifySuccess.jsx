@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
+import AuthPageShell from "../components/AuthPageShell";
 
 export default function VerifySuccess() {
   return (
-    <div className="auth-bg auth-status-shell">
+    <AuthPageShell className="auth-status-shell">
       <div className="auth-card auth-status-card premium-card">
         <div className="auth-status-icon">✓</div>
         <h1>Email Verified</h1>
@@ -27,6 +28,6 @@ export default function VerifySuccess() {
           </Link>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

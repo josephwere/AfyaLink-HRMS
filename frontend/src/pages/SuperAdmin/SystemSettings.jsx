@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../utils/auth";
 import {
+  getAssetDeliveryHealth,
   getEmailDeliveryHealth,
   getSystemSettings,
+  getSystemSettingsHistory,
+  restoreSystemSettingsRevision,
   updateSystemSettings,
 } from "../../services/systemSettingsApi";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
@@ -54,6 +57,48 @@ async function optimizeImageDataUrl(file, { maxDimension = 1600, targetBytes = 9
   return compressed;
 }
 
+function shapeSettingsForm(defaults, data) {
+  return {
+    branding: { ...defaults.branding, ...(data?.branding || {}) },
+    ai: { ...defaults.ai, ...(data?.ai || {}) },
+    communications: { ...defaults.communications, ...(data?.communications || {}) },
+    revenueCycle: { ...defaults.revenueCycle, ...(data?.revenueCycle || {}) },
+    patientSelfService: { ...defaults.patientSelfService, ...(data?.patientSelfService || {}) },
+    compliance: {
+      ...defaults.compliance,
+      ...(data?.compliance || {}),
+      privacyTemplates: {
+        ...(defaults.compliance.privacyTemplates || {}),
+        ...(data?.compliance?.privacyTemplates || {}),
+      },
+    },
+    clinical: {
+      ...defaults.clinical,
+      ...(data?.clinical || {}),
+      closeoutPolicy: {
+        ...(defaults.clinical.closeoutPolicy || {}),
+        ...(data?.clinical?.closeoutPolicy || {}),
+      },
+      familyAccess: {
+        ...(defaults.clinical.familyAccess || {}),
+        ...(data?.clinical?.familyAccess || {}),
+        countryPolicies: {
+          ...(defaults.clinical.familyAccess?.countryPolicies || {}),
+          ...(data?.clinical?.familyAccess?.countryPolicies || {}),
+        },
+      },
+    },
+    monetization: {
+      ...defaults.monetization,
+      ...(data?.monetization || {}),
+      featureAccess: {
+        ...(defaults.monetization.featureAccess || {}),
+        ...(data?.monetization?.featureAccess || {}),
+      },
+    },
+  };
+}
+
 export default function SystemSettings() {
   const { user } = useAuth();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
@@ -78,6 +123,61 @@ export default function SystemSettings() {
       callsEnabled: true,
       videoCallsEnabled: true,
       voiceCallsEnabled: true,
+    },
+    revenueCycle: {
+      denialRiskThreshold: 65,
+      overdueInvoiceDays: 14,
+      preauthPendingSlaHours: 24,
+      targetCollectionDays: 7,
+      autoFlagHighRiskClaims: true,
+    },
+    patientSelfService: {
+      defaultLanguage: "en",
+      enabledLanguages: ["en", "sw", "fr"],
+      allowLanguageSwitch: true,
+      voiceFirstIntake: false,
+      whatsappSupport: false,
+      helpLine: "",
+    },
+    compliance: {
+      auditRetentionDays: 365,
+      messagingRetentionDays: 180,
+      evidencePackRetentionDays: 365,
+      clinicalRecordRetentionYears: 7,
+      requireStepUpForSensitiveExports: true,
+      requireLegalHoldReason: true,
+      requireRegionalPrivacyNotice: true,
+      defaultRegion: "KE",
+      privacyTemplates: {
+        DEFAULT: {
+          label: "Default",
+          noticeTitle: "Patient privacy notice",
+          consentSummary: "We use your data to deliver care, manage payments, and meet legal duties.",
+          breachContact: "privacy@afyalink.health",
+          enabled: true,
+        },
+        KE: {
+          label: "Kenya",
+          noticeTitle: "Kenya privacy notice",
+          consentSummary: "Care, billing, consent management, and lawful health reporting are covered here.",
+          breachContact: "privacy-ke@afyalink.health",
+          enabled: true,
+        },
+        UG: {
+          label: "Uganda",
+          noticeTitle: "Uganda privacy notice",
+          consentSummary: "Patient access, consent, and regulatory sharing are governed by this regional template.",
+          breachContact: "privacy-ug@afyalink.health",
+          enabled: true,
+        },
+        TZ: {
+          label: "Tanzania",
+          noticeTitle: "Tanzania privacy notice",
+          consentSummary: "Clinical use, payment handling, and lawful reporting follow this regional privacy template.",
+          breachContact: "privacy-tz@afyalink.health",
+          enabled: true,
+        },
+      },
     },
     clinical: {
       closeoutPolicy: {
@@ -122,6 +222,11 @@ export default function SystemSettings() {
   const [initialForm, setInitialForm] = useState(null);
   const [emailHealth, setEmailHealth] = useState(null);
   const [emailHealthLoading, setEmailHealthLoading] = useState(false);
+  const [assetHealth, setAssetHealth] = useState(null);
+  const [assetHealthLoading, setAssetHealthLoading] = useState(false);
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [restoringRevisionId, setRestoringRevisionId] = useState("");
 
   if (!["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole)) {
     return <AccessDeniedCard message="System settings require founder, system admin, or developer privileges." />;
@@ -130,35 +235,7 @@ export default function SystemSettings() {
   useEffect(() => {
     getSystemSettings()
       .then((data) => {
-        const next = {
-          branding: { ...form.branding, ...(data.branding || {}) },
-          ai: { ...form.ai, ...(data.ai || {}) },
-          communications: { ...form.communications, ...(data.communications || {}) },
-          clinical: {
-            ...form.clinical,
-            ...(data.clinical || {}),
-            closeoutPolicy: {
-              ...(form.clinical.closeoutPolicy || {}),
-              ...(data?.clinical?.closeoutPolicy || {}),
-            },
-            familyAccess: {
-              ...(form.clinical.familyAccess || {}),
-              ...(data?.clinical?.familyAccess || {}),
-              countryPolicies: {
-                ...(form.clinical.familyAccess?.countryPolicies || {}),
-                ...(data?.clinical?.familyAccess?.countryPolicies || {}),
-              },
-            },
-          },
-          monetization: {
-            ...form.monetization,
-            ...(data.monetization || {}),
-            featureAccess: {
-              ...(form.monetization.featureAccess || {}),
-              ...(data?.monetization?.featureAccess || {}),
-            },
-          },
-        };
+        const next = shapeSettingsForm(form, data);
         setForm(next);
         setInitialForm(next);
       })
@@ -184,6 +261,43 @@ export default function SystemSettings() {
 
   useEffect(() => {
     loadEmailHealth();
+  }, []);
+
+  const loadAssetHealth = async () => {
+    setAssetHealthLoading(true);
+    try {
+      const data = await getAssetDeliveryHealth();
+      setAssetHealth(data);
+    } catch (err) {
+      setAssetHealth({
+        status: "warning",
+        provider: "unknown",
+        recommendations: [err?.message || "Failed to load asset delivery health."],
+        checkedAt: new Date().toISOString(),
+      });
+    } finally {
+      setAssetHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAssetHealth();
+  }, []);
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const data = await getSystemSettingsHistory();
+      setHistoryItems(Array.isArray(data?.items) ? data.items : []);
+    } catch {
+      setHistoryItems([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
   }, []);
 
   const isObject = (value) =>
@@ -230,36 +344,10 @@ export default function SystemSettings() {
       setMsg(successMessage);
       if (res.settings) {
         setSettings(res.settings);
-        setInitialForm(res.settings);
-        setForm({
-          branding: { ...form.branding, ...(res.settings.branding || {}) },
-          ai: { ...form.ai, ...(res.settings.ai || {}) },
-          communications: { ...form.communications, ...(res.settings.communications || {}) },
-          clinical: {
-            ...form.clinical,
-            ...(res.settings.clinical || {}),
-            closeoutPolicy: {
-              ...(form.clinical.closeoutPolicy || {}),
-              ...(res.settings?.clinical?.closeoutPolicy || {}),
-            },
-            familyAccess: {
-              ...(form.clinical.familyAccess || {}),
-              ...(res.settings?.clinical?.familyAccess || {}),
-              countryPolicies: {
-                ...(form.clinical.familyAccess?.countryPolicies || {}),
-                ...(res.settings?.clinical?.familyAccess?.countryPolicies || {}),
-              },
-            },
-          },
-          monetization: {
-            ...form.monetization,
-            ...(res.settings.monetization || {}),
-            featureAccess: {
-              ...(form.monetization.featureAccess || {}),
-              ...(res.settings?.monetization?.featureAccess || {}),
-            },
-          },
-        });
+        const next = shapeSettingsForm(form, res.settings);
+        setInitialForm(next);
+        setForm(next);
+        loadHistory();
       }
     } catch (err) {
       setMsg(err?.message || "Failed to save settings");
@@ -280,6 +368,9 @@ export default function SystemSettings() {
       ai: { ai: form.ai },
       communications: { communications: form.communications },
       clinical: { clinical: form.clinical },
+      revenueCycle: { revenueCycle: form.revenueCycle },
+      patientSelfService: { patientSelfService: form.patientSelfService },
+      compliance: { compliance: form.compliance },
     };
     if (!map[key]) return;
     setSavingCard(key);
@@ -347,6 +438,14 @@ export default function SystemSettings() {
     { key: "heavyExports", label: "Heavy Data Export Jobs" },
   ];
 
+  const patientLanguageOptions = [
+    { code: "en", label: "English" },
+    { code: "sw", label: "Kiswahili" },
+    { code: "fr", label: "Français" },
+  ];
+
+  const privacyTemplateKeys = ["DEFAULT", "KE", "UG", "TZ"];
+
   const setAllFeatureAccess = (tier) => {
     setForm((f) => ({
       ...f,
@@ -395,6 +494,148 @@ export default function SystemSettings() {
       </div>
 
       {msg && <div className="card">{msg}</div>}
+
+      <section className="section">
+        <h3>Settings History & Restore</h3>
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <strong>Protected revision history</strong>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
+                Every global save now records a recoverable snapshot, so founder settings survive redeploys and can be restored cleanly if needed.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={loadHistory}
+              disabled={historyLoading}
+            >
+              {historyLoading ? "Refreshing..." : "Refresh History"}
+            </button>
+          </div>
+
+          <div className="settings-history-list" style={{ marginTop: 14 }}>
+            {historyItems.length ? (
+              historyItems.map((item) => (
+                <div key={item._id} className="settings-history-item">
+                  <div className="settings-history-main">
+                    <strong>
+                      {item.source?.startsWith("system-settings-restore:")
+                        ? "Restore snapshot"
+                        : item.source === "system-settings"
+                          ? "Manual settings save"
+                          : item.source || "Settings snapshot"}
+                    </strong>
+                    <span className="muted">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleString() : "Unknown time"} •{" "}
+                      {item.actorRole || "Unknown role"}
+                    </span>
+                    <div className="settings-history-tags">
+                      {(item.sections || []).map((section) => (
+                        <span key={`${item._id}-${section}`} className="tag-chip">{section}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={loading || restoringRevisionId === item._id}
+                    onClick={async () => {
+                      if (!window.confirm("Restore this settings snapshot? This will replace the current global settings.")) {
+                        return;
+                      }
+                      setRestoringRevisionId(item._id);
+                      setMsg(null);
+                      try {
+                        const res = await restoreSystemSettingsRevision(item._id);
+                        if (res?.settings) {
+                          setSettings(res.settings);
+                          const next = shapeSettingsForm(form, res.settings);
+                          setForm(next);
+                          setInitialForm(next);
+                        }
+                        setMsg("Settings restored successfully.");
+                        await loadHistory();
+                      } catch (err) {
+                        setMsg(err?.message || "Failed to restore settings.");
+                      } finally {
+                        setRestoringRevisionId("");
+                      }
+                    }}
+                  >
+                    {restoringRevisionId === item._id ? "Restoring..." : "Restore"}
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                {historyLoading ? "Loading history..." : "No saved revisions yet. Your next settings save will appear here."}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Asset Delivery Health</h3>
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <strong>Branding storage and CDN status</strong>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
+                Confirms whether uploaded logos, icons, and auth backgrounds are staying on local storage or flowing through a CDN-backed provider.
+              </p>
+            </div>
+            <div className="welcome-actions" style={{ gap: 8 }}>
+              <span className={`action-pill ${assetHealth?.status === "healthy" ? "ok" : "warn"}`}>
+                {assetHealth?.status === "healthy" ? "Healthy" : "Needs attention"}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={loadAssetHealth}
+                disabled={assetHealthLoading}
+              >
+                {assetHealthLoading ? "Refreshing..." : "Refresh Status"}
+              </button>
+            </div>
+          </div>
+
+          <div className="panel-grid" style={{ marginTop: 12 }}>
+            <div className="card premium-card">
+              <h4>Provider</h4>
+              <p className="muted">{assetHealth?.provider || "unknown"}</p>
+              <p className="muted">
+                {assetHealth?.provider === "cloudinary"
+                  ? "Global CDN-backed media delivery is enabled."
+                  : "Local asset storage is active."}
+              </p>
+            </div>
+            <div className="card premium-card">
+              <h4>Public Base URL</h4>
+              <p className="muted" style={{ wordBreak: "break-word" }}>
+                {assetHealth?.publicBaseUrl || "Derived from the current backend origin"}
+              </p>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: 12 }}>
+            <h4>Recommended Next Checks</h4>
+            {assetHealth?.recommendations?.length ? (
+              <ul className="muted" style={{ marginTop: 8, paddingLeft: 18 }}>
+                {assetHealth.recommendations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted" style={{ marginTop: 8 }}>
+                Asset delivery is configured for durable branded media and should survive normal redeploys cleanly.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section className="section">
         <h3>Email Delivery Health</h3>
@@ -490,6 +731,9 @@ export default function SystemSettings() {
       <section className="section">
         <h3>Branding Assets</h3>
         <div className="card form">
+          <p className="muted" style={{ marginTop: 0 }}>
+            Uploaded branding is now persisted as backend-served asset URLs instead of large inline blobs, which is safer for redeploys and faster to cache behind a CDN later.
+          </p>
           <label>Main App Icon</label>
           <input type="file" accept="image/*" onChange={(e) => handleFile("appIcon", e.target.files?.[0])} />
           <label>Favicon (.ico or png)</label>
@@ -830,6 +1074,492 @@ export default function SystemSettings() {
             disabled={loading || savingCard === "clinical"}
           >
             {savingCard === "clinical" ? "Saving..." : "Save Clinical Closeout Policy"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Revenue-Cycle Intelligence</h3>
+        <div className="card form">
+          <p className="muted">
+            These thresholds drive denial-pressure alerts, collection-cycle scoring, and prior-authorization backlog warnings across the revenue workspace.
+          </p>
+          <label>
+            Denial risk threshold
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={form.revenueCycle.denialRiskThreshold}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  revenueCycle: {
+                    ...f.revenueCycle,
+                    denialRiskThreshold: Number(e.target.value || 65),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Overdue invoice age (days)
+            <input
+              type="number"
+              min="1"
+              value={form.revenueCycle.overdueInvoiceDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  revenueCycle: {
+                    ...f.revenueCycle,
+                    overdueInvoiceDays: Number(e.target.value || 14),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Prior auth SLA (hours)
+            <input
+              type="number"
+              min="1"
+              value={form.revenueCycle.preauthPendingSlaHours}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  revenueCycle: {
+                    ...f.revenueCycle,
+                    preauthPendingSlaHours: Number(e.target.value || 24),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Target collection cycle (days)
+            <input
+              type="number"
+              min="1"
+              value={form.revenueCycle.targetCollectionDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  revenueCycle: {
+                    ...f.revenueCycle,
+                    targetCollectionDays: Number(e.target.value || 7),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.revenueCycle.autoFlagHighRiskClaims)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  revenueCycle: {
+                    ...f.revenueCycle,
+                    autoFlagHighRiskClaims: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Auto-flag high-risk claims in revenue dashboards
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("revenueCycle")}
+            disabled={loading || savingCard === "revenueCycle"}
+          >
+            {savingCard === "revenueCycle" ? "Saving..." : "Save Revenue Intelligence"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Patient Self-Service Language & Channels</h3>
+        <div className="card form">
+          <p className="muted">
+            These controls shape multilingual patient pages, voice-first intake hints, and WhatsApp-aware support messaging.
+          </p>
+          <label>
+            Default patient language
+            <select
+              value={form.patientSelfService.defaultLanguage}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  patientSelfService: {
+                    ...f.patientSelfService,
+                    defaultLanguage: e.target.value,
+                  },
+                }))
+              }
+            >
+              {patientLanguageOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Enabled patient languages
+            <div className="settings-inline-checks">
+              {patientLanguageOptions.map((option) => {
+                const enabled = (form.patientSelfService.enabledLanguages || []).includes(option.code);
+                return (
+                  <label key={option.code} className="settings-inline-check">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) =>
+                        setForm((f) => {
+                          const current = new Set(f.patientSelfService.enabledLanguages || []);
+                          if (e.target.checked) current.add(option.code);
+                          else current.delete(option.code);
+                          const next = Array.from(current);
+                          return {
+                            ...f,
+                            patientSelfService: {
+                              ...f.patientSelfService,
+                              enabledLanguages: next.length ? next : ["en"],
+                            },
+                          };
+                        })
+                      }
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
+            </div>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.patientSelfService.allowLanguageSwitch)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  patientSelfService: {
+                    ...f.patientSelfService,
+                    allowLanguageSwitch: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Allow patients to switch language themselves
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.patientSelfService.voiceFirstIntake)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  patientSelfService: {
+                    ...f.patientSelfService,
+                    voiceFirstIntake: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Show voice-first intake support across patient pages
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.patientSelfService.whatsappSupport)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  patientSelfService: {
+                    ...f.patientSelfService,
+                    whatsappSupport: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Show WhatsApp support availability in patient self-service
+          </label>
+          <label>
+            Patient help line / support number
+            <input
+              value={form.patientSelfService.helpLine || ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  patientSelfService: {
+                    ...f.patientSelfService,
+                    helpLine: e.target.value,
+                  },
+                }))
+              }
+              placeholder="+254 700 000 000"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("patientSelfService")}
+            disabled={loading || savingCard === "patientSelfService"}
+          >
+            {savingCard === "patientSelfService" ? "Saving..." : "Save Patient Self-Service"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Compliance Policy Library</h3>
+        <div className="card form">
+          <p className="muted">
+            Founder-grade retention, export, and regional privacy controls that feed the compliance center and all protected workflows.
+          </p>
+          <label>
+            Audit retention days
+            <input
+              type="number"
+              min="30"
+              value={form.compliance.auditRetentionDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    auditRetentionDays: Number(e.target.value || 365),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Messaging retention days
+            <input
+              type="number"
+              min="30"
+              value={form.compliance.messagingRetentionDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    messagingRetentionDays: Number(e.target.value || 180),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Evidence-pack retention days
+            <input
+              type="number"
+              min="30"
+              value={form.compliance.evidencePackRetentionDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    evidencePackRetentionDays: Number(e.target.value || 365),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Clinical record retention years
+            <input
+              type="number"
+              min="1"
+              value={form.compliance.clinicalRecordRetentionYears}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    clinicalRecordRetentionYears: Number(e.target.value || 7),
+                  },
+                }))
+              }
+            />
+          </label>
+          <label>
+            Default compliance region
+            <select
+              value={form.compliance.defaultRegion || "KE"}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    defaultRegion: e.target.value,
+                  },
+                }))
+              }
+            >
+              {privacyTemplateKeys.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.compliance.requireStepUpForSensitiveExports)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    requireStepUpForSensitiveExports: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Require step-up verification for sensitive exports
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.compliance.requireLegalHoldReason)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    requireLegalHoldReason: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Require legal-hold reason before saving
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.compliance.requireRegionalPrivacyNotice)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  compliance: {
+                    ...f.compliance,
+                    requireRegionalPrivacyNotice: e.target.checked,
+                  },
+                }))
+              }
+            />
+            Require regional privacy notice availability
+          </label>
+
+          <div className="panel-grid">
+            {privacyTemplateKeys.map((code) => {
+              const template = form.compliance.privacyTemplates?.[code] || {};
+              return (
+                <div key={code} className="card premium-card">
+                  <h4>{template.label || code}</h4>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={template.enabled !== false}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          compliance: {
+                            ...f.compliance,
+                            privacyTemplates: {
+                              ...(f.compliance.privacyTemplates || {}),
+                              [code]: {
+                                ...(f.compliance.privacyTemplates?.[code] || {}),
+                                enabled: e.target.checked,
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                    Template enabled
+                  </label>
+                  <label>
+                    Notice title
+                    <input
+                      value={template.noticeTitle || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          compliance: {
+                            ...f.compliance,
+                            privacyTemplates: {
+                              ...(f.compliance.privacyTemplates || {}),
+                              [code]: {
+                                ...(f.compliance.privacyTemplates?.[code] || {}),
+                                noticeTitle: e.target.value,
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Consent summary
+                    <textarea
+                      value={template.consentSummary || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          compliance: {
+                            ...f.compliance,
+                            privacyTemplates: {
+                              ...(f.compliance.privacyTemplates || {}),
+                              [code]: {
+                                ...(f.compliance.privacyTemplates?.[code] || {}),
+                                consentSummary: e.target.value,
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Breach contact
+                    <input
+                      value={template.breachContact || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          compliance: {
+                            ...f.compliance,
+                            privacyTemplates: {
+                              ...(f.compliance.privacyTemplates || {}),
+                              [code]: {
+                                ...(f.compliance.privacyTemplates?.[code] || {}),
+                                breachContact: e.target.value,
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("compliance")}
+            disabled={loading || savingCard === "compliance"}
+          >
+            {savingCard === "compliance" ? "Saving..." : "Save Compliance Policy"}
           </button>
         </div>
       </section>

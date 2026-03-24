@@ -10,6 +10,7 @@ import {
   isMinorDob,
   searchMinorPatientsForGuardian,
 } from "../services/familyMonitoringService.js";
+import { buildFamilyTimelineForUser } from "../services/familyTimelineService.js";
 import { audit } from "../utils/audit.js";
 
 // ==========================
@@ -182,6 +183,21 @@ export const getFamilyMonitoring = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: "Failed to load family monitoring", error: err.message });
+  }
+};
+
+export const getFamilyTimeline = async (req, res) => {
+  try {
+    const data = await buildFamilyTimelineForUser({
+      userId: req.user.id,
+      limit: req.query.limit || 120,
+    });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to load family timeline",
+      error: err.message,
+    });
   }
 };
 

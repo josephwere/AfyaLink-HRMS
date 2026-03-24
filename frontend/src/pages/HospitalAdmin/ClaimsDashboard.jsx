@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import AIAutofillAuditSummary from "../../components/AIAutofillAuditSummary";
 
 export default function ClaimsDashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [claims, setClaims] = useState([]);
@@ -68,6 +70,9 @@ export default function ClaimsDashboard() {
           <p className="muted">Monitor claim status, flags, and open fraud alerts for your hospital.</p>
         </div>
         <div className="welcome-actions">
+          <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/revenue-intelligence")}>
+            Revenue Intelligence
+          </button>
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>

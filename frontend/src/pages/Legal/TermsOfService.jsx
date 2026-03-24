@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import LegalLinks from "../../components/LegalLinks";
+import AuthPageShell from "../../components/AuthPageShell";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 
 const sections = [
@@ -103,12 +103,8 @@ export default function TermsOfService() {
   const { settings } = useSystemSettings();
   const appName = settings?.branding?.appName || "AfyaLink";
 
-  useEffect(() => {
-    document.body.classList.add("auth-route");
-    return () => document.body.classList.remove("auth-route");
-  }, []);
-
   return (
+    <AuthPageShell>
     <div className="dashboard legal-page">
       <div className="welcome-panel legal-hero">
         <div>
@@ -140,5 +136,6 @@ export default function TermsOfService() {
         </section>
       ))}
     </div>
+    </AuthPageShell>
   );
 }

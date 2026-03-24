@@ -18,7 +18,8 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--app-bg, #f5f6fa);
   color: var(--app-text, #111827);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   zoom: var(--user-zoom, 1);
   line-height: var(--user-line-height, 1.5);
 }
@@ -35,6 +36,15 @@ th {
 
 body.auth-route {
   overflow-y: auto;
+}
+
+@keyframes afyalinkSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 :root {
@@ -92,10 +102,13 @@ body.auth-route {
 
 .verify-page {
   display: flex;
-  height: 100vh;
+  min-height: 100%;
+  width: 100%;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
   animation: fadeIn 0.6s ease-in;
 }
 
@@ -127,6 +140,10 @@ body.auth-route {
 .auth-bg.auth-bg-ready {
   background: var(--login-bg) center/cover no-repeat,
     linear-gradient(135deg, #0f766e, #2563eb);
+}
+
+.auth-bg > .legal-page {
+  width: min(1100px, 100%);
 }
 
 .auth-card {
@@ -6066,10 +6083,285 @@ button.card.stat {
   margin-bottom: 0;
 }
 
+.settings-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--app-surface, #fff) 88%, var(--app-surface-2, #f8fafc) 12%);
+}
+
+.settings-history-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .settings-history-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .query-highlight-row {
   background: color-mix(in srgb, var(--app-accent, #0ea5e9) 10%, white);
 }
 
 .query-highlight-row td {
   box-shadow: inset 0 -1px 0 rgba(14, 165, 233, 0.14), inset 0 1px 0 rgba(14, 165, 233, 0.14);
+}
+
+.family-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.family-member-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 248, 255, 0.92));
+  padding: 14px 16px;
+  text-align: left;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.family-member-chip:hover,
+.family-member-chip:focus-visible,
+.family-member-chip.is-active {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 20px 44px rgba(37, 99, 235, 0.12);
+}
+
+.family-member-chip strong {
+  font-size: 0.98rem;
+}
+
+.family-member-chip span,
+.family-member-chip small {
+  color: rgba(15, 23, 42, 0.68);
+}
+
+.family-timeline-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.family-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.family-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--app-accent, #2563eb), rgba(14, 165, 233, 0.85));
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  margin-top: 18px;
+}
+
+.family-timeline-body {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.96));
+  padding: 18px 18px 16px;
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.08);
+}
+
+.family-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.family-timeline-time {
+  color: rgba(15, 23, 42, 0.58);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.patient-language-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  margin: 0 0 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.96));
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.08);
+}
+
+.patient-language-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.patient-language-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-accent, #2563eb);
+}
+
+.patient-language-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.patient-language-controls {
+  display: grid;
+  gap: 12px;
+  min-width: min(240px, 100%);
+  justify-items: end;
+}
+
+.patient-language-select {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.72);
+}
+
+.patient-language-select select {
+  min-height: 46px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0 14px;
+}
+
+.patient-language-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.revenue-intelligence-shell .info-grid,
+.compliance-center-shell .info-grid {
+  align-items: stretch;
+}
+
+.revenue-alert-grid,
+.revenue-panel-grid,
+.compliance-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.revenue-action-list,
+.compliance-hold-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.revenue-action-card,
+.compliance-hold-card {
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+  padding: 16px 18px;
+}
+
+.revenue-action-card.ok {
+  border-color: rgba(16, 185, 129, 0.18);
+}
+
+.revenue-action-card.watch {
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.revenue-action-card.warn {
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.compliance-hold-card.compact {
+  padding: 14px 16px;
+}
+
+.settings-inline-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.settings-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.94rem;
+  color: rgba(15, 23, 42, 0.8);
+}
+
+@media (max-width: 720px) {
+  .patient-language-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .patient-language-controls {
+    justify-items: stretch;
+  }
+
+  .patient-language-select {
+    min-width: 0;
+  }
+
+  .patient-language-actions {
+    justify-content: flex-start;
+  }
+
+  .family-timeline-item {
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .family-timeline-body {
+    padding: 16px 14px;
+  }
+
+  .family-timeline-time {
+    white-space: normal;
+    text-align: left;
+  }
 }

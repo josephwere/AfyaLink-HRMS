@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { listDlqItems, retryDlqItem, updateDlqItem } from "../../services/dlqApi";
+import { listBackgroundJobs, retryBackgroundJob } from "../../services/backgroundJobsApi";
 
 export default function QueueReplay() {
   const [items, setItems] = useState([]);
+  const [backgroundJobs, setBackgroundJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -12,10 +14,15 @@ export default function QueueReplay() {
     setLoading(true);
     setMsg(null);
     try {
-      const data = await listDlqItems();
+      const [data, jobs] = await Promise.all([
+        listDlqItems(),
+        listBackgroundJobs({ limit: 30 }),
+      ]);
       setItems(Array.isArray(data) ? data : []);
+      setBackgroundJobs(Array.isArray(jobs?.items) ? jobs.items : []);
     } catch {
       setItems([]);
+      setBackgroundJobs([]);
       setMsg("Failed to load DLQ items");
     } finally {
       setLoading(false);
@@ -109,6 +116,62 @@ export default function QueueReplay() {
               {items.length === 0 && (
                 <tr>
                   <td colSpan="5">No DLQ items</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Durable Background Jobs</h3>
+              <p className="muted">
+                Mongo-backed retryable jobs for contact sync, outbound communications, and orchestration retries.
+              </p>
+            </div>
+            <div className="action-pill">{backgroundJobs.length} recent jobs</div>
+          </div>
+
+          <table className="table lite" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Attempts</th>
+                <th>Source</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {backgroundJobs.map((job) => (
+                <tr key={job._id}>
+                  <td>{job.type}</td>
+                  <td>{job.status}</td>
+                  <td>{job.attemptsMade || 0}/{job.maxAttempts || 0}</td>
+                  <td>{job.source || "-"}</td>
+                  <td>{job.createdAt ? new Date(job.createdAt).toLocaleString() : "-"}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={async () => {
+                        await retryBackgroundJob(job._id);
+                        load();
+                      }}
+                      disabled={job.status !== "DEAD_LETTER" && job.status !== "FAILED"}
+                    >
+                      Requeue
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {backgroundJobs.length === 0 && (
+                <tr>
+                  <td colSpan="6">No background jobs found</td>
                 </tr>
               )}
             </tbody>

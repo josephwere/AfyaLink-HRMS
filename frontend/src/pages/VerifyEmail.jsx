@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
+import AuthPageShell from "../components/AuthPageShell";
 import "./verify.css";
 
 export default function VerifyEmail() {
@@ -47,16 +48,17 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="verify-page">
+    <AuthPageShell>
+      <div className="verify-page">
       {status === "verifying" && (
-        <div className="card pulse">
+        <div className="auth-card auth-status-card premium-card verify-card pulse">
           <h1>Verifying…</h1>
           <p>Please wait</p>
         </div>
       )}
 
       {status === "success" && (
-        <div className="card success pop">
+        <div className="auth-card auth-status-card premium-card verify-card success pop">
           <h1>✅ Email Verified</h1>
           <p>Your account is now active.</p>
           <Link to="/login" className="btn">
@@ -66,14 +68,14 @@ export default function VerifyEmail() {
       )}
 
       {status === "invalid" && (
-        <div className="card error shake">
+        <div className="auth-card auth-status-card premium-card verify-card error shake">
           <h1>❌ Invalid Link</h1>
           <p>This verification link is invalid.</p>
         </div>
       )}
 
       {status === "error" && (
-        <div className="card error shake">
+        <div className="auth-card auth-status-card premium-card verify-card error shake">
           <h1>❌ Verification Failed</h1>
           <p>Link expired or already used.</p>
 
@@ -99,6 +101,7 @@ export default function VerifyEmail() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </AuthPageShell>
   );
 }

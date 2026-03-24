@@ -3,6 +3,7 @@ import express from "express";
 import { 
   getProfile, 
   getFamilyMonitoring,
+  getFamilyTimeline,
   searchMinorProfiles,
   linkMinorProfile,
   unlinkMinorProfile,
@@ -19,6 +20,7 @@ const router = express.Router();
 // Profile
 router.get("/", protect, getProfile);
 router.get("/family", protect, getFamilyMonitoring);
+router.get("/family/timeline", protect, getFamilyTimeline);
 router.get("/family/search", protect, searchMinorProfiles);
 router.post("/family/minors/link", protect, linkMinorProfile);
 router.delete("/family/minors/:patientId", protect, unlinkMinorProfile);

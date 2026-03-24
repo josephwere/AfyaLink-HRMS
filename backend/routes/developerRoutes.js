@@ -5,6 +5,8 @@ import {
   getDeveloperOverview,
   getDecisionCockpit,
   getTrustStatus,
+  getBackgroundJobs,
+  retryBackgroundJob,
   runWorkflowSlaScan,
 } from "../controllers/developerController.js";
 
@@ -29,6 +31,20 @@ router.get(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
   getDecisionCockpit
+);
+
+router.get(
+  "/background-jobs",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  getBackgroundJobs
+);
+
+router.post(
+  "/background-jobs/:id/retry",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"),
+  retryBackgroundJob
 );
 
 router.post(

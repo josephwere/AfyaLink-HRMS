@@ -6,6 +6,8 @@ import {
   listRecruitmentApplications,
   trackRecruitmentAdEvent,
 } from "../../services/recruitmentAdsApi";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 const emptyApplicationForm = {
   fullName: "",
@@ -29,6 +31,7 @@ function buildApplicationPayload(form, resumeFile) {
 }
 
 export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIENT_FEED" }) {
+  const { t } = usePatientLanguage();
   const location = useLocation();
   const [q, setQ] = useState("");
   const [ads, setAds] = useState([]);
@@ -120,41 +123,51 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
         <div className="welcome-panel recruitment-public-hero">
           <div>
             <span className="pill">AfyaLink Careers</span>
-            <h1 style={{ marginBottom: 10 }}>Work with verified hospitals across AfyaLink.</h1>
+            <h1 style={{ marginBottom: 10 }}>{t("careersHeroTitle", "Work with verified hospitals across AfyaLink.")}</h1>
             <p className="muted" style={{ maxWidth: 760 }}>
-              Browse healthcare opportunities from government-verified hospitals, compare benefits and work modes,
-              then apply with your profile and resume inside one secure flow.
+              {t(
+                "careersHeroSubtitle",
+                "Browse healthcare opportunities from government-verified hospitals, compare benefits and work modes, then apply with your profile and resume inside one secure flow."
+              )}
             </p>
             <div className="welcome-actions" style={{ marginTop: 12 }}>
-              <a className="btn-primary" href="#careers-feed">Browse openings</a>
-              <Link className="btn-secondary" to="/register">Create candidate account</Link>
-              <Link className="btn-secondary" to="/login">Sign in</Link>
+              <a className="btn-primary" href="#careers-feed">{t("browseOpenings", "Browse openings")}</a>
+              <Link className="btn-secondary" to="/register">{t("createCandidateAccount", "Create candidate account")}</Link>
+              <Link className="btn-secondary" to="/login">{t("signIn", "Sign in")}</Link>
             </div>
           </div>
           <div className="card premium-card">
-            <h3 style={{ marginTop: 0 }}>Why hospitals post here</h3>
+            <h3 style={{ marginTop: 0 }}>{t("whyHospitalsPost", "Why hospitals post here")}</h3>
             <ul style={{ margin: 0 }}>
-              <li>Verified hospital recruitment only</li>
-              <li>Rich banners, brochures, videos, and campaigns</li>
-              <li>Structured applicant pipeline with resume review</li>
-              <li>Source-aware analytics for every campaign</li>
+              <li>{t("verifiedHospitalRecruitmentOnly", "Verified hospital recruitment only")}</li>
+              <li>{t("richCampaignAssets", "Rich banners, brochures, videos, and campaigns")}</li>
+              <li>{t("structuredApplicantPipeline", "Structured applicant pipeline with resume review")}</li>
+              <li>{t("sourceAwareAnalytics", "Source-aware analytics for every campaign")}</li>
             </ul>
           </div>
         </div>
 
+        <PatientLanguageBar
+          title={t("careersLanguageTitle", "Candidate Language & Access")}
+          subtitle={t(
+            "careersLanguageSubtitle",
+            "Switch language before browsing public campaigns so the same premium AfyaLink experience feels familiar from discovery through application."
+          )}
+        />
+
         <section className="section">
           <div className="grid info-grid">
             <div className="card premium-card">
-              <h3>Verified Employers</h3>
-              <p className="muted">Only approved AfyaLink hospitals can publish public campaigns.</p>
+              <h3>{t("verifiedEmployers", "Verified Employers")}</h3>
+              <p className="muted">{t("verifiedEmployersSubtitle", "Only approved AfyaLink hospitals can publish public campaigns.")}</p>
             </div>
             <div className="card premium-card">
-              <h3>Faster Discovery</h3>
-              <p className="muted">Search by role, department, location, benefit, or campaign summary.</p>
+              <h3>{t("fasterDiscovery", "Faster Discovery")}</h3>
+              <p className="muted">{t("fasterDiscoverySubtitle", "Search by role, department, location, benefit, or campaign summary.")}</p>
             </div>
             <div className="card premium-card">
-              <h3>One Candidate Flow</h3>
-              <p className="muted">Upload resume, track applications, and move from discovery to hiring in one place.</p>
+              <h3>{t("oneCandidateFlow", "One Candidate Flow")}</h3>
+              <p className="muted">{t("oneCandidateFlowSubtitle", "Upload resume, track applications, and move from discovery to hiring in one place.")}</p>
             </div>
           </div>
         </section>
@@ -173,26 +186,37 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
       <div className="dashboard">
         <div className="welcome-panel">
           <div>
-            <h2>Career & Vacancy Feed</h2>
+            <h2>{t("careerVacancyFeed", "Career & Vacancy Feed")}</h2>
             <p className="muted">
-              View premium hospital vacancies, see campaign banners and benefits, then apply directly inside AfyaLink.
+              {t(
+                "careerVacancyFeedSubtitle",
+                "View premium hospital vacancies, see campaign banners and benefits, then apply directly inside AfyaLink."
+              )}
             </p>
           </div>
         </div>
+
+        <PatientLanguageBar
+          title={t("careerVacancyFeed", "Career & Vacancy Feed")}
+          subtitle={t(
+            "careerVacancyFeedSubtitle",
+            "View premium hospital vacancies, see campaign banners and benefits, then apply directly inside AfyaLink."
+          )}
+        />
 
         <section className="section">
           <div className="card premium-card">
             {msg ? <div className="subtle-banner">{msg}</div> : null}
 
-            <label>Search vacancies</label>
+            <label>{t("searchVacancies", "Search vacancies")}</label>
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by title, department, location, benefit or campaign summary"
+              placeholder={t("searchVacanciesPlaceholder", "Search by title, department, location, benefit or campaign summary")}
             />
 
             {loading ? (
-              <p className="muted">Loading...</p>
+              <p className="muted">{t("loading", "Loading...")}</p>
             ) : (
               <div className="grid cols-2" style={{ marginTop: 12 }}>
                 {ads.map((ad) => {
@@ -209,35 +233,35 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                       <div className="recruitment-card-head">
                         <div>
                           <h4>{ad.title}</h4>
-                          <p className="muted">{ad.bannerHeadline || ad.campaignSummary || ad.role || "Hospital opportunity"}</p>
+                          <p className="muted">{ad.bannerHeadline || ad.campaignSummary || ad.role || t("hospitalOpportunity", "Hospital opportunity")}</p>
                         </div>
                         <span className="pill">{existing?.status || "OPEN"}</span>
                       </div>
 
                       <div className="recruitment-meta-grid">
                         <div>
-                          <strong>Hospital</strong>
-                          <span>{ad?.hospital?.name || "Hospital"}</span>
+                          <strong>{t("hospital", "Hospital")}</strong>
+                          <span>{ad?.hospital?.name || t("hospital", "Hospital")}</span>
                         </div>
                         <div>
-                          <strong>Location</strong>
-                          <span>{ad.location || "Flexible"}</span>
+                          <strong>{t("location", "Location")}</strong>
+                          <span>{ad.location || t("flexible", "Flexible")}</span>
                         </div>
                         <div>
-                          <strong>Type</strong>
-                          <span>{ad.employmentType || "Not set"}</span>
+                          <strong>{t("type", "Type")}</strong>
+                          <span>{ad.employmentType || t("notSet", "Not set")}</span>
                         </div>
                         <div>
-                          <strong>Work Mode</strong>
+                          <strong>{t("workMode", "Work Mode")}</strong>
                           <span>{ad.workMode || "ONSITE"}</span>
                         </div>
                         <div>
-                          <strong>Department</strong>
-                          <span>{ad.department || "General"}</span>
+                          <strong>{t("department", "Department")}</strong>
+                          <span>{ad.department || t("general", "General")}</span>
                         </div>
                         <div>
-                          <strong>Salary</strong>
-                          <span>{ad.salaryRange || "Discussed during hiring"}</span>
+                          <strong>{t("salary", "Salary")}</strong>
+                          <span>{ad.salaryRange || t("discussedDuringHiring", "Discussed during hiring")}</span>
                         </div>
                       </div>
 
@@ -246,7 +270,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
                       {ad.highlights?.length ? (
                         <>
-                          <strong>Highlights</strong>
+                          <strong>{t("highlights", "Highlights")}</strong>
                           <div className="recruitment-chip-wrap">
                             {ad.highlights.map((item) => (
                               <span key={`${ad._id}-hl-${item}`} className="tag-chip">{item}</span>
@@ -257,7 +281,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
                       {ad.benefits?.length ? (
                         <>
-                          <strong>Benefits</strong>
+                          <strong>{t("benefits", "Benefits")}</strong>
                           <div className="recruitment-chip-wrap">
                             {ad.benefits.map((item) => (
                               <span key={`${ad._id}-bf-${item}`} className="tag-chip">{item}</span>
@@ -280,10 +304,10 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                           className="btn-secondary"
                           onClick={() => toggleOpenAd(ad._id)}
                         >
-                          {showDetails ? "Close" : "Open"}
+                          {showDetails ? t("close", "Close") : t("open", "Open")}
                         </button>
                         {existing ? (
-                          <span className="muted">Already applied</span>
+                          <span className="muted">{t("alreadyApplied", "Already applied")}</span>
                         ) : ad.applicationMode === "EXTERNAL" && ad.applyUrl ? (
                           <a
                             className="btn-primary"
@@ -292,11 +316,11 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                             rel="noreferrer"
                             onClick={trackAndFollow(ad._id, "EXTERNAL_CLICK")}
                           >
-                            Apply on External Site
+                            {t("applyExternal", "Apply on External Site")}
                           </a>
                         ) : (
                           <button type="button" className="btn-primary" onClick={() => startApply(ad._id)}>
-                            Apply in AfyaLink
+                            {t("applyInAfyalink", "Apply in AfyaLink")}
                           </button>
                         )}
                         {ad.careersPageUrl ? (
@@ -307,7 +331,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                             rel="noreferrer"
                             onClick={trackAndFollow(ad._id, "CAREERS_PAGE_CLICK")}
                           >
-                            Careers Page
+                            {t("careersPage", "Careers Page")}
                           </a>
                         ) : null}
                         {ad.media?.bannerLink ? (
@@ -318,7 +342,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                             rel="noreferrer"
                             onClick={trackAndFollow(ad._id, "BANNER_CLICK")}
                           >
-                            Campaign Link
+                            {t("campaignLink", "Campaign Link")}
                           </a>
                         ) : null}
                         {ad.media?.brochureUrl ? (
@@ -329,7 +353,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                             rel="noreferrer"
                             onClick={trackAndFollow(ad._id, "BROCHURE_CLICK")}
                           >
-                            Brochure
+                            {t("brochure", "Brochure")}
                           </a>
                         ) : null}
                         {ad.videoUrl ? (
@@ -340,17 +364,17 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                             rel="noreferrer"
                             onClick={trackAndFollow(ad._id, "VIDEO_CLICK")}
                           >
-                            Video
+                            {t("video", "Video")}
                           </a>
                         ) : null}
                       </div>
 
                       {showDetails ? (
                         <div className="card" style={{ margin: "12px 0 0" }}>
-                          <h4 style={{ marginTop: 0 }}>Vacancy Details</h4>
+                          <h4 style={{ marginTop: 0 }}>{t("vacancyDetails", "Vacancy Details")}</h4>
                           {ad.requirements?.length ? (
                             <>
-                              <strong>Requirements</strong>
+                              <strong>{t("requirements", "Requirements")}</strong>
                               <ul className="recruitment-detail-list">
                                 {ad.requirements.map((item) => (
                                   <li key={`${ad._id}-req-${item}`}>{item}</li>
@@ -361,26 +385,26 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
                           <div className="recruitment-meta-grid">
                             <div>
-                              <strong>Hiring Count</strong>
+                              <strong>{t("hiringCount", "Hiring Count")}</strong>
                               <span>{ad.hiringCount || "1"}</span>
                             </div>
                             <div>
-                              <strong>Seniority</strong>
-                              <span>{ad.seniorityLevel || "Not set"}</span>
+                              <strong>{t("seniority", "Seniority")}</strong>
+                              <span>{ad.seniorityLevel || t("notSet", "Not set")}</span>
                             </div>
                             <div>
-                              <strong>Campaign Start</strong>
-                              <span>{ad.campaignStartAt ? new Date(ad.campaignStartAt).toLocaleDateString() : "Now"}</span>
+                              <strong>{t("campaignStart", "Campaign Start")}</strong>
+                              <span>{ad.campaignStartAt ? new Date(ad.campaignStartAt).toLocaleDateString() : t("now", "Now")}</span>
                             </div>
                             <div>
-                              <strong>Expiry</strong>
-                              <span>{ad.expiresAt ? new Date(ad.expiresAt).toLocaleDateString() : "Open until filled"}</span>
+                              <strong>{t("expiry", "Expiry")}</strong>
+                              <span>{ad.expiresAt ? new Date(ad.expiresAt).toLocaleDateString() : t("openUntilFilled", "Open until filled")}</span>
                             </div>
                           </div>
 
                           {ad.contactEmail || ad.contactPhone ? (
                             <>
-                              <strong>Recruitment Contact</strong>
+                              <strong>{t("recruitmentContact", "Recruitment Contact")}</strong>
                               <div className="recruitment-chip-wrap" style={{ marginTop: 8 }}>
                                 {ad.contactEmail ? <span className="tag-chip">{ad.contactEmail}</span> : null}
                                 {ad.contactPhone ? <span className="tag-chip">{ad.contactPhone}</span> : null}
@@ -392,41 +416,41 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
 
                       {showApply ? (
                         <div className="card" style={{ margin: "12px 0 0" }}>
-                          <h4 style={{ marginTop: 0 }}>Apply: {ad.title}</h4>
+                          <h4 style={{ marginTop: 0 }}>{t("applyForRole", "Apply")}: {ad.title}</h4>
                           {ad.visibility === "PRIVATE_LINK" ? (
                             <>
-                              <label>Private access code</label>
+                              <label>{t("privateAccessCode", "Private access code")}</label>
                               <input
                                 value={form.privateAccessToken}
                                 onChange={(e) => setForm((p) => ({ ...p, privateAccessToken: e.target.value }))}
-                                placeholder="Paste the private application code"
+                                placeholder={t("privateAccessCodePlaceholder", "Paste the private application code")}
                               />
                             </>
                           ) : null}
-                          <label>Full Name</label>
+                          <label>{t("fullName", "Full Name")}</label>
                           <input value={form.fullName} onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))} />
-                          <label>Email</label>
+                          <label>{t("email", "Email")}</label>
                           <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
-                          <label>Phone</label>
+                          <label>{t("phone", "Phone")}</label>
                           <input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
-                          <label>Resume file</label>
+                          <label>{t("resumeFile", "Resume file")}</label>
                           <input
                             type="file"
                             accept=".pdf,.doc,.docx,.txt"
                             onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
                           />
-                          <label>Resume URL (optional)</label>
+                          <label>{t("resumeUrlOptional", "Resume URL (optional)")}</label>
                           <input value={form.resumeUrl} onChange={(e) => setForm((p) => ({ ...p, resumeUrl: e.target.value }))} />
-                          <label>Experience Summary</label>
+                          <label>{t("experienceSummary", "Experience Summary")}</label>
                           <textarea value={form.experienceSummary} onChange={(e) => setForm((p) => ({ ...p, experienceSummary: e.target.value }))} />
-                          <label>Cover Letter</label>
+                          <label>{t("coverLetter", "Cover Letter")}</label>
                           <textarea value={form.coverLetter} onChange={(e) => setForm((p) => ({ ...p, coverLetter: e.target.value }))} />
                           <div className="row-actions">
                             <button type="button" className="btn-primary" disabled={submitting} onClick={() => submitApplication(ad._id)}>
-                              {submitting ? "Submitting..." : "Submit Application"}
+                              {submitting ? t("submitting", "Submitting...") : t("submitApplication", "Submit Application")}
                             </button>
                             <button type="button" className="btn-secondary" disabled={submitting} onClick={cancelApply}>
-                              Cancel
+                              {t("cancel", "Cancel")}
                             </button>
                           </div>
                         </div>
@@ -435,7 +459,7 @@ export default function PatientAdsFeed({ variant = "app", defaultSource = "PATIE
                   );
                 })}
 
-                {ads.length === 0 ? <div className="card">No vacancies available right now.</div> : null}
+                {ads.length === 0 ? <div className="card">{t("noVacanciesAvailable", "No vacancies available right now.")}</div> : null}
               </div>
             )}
           </div>

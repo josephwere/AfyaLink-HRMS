@@ -2,11 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import ConsultationRoom from "../../components/ConsultationRoom";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
 
 export default function MyAppointments() {
+  const { t } = usePatientLanguage();
   const [searchParams] = useSearchParams();
   const hospitalFromQuery = searchParams.get("hospitalId") || "";
   const savedLocation = (() => {
@@ -316,10 +319,18 @@ export default function MyAppointments() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>My Appointments</h2>
-          <p className="muted">Choose your location first, then book in the nearest hospital.</p>
+          <h2>{t("appointmentsTitle", "Appointments & Nearby Hospitals")}</h2>
+          <p className="muted">{t("appointmentsSubtitle", "Choose your nearest hospital, book the right consultation mode, and follow active calls from one patient workspace.")}</p>
         </div>
       </div>
+
+      <PatientLanguageBar
+        title={t("appointmentsTitle", "Appointments & Nearby Hospitals")}
+        subtitle={t(
+          "appointmentsSubtitle",
+          "Choose your nearest hospital, book the right consultation mode, and follow active calls from one patient workspace."
+        )}
+      />
 
       {msg && <div className="card">{msg}</div>}
       {callMsg && <div className="card">{callMsg}</div>}
@@ -333,8 +344,8 @@ export default function MyAppointments() {
 
       <section className="section">
         <div className="card premium-card">
-          <h3>1) Choose Location</h3>
-          <label>Location mode</label>
+          <h3>1) {t("chooseLocation", "Choose Location")}</h3>
+          <label>{t("locationMode", "Location mode")}</label>
           <select
             value={locationMode}
             onChange={(e) => setLocationMode(e.target.value)}
@@ -357,11 +368,11 @@ export default function MyAppointments() {
               data-ai-aliases="detect gps|capture location|find nearest hospital from gps"
               data-ai-help="Detect the patient's current GPS location and refresh the nearest hospital options."
             >
-              {locating ? "Detecting..." : "Use Current Location"}
+              {locating ? t("detecting", "Detecting...") : t("currentLocation", "Use Current Location")}
             </button>
           )}
 
-          <label>Latitude</label>
+          <label>{t("latitude", "Latitude")}</label>
           <input
             value={lat}
             onChange={(e) => setLat(e.target.value)}
@@ -371,7 +382,7 @@ export default function MyAppointments() {
             data-ai-priority="low"
           />
 
-          <label>Longitude</label>
+          <label>{t("longitude", "Longitude")}</label>
           <input
             value={lng}
             onChange={(e) => setLng(e.target.value)}
@@ -381,7 +392,7 @@ export default function MyAppointments() {
             data-ai-priority="low"
           />
 
-          <label>Search radius (km)</label>
+          <label>{t("searchRadius", "Search radius (km)")}</label>
           <input
             type="number"
             min={1}
@@ -393,7 +404,7 @@ export default function MyAppointments() {
             data-ai-priority="low"
           />
 
-          <label>Location label (optional)</label>
+          <label>{t("locationLabelOptional", "Location label (optional)")}</label>
           <input
             value={locationLabel}
             onChange={(e) => setLocationLabel(e.target.value)}
@@ -407,8 +418,8 @@ export default function MyAppointments() {
 
       <section className="section">
         <div className="card premium-card">
-          <h3>2) Select Nearest Hospital</h3>
-          <label>Hospital</label>
+          <h3>2) {t("selectNearestHospitalTitle", "Select Nearest Hospital")}</h3>
+          <label>{t("selectHospital", "Hospital")}</label>
           <select
             value={hospitalId}
             onChange={(e) => setHospitalId(e.target.value)}
@@ -418,7 +429,7 @@ export default function MyAppointments() {
             data-ai-widget="hospital-picker"
             data-ai-priority="high"
           >
-            <option value="">{locationReady ? "Select nearest hospital" : "Choose location first"}</option>
+            <option value="">{locationReady ? t("selectNearestHospital", "Select nearest hospital") : t("chooseLocationFirst", "Choose location first")}</option>
             {hospitals.map((h) => (
               <option key={h._id} value={h._id}>
                 {h.name} {Number.isFinite(Number(h.distanceKm)) ? `• ${Number(h.distanceKm).toFixed(1)} km` : ""}
@@ -437,9 +448,9 @@ export default function MyAppointments() {
       </section>
 
       <section className="section">
-        <h3>3) Book Appointment</h3>
+        <h3>3) {t("bookAppointmentStep", "Book Appointment")}</h3>
         <form className="card premium-card" onSubmit={submit}>
-          <label>Service</label>
+          <label>{t("serviceType", "Service Type")}</label>
           <select
             value={form.serviceType}
             onChange={(e) => setForm((p) => ({ ...p, serviceType: e.target.value }))}
@@ -456,7 +467,7 @@ export default function MyAppointments() {
             <option value="Physiotherapy">Physiotherapy</option>
             <option value="Mental Health">Mental Health</option>
           </select>
-          <label>Date & Time</label>
+          <label>{t("preferredDate", "Preferred date & time")}</label>
           <input
             type="datetime-local"
             value={form.scheduledAt}
@@ -466,7 +477,7 @@ export default function MyAppointments() {
             data-ai-aliases="appointment time|scheduled time|booking date and time"
             data-ai-priority="high"
           />
-          <label>Consultation type</label>
+          <label>{t("consultationMode", "Consultation mode")}</label>
           <select
             value={form.consultationMode}
             onChange={(e) => setForm((p) => ({ ...p, consultationMode: e.target.value }))}
@@ -479,7 +490,7 @@ export default function MyAppointments() {
             <option value="VOICE">Voice call</option>
             <option value="VIDEO">Video call</option>
           </select>
-          <label>Reason</label>
+          <label>{t("reason", "Reason")}</label>
           <input
             value={form.reason}
             onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
@@ -488,7 +499,7 @@ export default function MyAppointments() {
             data-ai-aliases="consultation reason|visit reason|chief complaint"
             data-ai-priority="high"
           />
-          <label>Preferred doctor (optional)</label>
+          <label>{t("preferredDoctorOptional", "Preferred doctor (optional)")}</label>
           <input
             value={doctorSearch}
             onChange={(e) => setDoctorSearch(e.target.value)}
@@ -517,13 +528,13 @@ export default function MyAppointments() {
             The hospital will assign the best available doctor if you leave this blank.
           </p>
           <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? "Submitting..." : "Submit Appointment"}
+            {saving ? t("submitting", "Submitting...") : t("bookNow", "Book Now")}
           </button>
         </form>
       </section>
 
       <section className="section">
-        <h3>Best Next Slots</h3>
+        <h3>{t("suggestions", "Suggested Slots")}</h3>
         <div className="grid info-grid">
           {suggestions.map((item, index) => (
             <div key={`${item.doctorId}-${index}`} className="card premium-card">
@@ -555,7 +566,7 @@ export default function MyAppointments() {
                   }));
                 }}
               >
-                Use This Slot
+                {t("useThisSlot", "Use This Slot")}
               </button>
               <button
                 type="button"
@@ -568,20 +579,20 @@ export default function MyAppointments() {
                 data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || "Consultation"} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
                 onClick={() => bookSuggestedSlot(item)}
               >
-                {saving ? "Booking..." : "Book Now"}
+                {saving ? t("booking", "Booking...") : t("bookNow", "Book Now")}
               </button>
             </div>
           ))}
           {!suggestions.length && (
             <div className="card premium-card">
-              <p className="muted">No smart slot suggestions yet. Pick a time manually.</p>
+              <p className="muted">{t("noSuggestedSlots", "No smart slot suggestions yet. Pick a time manually.")}</p>
             </div>
           )}
         </div>
       </section>
 
       <section className="section">
-        <h3>Doctors In This Hospital</h3>
+        <h3>{t("doctorsInHospital", "Doctors In This Hospital")}</h3>
         <div className="grid info-grid">
           {filteredDoctors.slice(0, 8).map((doctor) => (
             <div key={doctor._id} className="card premium-card">
@@ -604,20 +615,20 @@ export default function MyAppointments() {
                 data-ai-aliases="select doctor card|choose doctor|set preferred doctor"
                 data-ai-help={`${doctor.name || "Doctor"} | ${doctor.specialization || doctor?.employment?.department || "General Practice"} | ${doctor.availableToday ? "Available today" : "Busy today"}`}
               >
-                Prefer This Doctor
+                {t("preferDoctor", "Prefer This Doctor")}
               </button>
             </div>
           ))}
           {!filteredDoctors.length && (
             <div className="card premium-card">
-              <p className="muted">No doctors listed for this hospital yet.</p>
+              <p className="muted">{t("noDoctorsListed", "No doctors listed for this hospital yet.")}</p>
             </div>
           )}
         </div>
       </section>
 
       <section className="section">
-        <h3>Consultation Calls</h3>
+        <h3>{t("activeCalls", "Active Calls")}</h3>
         <div className="grid info-grid">
           {calls.map((call) => (
             <div key={call._id} className="card premium-card">
@@ -641,21 +652,21 @@ export default function MyAppointments() {
                   data-ai-help={`${call.callType === "VIDEO" ? "Video" : "Voice"} consultation | ${call.doctor?.name || "Assigned doctor"} | ${call.status}`}
                   onClick={() => setActiveCall(call)}
                 >
-                  {call.status === "ACTIVE" ? "Join Room" : "Waiting"}
+                  {call.status === "ACTIVE" ? t("joinRoom", "Join Room") : t("waiting", "Waiting")}
                 </button>
               </div>
             </div>
           ))}
           {!calls.length && (
             <div className="card premium-card">
-              <p className="muted">No consultation calls yet.</p>
+              <p className="muted">{t("noConsultationCalls", "No consultation calls yet.")}</p>
             </div>
           )}
         </div>
       </section>
 
       <section className="section">
-        <h3>Appointment History</h3>
+        <h3>{t("recentAppointments", "Recent Appointments")}</h3>
         <div className="card premium-card">
           {loading ? (
             <p className="muted">Loading...</p>
@@ -710,7 +721,7 @@ export default function MyAppointments() {
                             data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
                             onClick={() => startConsultation(a._id, "VOICE")}
                           >
-                            Voice
+                            {t("voice", "Voice")}
                           </button>
                           <button
                             type="button"
@@ -722,7 +733,7 @@ export default function MyAppointments() {
                             data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
                             onClick={() => startConsultation(a._id, "VIDEO")}
                           >
-                            Video
+                            {t("video", "Video")}
                           </button>
                         </div>
                       </td>
@@ -730,7 +741,7 @@ export default function MyAppointments() {
                   ))}
                   {appointments.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="muted">No appointments yet.</td>
+                      <td colSpan={7} className="muted">{t("noAppointmentsYet", "No appointments yet.")}</td>
                     </tr>
                   )}
                 </tbody>

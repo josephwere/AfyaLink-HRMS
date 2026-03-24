@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
 import PasswordInput from "../components/PasswordInput";
+import AuthPageShell from "../components/AuthPageShell";
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -51,7 +52,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="auth-bg">
+    <AuthPageShell>
       <form className="auth-card" onSubmit={submit}>
         <h1>Reset password</h1>
 
@@ -70,6 +71,6 @@ export default function ResetPassword() {
           {loading ? "Resetting..." : "Reset password"}
         </button>
       </form>
-    </div>
+    </AuthPageShell>
   );
 }

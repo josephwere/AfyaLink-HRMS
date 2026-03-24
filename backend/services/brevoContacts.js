@@ -1,4 +1,5 @@
 import axios from "axios";
+import { enqueueBackgroundJob } from "./backgroundJobService.js";
 
 const BREVO_CONTACTS_API_URL = "https://api.brevo.com/v3/contacts";
 
@@ -86,7 +87,27 @@ export async function syncBrevoContactForUser(user, options = {}) {
 
 export function queueBrevoContactSync(user, options = {}) {
   if (!user) return;
-  syncBrevoContactForUser(user, options).catch((err) => {
+  enqueueBackgroundJob({
+    type: "BREVO_CONTACT_SYNC",
+    queue: "communications",
+    payload: {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+      options,
+    },
+    source: options.source || "brevo-contact-sync",
+    dedupeKey: user.email ? `brevo-contact:${String(user.email).trim().toLowerCase()}` : "",
+    tags: ["brevo", "contacts", String(user.role || "").toLowerCase()],
+    user: user._id || null,
+    hospital: user.hospital || null,
+    maxAttempts: 6,
+    backoffMs: 30000,
+  }).catch((err) => {
     console.error("[brevo] contact sync failed:", err?.response?.data || err?.message || err);
   });
 }

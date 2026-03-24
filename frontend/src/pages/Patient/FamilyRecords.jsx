@@ -4,9 +4,12 @@ import apiFetch from "../../utils/apiFetch";
 import { StatCard } from "../../components/Cards";
 import { listMyReports } from "../../services/reportsApi";
 import { selfRegisterMinorPatient } from "../../services/patientApi";
+import PatientLanguageBar from "../../components/PatientLanguageBar";
+import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 export default function FamilyRecords() {
   const navigate = useNavigate();
+  const { t } = usePatientLanguage();
   const [family, setFamily] = useState([]);
   const [encounters, setEncounters] = useState([]);
   const [reports, setReports] = useState([]);
@@ -109,23 +112,29 @@ export default function FamilyRecords() {
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
         <div>
-          <h2>Family Records</h2>
-          <p className="muted">
-            Parent-facing view of linked minor care records, reports, and recent encounter activity.
-          </p>
+          <h2>{t("familyRecordsTitle", "Family Records")}</h2>
+          <p className="muted">{t("familyRecordsSubtitle", "Parent-facing view of linked minor care records, reports, and recent encounter activity.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/profile")}>
-            Manage Linked Children
+            {t("manageLinkedChildren", "Manage Linked Children")}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/patient/family-timeline")}>
+            {t("familyTimeline", "Family Timeline")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/notifications?category=WELLNESS")}>
-            Daily Quotes
+            {t("openDailyQuotes", "Daily Quotes")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/patient/billing")}>
-            Billing View
+            {t("billing", "Billing")}
           </button>
         </div>
       </div>
+
+      <PatientLanguageBar
+        title={t("familyRecordsTitle", "Family Records")}
+        subtitle={t("familyRecordsSubtitle", "Parent-facing view of linked minor care records, reports, and recent encounter activity.")}
+      />
 
       {msg ? (
         <section className="section">
@@ -138,28 +147,26 @@ export default function FamilyRecords() {
           <div className="card-header-actions">
             <div>
               <h3>Register a Child Under Your Account</h3>
-              <p className="muted">
-                This creates a minor profile under your parent national ID so the child follows your family record trail across hospitals.
-              </p>
+              <p className="muted">{t("registerChildSubtitle", "This creates a minor profile under your parent national ID so the child follows your family record trail across hospitals.")}</p>
             </div>
             <div className="action-pill">
-              Parent ID: {profile?.nationalIdNumber || "Add your national ID in Profile first"}
+              {t("parentId", "Parent ID")}: {profile?.nationalIdNumber || t("addParentIdFirst", "Add your national ID in Profile first")}
             </div>
           </div>
 
           {!profile?.nationalIdNumber ? (
             <div className="subtle-banner" style={{ marginTop: 12 }}>
-              Add your national ID in Profile before self-registering a child. This is the family anchor used by hospitals and parent monitoring.
+              {t("addParentIdFirst", "Add your national ID in Profile before self-registering a child. This is the family anchor used by hospitals and parent monitoring.")}
             </div>
           ) : (
             <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 12 }}>
               <input
-                placeholder="Child first name"
+                placeholder={t("childFirstName", "Child first name")}
                 value={registerForm.firstName}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, firstName: e.target.value }))}
               />
               <input
-                placeholder="Child last name"
+                placeholder={t("childLastName", "Child last name")}
                 value={registerForm.lastName}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, lastName: e.target.value }))}
               />
@@ -172,18 +179,18 @@ export default function FamilyRecords() {
                 value={registerForm.gender}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, gender: e.target.value }))}
               >
-                <option value="">Gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
+                <option value="">{t("gender", "Gender")}</option>
+                <option value="MALE">{t("male", "Male")}</option>
+                <option value="FEMALE">{t("female", "Female")}</option>
+                <option value="OTHER">{t("other", "Other")}</option>
               </select>
               <input
-                placeholder="Child national ID / birth cert (optional)"
+                placeholder={t("childIdentityOptional", "Child national ID / birth cert (optional)")}
                 value={registerForm.nationalId}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, nationalId: e.target.value }))}
               />
               <input
-                placeholder="Child contact (optional)"
+                placeholder={t("childContactOptional", "Child contact (optional)")}
                 value={registerForm.contact}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, contact: e.target.value }))}
               />
@@ -191,7 +198,7 @@ export default function FamilyRecords() {
                 value={registerForm.hospitalId}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, hospitalId: e.target.value }))}
               >
-                <option value="">Select hospital</option>
+                <option value="">{t("selectHospital", "Select hospital")}</option>
                 {hospitals.map((hospital) => (
                   <option key={hospital._id} value={hospital._id}>
                     {hospital.name}
@@ -202,12 +209,12 @@ export default function FamilyRecords() {
                 value={registerForm.relationship}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, relationship: e.target.value }))}
               >
-                <option value="PARENT">Parent</option>
-                <option value="GUARDIAN">Guardian</option>
-                <option value="CAREGIVER">Caregiver</option>
+                <option value="PARENT">{t("parent", "Parent")}</option>
+                <option value="GUARDIAN">{t("guardian", "Guardian")}</option>
+                <option value="CAREGIVER">{t("caregiver", "Caregiver")}</option>
               </select>
               <textarea
-                placeholder="Registration note for this child (optional)"
+                placeholder={t("childNoteOptional", "Registration note for this child (optional)")}
                 value={registerForm.notes}
                 onChange={(e) => setRegisterForm((prev) => ({ ...prev, notes: e.target.value }))}
               />
@@ -228,10 +235,10 @@ export default function FamilyRecords() {
               }
               onClick={registerMinor}
             >
-              {registerBusy ? "Registering..." : "Register Child"}
+              {registerBusy ? t("registering", "Registering...") : t("registerChild", "Register Child")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/profile")}>
-              Update Parent Identity
+              {t("updateParentIdentity", "Update Parent Identity")}
             </button>
           </div>
         </div>
@@ -239,10 +246,10 @@ export default function FamilyRecords() {
 
       <section className="section">
         <div className="grid info-grid">
-          <StatCard title="Linked Children" value={totals.children} onClick={() => navigate("/profile")} />
-          <StatCard title="Upcoming Visits" value={totals.appointments} onClick={() => navigate("/patient/appointments")} />
-          <StatCard title="Tracked Encounters" value={totals.encounters} onClick={() => navigate("/patient/medical-records")} />
-          <StatCard title="Clinical Reports" value={totals.reports} onClick={() => navigate("/reports")} />
+          <StatCard title={t("linkedChildren", "Linked Children")} value={totals.children} onClick={() => navigate("/profile")} />
+          <StatCard title={t("upcomingChildVisits", "Upcoming Visits")} value={totals.appointments} onClick={() => navigate("/patient/appointments")} />
+          <StatCard title={t("trackedEncounters", "Tracked Encounters")} value={totals.encounters} onClick={() => navigate("/patient/medical-records")} />
+          <StatCard title={t("clinicalReports", "Clinical Reports")} value={totals.reports} onClick={() => navigate("/reports")} />
         </div>
       </section>
 
