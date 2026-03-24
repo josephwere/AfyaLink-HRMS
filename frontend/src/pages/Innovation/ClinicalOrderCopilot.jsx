@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
@@ -56,6 +56,8 @@ export default function ClinicalOrderCopilot() {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [clientMeta, setClientMeta] = useState(null);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     if (!canSwitchHospital) return;
@@ -64,27 +66,40 @@ export default function ClinicalOrderCopilot() {
       .catch(() => setHospitals([]));
   }, [canSwitchHospital]);
 
+  const loadSnapshot = useCallback(
+    async ({ preserveSnapshot = false } = {}) => {
+      const requestId = requestRef.current + 1;
+      requestRef.current = requestId;
+      setLoading(true);
+      setMsg("");
+      try {
+        const result = await getClinicalOrderCopilotSnapshot({
+          hospitalId: hospitalId || undefined,
+        });
+        if (requestRef.current !== requestId) return;
+        setSnapshot(result?.payload || null);
+        setClientMeta(result?.clientMeta || null);
+      } catch (err) {
+        if (requestRef.current !== requestId) return;
+        if (!preserveSnapshot) setSnapshot(null);
+        setMsg(
+          err?.message ||
+            "We could not load the clinical order copilot yet. Try again in a moment."
+        );
+      } finally {
+        if (requestRef.current === requestId) setLoading(false);
+      }
+    },
+    [hospitalId]
+  );
+
   useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    setMsg("");
-    getClinicalOrderCopilotSnapshot({ hospitalId: hospitalId || undefined })
-      .then((res) => {
-        if (!alive) return;
-        setSnapshot(res || null);
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setSnapshot(null);
-        setMsg(err?.message || "Failed to load clinical order copilot.");
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [hospitalId]);
+    loadSnapshot({ preserveSnapshot: false });
+  }, [loadSnapshot]);
+
+  const hasSnapshot = Boolean(snapshot);
+  const initialLoading = loading && !hasSnapshot;
+  const refreshing = loading && hasSnapshot;
 
   const summary = snapshot?.summary || {};
   const suggestions = snapshot?.suggestions || [];
@@ -159,6 +174,52 @@ export default function ClinicalOrderCopilot() {
     [summary]
   );
 
+  const controlPaths = useMemo(
+    () => [
+      {
+        eyebrow: "Clinical flow",
+        title: "Review active care lanes",
+        body: "Jump into the primary clinical workspace where staff can act on reviewed suggestions without losing patient context.",
+        actionLabel: actorRole === "DOCTOR" ? "Open OPD" : "Open appointments",
+        onClick: () => navigate(actorRole === "DOCTOR" ? "/doctor/opd" : "/hospital-admin/appointments"),
+      },
+      {
+        eyebrow: "Payer rail",
+        title: "Handle approval friction",
+        body: "Move straight to the claims and authorization workspace when payer drag is the real blocker.",
+        actionLabel:
+          actorRole === "DOCTOR"
+            ? "Open referrals"
+            : ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(actorRole)
+            ? "Open claims"
+            : "Open revenue intelligence",
+        onClick: () =>
+          navigate(
+            actorRole === "DOCTOR"
+              ? "/doctor/referrals"
+              : ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(actorRole)
+              ? "/hospital-admin/claims"
+              : "/system-admin/revenue-intelligence"
+          ),
+      },
+      {
+        eyebrow: "Lab rail",
+        title: "Watch downstream demand",
+        body: "Keep lab pressure visible so suggestions do not create bottlenecks for samples, queues, or reporting.",
+        actionLabel: "Open lab workflow",
+        onClick: () => navigate(resolveLabPath(actorRole)),
+      },
+      {
+        eyebrow: "Transfer context",
+        title: "Protect handover continuity",
+        body: "When the next decision depends on transfer context, open the command flow without leaving this order-planning frame.",
+        actionLabel: "Open transfer center",
+        onClick: () => navigate("/hospital-admin/transfer-command-center"),
+      },
+    ],
+    [actorRole, navigate]
+  );
+
   return (
     <div className="dashboard premium-shell clinical-order-copilot-shell innovation-console-page">
       <section className="premium-card premium-shell-head innovation-console-hero">
@@ -187,7 +248,12 @@ export default function ClinicalOrderCopilot() {
                   ))}
                 </select>
               ) : null}
-              <button type="button" className="btn-secondary" onClick={() => window.location.reload()} disabled={loading}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => loadSnapshot({ preserveSnapshot: hasSnapshot })}
+                disabled={loading}
+              >
                 {loading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
@@ -216,183 +282,268 @@ export default function ClinicalOrderCopilot() {
             <strong>Best use</strong>
             <span>Use it to shorten order planning, preauth prep, and escalation framing.</span>
           </div>
+          <div className="premium-note">
+            <strong>Runtime</strong>
+            <span>
+              {refreshing
+                ? "Refreshing live signals while the current console stays visible."
+                : clientMeta?.attempts > 1
+                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                : clientMeta?.loadedAt
+                ? `Live sync completed ${formatWhen(clientMeta.loadedAt)}.`
+                : "Warm-start protection is ready for the first live pull."}
+            </span>
+          </div>
         </div>
       </section>
 
-      {msg ? (
+      {initialLoading ? (
         <section className="section">
-          <div className="card">{msg}</div>
+          <div className="card premium-card innovation-console-state-card">
+            <span className="developer-tool-eyebrow">Warm start</span>
+            <strong>Preparing live clinical signals</strong>
+            <p className="muted">
+              We are waking the backend and holding this page until the first live snapshot is ready.
+              That avoids the cold-start timeout flash on first visit.
+            </p>
+            <div className="innovation-console-skeleton-grid" aria-hidden="true">
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+              <div className="innovation-console-skeleton" />
+            </div>
+          </div>
         </section>
       ) : null}
 
-      <section className="section">
-        <div className="grid info-grid">
-          {summaryCards.map((card) => (
-            <StatCard key={card.title} title={card.title} value={card.value} onClick={card.onClick} />
-          ))}
+      {msg ? (
+        <div className="premium-inline-note innovation-console-inline-state innovation-console-inline-state-warn">
+          <span>{msg}</span>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => loadSnapshot({ preserveSnapshot: hasSnapshot })}
+          >
+            Retry now
+          </button>
         </div>
-      </section>
+      ) : null}
 
-      <section className="section revenue-alert-grid">
-        <div className="card premium-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Review-Ready Suggestions</h3>
-              <p className="muted">These are draft suggestions, not automatic orders. Confidence helps triage review priority.</p>
+      {refreshing ? (
+        <div className="premium-inline-note innovation-console-inline-state">
+          <span>Refreshing live clinical signals. The current view stays in place until the new snapshot arrives.</span>
+          <span className="action-pill">Live sync in progress</span>
+        </div>
+      ) : null}
+
+      {hasSnapshot ? (
+        <>
+          <section className="section">
+            <div className="grid info-grid">
+              {summaryCards.map((card) => (
+                <StatCard key={card.title} title={card.title} value={card.value} onClick={card.onClick} />
+              ))}
             </div>
-            <div className="action-pill">{suggestions.length} active suggestions</div>
-          </div>
-          <div className="revenue-action-list">
-            {suggestions.length ? (
-              suggestions.map((item) => (
-                <div key={`${item.orderType}-${item.title}`} className="revenue-action-card watch">
-                  <div className="card-header-actions">
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p className="muted">{item.orderType} • {item.diagnosis || "Pattern-based"}</p>
+          </section>
+
+          <section className="section revenue-alert-grid">
+            <div className="card premium-card">
+              <div className="card-header-actions">
+                <div>
+                  <h3>Review-Ready Suggestions</h3>
+                  <p className="muted">These are draft suggestions, not automatic orders. Confidence helps triage review priority.</p>
+                </div>
+                <div className="action-pill">{suggestions.length} active suggestions</div>
+              </div>
+              <div className="revenue-action-list">
+                {suggestions.length ? (
+                  suggestions.map((item) => (
+                    <div key={`${item.orderType}-${item.title}`} className="revenue-action-card watch">
+                      <div className="card-header-actions">
+                        <div>
+                          <strong>{item.title}</strong>
+                          <p className="muted">{item.orderType} • {item.diagnosis || "Pattern-based"}</p>
+                        </div>
+                        <span className="action-pill">{formatPct(item.confidence)}</span>
+                      </div>
+                      <p className="muted">{item.reason}</p>
+                      <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+                        <span className="action-pill">{item.recentCount || 0} related encounters</span>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => navigate(resolveActionPath(actorRole, item, navigate))}
+                        >
+                          Open workflow
+                        </button>
+                      </div>
                     </div>
-                    <span className="action-pill">{formatPct(item.confidence)}</span>
+                  ))
+                ) : (
+                  <div className="developer-empty-state compact">
+                    <strong>No suggested order bundles right now.</strong>
+                    <p className="muted">When live encounter pressure rises, review-ready bundles will appear here first.</p>
                   </div>
-                  <p className="muted">{item.reason}</p>
-                  <div className="doctor-actions-row" style={{ marginTop: 10 }}>
-                    <span className="action-pill">{item.recentCount || 0} related encounters</span>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => navigate(resolveActionPath(actorRole, item, navigate))}
-                    >
-                      Open workflow
+                )}
+              </div>
+            </div>
+
+            <div className="card premium-card">
+              <div className="card-header-actions">
+                <div>
+                  <h3>Signal Summary</h3>
+                  <p className="muted">Top diagnostic pressure and ordering demand from the last 30 days.</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => navigate(actorRole === "DOCTOR" ? "/doctor/opd" : "/hospital-admin/appointments")}
+                >
+                  Open source workflows
+                </button>
+              </div>
+              <div className="panel-grid" style={{ marginTop: 12 }}>
+                <div className="card premium-card compact-card">
+                  <h4>Top Diagnoses</h4>
+                  <div className="signal-chip-grid">
+                    {diagnosisSignals.map((item) => (
+                      <span key={item.diagnosis} className="action-pill">
+                        {item.diagnosis} • {item.count}
+                      </span>
+                    ))}
+                    {!diagnosisSignals.length ? (
+                      <div className="developer-empty-state compact">
+                        <strong>No diagnosis signals yet.</strong>
+                        <p className="muted">Recent encounter patterns will accumulate here as the order graph becomes busier.</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="card premium-card compact-card">
+                  <h4>Top Medications</h4>
+                  <div className="signal-chip-grid">
+                    {topMedications.map((item) => (
+                      <span key={item.name} className="action-pill">
+                        {item.name} • {item.count}
+                      </span>
+                    ))}
+                    {!topMedications.length ? (
+                      <div className="developer-empty-state compact">
+                        <strong>No medication pressure yet.</strong>
+                        <p className="muted">Medication demand appears here when live ordering patterns start to cluster.</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="section revenue-panel-grid">
+            <div className="card premium-card">
+              <div className="card-header-actions">
+                <div>
+                  <h3>Top Lab Bundles</h3>
+                  <p className="muted">Which test groups are most active, and how much pending backlog they carry.</p>
+                </div>
+                <button type="button" className="btn-secondary" onClick={() => navigate(resolveLabPath(actorRole))}>
+                  Lab workflow
+                </button>
+              </div>
+              <div className="table-wrap" style={{ marginTop: 12 }}>
+                <table className="table premium-table">
+                  <thead>
+                    <tr>
+                      <th>Test</th>
+                      <th>Total Orders</th>
+                      <th>Pending</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topLabOrders.map((row) => (
+                      <tr key={row.testName}>
+                        <td>{row.testName || "Unspecified test"}</td>
+                        <td>{row.count}</td>
+                        <td>{row.pending}</td>
+                      </tr>
+                    ))}
+                    {!topLabOrders.length ? (
+                      <tr>
+                        <td colSpan={3}>No lab demand data yet.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="card premium-card">
+              <div className="card-header-actions">
+                <div>
+                  <h3>Recent Encounter Context</h3>
+                  <p className="muted">A lightweight context rail so order reviews stay grounded in the active patient story.</p>
+                </div>
+                <button type="button" className="btn-secondary" onClick={() => navigate(actorRole === "DOCTOR" ? "/doctor/patients" : "/hospital-admin/consultation-monitor")}>
+                  Open live context
+                </button>
+              </div>
+              <div className="table-wrap" style={{ marginTop: 12 }}>
+                <table className="table premium-table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Diagnosis</th>
+                      <th>State</th>
+                      <th>When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentEncounters.map((row) => (
+                      <tr key={row._id}>
+                        <td>
+                          <div>{row.patientName}</div>
+                          <div className="muted">{row.hospitalName}</div>
+                        </td>
+                        <td>{row.diagnosis}</td>
+                        <td>{row.state}</td>
+                        <td>{formatWhen(row.createdAt)}</td>
+                      </tr>
+                    ))}
+                    {!recentEncounters.length ? (
+                      <tr>
+                        <td colSpan={4}>No encounter context yet.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section className="section">
+            <div className="card-header-actions">
+              <div>
+                <h3>Control Paths</h3>
+                <p className="muted">Keep the next operational move one click away, even when the console is quiet.</p>
+              </div>
+            </div>
+            <div className="developer-tool-grid innovation-console-tool-grid">
+              {controlPaths.map((item) => (
+                <div key={item.title} className="developer-tool-card">
+                  <span className="developer-tool-eyebrow">{item.eyebrow}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <div className="developer-inline-actions compact">
+                    <button type="button" className="btn-secondary" onClick={item.onClick}>
+                      {item.actionLabel}
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="muted" style={{ marginTop: 12 }}>No suggested order bundles right now.</div>
-            )}
-          </div>
-        </div>
-
-        <div className="card premium-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Signal Summary</h3>
-              <p className="muted">Top diagnostic pressure and ordering demand from the last 30 days.</p>
+              ))}
             </div>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => navigate(actorRole === "DOCTOR" ? "/doctor/opd" : "/hospital-admin/appointments")}
-            >
-              Open source workflows
-            </button>
-          </div>
-          <div className="panel-grid" style={{ marginTop: 12 }}>
-            <div className="card premium-card compact-card">
-              <h4>Top Diagnoses</h4>
-              <div className="signal-chip-grid">
-                {diagnosisSignals.map((item) => (
-                  <span key={item.diagnosis} className="action-pill">
-                    {item.diagnosis} • {item.count}
-                  </span>
-                ))}
-                {!diagnosisSignals.length ? <div className="muted">No diagnosis signals yet.</div> : null}
-              </div>
-            </div>
-            <div className="card premium-card compact-card">
-              <h4>Top Medications</h4>
-              <div className="signal-chip-grid">
-                {topMedications.map((item) => (
-                  <span key={item.name} className="action-pill">
-                    {item.name} • {item.count}
-                  </span>
-                ))}
-                {!topMedications.length ? <div className="muted">No medication pressure yet.</div> : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section revenue-panel-grid">
-        <div className="card premium-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Top Lab Bundles</h3>
-              <p className="muted">Which test groups are most active, and how much pending backlog they carry.</p>
-            </div>
-            <button type="button" className="btn-secondary" onClick={() => navigate(resolveLabPath(actorRole))}>
-              Lab workflow
-            </button>
-          </div>
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="table premium-table">
-              <thead>
-                <tr>
-                  <th>Test</th>
-                  <th>Total Orders</th>
-                  <th>Pending</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topLabOrders.map((row) => (
-                  <tr key={row.testName}>
-                    <td>{row.testName || "Unspecified test"}</td>
-                    <td>{row.count}</td>
-                    <td>{row.pending}</td>
-                  </tr>
-                ))}
-                {!topLabOrders.length ? (
-                  <tr>
-                    <td colSpan={3}>No lab demand data yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="card premium-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Recent Encounter Context</h3>
-              <p className="muted">A lightweight context rail so order reviews stay grounded in the active patient story.</p>
-            </div>
-            <button type="button" className="btn-secondary" onClick={() => navigate(actorRole === "DOCTOR" ? "/doctor/patients" : "/hospital-admin/consultation-monitor")}>
-              Open live context
-            </button>
-          </div>
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="table premium-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Diagnosis</th>
-                  <th>State</th>
-                  <th>When</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentEncounters.map((row) => (
-                  <tr key={row._id}>
-                    <td>
-                      <div>{row.patientName}</div>
-                      <div className="muted">{row.hospitalName}</div>
-                    </td>
-                    <td>{row.diagnosis}</td>
-                    <td>{row.state}</td>
-                    <td>{formatWhen(row.createdAt)}</td>
-                  </tr>
-                ))}
-                {!recentEncounters.length ? (
-                  <tr>
-                    <td colSpan={4}>No encounter context yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }
