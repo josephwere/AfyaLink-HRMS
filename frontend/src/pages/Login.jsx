@@ -84,7 +84,14 @@ export default function Login() {
       const result = await login(identifier.trim(), password);
 
       if (result?.requires2FA) {
-        navigate("/2fa", { state: { userId: result.userId, email: identifier } });
+        navigate("/2fa", {
+          state: {
+            userId: result.userId,
+            email: identifier,
+            method: result.method,
+            reason: result.reason,
+          },
+        });
         return;
       }
 

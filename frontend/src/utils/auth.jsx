@@ -464,7 +464,15 @@ export function AuthProvider({ children }) {
     if (data.requires2FA) {
       localStorage.setItem("2fa_pending", "true");
       localStorage.setItem("2fa_user", data.userId);
-      return { requires2FA: true, userId: data.userId };
+      localStorage.setItem("2fa_method", data.method || "OTP");
+      localStorage.setItem("2fa_reason", data.reason || "");
+      localStorage.setItem("2fa_identifier", String(identifierOrToken || "").trim());
+      return {
+        requires2FA: true,
+        userId: data.userId,
+        method: data.method || "OTP",
+        reason: data.reason || "",
+      };
     }
 
     const normalizedRole = normalizeRole(data.user?.role);
@@ -516,6 +524,9 @@ export function AuthProvider({ children }) {
     }
     localStorage.removeItem("2fa_pending");
     localStorage.removeItem("2fa_user");
+    localStorage.removeItem("2fa_method");
+    localStorage.removeItem("2fa_reason");
+    localStorage.removeItem("2fa_identifier");
     clearRoleOverrideState();
     setRoleOverrideState("");
     setStrictImpersonationState(false);
@@ -547,6 +558,9 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("user");
       localStorage.removeItem("2fa_pending");
       localStorage.removeItem("2fa_user");
+      localStorage.removeItem("2fa_method");
+      localStorage.removeItem("2fa_reason");
+      localStorage.removeItem("2fa_identifier");
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
       localStorage.removeItem(STRICT_IMPERSONATION_KEY);
       setBaseUser(null);
