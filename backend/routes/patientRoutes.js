@@ -4,6 +4,8 @@ import express from "express";
 import {
   createPatient,
   selfRegisterMinorPatient,
+  requestFamilyAnchorApprovalOtp,
+  verifyFamilyAnchorApprovalOtp,
   listPatients,
   getPatient,
   searchPatients,
@@ -34,6 +36,18 @@ router.post(
   protect,
   requireRole("PATIENT", "GUEST"),
   selfRegisterMinorPatient
+);
+
+router.post(
+  "/family-anchor/request-otp",
+  protect,
+  requestFamilyAnchorApprovalOtp
+);
+
+router.post(
+  "/family-anchor/verify-otp",
+  protect,
+  verifyFamilyAnchorApprovalOtp
 );
 
 router.get("/", protect, listPatients);

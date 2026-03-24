@@ -73,15 +73,33 @@ const patientSchema = new Schema(
     },
 
     familyGroup: {
+      familyAnchorApproval: { type: Schema.Types.ObjectId, ref: "FamilyAnchorApproval", default: null, index: true },
       parentUser: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
       parentNationalIdNumber: { type: String, trim: true, default: "", index: true },
       parentNationalIdCountry: { type: String, trim: true, default: "", index: true },
       relationship: { type: String, trim: true, default: "PARENT" },
+      memberType: {
+        type: String,
+        enum: ["CHILD", "SPOUSE", "DEPENDENT", "OTHER"],
+        default: "CHILD",
+      },
       registrationSource: {
         type: String,
         enum: ["SELF_SERVICE", "HOSPITAL_STAFF", "PARENT_ACCOUNT_LINK", "LEGACY"],
         default: "LEGACY",
       },
+      approvalStatus: {
+        type: String,
+        enum: ["NOT_REQUIRED", "PENDING", "APPROVED", "REJECTED"],
+        default: "PENDING",
+      },
+      approvalChannel: {
+        type: String,
+        enum: ["NONE", "OTP", "ACCOUNT_LINK", "MANUAL"],
+        default: "NONE",
+      },
+      approvalRequestedAt: Date,
+      approvalApprovedAt: Date,
       verifiedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       verifiedAt: Date,
       parentDisplayName: { type: String, trim: true, default: "" },

@@ -40,6 +40,51 @@ const systemSettingsSchema = new Schema(
         requireBillingHandoffWhenPaymentsEnabled: { type: Boolean, default: true },
         requirePrescriptionWhenPharmacyEnabled: { type: Boolean, default: false },
       },
+      familyAccess: {
+        requireOtpForFamilyAnchor: { type: Boolean, default: true },
+        allowSingleAnchorForSpouseAndChildren: { type: Boolean, default: true },
+        otpTtlSeconds: { type: Number, default: 600 },
+        countryPolicies: {
+          type: Map,
+          of: {
+            fullProxyMaxAge: { type: Number, default: 15 },
+            sharedAccessMinAge: { type: Number, default: 16 },
+            adultAge: { type: Number, default: 18 },
+            label: { type: String, default: "" },
+            enabled: { type: Boolean, default: true },
+          },
+          default: {
+            DEFAULT: {
+              fullProxyMaxAge: 15,
+              sharedAccessMinAge: 16,
+              adultAge: 18,
+              label: "Default policy",
+              enabled: true,
+            },
+            KE: {
+              fullProxyMaxAge: 15,
+              sharedAccessMinAge: 16,
+              adultAge: 18,
+              label: "Kenya",
+              enabled: true,
+            },
+            UG: {
+              fullProxyMaxAge: 15,
+              sharedAccessMinAge: 16,
+              adultAge: 18,
+              label: "Uganda",
+              enabled: true,
+            },
+            TZ: {
+              fullProxyMaxAge: 15,
+              sharedAccessMinAge: 16,
+              adultAge: 18,
+              label: "Tanzania",
+              enabled: true,
+            },
+          },
+        },
+      },
     },
     governmentApis: {
       sha: {

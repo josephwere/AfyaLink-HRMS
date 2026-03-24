@@ -100,6 +100,16 @@ export const updateSystemSettings = async (req, res) => {
         ...(doc.clinical?.closeoutPolicy || {}),
         ...(clinical.closeoutPolicy || {}),
       },
+      familyAccess: {
+        ...(doc.clinical?.familyAccess || {}),
+        ...(clinical.familyAccess || {}),
+        countryPolicies: {
+          ...(doc.clinical?.familyAccess?.countryPolicies?.toObject?.() ||
+            doc.clinical?.familyAccess?.countryPolicies ||
+            {}),
+          ...(clinical.familyAccess?.countryPolicies || {}),
+        },
+      },
     };
   }
   if (governmentApis) {

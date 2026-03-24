@@ -65,9 +65,33 @@ function basePermissions(mode) {
   };
 }
 
-export function resolveMinorConsentPolicy({ age = null, countryCode = "" } = {}) {
+export function resolvePolicySeed({ countryCode = "", settings = null } = {}) {
   const normalizedCountryCode = normalizeCountryCode(countryCode);
-  const seed = POLICY_SEEDS[normalizedCountryCode] || POLICY_SEEDS.DEFAULT;
+  const configuredPolicies =
+    settings?.clinical?.familyAccess?.countryPolicies?.toObject?.() ||
+    settings?.clinical?.familyAccess?.countryPolicies ||
+    {};
+  const configuredSeed =
+    configuredPolicies?.[normalizedCountryCode] ||
+    configuredPolicies?.DEFAULT ||
+    null;
+
+  if (configuredSeed && configuredSeed.enabled !== false) {
+    return {
+      fullProxyMaxAge: Number(configuredSeed.fullProxyMaxAge ?? 15),
+      sharedAccessMinAge: Number(configuredSeed.sharedAccessMinAge ?? 16),
+      adultAge: Number(configuredSeed.adultAge ?? 18),
+      label: configuredSeed.label || POLICY_SEEDS[normalizedCountryCode]?.label || POLICY_SEEDS.DEFAULT.label,
+      note: POLICY_SEEDS[normalizedCountryCode]?.note || POLICY_SEEDS.DEFAULT.note,
+    };
+  }
+
+  return POLICY_SEEDS[normalizedCountryCode] || POLICY_SEEDS.DEFAULT;
+}
+
+export function resolveMinorConsentPolicy({ age = null, countryCode = "", settings = null } = {}) {
+  const normalizedCountryCode = normalizeCountryCode(countryCode);
+  const seed = resolvePolicySeed({ countryCode: normalizedCountryCode, settings });
 
   if (age === null || Number.isNaN(Number(age))) {
     return {

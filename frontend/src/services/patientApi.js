@@ -20,3 +20,15 @@ export const selfRegisterMinorPatient = (payload) =>
     method: "POST",
     body: payload,
   });
+
+export const requestFamilyAnchorApprovalOtp = (payload) =>
+  apiFetch("/api/patients/family-anchor/request-otp", {
+    method: "POST",
+    body: payload,
+  });
+
+export const verifyFamilyAnchorApprovalOtp = (payload) =>
+  apiFetch("/api/patients/family-anchor/verify-otp", {
+    method: "POST",
+    body: payload,
+  });

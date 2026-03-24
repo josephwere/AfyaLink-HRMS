@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
-import { listPatients } from "../../services/patientApi";
+import {
+  listPatients,
+  requestFamilyAnchorApprovalOtp,
+  verifyFamilyAnchorApprovalOtp,
+} from "../../services/patientApi";
 import { useAuth } from "../../utils/auth";
 import { extractDocument } from "../../services/aiExtractionApi";
 import { parseParentIdExtraction } from "../../utils/parentIdExtraction";
@@ -30,6 +34,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [msg, setMsg] = useState("");
+  const [familyAnchorEnabled, setFamilyAnchorEnabled] = useState(false);
   const [cacheReady, setCacheReady] = useState(false);
   const [cacheBadge, setCacheBadge] = useState("Live • now");
   const [form, setForm] = useState({ firstName: "", lastName: "", nationalId: "", dob: "" });
@@ -55,10 +60,16 @@ export default function Patients() {
   });
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrMsg, setOcrMsg] = useState("");
+  const [ocrPreview, setOcrPreview] = useState(null);
+  const [familyApprovalBusy, setFamilyApprovalBusy] = useState(false);
+  const [familyApprovalMsg, setFamilyApprovalMsg] = useState("");
+  const [familyApprovalOtp, setFamilyApprovalOtp] = useState("");
+  const [familyApprovalStatus, setFamilyApprovalStatus] = useState("IDLE");
   const parentIdFileInputRef = useRef(null);
   const parentIdCameraInputRef = useRef(null);
   const cacheScope = `${user?.role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
   const isMinor = isMinorDob(form.dob);
+  const needsFamilyAnchor = isMinor || familyAnchorEnabled;
 
   useEffect(() => {
     if (!selectedGuardian) return;
@@ -70,6 +81,16 @@ export default function Patients() {
       phone: selectedGuardian.phone || prev.phone || "",
     }));
   }, [selectedGuardian]);
+
+  useEffect(() => {
+    if (isMinor) {
+      setFamilyAnchorEnabled(true);
+      return;
+    }
+    setFamilyApprovalStatus("IDLE");
+    setFamilyApprovalOtp("");
+    setFamilyApprovalMsg("");
+  }, [isMinor]);
 
   const parseList = (data) => ({
     items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
@@ -176,12 +197,16 @@ export default function Patients() {
   const create = async () => {
     setMsg("");
     setOcrMsg("");
-    if (isMinor && !selectedGuardian && !inviteNewGuardian && !parentAnchor.nationalIdNumber.trim()) {
-      setMsg("Add the parent's national ID or link/create a parent account before registering a minor.");
+    if (needsFamilyAnchor && !selectedGuardian && !inviteNewGuardian && !parentAnchor.nationalIdNumber.trim()) {
+      setMsg("Add the family anchor national ID or link/create the family anchor account before saving this patient.");
       return;
     }
-    if (isMinor && inviteNewGuardian && (!newGuardian.name.trim() || !newGuardian.email.trim())) {
-      setMsg("Parent full name and email are required when creating a new parent account.");
+    if (needsFamilyAnchor && !selectedGuardian && !inviteNewGuardian && familyApprovalStatus !== "APPROVED") {
+      setMsg("Verify the family anchor OTP before saving a patient under a standalone national ID.");
+      return;
+    }
+    if (needsFamilyAnchor && inviteNewGuardian && (!newGuardian.name.trim() || !newGuardian.email.trim())) {
+      setMsg("Family anchor full name and email are required when creating a new account.");
       return;
     }
     try {
@@ -206,8 +231,9 @@ export default function Patients() {
         method: "POST",
         body: {
           ...form,
-          ...(isMinor
+          ...(needsFamilyAnchor
             ? {
+                useFamilyAnchor: !isMinor,
                 guardianRelationship,
                 guardianNotes,
                 guardianNationalIdNumber: resolvedParentNationalIdNumber,
@@ -216,12 +242,12 @@ export default function Patients() {
                 guardianPhone: resolvedParentPhone,
               }
             : {}),
-          ...(isMinor && selectedGuardian
+          ...(needsFamilyAnchor && selectedGuardian
             ? {
                 guardianAccountId: selectedGuardian._id,
               }
             : {}),
-          ...(isMinor && inviteNewGuardian && !selectedGuardian
+          ...(needsFamilyAnchor && inviteNewGuardian && !selectedGuardian
             ? {
                 createGuardianAccount: {
                   name: newGuardian.name,
@@ -242,6 +268,7 @@ export default function Patients() {
       setGuardianRelationship("PARENT");
       setGuardianNotes("");
       setInviteNewGuardian(false);
+      setFamilyAnchorEnabled(false);
       setNewGuardian({
         name: "",
         email: "",
@@ -255,13 +282,17 @@ export default function Patients() {
         displayName: "",
         phone: "",
       });
+      setOcrPreview(null);
+      setFamilyApprovalOtp("");
+      setFamilyApprovalMsg("");
+      setFamilyApprovalStatus("IDLE");
       setMsg(
-        isMinor && selectedGuardian
-          ? "Patient created and linked to the selected parent account."
+        needsFamilyAnchor && selectedGuardian
+          ? "Patient created and linked to the selected family anchor account."
           : res?.guardianInviteIssued
-            ? "Patient created. Parent account was created and an invite email was sent."
-            : isMinor && resolvedParentNationalIdNumber
-              ? "Patient created and anchored under the parent's national ID for family monitoring."
+            ? "Patient created. Family anchor account was created and an invite email was sent."
+            : needsFamilyAnchor && resolvedParentNationalIdNumber
+              ? "Patient created and anchored under the approved family national ID."
             : "Patient created."
       );
     } catch (err) {
@@ -272,17 +303,17 @@ export default function Patients() {
   const applyScannedParentIdentity = (parsed) => {
     setParentAnchor((prev) => ({
       ...prev,
-      nationalIdNumber: parsed.nationalIdNumber || prev.nationalIdNumber,
-      nationalIdCountry: parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
-      displayName: parsed.displayName || prev.displayName,
-      phone: parsed.phone || prev.phone,
+      nationalIdNumber: parsed.preview?.nationalIdNumber || parsed.nationalIdNumber || prev.nationalIdNumber,
+      nationalIdCountry: parsed.preview?.nationalIdCountry || parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
+      displayName: parsed.preview?.displayName || parsed.displayName || prev.displayName,
+      phone: parsed.preview?.phone || parsed.phone || prev.phone,
     }));
     setNewGuardian((prev) => ({
       ...prev,
-      nationalIdNumber: parsed.nationalIdNumber || prev.nationalIdNumber,
-      nationalIdCountry: parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
-      name: prev.name || parsed.displayName || "",
-      phone: prev.phone || parsed.phone || "",
+      nationalIdNumber: parsed.preview?.nationalIdNumber || parsed.nationalIdNumber || prev.nationalIdNumber,
+      nationalIdCountry: parsed.preview?.nationalIdCountry || parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
+      name: prev.name || parsed.preview?.displayName || parsed.displayName || "",
+      phone: prev.phone || parsed.preview?.phone || parsed.phone || "",
     }));
   };
 
@@ -291,21 +322,70 @@ export default function Patients() {
     setOcrBusy(true);
     setOcrMsg("");
     setMsg("");
+    setOcrPreview(null);
     try {
       const out = await extractDocument(file);
       const parsed = parseParentIdExtraction(out?.extraction || {});
-      applyScannedParentIdentity(parsed);
-      if (parsed.nationalIdNumber) {
-        setOcrMsg("Parent ID scanned successfully. Review the extracted details before creating the child record.");
+      setOcrPreview(parsed);
+      if (parsed.preview?.nationalIdNumber || parsed.nationalIdNumber) {
+        setOcrMsg("Parent ID scanned. Review the preview and confirm before saving this family anchor.");
       } else {
-        setOcrMsg("Scan completed, but the parent national ID was not confidently detected. Review and complete the fields manually.");
+        setOcrMsg("Scan completed, but the family national ID was not confidently detected. Review and complete the fields manually.");
       }
     } catch (err) {
-      setOcrMsg(err?.message || "Failed to scan parent ID. Check AI extraction access and try again.");
+      setOcrMsg(err?.message || "Failed to scan family anchor ID. Check AI extraction access and try again.");
     } finally {
       setOcrBusy(false);
       if (parentIdFileInputRef.current) parentIdFileInputRef.current.value = "";
       if (parentIdCameraInputRef.current) parentIdCameraInputRef.current.value = "";
+    }
+  };
+
+  const requestFamilyOtp = async () => {
+    if (!parentAnchor.nationalIdNumber.trim() || !parentAnchor.phone.trim()) {
+      setFamilyApprovalMsg("Enter the family anchor national ID and phone before requesting OTP.");
+      return;
+    }
+    setFamilyApprovalBusy(true);
+    setFamilyApprovalMsg("");
+    try {
+      const data = await requestFamilyAnchorApprovalOtp({
+        nationalIdNumber: parentAnchor.nationalIdNumber,
+        nationalIdCountry: parentAnchor.nationalIdCountry,
+        phone: parentAnchor.phone,
+        displayName: parentAnchor.displayName,
+        notes: guardianNotes,
+      });
+      setFamilyApprovalStatus("PENDING");
+      setFamilyApprovalMsg(data?.message || "OTP sent to the family anchor phone number.");
+    } catch (err) {
+      setFamilyApprovalMsg(err?.message || "Failed to request family approval OTP.");
+    } finally {
+      setFamilyApprovalBusy(false);
+    }
+  };
+
+  const verifyFamilyOtp = async () => {
+    if (!familyApprovalOtp.trim()) {
+      setFamilyApprovalMsg("Enter the OTP sent to the family anchor phone.");
+      return;
+    }
+    setFamilyApprovalBusy(true);
+    setFamilyApprovalMsg("");
+    try {
+      const data = await verifyFamilyAnchorApprovalOtp({
+        nationalIdNumber: parentAnchor.nationalIdNumber,
+        nationalIdCountry: parentAnchor.nationalIdCountry,
+        phone: parentAnchor.phone,
+        displayName: parentAnchor.displayName,
+        otp: familyApprovalOtp,
+      });
+      setFamilyApprovalStatus("APPROVED");
+      setFamilyApprovalMsg(data?.message || "Family anchor approved.");
+    } catch (err) {
+      setFamilyApprovalMsg(err?.message || "Failed to verify family approval OTP.");
+    } finally {
+      setFamilyApprovalBusy(false);
     }
   };
 
@@ -392,19 +472,31 @@ export default function Patients() {
             value={form.dob}
             onChange={(e) => setForm({ ...form, dob: e.target.value })}
           />
-          {isMinor ? (
+          {!isMinor ? (
+            <label className="profile-row" style={{ gap: 10, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={familyAnchorEnabled}
+                onChange={(e) => setFamilyAnchorEnabled(e.target.checked)}
+              />
+              Register this patient under an approved family anchor ID
+            </label>
+          ) : null}
+          {needsFamilyAnchor ? (
             <>
               <div className="subtle-banner">
-                This patient is a minor. Use any of the supported flows: link an existing parent account, create and invite a new parent, or register the child under the parent's national ID if only the ID card is available.
+                {isMinor
+                  ? "This patient is a minor. Use any of the supported flows: link an existing parent account, create and invite a new parent, or register the child under the parent's national ID if only the ID card is available."
+                  : "This patient will be attached to a family anchor so one approved national ID can serve the spouse and children under the same household record."}
               </div>
               <input
-                placeholder="Search parent by name, email, phone, or national ID"
+                placeholder="Search family anchor by name, email, phone, or national ID"
                 value={guardianQuery}
                 onChange={(e) => setGuardianQuery(e.target.value)}
               />
               <div className="welcome-actions">
                 <button type="button" className="btn-secondary" onClick={searchGuardians} disabled={guardianSearching}>
-                  {guardianSearching ? "Searching..." : "Find Parent Account"}
+                  {guardianSearching ? "Searching..." : "Find Family Anchor Account"}
                 </button>
                 {selectedGuardian ? (
                   <button
@@ -423,23 +515,25 @@ export default function Patients() {
                     if (selectedGuardian) setSelectedGuardian(null);
                   }}
                 >
-                  {inviteNewGuardian ? "Use Existing Parent" : "Create & Invite Parent"}
+                  {inviteNewGuardian ? "Use Existing Account" : "Create & Invite Anchor"}
                 </button>
               </div>
               <select value={guardianRelationship} onChange={(e) => setGuardianRelationship(e.target.value)}>
-                <option value="PARENT">Parent</option>
+                <option value="PARENT">Parent / Father</option>
                 <option value="GUARDIAN">Guardian</option>
                 <option value="CAREGIVER">Caregiver</option>
+                <option value="SPOUSE">Spouse</option>
+                <option value="DEPENDENT">Dependent</option>
               </select>
               <input
-                placeholder="Guardian note (optional)"
+                placeholder="Family anchor note (optional)"
                 value={guardianNotes}
                 onChange={(e) => setGuardianNotes(e.target.value)}
               />
               <div className="card form">
-                <strong>Parent identity anchor</strong>
+                <strong>Family national ID anchor</strong>
                 <span className="muted">
-                  If the parent does not yet have an AfyaLink account, staff can still register the child under the parent's national ID so the family record follows that ID later.
+                  If the father or primary family anchor does not yet have an AfyaLink account, staff can still register the family under that national ID. OTP approval sent to the anchor phone makes the linkage legally safer and reusable across spouse and children.
                 </span>
                 <div className="welcome-actions">
                   <button
@@ -475,79 +569,144 @@ export default function Patients() {
                   onChange={(e) => runParentIdExtraction(e.target.files?.[0] || null)}
                 />
                 {ocrMsg ? <span className="muted">{ocrMsg}</span> : null}
+                {ocrPreview ? (
+                  <div className="card premium-card">
+                    <strong>OCR preview</strong>
+                    <div className="panel-grid" style={{ marginTop: 10 }}>
+                      <div className="card">
+                        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+                          <span>National ID</span>
+                          <span className="action-pill">{ocrPreview.confidence?.nationalIdNumber || "LOW"}</span>
+                        </div>
+                        <div className="muted">{ocrPreview.preview?.nationalIdNumber || "Not detected"}</div>
+                      </div>
+                      <div className="card">
+                        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+                          <span>Country</span>
+                          <span className="action-pill">{ocrPreview.confidence?.nationalIdCountry || "LOW"}</span>
+                        </div>
+                        <div className="muted">{ocrPreview.preview?.nationalIdCountry || "Not detected"}</div>
+                      </div>
+                      <div className="card">
+                        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+                          <span>Name</span>
+                          <span className="action-pill">{ocrPreview.confidence?.displayName || "LOW"}</span>
+                        </div>
+                        <div className="muted">{ocrPreview.preview?.displayName || "Not detected"}</div>
+                      </div>
+                      <div className="card">
+                        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+                          <span>Phone</span>
+                          <span className="action-pill">{ocrPreview.confidence?.phone || "LOW"}</span>
+                        </div>
+                        <div className="muted">{ocrPreview.preview?.phone || "Not detected"}</div>
+                      </div>
+                    </div>
+                    <div className="welcome-actions" style={{ marginTop: 10 }}>
+                      <button type="button" className="btn-primary" onClick={() => applyScannedParentIdentity(ocrPreview)}>
+                        Use Scanned Values
+                      </button>
+                      <button type="button" className="btn-secondary" onClick={() => setOcrPreview(null)}>
+                        Clear Preview
+                      </button>
+                    </div>
+                    {ocrPreview.sourceSummary ? (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        {ocrPreview.sourceSummary}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <input
-                  placeholder="Parent national ID"
+                  placeholder="Family anchor national ID"
                   value={parentAnchor.nationalIdNumber}
                   onChange={(e) =>
                     setParentAnchor((prev) => ({ ...prev, nationalIdNumber: e.target.value }))
                   }
                 />
                 <input
-                  placeholder="Parent national ID country (e.g. KE)"
+                  placeholder="Family anchor ID country (e.g. KE)"
                   value={parentAnchor.nationalIdCountry}
                   onChange={(e) =>
                     setParentAnchor((prev) => ({ ...prev, nationalIdCountry: e.target.value.toUpperCase() }))
                   }
                 />
                 <input
-                  placeholder="Parent display name (optional)"
+                  placeholder="Family anchor holder name (optional)"
                   value={parentAnchor.displayName}
                   onChange={(e) =>
                     setParentAnchor((prev) => ({ ...prev, displayName: e.target.value }))
                   }
                 />
                 <input
-                  placeholder="Parent phone (optional)"
+                  placeholder="Family anchor phone for OTP approval"
                   value={parentAnchor.phone}
                   onChange={(e) =>
                     setParentAnchor((prev) => ({ ...prev, phone: e.target.value }))
                   }
                 />
+                <div className="welcome-actions">
+                  <button type="button" className="btn-secondary" onClick={requestFamilyOtp} disabled={familyApprovalBusy}>
+                    {familyApprovalBusy ? "Sending..." : "Send Family OTP"}
+                  </button>
+                  <input
+                    placeholder="Enter OTP"
+                    value={familyApprovalOtp}
+                    onChange={(e) => setFamilyApprovalOtp(e.target.value)}
+                  />
+                  <button type="button" className="btn-primary" onClick={verifyFamilyOtp} disabled={familyApprovalBusy}>
+                    {familyApprovalBusy ? "Verifying..." : "Verify OTP"}
+                  </button>
+                </div>
+                {familyApprovalStatus === "APPROVED" ? (
+                  <div className="action-pill ok">Family anchor approved</div>
+                ) : null}
+                {familyApprovalMsg ? <span className="muted">{familyApprovalMsg}</span> : null}
               </div>
               {inviteNewGuardian ? (
                 <div className="card form">
-                  <strong>Create parent account and send invite</strong>
+                  <strong>Create family anchor account and send invite</strong>
                   <input
-                    placeholder="Parent full name"
+                    placeholder="Anchor full name"
                     value={newGuardian.name}
                     onChange={(e) => setNewGuardian((prev) => ({ ...prev, name: e.target.value }))}
                   />
                   <input
-                    placeholder="Parent email"
+                    placeholder="Anchor email"
                     value={newGuardian.email}
                     onChange={(e) => setNewGuardian((prev) => ({ ...prev, email: e.target.value }))}
                   />
                   <input
-                    placeholder="Parent phone (optional)"
+                    placeholder="Anchor phone"
                     value={newGuardian.phone}
                     onChange={(e) => setNewGuardian((prev) => ({ ...prev, phone: e.target.value }))}
                   />
                   <input
-                    placeholder="Parent national ID"
+                    placeholder="Anchor national ID"
                     value={newGuardian.nationalIdNumber}
                     onChange={(e) =>
                       setNewGuardian((prev) => ({ ...prev, nationalIdNumber: e.target.value }))
                     }
                   />
                   <input
-                    placeholder="Parent national ID country (e.g. KE)"
+                    placeholder="Anchor national ID country (e.g. KE)"
                     value={newGuardian.nationalIdCountry}
                     onChange={(e) =>
                       setNewGuardian((prev) => ({ ...prev, nationalIdCountry: e.target.value.toUpperCase() }))
                     }
                   />
                   <span className="muted">
-                    A secure set-password email will be sent to the parent after the child record is created.
+                    A secure set-password email will be sent to the family anchor after the patient record is created.
                   </span>
                 </div>
               ) : null}
               {selectedGuardian ? (
                 <div className="card">
-                  <strong>Linked parent:</strong> {selectedGuardian.name}
+                  <strong>Linked family anchor:</strong> {selectedGuardian.name}
                   <div className="muted">{selectedGuardian.email || selectedGuardian.phone || selectedGuardian.nationalIdNumber || "No contact"}</div>
                   {selectedGuardian.nationalIdNumber ? (
                     <div className="muted">
-                      Parent national ID: {selectedGuardian.nationalIdNumber}
+                      Family anchor national ID: {selectedGuardian.nationalIdNumber}
                       {selectedGuardian.nationalIdCountry ? ` (${selectedGuardian.nationalIdCountry})` : ""}
                     </div>
                   ) : null}

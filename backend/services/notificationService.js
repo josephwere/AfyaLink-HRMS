@@ -58,8 +58,23 @@ export async function sendSMS({ provider = "auto", to, message }) {
         }),
       }
     );
+    const raw = await res.text();
+    let parsed = raw;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Africa's Talking may return XML/text depending on account tier or proxy path.
+    }
 
-    return { provider: "africastalking", result: await res.json() };
+    if (!res.ok) {
+      const detail =
+        typeof parsed === "string"
+          ? parsed.slice(0, 240)
+          : parsed?.errorMessage || parsed?.message || JSON.stringify(parsed).slice(0, 240);
+      throw new Error(detail || `Africa's Talking SMS failed with status ${res.status}`);
+    }
+
+    return { provider: "africastalking", result: parsed, status: res.status };
   }
 
   console.log("📨 SMS fallback:", to, message);

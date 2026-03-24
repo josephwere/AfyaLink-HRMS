@@ -85,6 +85,17 @@ export default function SystemSettings() {
         requireBillingHandoffWhenPaymentsEnabled: true,
         requirePrescriptionWhenPharmacyEnabled: false,
       },
+      familyAccess: {
+        requireOtpForFamilyAnchor: true,
+        allowSingleAnchorForSpouseAndChildren: true,
+        otpTtlSeconds: 600,
+        countryPolicies: {
+          DEFAULT: { fullProxyMaxAge: 15, sharedAccessMinAge: 16, adultAge: 18, label: "Default", enabled: true },
+          KE: { fullProxyMaxAge: 15, sharedAccessMinAge: 16, adultAge: 18, label: "Kenya", enabled: true },
+          UG: { fullProxyMaxAge: 15, sharedAccessMinAge: 16, adultAge: 18, label: "Uganda", enabled: true },
+          TZ: { fullProxyMaxAge: 15, sharedAccessMinAge: 16, adultAge: 18, label: "Tanzania", enabled: true },
+        },
+      },
     },
     monetization: {
       strategy: "CORE_FREE_PREMIUM_ADDONS",
@@ -129,6 +140,14 @@ export default function SystemSettings() {
             closeoutPolicy: {
               ...(form.clinical.closeoutPolicy || {}),
               ...(data?.clinical?.closeoutPolicy || {}),
+            },
+            familyAccess: {
+              ...(form.clinical.familyAccess || {}),
+              ...(data?.clinical?.familyAccess || {}),
+              countryPolicies: {
+                ...(form.clinical.familyAccess?.countryPolicies || {}),
+                ...(data?.clinical?.familyAccess?.countryPolicies || {}),
+              },
             },
           },
           monetization: {
@@ -222,6 +241,14 @@ export default function SystemSettings() {
             closeoutPolicy: {
               ...(form.clinical.closeoutPolicy || {}),
               ...(res.settings?.clinical?.closeoutPolicy || {}),
+            },
+            familyAccess: {
+              ...(form.clinical.familyAccess || {}),
+              ...(res.settings?.clinical?.familyAccess || {}),
+              countryPolicies: {
+                ...(form.clinical.familyAccess?.countryPolicies || {}),
+                ...(res.settings?.clinical?.familyAccess?.countryPolicies || {}),
+              },
             },
           },
           monetization: {
@@ -803,6 +830,199 @@ export default function SystemSettings() {
             disabled={loading || savingCard === "clinical"}
           >
             {savingCard === "clinical" ? "Saving..." : "Save Clinical Closeout Policy"}
+          </button>
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Family Access & Teen Consent Policy</h3>
+        <div className="card form">
+          <p className="muted">
+            Tune when parents have full proxy visibility, when teens move into shared access, and whether family-anchor OTP approval is required before one national ID can serve spouse and child records.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical.familyAccess.requireOtpForFamilyAnchor)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    familyAccess: {
+                      ...(f.clinical?.familyAccess || {}),
+                      requireOtpForFamilyAnchor: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Require OTP approval before a standalone family national ID anchor becomes trusted
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.clinical.familyAccess.allowSingleAnchorForSpouseAndChildren)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    familyAccess: {
+                      ...(f.clinical?.familyAccess || {}),
+                      allowSingleAnchorForSpouseAndChildren: e.target.checked,
+                    },
+                  },
+                }))
+              }
+            />
+            Allow one approved family anchor ID to serve spouse and child records
+          </label>
+          <label>
+            Family OTP TTL (seconds)
+            <input
+              type="number"
+              min="60"
+              step="30"
+              value={form.clinical.familyAccess.otpTtlSeconds || 600}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  clinical: {
+                    ...f.clinical,
+                    familyAccess: {
+                      ...(f.clinical?.familyAccess || {}),
+                      otpTtlSeconds: Number(e.target.value || 600),
+                    },
+                  },
+                }))
+              }
+            />
+          </label>
+
+          <div className="panel-grid">
+            {["DEFAULT", "KE", "UG", "TZ"].map((countryCode) => {
+              const policy = form.clinical.familyAccess?.countryPolicies?.[countryCode] || {};
+              return (
+                <div key={countryCode} className="card premium-card">
+                  <h4>{policy.label || countryCode}</h4>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={policy.enabled !== false}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          clinical: {
+                            ...f.clinical,
+                            familyAccess: {
+                              ...(f.clinical?.familyAccess || {}),
+                              countryPolicies: {
+                                ...(f.clinical?.familyAccess?.countryPolicies || {}),
+                                [countryCode]: {
+                                  ...(f.clinical?.familyAccess?.countryPolicies?.[countryCode] || {}),
+                                  enabled: e.target.checked,
+                                },
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                    Policy enabled
+                  </label>
+                  <label>
+                    Full parent proxy max age
+                    <input
+                      type="number"
+                      min="0"
+                      max="17"
+                      value={policy.fullProxyMaxAge ?? 15}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          clinical: {
+                            ...f.clinical,
+                            familyAccess: {
+                              ...(f.clinical?.familyAccess || {}),
+                              countryPolicies: {
+                                ...(f.clinical?.familyAccess?.countryPolicies || {}),
+                                [countryCode]: {
+                                  ...(f.clinical?.familyAccess?.countryPolicies?.[countryCode] || {}),
+                                  fullProxyMaxAge: Number(e.target.value || 15),
+                                },
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Shared access starts at age
+                    <input
+                      type="number"
+                      min="0"
+                      max="17"
+                      value={policy.sharedAccessMinAge ?? 16}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          clinical: {
+                            ...f.clinical,
+                            familyAccess: {
+                              ...(f.clinical?.familyAccess || {}),
+                              countryPolicies: {
+                                ...(f.clinical?.familyAccess?.countryPolicies || {}),
+                                [countryCode]: {
+                                  ...(f.clinical?.familyAccess?.countryPolicies?.[countryCode] || {}),
+                                  sharedAccessMinAge: Number(e.target.value || 16),
+                                },
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Adult consent age
+                    <input
+                      type="number"
+                      min="18"
+                      max="25"
+                      value={policy.adultAge ?? 18}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          clinical: {
+                            ...f.clinical,
+                            familyAccess: {
+                              ...(f.clinical?.familyAccess || {}),
+                              countryPolicies: {
+                                ...(f.clinical?.familyAccess?.countryPolicies || {}),
+                                [countryCode]: {
+                                  ...(f.clinical?.familyAccess?.countryPolicies?.[countryCode] || {}),
+                                  adultAge: Number(e.target.value || 18),
+                                },
+                              },
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => saveCard("clinical")}
+            disabled={loading || savingCard === "clinical"}
+          >
+            {savingCard === "clinical" ? "Saving..." : "Save Family Access Policy"}
           </button>
         </div>
       </section>

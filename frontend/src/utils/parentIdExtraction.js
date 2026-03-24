@@ -41,41 +41,53 @@ export function parseParentIdExtraction(extraction = {}) {
   const rawText = String(extraction?.rawText || extraction?.summary || "").replace(/\r/g, "\n");
   const fields = extraction?.fields && typeof extraction.fields === "object" ? extraction.fields : {};
 
-  const nationalIdNumber = sanitizeNationalId(
-    pickFirstValue(fields, [
-      "nationalIdNumber",
-      "idNumber",
-      "documentNumber",
-      "parentNationalIdNumber",
-      "identityNumber",
-    ]) ||
-      matchFirst(rawText, [
-        /(?:national\s+id|id(?:entification)?(?:\s*card)?(?:\s*no\.?|\s*number)?|identity\s*number|document\s*number)\s*[:#-]?\s*([A-Z0-9/-]{5,})/i,
-        /\b([A-Z]{0,2}\d{6,12})\b/,
-      ])
-  );
+  const fromStructuredNationalId = pickFirstValue(fields, [
+    "nationalIdNumber",
+    "idNumber",
+    "documentNumber",
+    "parentNationalIdNumber",
+    "identityNumber",
+  ]);
+  const fromTextNationalId = matchFirst(rawText, [
+    /(?:national\s+id|id(?:entification)?(?:\s*card)?(?:\s*no\.?|\s*number)?|identity\s*number|document\s*number)\s*[:#-]?\s*([A-Z0-9/-]{5,})/i,
+    /\b([A-Z]{0,2}\d{6,12})\b/,
+  ]);
+  const nationalIdNumber = sanitizeNationalId(fromStructuredNationalId || fromTextNationalId);
 
-  const displayName =
-    pickFirstValue(fields, ["fullName", "name", "parentName", "holderName"]) ||
-    matchFirst(rawText, [
-      /(?:name|holder\s+name|full\s+name)\s*[:#-]?\s*([A-Z][A-Z' -]{5,})/i,
-    ]);
+  const fromStructuredName = pickFirstValue(fields, ["fullName", "name", "parentName", "holderName"]);
+  const fromTextName = matchFirst(rawText, [
+    /(?:name|holder\s+name|full\s+name)\s*[:#-]?\s*([A-Z][A-Z' -]{5,})/i,
+  ]);
+  const displayName = fromStructuredName || fromTextName;
 
-  const phone =
-    pickFirstValue(fields, ["phone", "mobile", "telephone", "parentPhone"]) ||
-    matchFirst(rawText, [/\b(\+?\d[\d\s-]{7,}\d)\b/]);
+  const fromStructuredPhone = pickFirstValue(fields, ["phone", "mobile", "telephone", "parentPhone"]);
+  const fromTextPhone = matchFirst(rawText, [/\b(\+?\d[\d\s-]{7,}\d)\b/]);
+  const phone = fromStructuredPhone || fromTextPhone;
 
-  const nationalIdCountry = normalizeCountryCode(
-    pickFirstValue(fields, ["country", "issuingCountry", "parentNationalIdCountry"]) ||
-      matchFirst(rawText, [/\b(KENYA|UGANDA|TANZANIA|KE|UG|TZ)\b/i])
-  );
+  const fromStructuredCountry = pickFirstValue(fields, ["country", "issuingCountry", "parentNationalIdCountry"]);
+  const fromTextCountry = matchFirst(rawText, [/\b(KENYA|UGANDA|TANZANIA|KE|UG|TZ)\b/i]);
+  const nationalIdCountry = normalizeCountryCode(fromStructuredCountry || fromTextCountry);
 
-  return {
+  const preview = {
     nationalIdNumber,
     nationalIdCountry: nationalIdCountry || "KE",
     displayName,
     phone,
+  };
+
+  const confidence = {
+    nationalIdNumber: fromStructuredNationalId ? "HIGH" : fromTextNationalId ? "MEDIUM" : "LOW",
+    nationalIdCountry: fromStructuredCountry ? "HIGH" : fromTextCountry ? "MEDIUM" : "LOW",
+    displayName: fromStructuredName ? "HIGH" : fromTextName ? "MEDIUM" : "LOW",
+    phone: fromStructuredPhone ? "HIGH" : fromTextPhone ? "MEDIUM" : "LOW",
+  };
+
+  return {
+    ...preview,
+    preview,
+    confidence,
     sourceSummary: String(extraction?.summary || "").trim(),
+    rawText,
   };
 }
 

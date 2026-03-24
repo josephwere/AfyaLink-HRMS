@@ -4,6 +4,7 @@ import Patient from "../models/Patient.js";
 import Prescription from "../models/Prescription.js";
 import User from "../models/User.js";
 import { resolveMinorConsentPolicy } from "./minorConsentPolicyService.js";
+import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 
 function escapeRegex(value = "") {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -92,6 +93,7 @@ export async function buildLinkedMinorSummariesForUser(userId) {
     "nationalIdNumber nationalIdCountry familyMonitoring.linkedMinorPatients"
   );
   if (!user) return [];
+  const systemSettings = await getSystemSettingsDoc({ lean: true });
 
   const activeLinks = (user.familyMonitoring?.linkedMinorPatients || []).filter(
     (link) => String(link?.status || "ACTIVE").toUpperCase() === "ACTIVE" && link?.patient
@@ -170,6 +172,7 @@ export async function buildLinkedMinorSummariesForUser(userId) {
           patient.countryId ||
           user.nationalIdCountry ||
           "",
+        settings: systemSettings,
       });
       return {
         patientId: patient._id,

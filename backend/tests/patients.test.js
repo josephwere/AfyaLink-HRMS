@@ -98,6 +98,44 @@ describe('Patients CRUD', ()=>{
   });
 
   test('hospital staff can register a minor using only the parent national ID anchor', async () => {
+    const requestOtp = await request(app)
+      .post('/api/patients/family-anchor/request-otp')
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({
+        nationalIdNumber: 'PARENT-KE-001',
+        nationalIdCountry: 'KE',
+        displayName: 'Parent Test',
+        phone: '+254700000001',
+      });
+
+    expect(requestOtp.status).toBe(200);
+    expect(requestOtp.body?.testOtp).toMatch(/^\d{6}$/);
+
+    const verifyOtp = await request(app)
+      .post('/api/patients/family-anchor/verify-otp')
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({
+        nationalIdNumber: 'PARENT-KE-001',
+        nationalIdCountry: 'KE',
+        phone: '+254700000001',
+        displayName: 'Parent Test',
+        otp: '000000',
+      });
+    expect(verifyOtp.status).toBe(401);
+
+    const approved = await request(app)
+      .post('/api/patients/family-anchor/verify-otp')
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({
+          nationalIdNumber: 'PARENT-KE-001',
+          nationalIdCountry: 'KE',
+          phone: '+254700000001',
+          displayName: 'Parent Test',
+          otp: requestOtp.body.testOtp,
+        });
+
+    expect(approved.status).toBe(200);
+
     const r = await request(app)
       .post('/api/patients')
       .set('Authorization', `Bearer ${doctorToken}`)
@@ -125,5 +163,32 @@ describe('Patients CRUD', ()=>{
     expect(Boolean(linked)).toBe(true);
     expect(linked.consentPolicy.mode).toBe('SHARED_TEEN_ACCESS');
     expect(linked.consentPolicy.permissions.detailedClinicalNotes).toBe(false);
+  });
+
+  test('hospital staff can register a spouse under the same approved family anchor', async () => {
+    const r = await request(app)
+      .post('/api/patients')
+      .set('Authorization', `Bearer ${doctorToken}`)
+      .send({
+        firstName: 'Parent',
+        lastName: 'Spouse',
+        dob: isoDateYearsAgo(34),
+        useFamilyAnchor: true,
+        guardianRelationship: 'SPOUSE',
+        guardianNotes: 'Linked into the same family anchor after OTP approval.',
+        guardianNationalIdNumber: 'PARENT-KE-001',
+        guardianNationalIdCountry: 'KE',
+        guardianDisplayName: 'Parent Test',
+        guardianPhone: '+254700000001',
+      });
+
+    expect(r.status).toBe(201);
+    expect(r.body.patient?._id).toBeDefined();
+
+    const patient = await Patient.findById(r.body.patient._id).lean();
+    expect(patient.familyGroup.parentNationalIdNumber).toBe('PARENT-KE-001');
+    expect(patient.familyGroup.memberType).toBe('SPOUSE');
+    expect(patient.familyGroup.approvalStatus).toBe('APPROVED');
+    expect(patient.familyGroup.approvalChannel).toBe('OTP');
   });
 });
