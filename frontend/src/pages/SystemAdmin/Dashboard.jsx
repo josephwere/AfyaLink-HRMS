@@ -13,9 +13,11 @@ import { getDeveloperOverview, getTrustStatus, runWorkflowSlaScan } from "../../
 import { runStaffingForecast, runDigitalTwin } from "../../services/mlApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function SystemAdminDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [metrics, setMetrics] = useState(null);
   const [devOverview, setDevOverview] = useState(null);
   const [trust, setTrust] = useState(null);
@@ -231,29 +233,29 @@ export default function SystemAdminDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>System Admin Dashboard</h2>
-          <p className="muted">Simple technical view for queues, integrations, and system health.</p>
+          <h2>{translateText("System Admin Dashboard")}</h2>
+          <p className="muted">{translateText("Simple technical view for queues, integrations, and system health.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={runSla} disabled={runningSla}>
             {runningSla ? "Running SLA Scan..." : "Run Workflow SLA Scan"}
           </button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/government-hospital-registry")}>Gov Hospital Registry</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/hospital-verification-review")}>Hospital Review Queue</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-hub")}>Gov Integration Hub</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-control-plane")}>Control Plane</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>County Command</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/government-hospital-registry")}>{translateText("Gov Hospital Registry")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/hospital-verification-review")}>{translateText("Hospital Review Queue")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-hub")}>{translateText("Gov Integration Hub")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/integration-control-plane")}>{translateText("Control Plane")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>{translateText("County Command")}</button>
           <button type="button" className="btn-primary" onClick={() => navigate("/developer")}>Server Metrics</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Job Queue</button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/admin/realtime")}>Integration Monitor</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>{translateText("Training Tracker")}</button>
         </div>
       </div>
 
       {msg && <div className="card">{msg}</div>}
 
       <section className="section">
-        <h3>System Widgets</h3>
+        <h3>{translateText("System Widgets")}</h3>
         <div className="grid info-grid">
           <StatCard title="CPU / Memory" value={devOverview?.queues?.integration?.active ?? "—"} onClick={() => navigate("/developer")} />
           <StatCard title="Req / Min" value={devOverview?.queues?.integration?.completed ?? "—"} onClick={() => navigate("/admin/realtime")} />
@@ -298,19 +300,19 @@ export default function SystemAdminDashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">National overview of transfer volume and pending handovers.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("National overview of transfer volume and pending handovers.")}</p>
             </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,12 +320,12 @@ export default function SystemAdminDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -331,25 +333,25 @@ export default function SystemAdminDashboard() {
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
             <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>
-              County Command Center
+              {translateText("County Command Center")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
+          <h3>{translateText("Continuity Actions")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Track pending transfers over 24h per county.</div>
-            <div className="alert-item">Verify consent and handover completion for escalations.</div>
-            <div className="alert-item">Review transfer bottlenecks in county command center.</div>
+            <div className="alert-item">{translateText("Track pending transfers over 24h per county.")}</div>
+            <div className="alert-item">{translateText("Verify consent and handover completion for escalations.")}</div>
+            <div className="alert-item">{translateText("Review transfer bottlenecks in county command center.")}</div>
           </div>
         </div>
       </section>
 
       <section className="section">
-        <h3>Training Tracker</h3>
+        <h3>{translateText("Training Tracker")}</h3>
         <div className="grid info-grid">
           <StatCard title="Total Trainees" value={training.total} onClick={() => navigate("/admin/training-tracker")} />
           <StatCard title="Not Started" value={training.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />

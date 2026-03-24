@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getEmergencyCommandDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function EmergencyCommandDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
@@ -28,20 +30,20 @@ export default function EmergencyCommandDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Emergency Command Dashboard</h2>
-          <p className="muted">Simple view for emergency and dispatch flow.</p>
+          <h2>{translateText("Emergency Command Dashboard")}</h2>
+          <p className="muted">{translateText("Simple view for emergency and dispatch flow.")}</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/ops/triage")}>Open Triage</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/ops/triage")}>{translateText("Open Triage")}</button>
         </div>
       </div>
       <section className="section">
-        <h3>Live Metrics</h3>
+        <h3>{translateText("Live Metrics")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Active Emergencies" value={data?.activeEmergencies ?? "-"} onClick={() => navigate("/ops/triage")} />
-          <StatCard title="Escalated Incidents" value={data?.escalatedIncidents ?? "-"} onClick={() => navigate("/security-admin")} />
-          <StatCard title="Ambulance Dispatches Today" value={data?.ambulanceDispatchesToday ?? "-"} onClick={() => navigate("/communication")} />
-          <StatCard title="Triage Backlog" value={data?.triageBacklog ?? "-"} onClick={() => navigate("/ops/triage")} />
+          <StatCard title={translateText("Active Emergencies")} value={data?.activeEmergencies ?? "-"} onClick={() => navigate("/ops/triage")} />
+          <StatCard title={translateText("Escalated Incidents")} value={data?.escalatedIncidents ?? "-"} onClick={() => navigate("/security-admin")} />
+          <StatCard title={translateText("Ambulance Dispatches Today")} value={data?.ambulanceDispatchesToday ?? "-"} onClick={() => navigate("/communication")} />
+          <StatCard title={translateText("Triage Backlog")} value={data?.triageBacklog ?? "-"} onClick={() => navigate("/ops/triage")} />
         </div>
       </section>
 

@@ -4,9 +4,11 @@ import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getPayrollDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function PayrollOfficerDashboard() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
@@ -30,42 +32,42 @@ export default function PayrollOfficerDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Payroll Officer Engine</h2>
-          <p className="muted">Simple payroll view for salary, deductions, and payment history.</p>
+          <h2>{translateText("Payroll Officer Engine")}</h2>
+          <p className="muted">{translateText("Simple payroll view for salary, deductions, and payment history.")}</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/payments/full")}>Run Payroll</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>Tax Reports</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests#overtime")}>Overtime</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/payments/full")}>{translateText("Run Payroll")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>{translateText("Tax Reports")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests#overtime")}>{translateText("Overtime")}</button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Payroll Status</h3>
+        <h3>{translateText("Payroll Status")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Current Payroll Status" value={data?.invoicesThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
-          <StatCard title="Total Gross" value={data?.totalThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
-          <StatCard title="Total Deductions" value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/payments/full")} />
-          <StatCard title="Net Pay Summary" value={data?.paidThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title={translateText("Current Payroll Status")} value={data?.invoicesThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title={translateText("Total Gross")} value={data?.totalThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title={translateText("Total Deductions")} value={data?.unpaidInvoices ?? "—"} onClick={() => navigate("/payments/full")} />
+          <StatCard title={translateText("Net Pay Summary")} value={data?.paidThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
         </div>
       </section>
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Payroll Table</h3>
+          <h3>{translateText("Payroll Table")}</h3>
           <div className="panel-grid">
-            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Overtime Management</button>
-            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Allowances & Deductions</button>
-            <button type="button" className="action-link" onClick={() => navigate("/reports")}>Loan Management</button>
-            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>Generate Payslips</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>{translateText("Overtime Management")}</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>{translateText("Allowances & Deductions")}</button>
+            <button type="button" className="action-link" onClick={() => navigate("/reports")}>{translateText("Loan Management")}</button>
+            <button type="button" className="action-link" onClick={() => navigate("/payments/full")}>{translateText("Generate Payslips")}</button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Alerts</h3>
+          <h3>{translateText("Alerts")}</h3>
           <div className="alert-stack">
-            <div className="action-pill">Pending Approvals: {data?.pendingApprovals ?? "—"}</div>
-            <div className="action-pill">Overdue Payroll: {data?.overduePayroll ?? "—"}</div>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>Audit Trail</button>
+            <div className="action-pill">{translateText("Pending Approvals")}: {data?.pendingApprovals ?? "—"}</div>
+            <div className="action-pill">{translateText("Overdue Payroll")}: {data?.overduePayroll ?? "—"}</div>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/reports")}>{translateText("Audit Trail")}</button>
           </div>
         </div>
       </section>
@@ -74,19 +76,19 @@ export default function PayrollOfficerDashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -94,12 +96,12 @@ export default function PayrollOfficerDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -107,19 +109,19 @@ export default function PayrollOfficerDashboard() {
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>
-              Payroll Overview
+              {translateText("Payroll Overview")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
+          <h3>{translateText("Continuity Actions")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Monitor staffing cost shifts tied to transfer volumes.</div>
-            <div className="alert-item">Align overtime approvals with transfer surges.</div>
-            <div className="alert-item">Flag transfer-heavy wards for payroll review.</div>
+            <div className="alert-item">{translateText("Monitor staffing cost shifts tied to transfer volumes.")}</div>
+            <div className="alert-item">{translateText("Align overtime approvals with transfer surges.")}</div>
+            <div className="alert-item">{translateText("Flag transfer-heavy wards for payroll review.")}</div>
           </div>
         </div>
       </section>

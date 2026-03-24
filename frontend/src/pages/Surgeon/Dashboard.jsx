@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getSurgeonDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function SurgeonDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
@@ -28,26 +30,26 @@ export default function SurgeonDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Surgeon Dashboard</h2>
-          <p className="muted">Simple surgery view for theatre schedule and follow-up.</p>
+          <h2>{translateText("Surgeon Dashboard")}</h2>
+          <p className="muted">{translateText("Simple surgery view for theatre schedule and follow-up.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/doctor/surgery")}>
-            Surgery Workspace
+            {translateText("Surgery Workspace")}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests")}>
-            My Requests
+            {translateText("My Requests")}
           </button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Surgical Summary</h3>
+        <h3>{translateText("Surgical Summary")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Surgeries Today" value={data?.surgeriesToday ?? "—"} onClick={() => navigate("/doctor/surgery")} />
-          <StatCard title="Upcoming Surgeries" value={data?.upcomingSurgeries ?? "—"} onClick={() => navigate("/ops/theatre")} />
-          <StatCard title="Active Encounters" value={data?.activeEncounters ?? "—"} onClick={() => navigate("/doctor/ward")} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title={translateText("Surgeries Today")} value={data?.surgeriesToday ?? "—"} onClick={() => navigate("/doctor/surgery")} />
+          <StatCard title={translateText("Upcoming Surgeries")} value={data?.upcomingSurgeries ?? "—"} onClick={() => navigate("/ops/theatre")} />
+          <StatCard title={translateText("Active Encounters")} value={data?.activeEncounters ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title={translateText("Unread Notifications")} value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
         </div>
       </section>
 
@@ -55,19 +57,19 @@ export default function SurgeonDashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -75,12 +77,12 @@ export default function SurgeonDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -88,19 +90,19 @@ export default function SurgeonDashboard() {
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
             <button type="button" className="btn-secondary" onClick={() => navigate("/ops/theatre")}>
-              Theatre Ops
+              {translateText("Theatre Ops")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
+          <h3>{translateText("Continuity Actions")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Attach theatre notes before transfer completion.</div>
-            <div className="alert-item">Confirm surgical clearance in handover summary.</div>
-            <div className="alert-item">Coordinate post-op follow-up with receiving team.</div>
+            <div className="alert-item">{translateText("Attach theatre notes before transfer completion.")}</div>
+            <div className="alert-item">{translateText("Confirm surgical clearance in handover summary.")}</div>
+            <div className="alert-item">{translateText("Coordinate post-op follow-up with receiving team.")}</div>
           </div>
         </div>
       </section>

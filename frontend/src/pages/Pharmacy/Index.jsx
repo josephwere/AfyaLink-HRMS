@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function PharmacyDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [items, setItems] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [transfers, setTransfers] = useState([]);
@@ -38,34 +40,34 @@ export default function PharmacyDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Pharmacy Dashboard</h2>
-          <p className="muted">Simple pharmacy view for dispensing, stock, and expiry checks.</p>
+          <h2>{translateText("Pharmacy Dashboard")}</h2>
+          <p className="muted">{translateText("Simple pharmacy view for dispensing, stock, and expiry checks.")}</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/pharmacy/queue")}>Prescription Queue</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/inventory")}>Inventory</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>Reports</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/pharmacy/queue")}>{translateText("Prescription Queue")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/inventory")}>{translateText("Inventory")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>{translateText("Reports")}</button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Pharmacy Snapshot</h3>
+        <h3>{translateText("Pharmacy Snapshot")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Pending Prescriptions" value={pendingPrescriptions} onClick={() => navigate("/pharmacy/queue")} />
-          <StatCard title="Dispensed" value={dispensedToday} onClick={() => navigate("/pharmacy/queue")} />
-          <StatCard title="Low Stock Alerts" value={lowStock} onClick={() => navigate("/pharmacy/inventory")} />
-          <StatCard title="Expiring Drugs" value="Live" onClick={() => navigate("/pharmacy/expiry")} />
-          <StatCard title="Controlled Drugs" value="Tracked" onClick={() => navigate("/pharmacy/controlled")} />
+          <StatCard title={translateText("Pending Prescriptions")} value={pendingPrescriptions} onClick={() => navigate("/pharmacy/queue")} />
+          <StatCard title={translateText("Dispensed")} value={dispensedToday} onClick={() => navigate("/pharmacy/queue")} />
+          <StatCard title={translateText("Low Stock Alerts")} value={lowStock} onClick={() => navigate("/pharmacy/inventory")} />
+          <StatCard title={translateText("Expiring Drugs")} value={translateText("Live")} onClick={() => navigate("/pharmacy/expiry")} />
+          <StatCard title={translateText("Controlled Drugs")} value={translateText("Tracked")} onClick={() => navigate("/pharmacy/controlled")} />
         </div>
       </section>
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Dispensing Queue</h3>
+          <h3>{translateText("Dispensing Queue")}</h3>
           <div className="table-wrap">
             <table className="doctor-table">
               <thead>
-                <tr><th>Patient</th><th>Prescription</th><th>Status</th><th>Doctor</th></tr>
+                <tr><th>{translateText("Patient")}</th><th>{translateText("Prescription")}</th><th>{translateText("Status")}</th><th>{translateText("Doctor")}</th></tr>
               </thead>
               <tbody>
                 {prescriptions.slice(0, 10).map((i) => (
@@ -76,20 +78,20 @@ export default function PharmacyDashboard() {
                         : "-"}
                     </td>
                     <td>{i.summary || i?.appointment?.serviceType || "-"}</td>
-                    <td>{i.status}</td>
+                    <td>{translateText(i.status)}</td>
                     <td>{i?.doctor?.name || "-"}</td>
                   </tr>
                 ))}
-                {prescriptions.length === 0 && <tr><td colSpan="4" className="muted">No prescriptions</td></tr>}
+                {prescriptions.length === 0 && <tr><td colSpan="4" className="muted">{translateText("No prescriptions")}</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Interaction Alerts</h3>
+          <h3>{translateText("Interaction Alerts")}</h3>
           <div className="alert-stack">
-            <div className="action-pill">Drug interaction checks active</div>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>Open Safety Reports</button>
+            <div className="action-pill">{translateText("Drug interaction checks active")}</div>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>{translateText("Open Safety Reports")}</button>
           </div>
         </div>
       </section>
@@ -98,21 +100,21 @@ export default function PharmacyDashboard() {
         <div className="card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
             <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
+              {translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}
             </div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,12 +122,12 @@ export default function PharmacyDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>

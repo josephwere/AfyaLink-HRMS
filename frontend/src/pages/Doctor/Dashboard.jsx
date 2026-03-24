@@ -6,9 +6,11 @@ import { getDoctorDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
 import { runBurnoutScore } from "../../services/mlApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -145,15 +147,15 @@ export default function Dashboard() {
 
   const closeoutLabel = (encounter) => {
     if (!encounter?._id) return "";
-    if (encounter?.closeout?.canClose) return "Ready to close";
+    if (encounter?.closeout?.canClose) return translateText("Ready to close");
     const missing = Array.isArray(encounter?.closeout?.missingRequirements)
       ? encounter.closeout.missingRequirements.join(", ")
       : "";
-    return missing ? `Pending: ${missing}` : "Requirements pending";
+    return missing ? `Pending: ${missing}` : translateText("Requirements pending");
   };
   const escalationLabel = (encounter) => {
     if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
-    return encounter.escalationSummary.unreadMine > 0 ? "Nurse escalation" : "Escalation open";
+    return encounter.escalationSummary.unreadMine > 0 ? translateText("Nurse escalation") : translateText("Escalation open");
   };
 
   const transferStats = useMemo(() => {
@@ -205,26 +207,31 @@ export default function Dashboard() {
     <div className="dashboard doctor-workspace">
       <div className="welcome-panel">
         <div>
-          <h2>Doctor Clinical Workspace</h2>
-          <p className="muted">Welcome, Dr. {user?.name || "Clinician"}. Keep patient care fast and clear.</p>
+          <h2>{translateText("Doctor Clinical Workspace")}</h2>
+          <p className="muted">{translateText("Welcome")}, Dr. {user?.name || translateText("Clinician")}. {translateText("Keep patient care fast and clear.")}</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>Open Patients</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>Write Notes</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>Complete Plan</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/ward-board")}>Ward Board</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/escalations")}>My Escalations</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/settings")}>My Availability</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/patients")}>{translateText("Open Patients")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>{translateText("Write Notes")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/prescriptions")}>{translateText("Complete Plan")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/ward-board")}>{translateText("Ward Board")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/escalations")}>{translateText("My Escalations")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/settings")}>{translateText("My Availability")}</button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Clinical KPIs</h3>
+        <h3>{translateText("Clinical KPIs")}</h3>
         <div className="grid info-grid">
           {summary.map((s) => (
-            <StatCard key={s.title} title={s.title} value={s.value} onClick={() => openDoctorSummary(s.title)} />
+            <StatCard
+              key={s.title}
+              title={translateText(s.title)}
+              value={typeof s.value === "string" ? translateText(s.value) : s.value}
+              onClick={() => openDoctorSummary(s.title)}
+            />
           ))}
-          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/doctor/escalations")} />
+          <StatCard title={translateText("Open Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/doctor/escalations")} />
         </div>
       </section>
 

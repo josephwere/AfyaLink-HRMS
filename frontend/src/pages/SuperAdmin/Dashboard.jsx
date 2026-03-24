@@ -97,23 +97,23 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Super Admin Dashboard</h2>
-          <p className="muted">Simple global view for hospitals, staff, security, and system status.</p>
+          <h2>{translateText("Super Admin Dashboard")}</h2>
+          <p className="muted">{translateText("Simple global view for hospitals, staff, security, and system status.")}</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/super-admin/hospitals")}>Hospitals</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/create-admin")}>Role Management</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/super-assistants")}>Super Assistants</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>Global Payroll</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/settings")}>System Settings</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/pharmacies")}>Registered Pharmacies</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
+          <button type="button" className="btn-primary" onClick={() => navigate("/super-admin/hospitals")}>{translateText("Hospitals")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/create-admin")}>{translateText("Role Management")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/super-assistants")}>{translateText("Super Assistants")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/payments/full")}>{translateText("Global Payroll")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/settings")}>{translateText("System Settings")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/super-admin/pharmacies")}>{translateText("Registered Pharmacies")}</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>{translateText("Training Tracker")}</button>
         </div>
       </div>
       {msg && <div className="card">{msg}</div>}
 
       <section className="section">
-        <h3>Global Snapshot</h3>
+        <h3>{translateText("Global Snapshot")}</h3>
         <div className="grid info-grid">
           <StatCard
             title="Total Hospitals"
@@ -144,19 +144,19 @@ export default function Dashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,12 +164,12 @@ export default function Dashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -177,19 +177,19 @@ export default function Dashboard() {
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
             <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/county-command-center")}>
-              County Command Center
+              {translateText("County Command Center")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
+          <h3>{translateText("Continuity Actions")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Review consent gaps before transfer exports.</div>
-            <div className="alert-item">Monitor handover completion for inter-facility transfers.</div>
-            <div className="alert-item">Escalate delays through county command center.</div>
+            <div className="alert-item">{translateText("Review consent gaps before transfer exports.")}</div>
+            <div className="alert-item">{translateText("Monitor handover completion for inter-facility transfers.")}</div>
+            <div className="alert-item">{translateText("Escalate delays through county command center.")}</div>
           </div>
         </div>
       </section>

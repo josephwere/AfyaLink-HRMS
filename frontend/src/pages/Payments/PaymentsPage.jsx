@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import WorkflowTimeline from "../../components/workflow/WorkflowTimeline";
 import WorkflowBadge from "../../components/workflow/WorkflowBadge";
 import { normalizeRole } from "../../utils/normalizeRole";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 function formatMoney(amount, currency = "KES") {
   const numeric = Number(amount || 0);
@@ -21,6 +22,7 @@ function formatMoney(amount, currency = "KES") {
 
 export default function PaymentsPage() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
   const [searchParams] = useSearchParams();
   const initialHospitalId =
@@ -232,8 +234,8 @@ export default function PaymentsPage() {
       <div className="auth-status-shell">
         <div className="auth-status-card premium-card">
           <div className="auth-status-icon">₿</div>
-          <h1>Payments are locked</h1>
-          <p className="subtitle">Sign in first to review billing, workflow state, and payment channels.</p>
+          <h1>{translateText("Payments are locked")}</h1>
+          <p className="subtitle">{translateText("Sign in first to review billing, workflow state, and payment channels.")}</p>
         </div>
       </div>
     );
@@ -242,38 +244,37 @@ export default function PaymentsPage() {
   return (
     <div className="dashboard premium-shell payments-shell">
       <section className="premium-card premium-shell-head">
-        <div className="premium-shell-kicker">Revenue command</div>
+        <div className="premium-shell-kicker">{translateText("Revenue command")}</div>
         <div className="card-header-actions">
           <div>
-            <h1 className="premium-shell-title">Payments</h1>
+            <h1 className="premium-shell-title">{translateText("Payments")}</h1>
             <p className="premium-shell-subtitle">
-              Route each transaction through the right payment rail without losing workflow control,
-              auditability, or hospital context.
+              {translateText("Route each transaction through the right payment rail without losing workflow control, auditability, or hospital context.")}
             </p>
           </div>
           <div className="premium-shell-meta">
             <div className="premium-shell-stat">
-              <span>Transactions</span>
+              <span>{translateText("Transactions")}</span>
               <strong>{paymentSummary.totalTransactions}</strong>
             </div>
             <div className="premium-shell-stat">
-              <span>Ready To Pay</span>
+              <span>{translateText("Ready To Pay")}</span>
               <strong>{paymentSummary.ready}</strong>
             </div>
             <div className="premium-shell-stat">
-              <span>Total Due</span>
+              <span>{translateText("Total Due")}</span>
               <strong>{paymentSummary.totalAmountLabel}</strong>
             </div>
             <div className="premium-shell-stat">
-              <span>Channels</span>
+              <span>{translateText("Channels")}</span>
               <strong>{paymentSummary.methodsEnabled}</strong>
             </div>
           </div>
         </div>
         <div className="premium-inline-note">
           {hospitalId
-            ? `Hospital context: ${hospitalInfo?.name || hospitalId}`
-            : "Global billing view active."}
+            ? `${translateText("Hospital")}: ${hospitalInfo?.name || hospitalId}`
+            : translateText("Global billing view active.")}
         </div>
       </section>
 
@@ -281,13 +282,13 @@ export default function PaymentsPage() {
         <section className="card premium-card">
           <div className="card-header-actions">
             <div>
-              <h3>Hospital scope</h3>
-              <p className="muted">Switch context to inspect the enabled payment rails for a specific facility.</p>
+              <h3>{translateText("Hospital scope")}</h3>
+              <p className="muted">{translateText("Switch context to inspect the enabled payment rails for a specific facility.")}</p>
             </div>
           </div>
-          <label>Hospital</label>
+          <label>{translateText("Hospital")}</label>
           <select value={hospitalId} onChange={(e) => setHospitalId(e.target.value)}>
-            <option value="">All hospitals</option>
+            <option value="">{translateText("All hospitals")}</option>
             {hospitalOptions.map((h) => (
               <option key={h._id} value={h._id}>
                 {h.name || h.code || h._id}
@@ -300,17 +301,17 @@ export default function PaymentsPage() {
       <section className="card premium-card">
         <div className="card-header-actions">
           <div>
-            <h3>Pending payment workflow</h3>
-            <p className="muted">Every transaction stays pinned to its workflow state until the backend confirms the next move.</p>
+            <h3>{translateText("Pending payment workflow")}</h3>
+            <p className="muted">{translateText("Every transaction stays pinned to its workflow state until the backend confirms the next move.")}</p>
           </div>
         </div>
 
         {hospitalInfo ? (
           <div className="premium-banner">
-            Available channels:{" "}
+            {translateText("Available channels:")}{" "}
             {(hospitalInfo.patientPaymentMethods || [])
               .map((m) => m.label || m.type)
-              .join(", ") || "Not configured"}
+              .join(", ") || translateText("Not configured")}
           </div>
         ) : null}
 
@@ -320,11 +321,11 @@ export default function PaymentsPage() {
           <table className="table premium-table">
             <thead>
               <tr>
-                <th>Patient</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Action</th>
-                <th>Workflow</th>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Amount")}</th>
+                <th>{translateText("Status")}</th>
+                <th>{translateText("Action")}</th>
+                <th>{translateText("Workflow")}</th>
               </tr>
             </thead>
             <tbody>
@@ -346,7 +347,7 @@ export default function PaymentsPage() {
                           disabled={loading || !canPay}
                           onClick={() => setActiveTx(tx)}
                         >
-                          Choose Method
+                          {translateText("Choose Method")}
                         </button>
                       </td>
                       <td className="payments-timeline-cell">
@@ -359,8 +360,8 @@ export default function PaymentsPage() {
                 <tr>
                   <td colSpan="5">
                     <div className="premium-empty">
-                      <strong>No pending payments</strong>
-                      <span>The workflow queue is clear for the current scope.</span>
+                      <strong>{translateText("No pending payments")}</strong>
+                      <span>{translateText("The workflow queue is clear for the current scope.")}</span>
                     </div>
                   </td>
                 </tr>
@@ -374,7 +375,7 @@ export default function PaymentsPage() {
         <section className="card premium-card">
           <div className="card-header-actions">
             <div>
-              <h3>Choose payment method</h3>
+              <h3>{translateText("Choose payment method")}</h3>
               <p className="muted">
                 Route {formatMoney(activeTx.amount, activeTx.currency || "KES")} for{" "}
                 {activeTx.patient?.name || "this patient"} through the right channel.
@@ -389,15 +390,15 @@ export default function PaymentsPage() {
                 setBankInvoice(null);
               }}
             >
-              Close
+              {translateText("Close")}
             </button>
           </div>
 
           <div className="premium-method-grid">
             {methodOptions.length === 0 ? (
               <div className="premium-empty">
-                <strong>No methods enabled</strong>
-                <span>This hospital has not exposed any patient payment methods yet.</span>
+                <strong>{translateText("No methods enabled")}</strong>
+                <span>{translateText("This hospital has not exposed any patient payment methods yet.")}</span>
               </div>
             ) : (
               methodOptions.map((opt) => (
@@ -413,7 +414,7 @@ export default function PaymentsPage() {
                     <span className="premium-method-card__label">{opt.label}</span>
                   </div>
                   <div className="premium-method-card__meta">
-                    {opt.disabled ? "Coming soon" : opt.recommended ? "Recommended" : "Available"}
+                    {opt.disabled ? translateText("Coming soon") : opt.recommended ? translateText("Recommended") : translateText("Available")}
                   </div>
                 </button>
               ))
@@ -438,7 +439,7 @@ export default function PaymentsPage() {
                 URL.revokeObjectURL(url);
               }}
             >
-              Download Bank Invoice
+              {translateText("Download Bank Invoice")}
             </button>
           ) : null}
         </section>

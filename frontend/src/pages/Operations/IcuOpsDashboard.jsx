@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getIcuOpsDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function IcuOpsDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
@@ -28,22 +30,22 @@ export default function IcuOpsDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>ICU & Ward Operations</h2>
-          <p className="muted">Simple ICU/ward view for admissions and high-risk follow-up.</p>
+          <h2>{translateText("ICU & Ward Operations")}</h2>
+          <p className="muted">{translateText("Simple ICU/ward view for admissions and high-risk follow-up.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/doctor/ward")}>
-            Open Ward Workspace
+            {translateText("Open Ward Workspace")}
           </button>
         </div>
       </div>
       <section className="section">
-        <h3>Live Metrics</h3>
+        <h3>{translateText("Live Metrics")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Active Inpatients" value={data?.activeInpatients ?? "—"} onClick={() => navigate("/doctor/ward")} />
-          <StatCard title="Admissions Today" value={data?.admissionsToday ?? "—"} onClick={() => navigate("/doctor/ward")} />
-          <StatCard title="High-Risk Followups" value={data?.highRiskFollowups ?? "—"} onClick={() => navigate("/doctor/ward-board")} />
-          <StatCard title="Pending Lab Results" value={data?.pendingLabResults ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
+          <StatCard title={translateText("Active Inpatients")} value={data?.activeInpatients ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title={translateText("Admissions Today")} value={data?.admissionsToday ?? "—"} onClick={() => navigate("/doctor/ward")} />
+          <StatCard title={translateText("High-Risk Followups")} value={data?.highRiskFollowups ?? "—"} onClick={() => navigate("/doctor/ward-board")} />
+          <StatCard title={translateText("Pending Lab Results")} value={data?.pendingLabResults ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
         </div>
       </section>
 

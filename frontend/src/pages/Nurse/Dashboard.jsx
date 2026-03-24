@@ -4,9 +4,11 @@ import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getNurseDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function NurseDashboard() {
   const { user } = useAuth();
+  const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
@@ -30,46 +32,46 @@ export default function NurseDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Nurse Clinical Operations</h2>
-          <p className="muted">Daily nursing tasks in one clear workspace.</p>
+          <h2>{translateText("Nurse Clinical Operations")}</h2>
+          <p className="muted">{translateText("Daily nursing tasks in one clear workspace.")}</p>
         </div>
         <div className="welcome-actions">
-          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>Open Shift</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/vitals")}>Record Vitals</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/medication")}>Give Medication</button>
-          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/ward-board")}>Ward Board</button>
+          <button className="btn-primary" type="button" onClick={() => navigate("/nurse/shift")}>{translateText("Open Shift")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/vitals")}>{translateText("Record Vitals")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/medication")}>{translateText("Give Medication")}</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/ward-board")}>{translateText("Ward Board")}</button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Nursing Snapshot</h3>
+        <h3>{translateText("Nursing Snapshot")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Shift Info" value="Active" onClick={() => navigate("/nurse/shift")} />
-          <StatCard title="Assigned Patients" value={data?.patientsTotal ?? "—"} onClick={() => navigate("/nurse/patients")} />
-          <StatCard title="Medication Due Alerts" value={data?.pendingLabOrders ?? "—"} onClick={() => navigate("/nurse/medication")} />
-          <StatCard title="Pending Requests" value={data?.pendingRequests?.total ?? "—"} onClick={() => navigate("/nurse/ward-board")} />
-          <StatCard title="Open Escalations" value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/nurse/patients")} />
+          <StatCard title={translateText("Shift Info")} value={translateText("Active")} onClick={() => navigate("/nurse/shift")} />
+          <StatCard title={translateText("Assigned Patients")} value={data?.patientsTotal ?? "—"} onClick={() => navigate("/nurse/patients")} />
+          <StatCard title={translateText("Medication Due Alerts")} value={data?.pendingLabOrders ?? "—"} onClick={() => navigate("/nurse/medication")} />
+          <StatCard title={translateText("Pending Requests")} value={data?.pendingRequests?.total ?? "—"} onClick={() => navigate("/nurse/ward-board")} />
+          <StatCard title={translateText("Open Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/nurse/patients")} />
         </div>
       </section>
 
       <section className="section doctor-main-grid">
         <div className="card doctor-schedule-card">
-          <h3>Main Tasks</h3>
+          <h3>{translateText("Main Tasks")}</h3>
           <div className="panel-grid">
-            <button className="action-link" type="button" onClick={() => navigate("/nurse/patients")}>Patient Task List</button>
-            <button className="action-link" type="button" onClick={() => navigate("/nurse/medication")}>Medication Administration</button>
-            <button className="action-link" type="button" onClick={() => navigate("/nurse/vitals")}>Vitals Entry</button>
-            <button className="action-link" type="button" onClick={() => navigate("/nurse/ward-board")}>Ward Board</button>
-            <button className="action-link" type="button" onClick={() => navigate("/nurse/incidents")}>Incident Reports</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/patients")}>{translateText("Patient Task List")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/medication")}>{translateText("Medication Administration")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/vitals")}>{translateText("Vitals Entry")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/ward-board")}>{translateText("Ward Board")}</button>
+            <button className="action-link" type="button" onClick={() => navigate("/nurse/incidents")}>{translateText("Incident Reports")}</button>
           </div>
         </div>
 
         <div className="card doctor-alerts-card">
-          <h3>Alerts</h3>
+          <h3>{translateText("Alerts")}</h3>
           <div className="alert-stack">
-            <div className="action-pill">Critical Alerts: {data?.appointmentsToday ?? "—"}</div>
-            <div className="action-pill">Leave Pending: {data?.pendingRequests?.leave ?? "—"}</div>
-            <button className="btn-secondary" type="button" onClick={() => navigate("/workforce/requests")}>Open My Requests</button>
+            <div className="action-pill">{translateText("Critical Alerts")}: {data?.appointmentsToday ?? "—"}</div>
+            <div className="action-pill">{translateText("Leave Pending")}: {data?.pendingRequests?.leave ?? "—"}</div>
+            <button className="btn-secondary" type="button" onClick={() => navigate("/workforce/requests")}>{translateText("Open My Requests")}</button>
           </div>
         </div>
       </section>
@@ -78,21 +80,21 @@ export default function NurseDashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
             <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
+              {translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}
             </div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,12 +102,12 @@ export default function NurseDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -113,19 +115,19 @@ export default function NurseDashboard() {
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
             <button className="btn-secondary" type="button" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
             <button className="btn-secondary" type="button" onClick={() => navigate("/nurse/ward-board")}>
-              Ward Board
+              {translateText("Ward Board")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Handoff Checklist</h3>
+          <h3>{translateText("Handoff Checklist")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Confirm vitals and meds before transfer handoff.</div>
-            <div className="alert-item">Log outstanding labs or imaging for receiving team.</div>
-            <div className="alert-item">Escalate missing consent to the command center.</div>
+            <div className="alert-item">{translateText("Confirm vitals and meds before transfer handoff.")}</div>
+            <div className="alert-item">{translateText("Log outstanding labs or imaging for receiving team.")}</div>
+            <div className="alert-item">{translateText("Escalate missing consent to the command center.")}</div>
           </div>
         </div>
       </section>
@@ -134,10 +136,10 @@ export default function NurseDashboard() {
         <div className="card">
           <div className="card-header-actions">
             <div>
-              <h3>Escalation Board</h3>
-              <p className="muted">Blocked discharge and transfer issues waiting for clinician action.</p>
+              <h3>{translateText("Escalation Board")}</h3>
+              <p className="muted">{translateText("Blocked discharge and transfer issues waiting for clinician action.")}</p>
             </div>
-            <div className="action-pill">Open: {data?.escalationSummary?.openCount ?? 0}</div>
+            <div className="action-pill">{translateText("Open")}: {data?.escalationSummary?.openCount ?? 0}</div>
           </div>
           <div className="alert-stack" style={{ marginTop: 12 }}>
             {(data?.escalationSummary?.items || []).slice(0, 6).map((item) => (
@@ -146,12 +148,12 @@ export default function NurseDashboard() {
                   <div>
                     <strong>{item.patientName}</strong>
                     <div className="muted" style={{ marginTop: 4 }}>
-                      {item.resolvedAt ? "Resolved" : "Awaiting clinician review"}
+                      {item.resolvedAt ? translateText("Resolved") : translateText("Awaiting clinician review")}
                       {item.missingRequirements?.length ? ` • Missing: ${item.missingRequirements.join(", ")}` : ""}
                     </div>
                   </div>
                   <div className={`action-pill${item.resolvedAt ? "" : " warning"}`}>
-                    {item.resolvedAt ? "Resolved" : "Open"}
+                    {item.resolvedAt ? translateText("Resolved") : translateText("Open")}
                   </div>
                 </div>
                 <p className="muted" style={{ marginTop: 8 }}>{item.body || item.title}</p>
@@ -161,13 +163,13 @@ export default function NurseDashboard() {
                     className="btn-secondary"
                     onClick={() => navigate(item.patientId ? `/nurse/vitals?patientId=${item.patientId}` : "/nurse/vitals")}
                   >
-                    Open Patient
+                    {translateText("Open Patient")}
                   </button>
                 </div>
               </div>
             ))}
             {!(data?.escalationSummary?.items || []).length ? (
-              <div className="action-pill">No escalation activity yet.</div>
+              <div className="action-pill">{translateText("No escalation activity yet.")}</div>
             ) : null}
           </div>
         </div>

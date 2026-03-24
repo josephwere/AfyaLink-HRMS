@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { getReceptionistDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function ReceptionistDashboard() {
   const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
@@ -28,12 +30,12 @@ export default function ReceptionistDashboard() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Receptionist Dashboard</h2>
-          <p className="muted">Simple front desk view for booking and patient check-in.</p>
+          <h2>{translateText("Receptionist Dashboard")}</h2>
+          <p className="muted">{translateText("Simple front desk view for booking and patient check-in.")}</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-primary" onClick={() => navigate("/workforce/requests")}>
-            My Requests
+            {translateText("My Requests")}
           </button>
           <button
             type="button"
@@ -44,23 +46,23 @@ export default function ReceptionistDashboard() {
             data-ai-aliases="front desk booking|open booking workflow|go to booking desk"
             data-ai-help="Navigate to the receptionist booking desk workflow."
           >
-            Booking Desk
+            {translateText("Booking Desk")}
           </button>
         </div>
       </div>
 
       <section className="section">
-        <h3>Front Desk Summary</h3>
+        <h3>{translateText("Front Desk Summary")}</h3>
         <div className="grid info-grid">
-          <StatCard title="Appointments Today" value={data?.appointmentsToday ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
-          <StatCard title="Patients Total" value={data?.patientsTotal ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
-          <StatCard title="Unread Notifications" value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
-          <StatCard title="My Pending Requests" value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
+          <StatCard title={translateText("Appointments Today")} value={data?.appointmentsToday ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
+          <StatCard title={translateText("Patients Total")} value={data?.patientsTotal ?? "—"} onClick={() => navigate("/receptionist/booking-desk")} />
+          <StatCard title={translateText("Unread Notifications")} value={data?.unreadNotifications ?? "—"} onClick={() => navigate("/notifications")} />
+          <StatCard title={translateText("My Pending Requests")} value={data?.myPendingRequests ?? "—"} onClick={() => navigate("/workforce/requests")} />
         </div>
       </section>
 
       <section className="section">
-        <h3>Main Tasks</h3>
+        <h3>{translateText("Main Tasks")}</h3>
         <div className="panel-grid">
           <button
             type="button"
@@ -71,7 +73,7 @@ export default function ReceptionistDashboard() {
             data-ai-aliases="fast booking|front desk booking|booking task"
             data-ai-help="Navigate to the fast hospital booking workflow."
           >
-            Fast Hospital Booking
+            {translateText("Fast Hospital Booking")}
           </button>
           <button
             type="button"
@@ -82,7 +84,7 @@ export default function ReceptionistDashboard() {
             data-ai-aliases="notifications|messages|front desk inbox"
             data-ai-help="Navigate to receptionist notifications and messages."
           >
-            Front Desk Messages
+            {translateText("Front Desk Messages")}
           </button>
         </div>
       </section>
@@ -91,19 +93,19 @@ export default function ReceptionistDashboard() {
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
+              <h3>{translateText("Transfer Continuity")}</h3>
+              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
+            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+                  <th>{translateText("Patient")}</th>
+                  <th>{translateText("Route")}</th>
+                  <th>{translateText("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,12 +113,12 @@ export default function ReceptionistDashboard() {
                   <tr key={t._id}>
                     <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
                     <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
+                    <td>{translateText(t.status)}</td>
                   </tr>
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -132,7 +134,7 @@ export default function ReceptionistDashboard() {
               data-ai-aliases="transfer command center|handover desk|transfer workflow"
               data-ai-help="Navigate to the transfer command center for hospital handoffs."
             >
-              Transfer Command Center
+              {translateText("Transfer Command Center")}
             </button>
             <button
               type="button"
@@ -143,16 +145,16 @@ export default function ReceptionistDashboard() {
               data-ai-aliases="booking desk|front desk booking|booking workflow"
               data-ai-help="Navigate to the receptionist booking desk workflow."
             >
-              Booking Desk
+              {translateText("Booking Desk")}
             </button>
           </div>
         </div>
         <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
+          <h3>{translateText("Continuity Actions")}</h3>
           <div className="alert-stack">
-            <div className="alert-item">Confirm receiving hospital details before check-in.</div>
-            <div className="alert-item">Direct patients to transfer handover desk if pending.</div>
-            <div className="alert-item">Notify clinicians when transfer arrivals are on-site.</div>
+            <div className="alert-item">{translateText("Confirm receiving hospital details before check-in.")}</div>
+            <div className="alert-item">{translateText("Direct patients to transfer handover desk if pending.")}</div>
+            <div className="alert-item">{translateText("Notify clinicians when transfer arrivals are on-site.")}</div>
           </div>
         </div>
       </section>

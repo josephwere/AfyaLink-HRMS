@@ -283,7 +283,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="alert-stack">
-              <div className="muted">No recent visit summary yet.</div>
+              <div className="muted">{t("noRecentVisitSummary", "No recent visit summary yet.")}</div>
               <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>Messages</button>
               <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>Feedback</button>
             </div>
