@@ -2302,6 +2302,13 @@ export default function Profile() {
                       <p className="muted" style={{ marginTop: 6 }}>
                         {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
                       </p>
+                      {item.consentPolicy ? (
+                        <p className="muted" style={{ marginTop: 6 }}>
+                          {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
+                            ? `Teen shared access active (${item.consentPolicy.countryCode}).`
+                            : `Parent proxy access active (${item.consentPolicy.countryCode}).`}
+                        </p>
+                      ) : null}
                     </div>
                     <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
                       Remove
@@ -2311,7 +2318,9 @@ export default function Profile() {
                     Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
                   </p>
                   <p className="muted">
-                    Latest diagnosis: {item.latestDiagnosis || "No diagnosis captured yet"}
+                    Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
+                      ? "Detailed teen clinical notes are hidden in shared-access mode."
+                      : item.latestDiagnosis || "No diagnosis captured yet"}
                   </p>
                   <p className="muted">
                     Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}

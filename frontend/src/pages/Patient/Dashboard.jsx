@@ -123,11 +123,20 @@ export default function Dashboard() {
                 <p className="muted">
                   {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
                 </p>
+                {item.consentPolicy ? (
+                  <div className="action-pill" style={{ marginTop: 8 }}>
+                    {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
+                      ? `Teen shared access • ${item.consentPolicy.countryCode}`
+                      : `Parent proxy access • ${item.consentPolicy.countryCode}`}
+                  </div>
+                ) : null}
                 <p className="muted">
                   Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
                 </p>
                 <p className="muted">
-                  Latest diagnosis: {item.latestDiagnosis || "No diagnosis captured yet"}
+                  Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
+                    ? "Detailed teen clinical notes are hidden in shared-access mode"
+                    : item.latestDiagnosis || "No diagnosis captured yet"}
                 </p>
                 <div className="doctor-actions-row" style={{ marginTop: 10 }}>
                   <button className="btn-secondary" type="button" onClick={() => navigate("/patient/family-records")}>

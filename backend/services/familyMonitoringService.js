@@ -3,6 +3,7 @@ import Encounter from "../models/Encounter.js";
 import Patient from "../models/Patient.js";
 import Prescription from "../models/Prescription.js";
 import User from "../models/User.js";
+import { resolveMinorConsentPolicy } from "./minorConsentPolicyService.js";
 
 function escapeRegex(value = "") {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -30,10 +31,26 @@ function toName(row) {
   return [row?.firstName, row?.lastName].filter(Boolean).join(" ").trim() || "Child patient";
 }
 
+async function findNationalIdAnchoredMinorIds({ user, hospitalId = null }) {
+  const parentNationalIdNumber = String(user?.nationalIdNumber || "").trim().toUpperCase();
+  if (!parentNationalIdNumber) return [];
+
+  const where = {
+    active: true,
+    "familyGroup.parentNationalIdNumber": parentNationalIdNumber,
+  };
+  if (hospitalId) where.hospital = hospitalId;
+  if (user?.nationalIdCountry) {
+    where["familyGroup.parentNationalIdCountry"] = String(user.nationalIdCountry).trim().toUpperCase();
+  }
+
+  return Patient.find(where).distinct("_id");
+}
+
 export async function resolvePatientIdsForUser(userId, hospitalId = null, options = {}) {
   const { includeLinkedMinors = true } = options;
   const user = await User.findById(userId).select(
-    "name phone nationalIdNumber familyMonitoring.linkedMinorPatients"
+    "name phone nationalIdNumber nationalIdCountry familyMonitoring.linkedMinorPatients"
   );
   if (!user) return [];
 
@@ -63,25 +80,32 @@ export async function resolvePatientIdsForUser(userId, hospitalId = null, option
     }
   }
 
-  return [...new Set([...directIds, ...linkedIds].map((id) => String(id)))];
+  const anchoredIds = includeLinkedMinors
+    ? await findNationalIdAnchoredMinorIds({ user, hospitalId })
+    : [];
+
+  return [...new Set([...directIds, ...linkedIds, ...anchoredIds].map((id) => String(id)))];
 }
 
 export async function buildLinkedMinorSummariesForUser(userId) {
-  const user = await User.findById(userId).select("familyMonitoring.linkedMinorPatients");
+  const user = await User.findById(userId).select(
+    "nationalIdNumber nationalIdCountry familyMonitoring.linkedMinorPatients"
+  );
   if (!user) return [];
 
   const activeLinks = (user.familyMonitoring?.linkedMinorPatients || []).filter(
     (link) => String(link?.status || "ACTIVE").toUpperCase() === "ACTIVE" && link?.patient
   );
-  if (!activeLinks.length) return [];
-
-  const patientIds = activeLinks.map((link) => link.patient);
+  const explicitLinkMap = new Map(activeLinks.map((link) => [String(link.patient), link]));
+  const anchoredIds = await findNationalIdAnchoredMinorIds({ user });
+  const patientIds = [...new Set([...activeLinks.map((link) => link.patient), ...anchoredIds].map(String))];
+  if (!patientIds.length) return [];
   const now = new Date();
 
   const [patients, appointmentStats, encounterStats, prescriptionStats] = await Promise.all([
     Patient.find({ _id: { $in: patientIds }, active: true })
       .populate("hospital", "name")
-      .select("firstName lastName dob gender hospital medicalRecords metadata guardianLinks updatedAt"),
+      .select("firstName lastName dob gender hospital medicalRecords metadata guardianLinks familyGroup updatedAt"),
     Appointment.aggregate([
       { $match: { patient: { $in: patientIds }, status: { $ne: "Cancelled" } } },
       { $sort: { scheduledAt: -1, createdAt: -1 } },
@@ -129,24 +153,35 @@ export async function buildLinkedMinorSummariesForUser(userId) {
   const encounterMap = new Map(encounterStats.map((row) => [String(row._id), row]));
   const prescriptionMap = new Map(prescriptionStats.map((row) => [String(row._id), row]));
 
-  return activeLinks
-    .map((link) => {
-      const patient = patientMap.get(String(link.patient));
+  const linkedPatients = patientIds
+    .map((patientId) => {
+      const patient = patientMap.get(String(patientId));
       if (!patient || !isMinorDob(patient.dob)) return null;
-      const appointments = appointmentMap.get(String(link.patient)) || {};
-      const encounters = encounterMap.get(String(link.patient)) || {};
-      const prescriptions = prescriptionMap.get(String(link.patient)) || {};
+      const link = explicitLinkMap.get(String(patientId));
+      const implicitRelationship = patient.familyGroup?.relationship || "PARENT";
+      const appointments = appointmentMap.get(String(patientId)) || {};
+      const encounters = encounterMap.get(String(patientId)) || {};
+      const prescriptions = prescriptionMap.get(String(patientId)) || {};
+      const age = calculateAge(patient.dob);
+      const consentPolicy = resolveMinorConsentPolicy({
+        age,
+        countryCode:
+          patient.familyGroup?.parentNationalIdCountry ||
+          patient.countryId ||
+          user.nationalIdCountry ||
+          "",
+      });
       return {
         patientId: patient._id,
         name: toName(patient),
         firstName: patient.firstName || "",
         lastName: patient.lastName || "",
         dob: patient.dob || null,
-        age: calculateAge(patient.dob),
+        age,
         gender: patient.gender || "",
-        relationship: link.relationship || "PARENT",
-        linkedAt: link.linkedAt || null,
-        notes: link.notes || "",
+        relationship: link?.relationship || implicitRelationship,
+        linkedAt: link?.linkedAt || patient.familyGroup?.verifiedAt || null,
+        notes: link?.notes || patient.familyGroup?.notes || "",
         hospitalId: patient.hospital?._id || patient.hospital || null,
         hospitalName: patient.hospital?.name || "",
         medicalRecordsCount: Array.isArray(patient.medicalRecords) ? patient.medicalRecords.length : 0,
@@ -160,6 +195,7 @@ export async function buildLinkedMinorSummariesForUser(userId) {
         latestEncounterState: encounters.latestEncounterState || "",
         activePrescriptions: Number(prescriptions.activePrescriptions || 0),
         latestPrescriptionAt: prescriptions.latestPrescriptionAt || null,
+        consentPolicy,
         lastUpdatedAt:
           appointments.latestAppointmentAt ||
           encounters.latestEncounterAt ||
@@ -170,6 +206,8 @@ export async function buildLinkedMinorSummariesForUser(userId) {
     })
     .filter(Boolean)
     .sort((a, b) => new Date(b.lastUpdatedAt || 0) - new Date(a.lastUpdatedAt || 0));
+
+  return linkedPatients;
 }
 
 export async function searchMinorPatientsForGuardian({

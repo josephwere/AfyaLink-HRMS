@@ -3,6 +3,7 @@
 import express from "express";
 import {
   createPatient,
+  selfRegisterMinorPatient,
   listPatients,
   getPatient,
   searchPatients,
@@ -11,6 +12,7 @@ import {
 } from "../controllers/patientController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
+import { requireRole } from "../middleware/roleMiddleware.js";
 import { planGuard } from "../middleware/planGuard.js";
 
 const router = express.Router();
@@ -25,6 +27,13 @@ router.post(
   protect,
   planGuard({ limitKey: "patients" }), // 🧑‍⚕️ PATIENT LIMIT ENFORCED
   createPatient
+);
+
+router.post(
+  "/self-register-minor",
+  protect,
+  requireRole("PATIENT", "GUEST"),
+  selfRegisterMinorPatient
 );
 
 router.get("/", protect, listPatients);

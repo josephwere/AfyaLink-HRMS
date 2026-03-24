@@ -15,3 +15,8 @@ const buildQuery = (options = {}) => {
 export const listPatients = (options = {}) =>
   apiFetch(`/api/patients${buildQuery(options)}`);
 
+export const selfRegisterMinorPatient = (payload) =>
+  apiFetch("/api/patients/self-register-minor", {
+    method: "POST",
+    body: payload,
+  });

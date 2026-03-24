@@ -223,8 +223,8 @@ export const linkMinorProfile = async (req, res) => {
     }
 
     const [user, patient] = await Promise.all([
-      User.findById(req.user.id).select("hospital familyMonitoring"),
-      Patient.findById(patientId).select("firstName lastName dob hospital guardianLinks active"),
+      User.findById(req.user.id).select("hospital name phone nationalIdNumber nationalIdCountry familyMonitoring"),
+      Patient.findById(patientId).select("firstName lastName dob hospital guardianLinks familyGroup active"),
     ]);
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!patient || !patient.active) return res.status(404).json({ message: "Patient not found" });
@@ -268,6 +268,19 @@ export const linkMinorProfile = async (req, res) => {
       notes: String(notes || "").trim(),
     });
     patient.guardianLinks = nextGuardianLinks;
+    patient.familyGroup = {
+      ...(patient.familyGroup || {}),
+      parentUser: user._id,
+      parentNationalIdNumber: user.nationalIdNumber || patient.familyGroup?.parentNationalIdNumber || "",
+      parentNationalIdCountry: user.nationalIdCountry || patient.familyGroup?.parentNationalIdCountry || "",
+      relationship: String(relationship || "PARENT").trim() || "PARENT",
+      registrationSource: patient.familyGroup?.registrationSource || "PARENT_ACCOUNT_LINK",
+      verifiedBy: req.user._id,
+      verifiedAt: new Date(),
+      parentDisplayName: user.name || patient.familyGroup?.parentDisplayName || "",
+      parentPhone: user.phone || patient.familyGroup?.parentPhone || "",
+      notes: String(notes || "").trim() || patient.familyGroup?.notes || "",
+    };
 
     await Promise.all([user.save(), patient.save()]);
     await audit({

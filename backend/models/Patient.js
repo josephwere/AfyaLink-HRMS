@@ -72,6 +72,23 @@ const patientSchema = new Schema(
       default: [],
     },
 
+    familyGroup: {
+      parentUser: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
+      parentNationalIdNumber: { type: String, trim: true, default: "", index: true },
+      parentNationalIdCountry: { type: String, trim: true, default: "", index: true },
+      relationship: { type: String, trim: true, default: "PARENT" },
+      registrationSource: {
+        type: String,
+        enum: ["SELF_SERVICE", "HOSPITAL_STAFF", "PARENT_ACCOUNT_LINK", "LEGACY"],
+        default: "LEGACY",
+      },
+      verifiedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      verifiedAt: Date,
+      parentDisplayName: { type: String, trim: true, default: "" },
+      parentPhone: { type: String, trim: true, default: "" },
+      notes: { type: String, trim: true, default: "" },
+    },
+
     metadata: Object,
 
     /* ================= SOFT DELETE ================= */
@@ -87,6 +104,7 @@ const patientSchema = new Schema(
 patientSchema.index({ hospital: 1, active: 1, createdAt: -1 });
 patientSchema.index({ hospital: 1, lastName: 1, firstName: 1 });
 patientSchema.index({ hospital: 1, nationalId: 1 });
+patientSchema.index({ hospital: 1, "familyGroup.parentNationalIdNumber": 1, active: 1 });
 
 /* ======================================================
    🚫 NEVER RETURN DELETED PATIENTS BY DEFAULT (OPTIONAL)

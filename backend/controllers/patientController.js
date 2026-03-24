@@ -8,6 +8,7 @@ import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { isMinorDob } from "../services/familyMonitoringService.js";
 import { issuePasswordResetLink, resolveFrontendBase } from "../utils/passwordReset.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
+import { normalizeRole } from "../utils/normalizeRole.js";
 
 function resolveActorHospitalId(req) {
   return req.user?.hospitalId || req.user?.hospital || null;
@@ -20,6 +21,110 @@ function resolveScopedHospitalId(req) {
     return req.query?.hospitalId || actorHospitalId || null;
   }
   return actorHospitalId;
+}
+
+function normalizeNationalId(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeCountryCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function syncGuardianMinorLink({ guardian, patient, linkedBy, relationship = "PARENT", notes = "" }) {
+  if (!guardian || !patient) return;
+  guardian.familyMonitoring = guardian.familyMonitoring || {};
+  guardian.familyMonitoring.linkedMinorPatients = [
+    ...(guardian.familyMonitoring.linkedMinorPatients || []).filter(
+      (link) => String(link.patient) !== String(patient._id)
+    ),
+    {
+      patient: patient._id,
+      relationship: String(relationship || "PARENT").trim() || "PARENT",
+      status: "ACTIVE",
+      linkedAt: new Date(),
+      linkedBy,
+      notes: String(notes || "").trim(),
+    },
+  ];
+}
+
+function syncPatientGuardianLink({ guardian, patient, linkedBy, relationship = "PARENT", notes = "" }) {
+  if (!guardian || !patient) return;
+  patient.guardianLinks = [
+    ...(patient.guardianLinks || []).filter(
+      (link) => String(link.user) !== String(guardian._id)
+    ),
+    {
+      user: guardian._id,
+      relationship: String(relationship || "PARENT").trim() || "PARENT",
+      status: "ACTIVE",
+      canMonitor: true,
+      linkedAt: new Date(),
+      linkedBy,
+      notes: String(notes || "").trim(),
+    },
+  ];
+}
+
+function syncPatientFamilyAnchor({
+  patient,
+  guardian = null,
+  guardianNationalIdNumber = "",
+  guardianNationalIdCountry = "",
+  guardianDisplayName = "",
+  guardianPhone = "",
+  relationship = "PARENT",
+  linkedBy = null,
+  notes = "",
+  registrationSource = "HOSPITAL_STAFF",
+}) {
+  if (!patient) return;
+  const parentNationalIdNumber =
+    normalizeNationalId(guardianNationalIdNumber) ||
+    normalizeNationalId(guardian?.nationalIdNumber);
+  const parentNationalIdCountry =
+    normalizeCountryCode(guardianNationalIdCountry) ||
+    normalizeCountryCode(guardian?.nationalIdCountry);
+
+  if (!guardian && !parentNationalIdNumber) return;
+
+  patient.familyGroup = {
+    ...(patient.familyGroup || {}),
+    parentUser: guardian?._id || patient.familyGroup?.parentUser || null,
+    parentNationalIdNumber,
+    parentNationalIdCountry,
+    relationship: String(relationship || "PARENT").trim() || "PARENT",
+    registrationSource,
+    verifiedBy: linkedBy || null,
+    verifiedAt: new Date(),
+    parentDisplayName: guardian?.name || guardianDisplayName || patient.familyGroup?.parentDisplayName || "",
+    parentPhone: guardian?.phone || guardianPhone || patient.familyGroup?.parentPhone || "",
+    notes: String(notes || "").trim(),
+  };
+}
+
+async function resolveGuardianByNationalId({ hospitalId, nationalIdNumber, nationalIdCountry = "" }) {
+  const normalizedNationalIdNumber = normalizeNationalId(nationalIdNumber);
+  const normalizedNationalIdCountry = normalizeCountryCode(nationalIdCountry);
+  if (!normalizedNationalIdNumber) return null;
+
+  const hospitalScope = hospitalId
+    ? [{ hospital: hospitalId }, { hospital: null }, { hospital: { $exists: false } }]
+    : [{ hospital: null }, { hospital: { $exists: false } }];
+
+  return User.findOne({
+    active: true,
+    role: { $in: ["PATIENT", "GUEST"] },
+    nationalIdNumber: normalizedNationalIdNumber,
+    ...(normalizedNationalIdCountry ? { nationalIdCountry: normalizedNationalIdCountry } : {}),
+    $or: hospitalScope,
+  })
+    .sort({
+      hospital: hospitalId ? -1 : 1,
+      updatedAt: -1,
+    })
+    .select("_id name email phone role familyMonitoring hospital nationalIdNumber nationalIdCountry");
 }
 
 /**
@@ -35,11 +140,16 @@ export const createPatient = async (req, res, next) => {
       guardianAccountId = null,
       guardianRelationship = "PARENT",
       guardianNotes = "",
+      guardianNationalIdNumber = "",
+      guardianNationalIdCountry = "",
+      guardianDisplayName = "",
+      guardianPhone = "",
       createGuardianAccount = null,
       ...patientPayload
     } = req.body || {};
     const isMinor = isMinorDob(patientPayload?.dob);
-    const shouldLinkGuardian = Boolean(guardianAccountId || createGuardianAccount) && isMinor;
+    const shouldLinkGuardian =
+      Boolean(guardianAccountId || createGuardianAccount || guardianNationalIdNumber) && isMinor;
     let guardian = null;
     let guardianInvite = null;
 
@@ -82,11 +192,13 @@ export const createPatient = async (req, res, next) => {
         guardian = await User.findOne({
           _id: guardianAccountId,
           active: true,
-        }).select("_id role familyMonitoring hospital");
+        }).select("_id name phone role familyMonitoring hospital nationalIdNumber nationalIdCountry");
       } else if (createGuardianAccount && typeof createGuardianAccount === "object") {
         const name = String(createGuardianAccount.name || "").trim();
         const email = String(createGuardianAccount.email || "").trim().toLowerCase();
         const phone = String(createGuardianAccount.phone || "").trim();
+        const nationalIdNumber = normalizeNationalId(createGuardianAccount.nationalIdNumber);
+        const nationalIdCountry = normalizeCountryCode(createGuardianAccount.nationalIdCountry);
 
         if (!name || !email) {
           return res.status(400).json({ message: "Parent name and email are required to create and invite a new parent account" });
@@ -95,7 +207,7 @@ export const createPatient = async (req, res, next) => {
         guardian = await User.findOne({
           active: true,
           $or: [{ email }, ...(phone ? [{ phone }] : [])],
-        }).select("_id role familyMonitoring hospital email phone");
+        }).select("_id name email phone role familyMonitoring hospital nationalIdNumber nationalIdCountry");
 
         if (!guardian) {
           guardian = await User.create({
@@ -107,6 +219,8 @@ export const createPatient = async (req, res, next) => {
             password: crypto.randomBytes(18).toString("base64url"),
             authProvider: "local",
             active: true,
+            nationalIdNumber: nationalIdNumber || undefined,
+            nationalIdCountry: nationalIdCountry || undefined,
             metadata: {
               invitedAsGuardian: true,
               invitedBy: req.user._id,
@@ -129,7 +243,15 @@ export const createPatient = async (req, res, next) => {
         }
       }
 
-      if (!guardian) {
+      if (!guardian && guardianNationalIdNumber) {
+        guardian = await resolveGuardianByNationalId({
+          hospitalId,
+          nationalIdNumber: guardianNationalIdNumber,
+          nationalIdCountry: guardianNationalIdCountry,
+        });
+      }
+
+      if (!guardian && guardianAccountId) {
         return res.status(400).json({ message: "Selected parent account was not found" });
       }
     }
@@ -143,37 +265,45 @@ export const createPatient = async (req, res, next) => {
     });
 
     if (guardian && isMinorDob(patient.dob)) {
-      guardian.familyMonitoring = guardian.familyMonitoring || {};
-      guardian.familyMonitoring.linkedMinorPatients = [
-        ...(guardian.familyMonitoring.linkedMinorPatients || []).filter(
-          (link) => String(link.patient) !== String(patient._id)
-        ),
-        {
-          patient: patient._id,
-          relationship: String(guardianRelationship || "PARENT").trim() || "PARENT",
-          status: "ACTIVE",
-          linkedAt: new Date(),
-          linkedBy: req.user._id,
-          notes: String(guardianNotes || "").trim(),
-        },
-      ];
+      syncGuardianMinorLink({
+        guardian,
+        patient,
+        linkedBy: req.user._id,
+        relationship: guardianRelationship,
+        notes: guardianNotes,
+      });
+      syncPatientGuardianLink({
+        guardian,
+        patient,
+        linkedBy: req.user._id,
+        relationship: guardianRelationship,
+        notes: guardianNotes,
+      });
+    }
 
-      patient.guardianLinks = [
-        ...(patient.guardianLinks || []).filter(
-          (link) => String(link.user) !== String(guardian._id)
-        ),
-        {
-          user: guardian._id,
-          relationship: String(guardianRelationship || "PARENT").trim() || "PARENT",
-          status: "ACTIVE",
-          canMonitor: true,
-          linkedAt: new Date(),
-          linkedBy: req.user._id,
-          notes: String(guardianNotes || "").trim(),
-        },
-      ];
+    if (isMinorDob(patient.dob)) {
+      syncPatientFamilyAnchor({
+        patient,
+        guardian,
+        guardianNationalIdNumber,
+        guardianNationalIdCountry,
+        guardianDisplayName,
+        guardianPhone,
+        relationship: guardianRelationship,
+        linkedBy: req.user._id,
+        notes: guardianNotes,
+        registrationSource: "HOSPITAL_STAFF",
+      });
+    }
 
-      await Promise.all([guardian.save(), patient.save()]);
+    if (guardian || patient.familyGroup?.parentNationalIdNumber) {
+      await Promise.all([
+        guardian ? guardian.save() : Promise.resolve(),
+        patient.save(),
+      ]);
+    }
+
+    if (guardian && isMinorDob(patient.dob)) {
       await audit({
         req,
         action: "REGISTER_MINOR_WITH_GUARDIAN_LINK",
@@ -182,6 +312,21 @@ export const createPatient = async (req, res, next) => {
         metadata: {
           guardianAccountId: guardian._id,
           guardianRelationship: guardianRelationship || "PARENT",
+          guardianNationalIdNumber:
+            normalizeNationalId(guardianNationalIdNumber) ||
+            normalizeNationalId(guardian?.nationalIdNumber),
+        },
+      });
+    } else if (patient.familyGroup?.parentNationalIdNumber) {
+      await audit({
+        req,
+        action: "REGISTER_MINOR_WITH_PARENT_NATIONAL_ID",
+        resource: "Patient",
+        resourceId: patient._id,
+        metadata: {
+          guardianRelationship: guardianRelationship || "PARENT",
+          guardianNationalIdNumber: patient.familyGroup.parentNationalIdNumber,
+          guardianNationalIdCountry: patient.familyGroup.parentNationalIdCountry || "",
         },
       });
     }
@@ -190,6 +335,121 @@ export const createPatient = async (req, res, next) => {
       patient,
       guardianInviteIssued: Boolean(guardianInvite),
       guardianInviteExpiresAt: guardianInvite?.expiresAt || null,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const selfRegisterMinorPatient = async (req, res, next) => {
+  try {
+    const actor = await User.findById(req.user._id || req.user.id).select(
+      "name phone role nationalIdNumber nationalIdCountry hospital familyMonitoring"
+    );
+    if (!actor) {
+      return res.status(404).json({ message: "Parent account not found" });
+    }
+
+    const actorRole = normalizeRole(req.user?.actualRole || req.user?.role || actor.role || "");
+    if (!["PATIENT", "GUEST"].includes(actorRole)) {
+      return res.status(403).json({ message: "Only patient or guardian accounts can self-register minors" });
+    }
+
+    if (!actor.nationalIdNumber) {
+      return res.status(400).json({
+        message: "Add your national ID to your profile before registering a child under your account",
+      });
+    }
+
+    const {
+      hospitalId: requestedHospitalId = null,
+      relationship = "PARENT",
+      notes = "",
+      ...patientPayload
+    } = req.body || {};
+
+    if (!isMinorDob(patientPayload?.dob)) {
+      return res.status(400).json({ message: "Only patients under 18 can be registered as minors under a parent account" });
+    }
+
+    const hospitalId = requestedHospitalId || actor.hospital || null;
+    if (!hospitalId) {
+      return res.status(400).json({ message: "Select a hospital for the child registration" });
+    }
+
+    const hospital = await Hospital.findOne({ _id: hospitalId, active: true }).select("limits");
+    if (!hospital) {
+      return res.status(404).json({ message: "Selected hospital was not found" });
+    }
+
+    const patientCount = await Patient.countDocuments({
+      hospital: hospitalId,
+      active: true,
+    });
+    if (hospital.limits?.patients && patientCount >= hospital.limits.patients) {
+      return res.status(403).json({
+        message: "Selected hospital has reached its patient plan limit. Choose another hospital or contact support.",
+      });
+    }
+
+    const patient = await Patient.create({
+      ...patientPayload,
+      hospital: hospitalId,
+      createdBy: actor._id,
+      active: true,
+      metadata: {
+        ...(patientPayload?.metadata || {}),
+        selfRegisteredMinor: true,
+        parentUserId: actor._id,
+      },
+    });
+
+    syncGuardianMinorLink({
+      guardian: actor,
+      patient,
+      linkedBy: actor._id,
+      relationship,
+      notes,
+    });
+    syncPatientGuardianLink({
+      guardian: actor,
+      patient,
+      linkedBy: actor._id,
+      relationship,
+      notes,
+    });
+    syncPatientFamilyAnchor({
+      patient,
+      guardian: actor,
+      guardianNationalIdNumber: actor.nationalIdNumber,
+      guardianNationalIdCountry: actor.nationalIdCountry,
+      guardianDisplayName: actor.name,
+      guardianPhone: actor.phone,
+      relationship,
+      linkedBy: actor._id,
+      notes,
+      registrationSource: "SELF_SERVICE",
+    });
+
+    await Promise.all([actor.save(), patient.save()]);
+
+    await audit({
+      req,
+      action: "SELF_REGISTER_MINOR",
+      resource: "Patient",
+      resourceId: patient._id,
+      metadata: {
+        parentUserId: actor._id,
+        parentNationalIdNumber: actor.nationalIdNumber,
+        relationship,
+        hospitalId,
+      },
+    });
+
+    res.status(201).json({
+      patient,
+      linkedToParent: true,
+      parentNationalIdNumber: actor.nationalIdNumber,
     });
   } catch (err) {
     next(err);
@@ -376,7 +636,7 @@ export const searchGuardianAccounts = async (req, res, next) => {
         },
       ],
     })
-      .select("name email phone role nationalIdNumber hospital")
+      .select("name email phone role nationalIdNumber nationalIdCountry hospital")
       .limit(12)
       .lean();
 
@@ -388,6 +648,7 @@ export const searchGuardianAccounts = async (req, res, next) => {
         phone: row.phone || "",
         role: row.role || "PATIENT",
         nationalIdNumber: row.nationalIdNumber || "",
+        nationalIdCountry: row.nationalIdCountry || "",
         hospital: row.hospital || null,
       })),
     });

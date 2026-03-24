@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
 import { listPatients } from "../../services/patientApi";
 import { useAuth } from "../../utils/auth";
+import { extractDocument } from "../../services/aiExtractionApi";
+import { parseParentIdExtraction } from "../../utils/parentIdExtraction";
 
 const PATIENTS_QUERY_CACHE_KEY = "patients_query_cache_v1";
 const PATIENTS_QUERY_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -38,9 +40,36 @@ export default function Patients() {
   const [guardianRelationship, setGuardianRelationship] = useState("PARENT");
   const [guardianNotes, setGuardianNotes] = useState("");
   const [inviteNewGuardian, setInviteNewGuardian] = useState(false);
-  const [newGuardian, setNewGuardian] = useState({ name: "", email: "", phone: "" });
+  const [newGuardian, setNewGuardian] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    nationalIdNumber: "",
+    nationalIdCountry: "KE",
+  });
+  const [parentAnchor, setParentAnchor] = useState({
+    nationalIdNumber: "",
+    nationalIdCountry: "KE",
+    displayName: "",
+    phone: "",
+  });
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrMsg, setOcrMsg] = useState("");
+  const parentIdFileInputRef = useRef(null);
+  const parentIdCameraInputRef = useRef(null);
   const cacheScope = `${user?.role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
   const isMinor = isMinorDob(form.dob);
+
+  useEffect(() => {
+    if (!selectedGuardian) return;
+    setParentAnchor((prev) => ({
+      ...prev,
+      nationalIdNumber: selectedGuardian.nationalIdNumber || prev.nationalIdNumber || "",
+      nationalIdCountry: selectedGuardian.nationalIdCountry || prev.nationalIdCountry || "KE",
+      displayName: selectedGuardian.name || prev.displayName || "",
+      phone: selectedGuardian.phone || prev.phone || "",
+    }));
+  }, [selectedGuardian]);
 
   const parseList = (data) => ({
     items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
@@ -146,16 +175,50 @@ export default function Patients() {
 
   const create = async () => {
     setMsg("");
+    setOcrMsg("");
+    if (isMinor && !selectedGuardian && !inviteNewGuardian && !parentAnchor.nationalIdNumber.trim()) {
+      setMsg("Add the parent's national ID or link/create a parent account before registering a minor.");
+      return;
+    }
+    if (isMinor && inviteNewGuardian && (!newGuardian.name.trim() || !newGuardian.email.trim())) {
+      setMsg("Parent full name and email are required when creating a new parent account.");
+      return;
+    }
     try {
+      const resolvedParentNationalIdNumber =
+        selectedGuardian?.nationalIdNumber ||
+        newGuardian.nationalIdNumber ||
+        parentAnchor.nationalIdNumber;
+      const resolvedParentNationalIdCountry =
+        selectedGuardian?.nationalIdCountry ||
+        newGuardian.nationalIdCountry ||
+        parentAnchor.nationalIdCountry;
+      const resolvedParentDisplayName =
+        selectedGuardian?.name ||
+        newGuardian.name ||
+        parentAnchor.displayName;
+      const resolvedParentPhone =
+        selectedGuardian?.phone ||
+        newGuardian.phone ||
+        parentAnchor.phone;
+
       const res = await apiFetch("/api/patients", {
         method: "POST",
         body: {
           ...form,
+          ...(isMinor
+            ? {
+                guardianRelationship,
+                guardianNotes,
+                guardianNationalIdNumber: resolvedParentNationalIdNumber,
+                guardianNationalIdCountry: resolvedParentNationalIdCountry,
+                guardianDisplayName: resolvedParentDisplayName,
+                guardianPhone: resolvedParentPhone,
+              }
+            : {}),
           ...(isMinor && selectedGuardian
             ? {
                 guardianAccountId: selectedGuardian._id,
-                guardianRelationship,
-                guardianNotes,
               }
             : {}),
           ...(isMinor && inviteNewGuardian && !selectedGuardian
@@ -164,9 +227,9 @@ export default function Patients() {
                   name: newGuardian.name,
                   email: newGuardian.email,
                   phone: newGuardian.phone,
+                  nationalIdNumber: newGuardian.nationalIdNumber,
+                  nationalIdCountry: newGuardian.nationalIdCountry,
                 },
-                guardianRelationship,
-                guardianNotes,
               }
             : {}),
         },
@@ -179,16 +242,70 @@ export default function Patients() {
       setGuardianRelationship("PARENT");
       setGuardianNotes("");
       setInviteNewGuardian(false);
-      setNewGuardian({ name: "", email: "", phone: "" });
+      setNewGuardian({
+        name: "",
+        email: "",
+        phone: "",
+        nationalIdNumber: "",
+        nationalIdCountry: "KE",
+      });
+      setParentAnchor({
+        nationalIdNumber: "",
+        nationalIdCountry: "KE",
+        displayName: "",
+        phone: "",
+      });
       setMsg(
         isMinor && selectedGuardian
           ? "Patient created and linked to the selected parent account."
           : res?.guardianInviteIssued
             ? "Patient created. Parent account was created and an invite email was sent."
+            : isMinor && resolvedParentNationalIdNumber
+              ? "Patient created and anchored under the parent's national ID for family monitoring."
             : "Patient created."
       );
     } catch (err) {
       setMsg(err?.message || "Failed to create patient");
+    }
+  };
+
+  const applyScannedParentIdentity = (parsed) => {
+    setParentAnchor((prev) => ({
+      ...prev,
+      nationalIdNumber: parsed.nationalIdNumber || prev.nationalIdNumber,
+      nationalIdCountry: parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
+      displayName: parsed.displayName || prev.displayName,
+      phone: parsed.phone || prev.phone,
+    }));
+    setNewGuardian((prev) => ({
+      ...prev,
+      nationalIdNumber: parsed.nationalIdNumber || prev.nationalIdNumber,
+      nationalIdCountry: parsed.nationalIdCountry || prev.nationalIdCountry || "KE",
+      name: prev.name || parsed.displayName || "",
+      phone: prev.phone || parsed.phone || "",
+    }));
+  };
+
+  const runParentIdExtraction = async (file) => {
+    if (!file) return;
+    setOcrBusy(true);
+    setOcrMsg("");
+    setMsg("");
+    try {
+      const out = await extractDocument(file);
+      const parsed = parseParentIdExtraction(out?.extraction || {});
+      applyScannedParentIdentity(parsed);
+      if (parsed.nationalIdNumber) {
+        setOcrMsg("Parent ID scanned successfully. Review the extracted details before creating the child record.");
+      } else {
+        setOcrMsg("Scan completed, but the parent national ID was not confidently detected. Review and complete the fields manually.");
+      }
+    } catch (err) {
+      setOcrMsg(err?.message || "Failed to scan parent ID. Check AI extraction access and try again.");
+    } finally {
+      setOcrBusy(false);
+      if (parentIdFileInputRef.current) parentIdFileInputRef.current.value = "";
+      if (parentIdCameraInputRef.current) parentIdCameraInputRef.current.value = "";
     }
   };
 
@@ -278,10 +395,10 @@ export default function Patients() {
           {isMinor ? (
             <>
               <div className="subtle-banner">
-                This patient is a minor. Link a parent or guardian account so the child can be monitored from the parent account.
+                This patient is a minor. Use any of the supported flows: link an existing parent account, create and invite a new parent, or register the child under the parent's national ID if only the ID card is available.
               </div>
               <input
-                placeholder="Search parent by name, email, phone, or ID"
+                placeholder="Search parent by name, email, phone, or national ID"
                 value={guardianQuery}
                 onChange={(e) => setGuardianQuery(e.target.value)}
               />
@@ -319,6 +436,74 @@ export default function Patients() {
                 value={guardianNotes}
                 onChange={(e) => setGuardianNotes(e.target.value)}
               />
+              <div className="card form">
+                <strong>Parent identity anchor</strong>
+                <span className="muted">
+                  If the parent does not yet have an AfyaLink account, staff can still register the child under the parent's national ID so the family record follows that ID later.
+                </span>
+                <div className="welcome-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => parentIdFileInputRef.current?.click()}
+                    disabled={ocrBusy}
+                  >
+                    {ocrBusy ? "Scanning..." : "Upload Parent ID"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => parentIdCameraInputRef.current?.click()}
+                    disabled={ocrBusy}
+                  >
+                    {ocrBusy ? "Scanning..." : "Take Photo"}
+                  </button>
+                </div>
+                <input
+                  ref={parentIdFileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp"
+                  style={{ display: "none" }}
+                  onChange={(e) => runParentIdExtraction(e.target.files?.[0] || null)}
+                />
+                <input
+                  ref={parentIdCameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  style={{ display: "none" }}
+                  onChange={(e) => runParentIdExtraction(e.target.files?.[0] || null)}
+                />
+                {ocrMsg ? <span className="muted">{ocrMsg}</span> : null}
+                <input
+                  placeholder="Parent national ID"
+                  value={parentAnchor.nationalIdNumber}
+                  onChange={(e) =>
+                    setParentAnchor((prev) => ({ ...prev, nationalIdNumber: e.target.value }))
+                  }
+                />
+                <input
+                  placeholder="Parent national ID country (e.g. KE)"
+                  value={parentAnchor.nationalIdCountry}
+                  onChange={(e) =>
+                    setParentAnchor((prev) => ({ ...prev, nationalIdCountry: e.target.value.toUpperCase() }))
+                  }
+                />
+                <input
+                  placeholder="Parent display name (optional)"
+                  value={parentAnchor.displayName}
+                  onChange={(e) =>
+                    setParentAnchor((prev) => ({ ...prev, displayName: e.target.value }))
+                  }
+                />
+                <input
+                  placeholder="Parent phone (optional)"
+                  value={parentAnchor.phone}
+                  onChange={(e) =>
+                    setParentAnchor((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                />
+              </div>
               {inviteNewGuardian ? (
                 <div className="card form">
                   <strong>Create parent account and send invite</strong>
@@ -337,6 +522,20 @@ export default function Patients() {
                     value={newGuardian.phone}
                     onChange={(e) => setNewGuardian((prev) => ({ ...prev, phone: e.target.value }))}
                   />
+                  <input
+                    placeholder="Parent national ID"
+                    value={newGuardian.nationalIdNumber}
+                    onChange={(e) =>
+                      setNewGuardian((prev) => ({ ...prev, nationalIdNumber: e.target.value }))
+                    }
+                  />
+                  <input
+                    placeholder="Parent national ID country (e.g. KE)"
+                    value={newGuardian.nationalIdCountry}
+                    onChange={(e) =>
+                      setNewGuardian((prev) => ({ ...prev, nationalIdCountry: e.target.value.toUpperCase() }))
+                    }
+                  />
                   <span className="muted">
                     A secure set-password email will be sent to the parent after the child record is created.
                   </span>
@@ -346,6 +545,12 @@ export default function Patients() {
                 <div className="card">
                   <strong>Linked parent:</strong> {selectedGuardian.name}
                   <div className="muted">{selectedGuardian.email || selectedGuardian.phone || selectedGuardian.nationalIdNumber || "No contact"}</div>
+                  {selectedGuardian.nationalIdNumber ? (
+                    <div className="muted">
+                      Parent national ID: {selectedGuardian.nationalIdNumber}
+                      {selectedGuardian.nationalIdCountry ? ` (${selectedGuardian.nationalIdCountry})` : ""}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
               {guardianResults.length && !inviteNewGuardian ? (
