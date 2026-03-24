@@ -43,6 +43,7 @@ export const PATIENT_TRANSLATIONS = {
     insurance: "Insurance",
     transferConsents: "Transfer Consents",
     latestVisitSummary: "Latest Visit Summary",
+    noRecentVisitSummary: "No recent visit summary yet.",
     familyRecordsTitle: "Family Records",
     familyRecordsSubtitle:
       "Parent-facing view of linked minor care records, reports, and recent encounter activity.",
@@ -276,6 +277,7 @@ export const PATIENT_TRANSLATIONS = {
     insurance: "Bima",
     transferConsents: "Ridhaa za Uhamisho",
     latestVisitSummary: "Muhtasari wa Ziara ya Hivi Karibuni",
+    noRecentVisitSummary: "Bado hakuna muhtasari wa ziara ya hivi karibuni.",
     familyRecordsTitle: "Rekodi za Familia",
     familyRecordsSubtitle:
       "Mwonekano wa mzazi wa rekodi za watoto waliofungwa, ripoti, na shughuli za hivi karibuni za matibabu.",
@@ -509,6 +511,7 @@ export const PATIENT_TRANSLATIONS = {
     insurance: "Assurance",
     transferConsents: "Consentements de transfert",
     latestVisitSummary: "Résumé de la dernière visite",
+    noRecentVisitSummary: "Aucun résumé de visite récente pour le moment.",
     familyRecordsTitle: "Dossiers familiaux",
     familyRecordsSubtitle:
       "Vue parent des dossiers des mineurs liés, des rapports et de l’activité clinique récente.",
