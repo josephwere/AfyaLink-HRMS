@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
-import apiFetch from "../utils/apiFetch";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
+import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 export function useGoogleAuth() {
   const { login } = useAuth();
@@ -14,12 +14,13 @@ export function useGoogleAuth() {
   const handleSuccess = async (credentialResponse) => {
     try {
       setError(null);
+      await warmAuthRuntime("auth-entry");
 
       if (!credentialResponse?.credential) {
         throw new Error("Missing Google credential");
       }
 
-      const data = await apiFetch("/api/auth/google", {
+      const data = await guardedAuthFetch("/api/auth/google", {
         method: "POST",
         body: { credential: credentialResponse.credential },
       });

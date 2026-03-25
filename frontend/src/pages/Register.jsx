@@ -5,7 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import PasswordInput from "../components/PasswordInput";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import LegalLinks from "../components/LegalLinks";
-import apiFetch from "../utils/apiFetch";
 import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
@@ -15,6 +14,7 @@ import {
   enqueueOfflineRegistration,
   flushOfflineRegistrations,
 } from "../utils/offlineRegistration";
+import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -41,6 +41,10 @@ export default function Register() {
   React.useEffect(() => {
     document.body.classList.add("auth-route");
     return () => document.body.classList.remove("auth-route");
+  }, []);
+
+  React.useEffect(() => {
+    warmAuthRuntime("auth-entry").catch(() => {});
   }, []);
 
   React.useEffect(() => {
@@ -97,7 +101,7 @@ export default function Register() {
       setError("");
       setInfo("");
 
-      const data = await apiFetch("/api/auth/register", {
+      const data = await guardedAuthFetch("/api/auth/register", {
         method: "POST",
         body: payload,
       });

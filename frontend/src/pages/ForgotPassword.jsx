@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
 import PasswordInput from "../components/PasswordInput";
-import { apiFetch } from "../utils/apiFetch";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 function maskEmail(value) {
   const raw = String(value || "").trim();
@@ -33,6 +33,10 @@ export default function ForgotPassword() {
     return () => document.body.classList.remove("auth-route");
   }, []);
 
+  useEffect(() => {
+    warmAuthRuntime("auth-entry").catch(() => {});
+  }, []);
+
   const submitEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -40,16 +44,9 @@ export default function ForgotPassword() {
     setError("");
 
     try {
-      await apiFetch("/healthz", {
-        method: "GET",
-        timeoutMs: 4000,
-        _skipOfflineQueue: true,
-      });
-
-      await apiFetch("/api/auth/forgot-password", {
+      await guardedAuthFetch("/api/auth/forgot-password", {
         method: "POST",
         body: { email },
-        timeoutMs: 45000,
       });
 
       setSubmitted(true);
@@ -60,7 +57,11 @@ export default function ForgotPassword() {
         setError("Backend is unavailable right now. Please wait 20–30 seconds and try again.");
         return;
       }
-      if (message.toLowerCase().includes("timed out")) {
+      if (
+        message.toLowerCase().includes("timed out") ||
+        message.toLowerCase().includes("taking longer than usual") ||
+        message.toLowerCase().includes("waking up")
+      ) {
         setError("Server is waking up. Please wait 20–30 seconds and try again.");
         return;
       }
@@ -77,16 +78,9 @@ export default function ForgotPassword() {
     setError("");
 
     try {
-      await apiFetch("/healthz", {
-        method: "GET",
-        timeoutMs: 4000,
-        _skipOfflineQueue: true,
-      });
-
-      await apiFetch("/api/auth/forgot-password/phone/request-otp", {
+      await guardedAuthFetch("/api/auth/forgot-password/phone/request-otp", {
         method: "POST",
         body: { phone },
-        timeoutMs: 45000,
       });
 
       setPhoneResetComplete(false);
@@ -99,7 +93,11 @@ export default function ForgotPassword() {
         setError("Backend is unavailable right now. Please wait 20–30 seconds and try again.");
         return;
       }
-      if (message.toLowerCase().includes("timed out")) {
+      if (
+        message.toLowerCase().includes("timed out") ||
+        message.toLowerCase().includes("taking longer than usual") ||
+        message.toLowerCase().includes("waking up")
+      ) {
         setError("Server is waking up. Please wait 20–30 seconds and try again.");
         return;
       }
@@ -116,10 +114,9 @@ export default function ForgotPassword() {
     setError("");
 
     try {
-      await apiFetch("/api/auth/reset-password/phone", {
+      await guardedAuthFetch("/api/auth/reset-password/phone", {
         method: "POST",
         body: { phone, otp: phoneOtp, password: phonePassword },
-        timeoutMs: 45000,
       });
 
       setPhoneResetComplete(true);

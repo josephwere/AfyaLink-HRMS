@@ -1,0 +1,95 @@
+import apiFetch from "../utils/apiFetch";
+
+const AUTH_WARMUP_TIMEOUT_MS = 4000;
+const AUTH_TIMEOUT_SEQUENCE = [20000, 35000, 50000];
+const warmPromises = new Map();
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isRetriableAuthError(err) {
+  const message = String(err?.message || "").toLowerCase();
+  const status = Number(err?.status || 0);
+  if (
+    message.includes("timed out") ||
+    message.includes("network error") ||
+    message.includes("taking longer than usual")
+  ) {
+    return true;
+  }
+  return [408, 429, 500, 502, 503, 504].includes(status);
+}
+
+function toAuthFriendlyError(err, warmed, attemptsTried) {
+  const message = String(err?.message || "");
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("timed out") ||
+    lower.includes("network error") ||
+    lower.includes("taking longer than usual")
+  ) {
+    return new Error(
+      warmed
+        ? "Secure sign-in is taking longer than usual. Please wait a few seconds and try again."
+        : `Secure sign-in is waking up. We already retried ${attemptsTried} time${attemptsTried === 1 ? "" : "s"} for you. Please try again in a few seconds.`
+    );
+  }
+  return err instanceof Error ? err : new Error(message || "Authentication failed");
+}
+
+export async function warmAuthRuntime(
+  key = "auth-runtime",
+  { path = "/healthz", timeoutMs = AUTH_WARMUP_TIMEOUT_MS } = {}
+) {
+  if (!warmPromises.has(key)) {
+    const promise = (async () => {
+      try {
+        await apiFetch(path, {
+          method: "GET",
+          timeoutMs,
+          _skipOfflineQueue: true,
+        });
+        return true;
+      } catch {
+        return false;
+      } finally {
+        warmPromises.delete(key);
+      }
+    })();
+    warmPromises.set(key, promise);
+  }
+  return warmPromises.get(key);
+}
+
+export async function guardedAuthFetch(
+  path,
+  options = {},
+  {
+    warmupKey = "auth-runtime",
+    warmupPath = "/healthz",
+    timeoutSequence = AUTH_TIMEOUT_SEQUENCE,
+    retryDelayMs = 700,
+  } = {}
+) {
+  const warmed = await warmAuthRuntime(warmupKey, { path: warmupPath });
+  let lastError = null;
+
+  for (let index = 0; index < timeoutSequence.length; index += 1) {
+    try {
+      return await apiFetch(path, {
+        ...options,
+        timeoutMs: timeoutSequence[index],
+        _skipOfflineQueue: true,
+      });
+    } catch (err) {
+      lastError = err;
+      if (!isRetriableAuthError(err) || index === timeoutSequence.length - 1) {
+        throw toAuthFriendlyError(err, warmed, index + 1);
+      }
+      await sleep(retryDelayMs * (index + 1));
+    }
+  }
+
+  throw toAuthFriendlyError(lastError, warmed, timeoutSequence.length);
+}

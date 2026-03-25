@@ -8,6 +8,7 @@ import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { warmAuthRuntime } from "../services/guardedAuthFetch";
 
 export default function Login() {
   const { login } = useAuth();
@@ -51,6 +52,10 @@ export default function Login() {
   useEffect(() => {
     document.body.classList.add("auth-route");
     return () => document.body.classList.remove("auth-route");
+  }, []);
+
+  useEffect(() => {
+    warmAuthRuntime("auth-entry").catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -145,7 +150,7 @@ export default function Login() {
         )}
         {slowAuth && (
           <div className="auth-info">
-            Signing in is taking longer than usual. Please wait a few seconds.
+            We’re warming secure sign-in and retrying quietly in the background. Please wait a few seconds.
           </div>
         )}
 

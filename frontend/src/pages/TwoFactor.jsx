@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
-import { apiFetch } from "../utils/apiFetch";
 import { useAuth } from "../utils/auth";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
+import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 function maskIdentifier(value) {
   const raw = String(value || "").trim();
@@ -62,6 +62,10 @@ export default function TwoFactor() {
   }, []);
 
   useEffect(() => {
+    warmAuthRuntime("auth-entry").catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!userId) {
       navigate("/login", { replace: true });
     }
@@ -114,7 +118,7 @@ export default function TwoFactor() {
     setLoading(true);
 
     try {
-      const data = await apiFetch("/api/auth/2fa/verify", {
+      const data = await guardedAuthFetch("/api/auth/2fa/verify", {
         method: "POST",
         body: { userId, otp: otp.trim().toUpperCase() },
       });
@@ -135,7 +139,7 @@ export default function TwoFactor() {
     setError("");
     setInfo("");
     try {
-      const data = await apiFetch("/api/auth/2fa/resend", {
+      const data = await guardedAuthFetch("/api/auth/2fa/resend", {
         method: "POST",
         body: { userId },
       });

@@ -107,7 +107,7 @@ async function apiFetch(path, options = {}, _retry = false) {
       };
     }
     if (err?.name === "AbortError") {
-      throw new Error("Request timed out. Please try again.");
+      throw new Error("This request is taking longer than usual. Please try again.");
     }
     throw new Error("Network error. Please check your connection.");
   } finally {

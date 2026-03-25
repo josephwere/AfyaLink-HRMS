@@ -2,7 +2,12 @@ import apiFetch from "../utils/apiFetch";
 
 const DEFAULT_WARMUP_TIMEOUT_MS = 4500;
 const DEFAULT_TIMEOUT_SEQUENCE = [26000, 38000];
-const RETRYABLE_ERROR_HINTS = ["timed out", "network error", "failed to fetch"];
+const RETRYABLE_ERROR_HINTS = [
+  "timed out",
+  "network error",
+  "failed to fetch",
+  "taking longer than usual",
+];
 
 const warmPromises = new Map();
 

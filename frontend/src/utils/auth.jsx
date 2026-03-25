@@ -9,6 +9,7 @@ import {
 import { apiFetch, logout as apiLogout } from "./apiFetch";
 import { normalizeRole } from "./normalizeRole";
 import { flushOfflineRegistrations } from "./offlineRegistration";
+import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -314,6 +315,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const authEntryRoutes = new Set(["/login", "/register", "/forgot-password", "/2fa"]);
+    if (authEntryRoutes.has(window.location.pathname)) {
+      warmAuthRuntime("auth-entry").catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
     if (!baseUser) return undefined;
 
     const runKeepalive = async () => {
@@ -432,13 +441,12 @@ export function AuthProvider({ children }) {
     ============================ */
     let data;
     try {
-      data = await apiFetch("/api/auth/login", {
+      data = await guardedAuthFetch("/api/auth/login", {
         method: "POST",
         body: {
           identifier: identifierOrToken,
           password: passwordOrOptions,
         },
-        timeoutMs: 12000,
       });
     } catch (err) {
       const networkLike =
@@ -593,6 +601,25 @@ export function AuthProvider({ children }) {
     return true;
   };
 
+  const patchUser = (patch = {}) => {
+    if (!baseUser || !patch || typeof patch !== "object") return false;
+    const nextUser = {
+      ...baseUser,
+      ...patch,
+      uiPreferences: {
+        ...(baseUser.uiPreferences || {}),
+        ...(patch.uiPreferences || {}),
+      },
+    };
+    setBaseUser(nextUser);
+    try {
+      localStorage.setItem("user", JSON.stringify(nextUser));
+    } catch {
+      // ignore local storage sync errors
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (loading) return;
     if (!canRoleOverride && roleOverride) {
@@ -618,6 +645,7 @@ export function AuthProvider({ children }) {
         canRoleOverride,
         setRoleOverride,
         setStrictImpersonation,
+        patchUser,
 
         // existing
         login,
