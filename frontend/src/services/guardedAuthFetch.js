@@ -4,6 +4,18 @@ const AUTH_WARMUP_TIMEOUT_MS = 4000;
 const AUTH_TIMEOUT_SEQUENCE = [20000, 35000, 50000];
 const warmPromises = new Map();
 
+export function isRetriableAuthMessage(message) {
+  const lower = String(message || "").toLowerCase();
+  return (
+    lower.includes("timed out") ||
+    lower.includes("request timed out") ||
+    lower.includes("network error") ||
+    lower.includes("taking longer than usual") ||
+    lower.includes("waking up") ||
+    lower.includes("failed to fetch")
+  );
+}
+
 function sleep(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -11,11 +23,7 @@ function sleep(ms) {
 function isRetriableAuthError(err) {
   const message = String(err?.message || "").toLowerCase();
   const status = Number(err?.status || 0);
-  if (
-    message.includes("timed out") ||
-    message.includes("network error") ||
-    message.includes("taking longer than usual")
-  ) {
+  if (isRetriableAuthMessage(message)) {
     return true;
   }
   return [408, 429, 500, 502, 503, 504].includes(status);
@@ -36,6 +44,27 @@ function toAuthFriendlyError(err, warmed, attemptsTried) {
     );
   }
   return err instanceof Error ? err : new Error(message || "Authentication failed");
+}
+
+export function normalizeAuthUiError(
+  err,
+  {
+    timeoutMessage = "We’re warming secure access and retrying in the background. Please wait a few seconds and try again.",
+    networkMessage = "Secure access is temporarily unavailable. Please check your connection and try again.",
+    fallback = "Something went wrong. Please try again.",
+  } = {}
+) {
+  const message = String(err?.message || "").trim();
+  const lower = message.toLowerCase();
+
+  if (isRetriableAuthMessage(lower)) {
+    if (lower.includes("network error") || lower.includes("failed to fetch")) {
+      return networkMessage;
+    }
+    return timeoutMessage;
+  }
+
+  return message || fallback;
 }
 
 export async function warmAuthRuntime(

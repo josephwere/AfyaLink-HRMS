@@ -4,7 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
-import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
+import {
+  guardedAuthFetch,
+  normalizeAuthUiError,
+  warmAuthRuntime,
+} from "../services/guardedAuthFetch";
 
 export function useGoogleAuth() {
   const { login } = useAuth();
@@ -35,7 +39,15 @@ export function useGoogleAuth() {
 
       navigate(redirectByRole(data.user), { replace: true });
     } catch (err) {
-      setError(err.message || "Google authentication failed");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "Google sign-in is taking longer than usual. We’re retrying quietly in the background. Please wait a few seconds and try again.",
+          networkMessage:
+            "Google sign-in is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Google authentication failed",
+        })
+      );
     }
   };
 

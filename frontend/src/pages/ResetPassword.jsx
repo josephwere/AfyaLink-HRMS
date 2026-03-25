@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { apiFetch } from "../utils/apiFetch";
 import PasswordInput from "../components/PasswordInput";
 import AuthPageShell from "../components/AuthPageShell";
+import {
+  guardedAuthFetch,
+  normalizeAuthUiError,
+  warmAuthRuntime,
+} from "../services/guardedAuthFetch";
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -24,6 +28,10 @@ export default function ResetPassword() {
     }
   }, [token]);
 
+  useEffect(() => {
+    warmAuthRuntime("auth-entry").catch(() => {});
+  }, []);
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
@@ -37,7 +45,7 @@ export default function ResetPassword() {
     }
 
     try {
-      await apiFetch("/api/auth/reset-password", {
+      await guardedAuthFetch("/api/auth/reset-password", {
         method: "POST",
         body: { token, password },
       });
@@ -45,7 +53,15 @@ export default function ResetPassword() {
       setMsg("Password reset successful. Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setError(err.message || "Reset link expired or invalid");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "Password reset is taking longer than usual. Please wait a few seconds and try again.",
+          networkMessage:
+            "Password reset is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Reset link expired or invalid",
+        })
+      );
     } finally {
       setLoading(false);
     }

@@ -8,7 +8,7 @@ import { redirectByRole } from "../utils/redirectByRole";
 import { useAuth } from "../utils/auth";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
-import { warmAuthRuntime } from "../services/guardedAuthFetch";
+import { normalizeAuthUiError, warmAuthRuntime } from "../services/guardedAuthFetch";
 
 export default function Login() {
   const { login } = useAuth();
@@ -114,7 +114,15 @@ export default function Login() {
 
       navigate(redirectByRole(result.user), { replace: true });
     } catch (err) {
-      setError(err.message || "Invalid credentials");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "We’re warming secure sign-in and retrying in the background. Please wait a few seconds and try again.",
+          networkMessage:
+            "Secure sign-in is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Invalid credentials",
+        })
+      );
     } finally {
       clearTimeout(slowTimer);
       setSubmitting(false);
@@ -142,7 +150,7 @@ export default function Login() {
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
-        {googleError && <div className="auth-error">{googleError}</div>}
+        {googleError && googleError !== error && <div className="auth-error">{googleError}</div>}
         {isOffline && (
           <div className="auth-info">
             You are offline. Login works only for accounts previously signed in on this device.

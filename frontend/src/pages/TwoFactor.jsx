@@ -3,7 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
 import { useAuth } from "../utils/auth";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
-import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
+import {
+  guardedAuthFetch,
+  normalizeAuthUiError,
+  warmAuthRuntime,
+} from "../services/guardedAuthFetch";
 
 function maskIdentifier(value) {
   const raw = String(value || "").trim();
@@ -127,7 +131,15 @@ export default function TwoFactor() {
       clearPending2FAState();
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message || "Verification failed");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "Two-factor verification is taking longer than usual. Please wait a few seconds and try again.",
+          networkMessage:
+            "Two-factor verification is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Verification failed",
+        })
+      );
     } finally {
       setLoading(false);
     }
@@ -146,7 +158,15 @@ export default function TwoFactor() {
       setInfo(data?.msg || "A fresh 2FA code is on the way.");
       setCooldown(30);
     } catch (err) {
-      setError(err.message || "Failed to resend the security code");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "Resending the security code is taking longer than usual. Please wait a few seconds and try again.",
+          networkMessage:
+            "Resending the security code is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Failed to resend the security code",
+        })
+      );
     } finally {
       setResending(false);
     }

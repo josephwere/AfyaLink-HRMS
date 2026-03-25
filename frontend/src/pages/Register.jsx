@@ -14,7 +14,11 @@ import {
   enqueueOfflineRegistration,
   flushOfflineRegistrations,
 } from "../utils/offlineRegistration";
-import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
+import {
+  guardedAuthFetch,
+  normalizeAuthUiError,
+  warmAuthRuntime,
+} from "../services/guardedAuthFetch";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -128,7 +132,15 @@ export default function Register() {
           "Network unavailable. Registration saved offline and will auto-submit when internet returns."
         );
       } else {
-        setError(msg || "Registration failed");
+        setError(
+          normalizeAuthUiError(err, {
+            timeoutMessage:
+              "We’re warming secure account setup and retrying in the background. Please wait a few seconds and try again.",
+            networkMessage:
+              "Account setup is temporarily unavailable. Please check your connection and try again.",
+            fallback: msg || "Registration failed",
+          })
+        );
       }
     } finally {
       setSubmitting(false);
@@ -155,7 +167,7 @@ export default function Register() {
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
-        {googleError && <div className="auth-error">{googleError}</div>}
+        {googleError && googleError !== error && <div className="auth-error">{googleError}</div>}
 
         <label>Full Name</label>
         <input name="name" value={form.name} onChange={handleChange} required />

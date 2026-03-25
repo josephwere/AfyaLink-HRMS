@@ -3,7 +3,11 @@ import { Link } from "react-router-dom";
 import LegalLinks from "../components/LegalLinks";
 import PasswordInput from "../components/PasswordInput";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
-import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
+import {
+  guardedAuthFetch,
+  normalizeAuthUiError,
+  warmAuthRuntime,
+} from "../services/guardedAuthFetch";
 
 function maskEmail(value) {
   const raw = String(value || "").trim();
@@ -52,20 +56,14 @@ export default function ForgotPassword() {
       setSubmitted(true);
       setMsg("If an AfyaLink account matches this email, a secure reset link is already on the way.");
     } catch (err) {
-      const message = err.message || "Something went wrong";
-      if (message.toLowerCase().includes("network error")) {
-        setError("Backend is unavailable right now. Please wait 20–30 seconds and try again.");
-        return;
-      }
-      if (
-        message.toLowerCase().includes("timed out") ||
-        message.toLowerCase().includes("taking longer than usual") ||
-        message.toLowerCase().includes("waking up")
-      ) {
-        setError("Server is waking up. Please wait 20–30 seconds and try again.");
-        return;
-      }
-      setError(message);
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage: "Password recovery is warming up. Please wait 20–30 seconds and try again.",
+          networkMessage:
+            "Password recovery is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Something went wrong",
+        })
+      );
     } finally {
       setLoading(false);
     }
@@ -88,20 +86,14 @@ export default function ForgotPassword() {
       setSubmitted(true);
       setMsg("If an AfyaLink account matches this phone number, a secure reset code is already on the way.");
     } catch (err) {
-      const message = err.message || "Something went wrong";
-      if (message.toLowerCase().includes("network error")) {
-        setError("Backend is unavailable right now. Please wait 20–30 seconds and try again.");
-        return;
-      }
-      if (
-        message.toLowerCase().includes("timed out") ||
-        message.toLowerCase().includes("taking longer than usual") ||
-        message.toLowerCase().includes("waking up")
-      ) {
-        setError("Server is waking up. Please wait 20–30 seconds and try again.");
-        return;
-      }
-      setError(message);
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage: "Password recovery is warming up. Please wait 20–30 seconds and try again.",
+          networkMessage:
+            "Password recovery is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Something went wrong",
+        })
+      );
     } finally {
       setLoading(false);
     }
@@ -123,7 +115,15 @@ export default function ForgotPassword() {
       setMsg("Password reset successful. You can now sign in with the new password.");
       setSubmitted(true);
     } catch (err) {
-      setError(err.message || "Invalid or expired reset code");
+      setError(
+        normalizeAuthUiError(err, {
+          timeoutMessage:
+            "Password reset verification is taking longer than usual. Please wait a few seconds and try again.",
+          networkMessage:
+            "Password reset verification is temporarily unavailable. Please check your connection and try again.",
+          fallback: "Invalid or expired reset code",
+        })
+      );
     } finally {
       setLoading(false);
     }
