@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getPatientDashboard } from "../../services/dashboardApi";
-import apiFetch from "../../utils/apiFetch";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
+import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -33,9 +33,15 @@ export default function Dashboard() {
         referralsResult,
       ] = await Promise.allSettled([
         getPatientDashboard(),
-        apiFetch("/api/appointments?limit=10"),
-        apiFetch("/api/encounters?limit=1"),
-        apiFetch("/api/pharmacy/prescriptions"),
+        guardedConsoleFetch("/api/appointments?limit=10", {
+          warmupKey: "patient-dashboard-appointments",
+        }).then((result) => result?.payload || null),
+        guardedConsoleFetch("/api/encounters?limit=1", {
+          warmupKey: "patient-dashboard-encounters",
+        }).then((result) => result?.payload || null),
+        guardedConsoleFetch("/api/pharmacy/prescriptions", {
+          warmupKey: "patient-dashboard-prescriptions",
+        }).then((result) => result?.payload || null),
         listPharmacyReferrals({ limit: 20 }),
       ]);
 

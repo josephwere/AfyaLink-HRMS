@@ -2,7 +2,10 @@ import apiFetch from "../utils/apiFetch";
 import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export const getSystemAdminMetrics = async () => {
-  return apiFetch("/api/system-admin/metrics");
+  const result = await guardedConsoleFetch("/api/system-admin/metrics", {
+    warmupKey: "system-admin-metrics",
+  });
+  return result?.payload || null;
 };
 
 export const getIntegrationHubSummary = async () => {

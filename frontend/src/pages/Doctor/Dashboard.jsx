@@ -8,6 +8,7 @@ import { runBurnoutScore } from "../../services/mlApi";
 import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -78,8 +79,11 @@ export default function Dashboard() {
       .then((res) => setData(res))
       .catch(() => setData(null));
 
-    apiFetch("/api/appointments?limit=8&cursorMode=1")
-      .then((res) => {
+    guardedConsoleFetch("/api/appointments?limit=8&cursorMode=1", {
+      warmupKey: "doctor-dashboard-appointments",
+    })
+      .then((result) => {
+        const res = result?.payload || {};
         const rows = Array.isArray(res?.items) ? res.items : [];
         setAppointments(rows);
         loadEncounterSnapshots(rows);
@@ -89,8 +93,11 @@ export default function Dashboard() {
         setEncounterByPatient({});
       });
 
-    apiFetch("/api/notifications?limit=8")
-      .then((res) => {
+    guardedConsoleFetch("/api/notifications?limit=8", {
+      warmupKey: "doctor-dashboard-notifications",
+    })
+      .then((result) => {
+        const res = result?.payload || {};
         const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
         setAlerts(items.slice(0, 8));
       })
@@ -108,8 +115,13 @@ export default function Dashboard() {
       });
 
     if (user?.id) {
-      apiFetch(`/api/appointments/doctors/${user.id}/availability`)
-        .then((res) => setAvailability(Array.isArray(res?.items) ? res.items : []))
+      guardedConsoleFetch(`/api/appointments/doctors/${user.id}/availability`, {
+        warmupKey: "doctor-dashboard-availability",
+      })
+        .then((result) => {
+          const res = result?.payload || {};
+          setAvailability(Array.isArray(res?.items) ? res.items : []);
+        })
         .catch(() => setAvailability([]));
     }
 

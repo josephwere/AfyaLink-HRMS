@@ -1,4 +1,5 @@
 import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export async function listRegisteredPharmacies(params = {}) {
   const qs = new URLSearchParams();
@@ -27,7 +28,10 @@ export async function listPharmacyReferrals(params = {}) {
   Object.entries(params || {}).forEach(([k, v]) => {
     if (v !== undefined && v !== null && String(v) !== "") qs.set(k, String(v));
   });
-  return apiFetch(`/api/pharmacy-network/referrals?${qs.toString()}`);
+  const result = await guardedConsoleFetch(`/api/pharmacy-network/referrals?${qs.toString()}`, {
+    warmupKey: "pharmacy-referrals",
+  });
+  return result?.payload || null;
 }
 
 export async function createPharmacyReferral(payload) {

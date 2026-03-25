@@ -15,6 +15,7 @@ import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function SystemAdminDashboard() {
   const navigate = useNavigate();
@@ -166,8 +167,11 @@ export default function SystemAdminDashboard() {
         })
       );
     loadAi();
-    apiFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500")
-      .then((res) => {
+    guardedConsoleFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500", {
+      warmupKey: "system-admin-unlinked-pharmacists",
+    })
+      .then((result) => {
+        const res = result?.payload || {};
         const rows = Array.isArray(res?.items) ? res.items : [];
         setUnlinkedPharmacists(rows.length);
       })

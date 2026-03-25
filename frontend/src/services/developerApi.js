@@ -1,11 +1,17 @@
 import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
+
+async function loadDeveloperSnapshot(path, warmupKey) {
+  const result = await guardedConsoleFetch(path, { warmupKey });
+  return result?.payload || null;
+}
 
 export const getDeveloperOverview = async () => {
-  return apiFetch("/api/developer/overview");
+  return loadDeveloperSnapshot("/api/developer/overview", "developer-overview");
 };
 
 export const getTrustStatus = async () => {
-  return apiFetch("/api/developer/trust-status");
+  return loadDeveloperSnapshot("/api/developer/trust-status", "developer-trust-status");
 };
 
 export const runWorkflowSlaScan = async () => {
@@ -15,5 +21,5 @@ export const runWorkflowSlaScan = async () => {
 };
 
 export const getDecisionCockpit = async () => {
-  return apiFetch("/api/developer/decision-cockpit");
+  return loadDeveloperSnapshot("/api/developer/decision-cockpit", "developer-decision-cockpit");
 };

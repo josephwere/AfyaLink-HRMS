@@ -10,6 +10,7 @@ import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -34,8 +35,11 @@ export default function Dashboard() {
   useEffect(() => {
     getSuperAdminDashboard().then(setData).catch(() => setData(null));
     getDeveloperOverview().then(setOps).catch(() => setOps(null));
-    apiFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500")
-      .then((res) => {
+    guardedConsoleFetch("/api/users?missingRegisteredPharmacy=1&page=1&limit=500", {
+      warmupKey: "super-admin-unlinked-pharmacists",
+    })
+      .then((result) => {
+        const res = result?.payload || {};
         const rows = Array.isArray(res?.items) ? res.items : [];
         setUnlinkedPharmacists(rows.length);
       })
