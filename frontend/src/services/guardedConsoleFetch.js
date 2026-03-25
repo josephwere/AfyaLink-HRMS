@@ -25,6 +25,18 @@ function isRetryableConsoleError(error) {
   );
 }
 
+function toConsoleFriendlyError(error, warmed, attempts) {
+  const message = String(error?.message || "").toLowerCase();
+  if (isRetryableConsoleError(error) || RETRYABLE_ERROR_HINTS.some((hint) => message.includes(hint))) {
+    return new Error(
+      warmed
+        ? "Workspace data is taking longer than usual. Please wait a few seconds and try again."
+        : `Workspace services are warming up. We already retried ${attempts} time${attempts === 1 ? "" : "s"} for you. Please try again in a few seconds.`
+    );
+  }
+  return error instanceof Error ? error : new Error(String(error?.message || "Failed to load workspace"));
+}
+
 export async function warmConsoleRuntime(
   key = "default",
   { path = "/healthz", timeoutMs = DEFAULT_WARMUP_TIMEOUT_MS } = {}
@@ -48,6 +60,7 @@ export async function warmConsoleRuntime(
 export async function guardedConsoleFetch(
   path,
   {
+    requestOptions = {},
     warmupKey = "default",
     warmupPath = "/healthz",
     timeoutSequence = DEFAULT_TIMEOUT_SEQUENCE,
@@ -59,7 +72,7 @@ export async function guardedConsoleFetch(
   for (let attemptIndex = 0; attemptIndex < timeoutSequence.length; attemptIndex += 1) {
     const timeoutMs = timeoutSequence[attemptIndex];
     try {
-      const payload = await apiFetch(path, { timeoutMs });
+      const payload = await apiFetch(path, { ...requestOptions, timeoutMs });
       return {
         payload,
         clientMeta: {
@@ -81,5 +94,5 @@ export async function guardedConsoleFetch(
     }
   }
 
-  throw lastError;
+  throw toConsoleFriendlyError(lastError, warmed, timeoutSequence.length);
 }

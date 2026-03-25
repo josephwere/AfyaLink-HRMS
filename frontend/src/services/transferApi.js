@@ -1,4 +1,10 @@
 import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
+
+async function loadTransferSnapshot(path, warmupKey) {
+  const result = await guardedConsoleFetch(path, { warmupKey });
+  return result?.payload || null;
+}
 
 export const listTransfers = async (params = {}) => {
   const storedStatus = localStorage.getItem("afyalink_transfer_status") || "";
@@ -11,7 +17,7 @@ export const listTransfers = async (params = {}) => {
   if (params.scope || storedScope) query.set("scope", params.scope || storedScope);
   if (params.hospitalId) query.set("hospitalId", params.hospitalId);
   const qs = query.toString();
-  return apiFetch(`/api/transfers${qs ? `?${qs}` : ""}`);
+  return loadTransferSnapshot(`/api/transfers${qs ? `?${qs}` : ""}`, "transfers-list");
 };
 
 export const listMyTransfers = async (params = {}) => {
@@ -20,7 +26,7 @@ export const listMyTransfers = async (params = {}) => {
   if (params.limit) query.set("limit", String(params.limit));
   if (params.page) query.set("page", String(params.page));
   const qs = query.toString();
-  return apiFetch(`/api/transfers/mine${qs ? `?${qs}` : ""}`);
+  return loadTransferSnapshot(`/api/transfers/mine${qs ? `?${qs}` : ""}`, "transfers-mine");
 };
 
 export const getTransferCommandCenterOverview = async (params = {}) => {
@@ -28,7 +34,10 @@ export const getTransferCommandCenterOverview = async (params = {}) => {
   if (params.status) query.set("status", params.status);
   if (params.limit) query.set("limit", String(params.limit));
   const qs = query.toString();
-  return apiFetch(`/api/transfers/command-center/overview${qs ? `?${qs}` : ""}`);
+  return loadTransferSnapshot(
+    `/api/transfers/command-center/overview${qs ? `?${qs}` : ""}`,
+    "transfers-command-center"
+  );
 };
 
 export const requestTransfer = async (payload) => {

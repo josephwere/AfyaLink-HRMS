@@ -9,6 +9,7 @@ import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -137,9 +138,11 @@ export default function Dashboard() {
         setTransfers([]);
         setTransferError(err?.message || "Failed to load transfers.");
       });
-    apiFetch("/api/machine-connectivity/devices")
-      .then((r) => {
-        const rows = Array.isArray(r?.items) ? r.items : [];
+    guardedConsoleFetch("/api/machine-connectivity/devices", {
+      warmupKey: "hospital-admin-machine-connectivity",
+    })
+      .then((result) => {
+        const rows = Array.isArray(result?.payload?.items) ? result.payload.items : [];
         setMachineStats({
           total: rows.length,
           online: rows.filter((d) => d.status === "ONLINE").length,
