@@ -88,10 +88,10 @@ export default function CommandPalette() {
   const quickActions = useMemo(() => {
     const base = [
       { label: translateText("Home"), path: redirectByRole(user), badge: translateText("Workspace") },
-      { label: translateText("Account"), path: "/profile", badge: translateText("Profile") },
-      { label: translateText("Notifications"), path: "/notifications", badge: translateText("Inbox") },
+      { label: translateText("Account"), path: "/app/platform/account/profile", badge: translateText("Profile") },
+      { label: translateText("Notifications"), path: "/app/platform/inbox/notifications", badge: translateText("Inbox") },
       { label: translateText("Settings"), path: settingsPathForRole(normalizedRole), badge: translateText("Preferences") },
-      { label: translateText("AI Assistant"), path: "/ai/chatbot", badge: translateText("AI") },
+      { label: translateText("AI Assistant"), path: "/app/innovation/ai/chatbot", badge: translateText("AI") },
       ...getQuickActionsForRole(normalizedRole).map((item) => ({
         ...item,
         badge: translateText("For you"),
@@ -196,7 +196,7 @@ export default function CommandPalette() {
             label: translateText(`Hospital: ${hospital.name}${hospital.code ? ` (${hospital.code})` : ""}`),
             description: translateText("Jump into the matching hospital workspace."),
             path: canViewHospitals
-              ? `/super-admin/hospitals?q=${encodeURIComponent(hospital.name || hospital.code || "")}`
+              ? `/app/governance/registry/hospitals?q=${encodeURIComponent(hospital.name || hospital.code || "")}`
               : redirectByRole(user),
             badge: translateText("Hospital"),
           }));
@@ -204,8 +204,8 @@ export default function CommandPalette() {
             label: `${worker.name} • ${translateText(String(worker.role || ""))}`,
             description: translateText("Open the closest matching staff or user record."),
             path: canViewWorkers
-              ? `/hospital-admin/staff?q=${encodeURIComponent(worker.name || worker.email || "")}`
-              : "/profile",
+              ? `/app/people/staff/index?q=${encodeURIComponent(worker.name || worker.email || "")}`
+              : "/app/platform/account/profile",
             badge: translateText("People"),
           }));
           setRemoteResults(dedupeCommands([...hospitals, ...workers]).slice(0, 8));

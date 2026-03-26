@@ -1,356 +1,78 @@
+import { workspacesForUser, navForWorkspace, WORKSPACE_HOME_PATH } from "../app/navigation/workspaces";
 import { normalizeRole } from "../utils/normalizeRole";
 
-const BASE_ITEMS = [
-  { label: "Dashboard Overview", path: "/" },
-  { label: "Profile", path: "/profile" },
-  { label: "Analytics", path: "/analytics" },
-  { label: "Reports", path: "/reports" },
-  { label: "Inventory", path: "/inventory" },
-  { label: "Payments", path: "/payments" },
-  { label: "Payment Operations", path: "/payments/full" },
-  { label: "AI Assistant", path: "/ai/medical" },
-  { label: "AI Triage", path: "/ai/triage" },
-  { label: "AI Voice Dictation", path: "/ai/voice" },
-  { label: "AI Document Extract", path: "/ai/extract" },
-  { label: "AI Chatbot", path: "/ai/chatbot" },
-  { label: "Terms of Service", path: "/terms" },
-  { label: "Privacy Policy", path: "/privacy" },
-];
-
-const ROLE_ITEMS = {
-  SUPER_ADMIN: [
-    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
-    { label: "Super Admin Dashboard", path: "/super-admin" },
-    { label: "Manage Hospitals", path: "/super-admin/hospitals" },
-    { label: "System Settings", path: "/super-admin/settings" },
-    { label: "Compliance Center", path: "/system-admin/compliance-center" },
-    { label: "Revenue Intelligence", path: "/system-admin/revenue-intelligence" },
-    { label: "Clinical Order Copilot", path: "/system-admin/clinical-order-copilot" },
-    { label: "Digital Hospital Twin", path: "/system-admin/digital-hospital-twin" },
-    { label: "Interop Marketplace", path: "/system-admin/interop-marketplace" },
-    { label: "Admin Controls", path: "/admin" },
-    { label: "Audit Logs", path: "/admin/audit-logs" },
-    { label: "Super Assistants", path: "/admin/super-assistants" },
-    { label: "Integrations", path: "/admin/realtime" },
-    { label: "System Admin Dashboard", path: "/system-admin" },
-    { label: "Integration Hub", path: "/system-admin/integration-hub" },
-    { label: "Integration Control Plane", path: "/system-admin/integration-control-plane" },
-    { label: "County Command Center", path: "/system-admin/county-command-center" },
-    { label: "Government Claims Dashboard", path: "/system-admin/government-claims" },
-    { label: "Fraud Guard", path: "/system-admin/fraud-guard" },
-    { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit" },
-    { label: "Government Hospital Registry", path: "/system-admin/government-hospital-registry" },
-    { label: "Patient Identity Registry", path: "/system-admin/patient-identity-registry" },
-    { label: "Claim Rules", path: "/system-admin/claim-rules" },
-    { label: "Hospital Verification Review", path: "/system-admin/hospital-verification-review" },
-    { label: "Developer Console", path: "/developer" },
-    { label: "Print Center", path: "/admin/print-center" },
-    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-    { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-    { label: "Training Playbook", path: "/admin/training-playbook" },
-    { label: "Launch Readiness", path: "/admin/launch-readiness" },
-    { label: "Payment Settings", path: "/admin/payment-settings" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  SYSTEM_ADMIN: [
-    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
-    { label: "System Admin Dashboard", path: "/system-admin" },
-    { label: "Clinical Order Copilot", path: "/system-admin/clinical-order-copilot" },
-    { label: "Digital Hospital Twin", path: "/system-admin/digital-hospital-twin" },
-    { label: "Interop Marketplace", path: "/system-admin/interop-marketplace" },
-    { label: "Integration Hub", path: "/system-admin/integration-hub" },
-    { label: "Integration Control Plane", path: "/system-admin/integration-control-plane" },
-    { label: "County Command Center", path: "/system-admin/county-command-center" },
-    { label: "Government Claims Dashboard", path: "/system-admin/government-claims" },
-    { label: "Compliance Center", path: "/system-admin/compliance-center" },
-    { label: "Revenue Intelligence", path: "/system-admin/revenue-intelligence" },
-    { label: "ABAC Policies", path: "/system-admin/abac" },
-    { label: "Mapping Studio", path: "/system-admin/mapping-studio" },
-    { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit" },
-    { label: "Government Hospital Registry", path: "/system-admin/government-hospital-registry" },
-    { label: "Patient Identity Registry", path: "/system-admin/patient-identity-registry" },
-    { label: "Claim Rules", path: "/system-admin/claim-rules" },
-    { label: "Hospital Verification Review", path: "/system-admin/hospital-verification-review" },
-    { label: "NLP Analytics", path: "/system-admin/nlp-analytics" },
-    { label: "Regulatory Reports", path: "/system-admin/regulatory-reports" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "Migration Hub", path: "/system-admin/migrations" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "Manage Hospitals", path: "/super-admin/hospitals" },
-    { label: "Admin Controls", path: "/admin" },
-    { label: "Audit Logs", path: "/admin/audit-logs" },
-    { label: "Super Assistants", path: "/admin/super-assistants" },
-    { label: "Integrations", path: "/admin/realtime" },
-    { label: "Print Center", path: "/admin/print-center" },
-    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-    { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-    { label: "Training Playbook", path: "/admin/training-playbook" },
-    { label: "Launch Readiness", path: "/admin/launch-readiness" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  SUPER_ASSISTANT: [
-    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
-  ],
-  GOVERNMENT_ADMIN: [
-    { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
-    { label: "Fraud Guard", path: "/system-admin/fraud-guard" },
-    { label: "Audit Logs", path: "/admin/audit-logs" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  GOVERNMENT_REGULATOR: [
-    { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
-    { label: "Fraud Guard", path: "/system-admin/fraud-guard" },
-    { label: "Audit Logs", path: "/admin/audit-logs" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  GOVERNMENT_AUDITOR: [
-    { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
-    { label: "Fraud Guard", path: "/system-admin/fraud-guard" },
-    { label: "Audit Logs", path: "/admin/audit-logs" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  GOVERNMENT_INSPECTOR: [
-    { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
-    { label: "Hospital Verification Review", path: "/system-admin/hospital-verification-review" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  GOVERNMENT_ANALYST: [
-    { label: "Government Regulatory Dashboard", path: "/system-admin/government-claims" },
-    { label: "Analytics", path: "/analytics" },
-  ],
-  HOSPITAL_ADMIN: [
-    { label: "Hospital Admin", path: "/hospital-admin" },
-    { label: "Clinical Order Copilot", path: "/hospital-admin/clinical-order-copilot" },
-    { label: "Digital Twin", path: "/hospital-admin/digital-twin" },
-    { label: "Interop Marketplace", path: "/hospital-admin/interop-marketplace" },
-    { label: "Ward Board", path: "/hospital-admin/ward-board" },
-    { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center" },
-    { label: "Appointment Analytics", path: "/hospital-admin/appointment-analytics" },
-    { label: "Consultation Monitor", path: "/hospital-admin/consultation-monitor" },
-    { label: "Escalation Queue", path: "/hospital-admin/escalations" },
-    { label: "Register Staff", path: "/hospital-admin/register-staff" },
-    { label: "Approvals", path: "/hospital-admin/approvals" },
-    { label: "Staff Management", path: "/hospital-admin/staff" },
-    { label: "Machine Connectivity", path: "/hospital-admin/machine-connectivity" },
-    { label: "Machine Alerts", path: "/hospital-admin/machine-alerts" },
-    { label: "Hospital Customization", path: "/hospital-admin/customization" },
-    { label: "Recruitment Ads", path: "/hospital-admin/recruitment-ads" },
-    { label: "Claims & Fraud", path: "/hospital-admin/claims" },
-    { label: "Revenue Intelligence", path: "/hospital-admin/revenue-intelligence" },
-    { label: "Migration Hub", path: "/system-admin/migrations" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-    { label: "Offline Sync", path: "/admin/crdt-patients" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "Print Center", path: "/admin/print-center" },
-    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-    { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-    { label: "Training Playbook", path: "/admin/training-playbook" },
-    { label: "Launch Readiness", path: "/admin/launch-readiness" },
-  ],
-  HOSPITAL_ADMIN_ASSISTANT: [
-    { label: "Hospital Admin", path: "/hospital-admin" },
-    { label: "Clinical Order Copilot", path: "/hospital-admin/clinical-order-copilot" },
-    { label: "Digital Twin", path: "/hospital-admin/digital-twin" },
-    { label: "Interop Marketplace", path: "/hospital-admin/interop-marketplace" },
-    { label: "Ward Board", path: "/hospital-admin/ward-board" },
-    { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center" },
-    { label: "Appointment Analytics", path: "/hospital-admin/appointment-analytics" },
-    { label: "Consultation Monitor", path: "/hospital-admin/consultation-monitor" },
-    { label: "Approvals", path: "/hospital-admin/approvals" },
-    { label: "Revenue Intelligence", path: "/hospital-admin/revenue-intelligence" },
-    { label: "Machine Connectivity", path: "/hospital-admin/machine-connectivity" },
-    { label: "Machine Alerts", path: "/hospital-admin/machine-alerts" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "Notifications", path: "/notifications" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-  ],
-  DOCTOR: [
-    { label: "Doctor Dashboard", path: "/doctor" },
-    { label: "Clinical Order Copilot", path: "/doctor/clinical-order-copilot" },
-    { label: "My Schedule", path: "/doctor/schedule" },
-    { label: "My Patients", path: "/doctor/patients" },
-    { label: "OPD Clinic", path: "/doctor/opd" },
-    { label: "Inpatient Ward", path: "/doctor/ward" },
-    { label: "Ward Board", path: "/doctor/ward-board" },
-    { label: "Surgery / Procedures", path: "/doctor/surgery" },
-    { label: "Lab Results", path: "/doctor/lab-results" },
-    { label: "Prescriptions", path: "/doctor/prescriptions" },
-    { label: "Medical Records", path: "/doctor/medical-records" },
-    { label: "Referrals", path: "/doctor/referrals" },
-    { label: "Transfers", path: "/doctor/transfers" },
-    { label: "Performance", path: "/doctor/performance" },
-    { label: "CME & Certifications", path: "/doctor/cme" },
-    { label: "Leave Requests", path: "/doctor/leave" },
-    { label: "Reports & Notes", path: "/doctor/reports-notes" },
-    { label: "Doctor Settings", path: "/doctor/settings" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center" },
-    { label: "Appointments", path: "/doctor/appointments" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "My Escalations", path: "/doctor/escalations" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  NURSE: [
-    { label: "Nurse Dashboard", path: "/nurse" },
-    { label: "My Shift", path: "/nurse/shift" },
-    { label: "Assigned Patients", path: "/nurse/patients" },
-    { label: "Ward Board", path: "/nurse/ward-board" },
-    { label: "Medication Administration", path: "/nurse/medication" },
-    { label: "Incident Reports", path: "/nurse/incidents" },
-    { label: "Vitals Entry", path: "/nurse/vitals" },
-    { label: "Leave Requests", path: "/nurse/leave" },
-    { label: "Performance", path: "/nurse/performance" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  LAB_TECH: [
-    { label: "Lab Dashboard", path: "/lab-tech" },
-    { label: "Test Queue", path: "/lab-tech/test-queue" },
-    { label: "Equipment Logs", path: "/lab-tech/equipment" },
-    { label: "Sample Tracking", path: "/lab-tech/samples" },
-    { label: "Quality Control", path: "/lab-tech/qc" },
-    { label: "Safety Checklist", path: "/lab-tech/safety" },
-    { label: "Reports Archive", path: "/lab-tech/archive" },
-    { label: "Lab Tests", path: "/labtech/labs" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  PHARMACIST: [
-    { label: "Pharmacy", path: "/pharmacy" },
-    { label: "Prescription Queue", path: "/pharmacy/queue" },
-    { label: "Inventory", path: "/pharmacy/inventory" },
-    { label: "Controlled Drugs", path: "/pharmacy/controlled" },
-    { label: "Expiry Alerts", path: "/pharmacy/expiry" },
-    { label: "Supplier Orders", path: "/pharmacy/suppliers" },
-    { label: "Pharmacy Reports", path: "/pharmacy/reports" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  HR_MANAGER: [
-    { label: "HR Manager", path: "/hr-manager" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-    { label: "Training Playbook", path: "/admin/training-playbook" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  PAYROLL_OFFICER: [
-    { label: "Payroll Officer", path: "/payroll-officer" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  COMMUNITY_HEALTH_WORKER: [
-    { label: "CHW Dashboard", path: "/community-health-worker" },
-    { label: "My Households", path: "/community-health-worker" },
-    { label: "Disease Surveillance", path: "/community-health-worker" },
-    { label: "Referrals", path: "/community-health-worker" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  DEVELOPER: [
-    { label: "Unified Assistant Dashboard", path: "/system-admin/unified-assistant" },
-    { label: "Developer Console", path: "/developer" },
-    { label: "Clinical Order Copilot", path: "/system-admin/clinical-order-copilot" },
-    { label: "Digital Hospital Twin", path: "/system-admin/digital-hospital-twin" },
-    { label: "Interop Marketplace", path: "/system-admin/interop-marketplace" },
-    { label: "Queue Replay", path: "/developer/queue-replay" },
-    { label: "Webhook Retry", path: "/developer/webhook-retry" },
-    { label: "Decision Cockpit", path: "/developer/decision-cockpit" },
-    { label: "Provenance Verify", path: "/developer/provenance-verify" },
-    { label: "AI Extraction History", path: "/developer/ai-extraction-history" },
-    { label: "Pharmacy Access Audit", path: "/system-admin/pharmacy-access-audit" },
-    { label: "ABAC Policies", path: "/system-admin/abac" },
-    { label: "Mapping Studio", path: "/system-admin/mapping-studio" },
-    { label: "NLP Analytics", path: "/system-admin/nlp-analytics" },
-    { label: "Regulatory Reports", path: "/system-admin/regulatory-reports" },
-    { label: "Clinical Intelligence", path: "/system-admin/clinical-intelligence" },
-    { label: "Migration Hub", path: "/system-admin/migrations" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "System Admin Dashboard", path: "/system-admin" },
-    { label: "Super Admin Dashboard", path: "/super-admin" },
-    { label: "Print Center", path: "/admin/print-center" },
-    { label: "Offline Ops Monitor", path: "/admin/offline-ops" },
-    { label: "Training Tracker", path: "/admin/training-tracker" },
-    { label: "AI Autofill Audit", path: "/admin/ai-autofill-audit" },
-    { label: "Training Playbook", path: "/admin/training-playbook" },
-    { label: "Launch Readiness", path: "/admin/launch-readiness" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  SECURITY_ADMIN: [
-    { label: "Security Admin", path: "/security-admin" },
-    { label: "Print Center", path: "/admin/print-center" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  SECURITY_OFFICER: [
-    { label: "Security Officer", path: "/security-officer" },
-    { label: "Communication Center", path: "/communication" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  RADIOLOGIST: [
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  THERAPIST: [
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  SURGEON: [
-    { label: "Surgeon Dashboard", path: "/surgeon" },
-    { label: "Clinical Order Copilot", path: "/doctor/clinical-order-copilot" },
-    { label: "Theatre Ops", path: "/ops/theatre" },
-    { label: "Emergency Command", path: "/ops/emergency-command" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  RECEPTIONIST: [
-    { label: "Receptionist Dashboard", path: "/receptionist" },
-    { label: "Booking Desk", path: "/receptionist/booking-desk" },
-    { label: "My Requests", path: "/workforce/requests" },
-    { label: "Notifications", path: "/notifications" },
-  ],
-  PATIENT: [
-    { label: "Patient Dashboard", path: "/patient" },
-    { label: "Notifications", path: "/notifications" },
-    { label: "Hospitals", path: "/patient/hospitals" },
-    { label: "Vacancy Feed", path: "/patient/ads" },
-    { label: "Careers", path: "/careers" },
-    { label: "My Appointments", path: "/patient/appointments" },
-    { label: "Medical Records", path: "/patient/medical-records" },
-    { label: "Family Records", path: "/patient/family-records" },
-    { label: "Family Timeline", path: "/patient/family-timeline" },
-    { label: "Prescriptions", path: "/patient/prescriptions" },
-    { label: "Lab Results", path: "/patient/lab-results" },
-    { label: "Billing", path: "/patient/billing" },
-    { label: "Insurance", path: "/patient/insurance" },
-    { label: "Hospitals", path: "/patient/hospitals" },
-    { label: "Feedback", path: "/patient/feedback" },
-  ],
-  GUEST: [{ label: "Guest Home", path: "/guest" }],
-};
-
-export function getSearchCatalog(user) {
-  const role = normalizeRole(user?.role || "");
-  const roleItems = ROLE_ITEMS[role] || [];
-  const merged = [...roleItems, ...BASE_ITEMS];
-
+function dedupeByPath(items = []) {
   const seen = new Set();
-  return merged.filter((item) => {
-    if (seen.has(item.path)) return false;
-    seen.add(item.path);
+  return (items || []).filter((item) => {
+    const path = String(item?.path || "");
+    if (!path || seen.has(path)) return false;
+    seen.add(path);
     return true;
   });
 }
+
+function extraCatalogItemsForRole(role) {
+  const r = normalizeRole(role || "");
+  const base = [
+    { label: "Profile", path: "/app/platform/account/profile", description: "Account settings and workspace panels." },
+    { label: "Notifications", path: "/app/platform/inbox/notifications", description: "Your alerts and inbox." },
+    { label: "Communication Center", path: "/app/platform/inbox/communication", description: "Messages and broadcast center." },
+  ];
+
+  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(r)) {
+    base.push({
+      label: "System Settings",
+      path: "/app/platform/settings/system",
+      description: "Branding, payments, AI, and compliance configuration.",
+    });
+  }
+
+  return base;
+}
+
+function navCatalogForUser(user) {
+  const workspaces = workspacesForUser(user);
+  const items = [];
+
+  workspaces.forEach((ws) => {
+    const groups = navForWorkspace(ws.id);
+    groups.forEach((group) => {
+      (group.items || []).forEach((item) => {
+        items.push({
+          label: item.label,
+          path: item.path,
+          description: `${ws.label} · ${group.group}`,
+          badge: ws.label,
+        });
+      });
+    });
+
+    const homePath = WORKSPACE_HOME_PATH?.[ws.id];
+    if (homePath) {
+      items.push({
+        label: `${ws.label} Home`,
+        path: homePath,
+        description: `${ws.label} · Home`,
+        badge: ws.label,
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
+ * Command palette catalog.
+ *
+ * Rule: navigation comes from the workspace model (single source of truth).
+ * Add only a small number of cross-cutting non-nav destinations here.
+ */
+export function getSearchCatalog(user) {
+  if (!user) return [];
+  const merged = [
+    ...navCatalogForUser(user),
+    ...extraCatalogItemsForRole(user?.role),
+  ];
+  return dedupeByPath(merged);
+}
+

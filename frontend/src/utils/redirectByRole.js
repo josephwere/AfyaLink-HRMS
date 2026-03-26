@@ -6,39 +6,44 @@ import { normalizeRole } from "./normalizeRole";
  */
 
 const ROLE_REDIRECT_MAP = Object.freeze({
-  // 🔑 Super & system admins
-  SUPER_ADMIN: "/super-admin",
-  SUPER_ASSISTANT: "/system-admin/unified-assistant",
-  SYSTEM_ADMIN: "/system-admin",
-  HOSPITAL_ADMIN: "/hospital-admin",
-  HOSPITAL_ADMIN_ASSISTANT: "/hospital-admin",
-  SECURITY_ADMIN: "/security-admin",
-  SECURITY_OFFICER: "/security-officer",
-  HR_MANAGER: "/hr-manager",
-  PAYROLL_OFFICER: "/payroll-officer",
-  COMMUNITY_HEALTH_WORKER: "/community-health-worker",
-  GOVERNMENT_REGULATOR: "/system-admin/government-claims",
-  GOVERNMENT_ADMIN: "/system-admin/government-claims",
-  GOVERNMENT_AUDITOR: "/system-admin/government-claims",
-  GOVERNMENT_INSPECTOR: "/system-admin/government-claims",
-  GOVERNMENT_ANALYST: "/system-admin/government-claims",
-  DEVELOPER: "/developer",
+  // 🔑 Platform operators
+  SUPER_ADMIN: "/app/platform/home/index",
+  SUPER_ASSISTANT: "/app/platform/ai/unified-assistant",
+  SYSTEM_ADMIN: "/app/governance/home/index",
+  DEVELOPER: "/app/platform/dev/home",
 
-  // 🩺 Clinical staff
-  DOCTOR: "/doctor",
-  SURGEON: "/surgeon",
-  NURSE: "/nurse",
-  LAB_TECH: "/lab-tech",
-  PHARMACIST: "/pharmacy",
+  SECURITY_ADMIN: "/app/platform/home/index",
+  SECURITY_OFFICER: "/app/platform/home/index",
 
-  // 👤 End users
-  PATIENT: "/patient",
-  GUEST: "/guest",
+  // 🏥 Facility ops
+  HOSPITAL_ADMIN: "/app/operations/home/index",
+  HOSPITAL_ADMIN_ASSISTANT: "/app/operations/home/index",
+  RECEPTIONIST: "/app/operations/home/index",
+  COMMUNITY_HEALTH_WORKER: "/app/operations/home/index",
+  LAB_TECH: "/app/operations/home/index",
+  PHARMACIST: "/app/operations/home/index",
 
-  // 🚨 future-proof (backend may add later)
-  RADIOLOGIST: "/radiologist",
-  THERAPIST: "/therapist",
-  RECEPTIONIST: "/receptionist",
+  // 🩺 Care
+  DOCTOR: "/app/care/home/index",
+  SURGEON: "/app/care/home/index",
+  NURSE: "/app/care/home/index",
+  RADIOLOGIST: "/app/care/home/index",
+  THERAPIST: "/app/care/home/index",
+
+  // 👥 People + revenue
+  HR_MANAGER: "/app/people/home/index",
+  PAYROLL_OFFICER: "/app/revenue/home/index",
+
+  // 🏛 Governance
+  GOVERNMENT_REGULATOR: "/app/governance/home/index",
+  GOVERNMENT_ADMIN: "/app/governance/home/index",
+  GOVERNMENT_AUDITOR: "/app/governance/home/index",
+  GOVERNMENT_INSPECTOR: "/app/governance/home/index",
+  GOVERNMENT_ANALYST: "/app/governance/home/index",
+
+  // 👤 Portal
+  PATIENT: "/app/portal/home/index",
+  GUEST: "/app/portal/home/index",
 });
 
 /**

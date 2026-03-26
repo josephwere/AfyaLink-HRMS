@@ -1,15 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import { useAuth } from "../utils/auth";
-import { fetchMenu, makeMenuCacheKey, readMenuCache, writeMenuCache } from "../services/menuApi";
 import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
-import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
+import { settingsPathForRole } from "../utils/workspaceNavigation";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
+import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
+import { workspacesForUser, navForWorkspace, WORKSPACE_HOME_PATH } from "../app/navigation/workspaces";
+import { LEGACY_ROUTE_MAP } from "../app/routing/legacyRouteMap";
+
 import LegalLinks from "./LegalLinks";
 
 const RECENT_LIMIT = 6;
@@ -56,27 +60,12 @@ function NavIcon({ name }) {
 
 function dedupeByPath(items = []) {
   const seen = new Set();
-  return items.filter((item) => {
+  return (items || []).filter((item) => {
     const key = String(item?.path || "");
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-}
-
-function dedupeSectionsByPath(sections = []) {
-  const seen = new Set();
-  return sections
-    .map((section) => {
-      const items = (section?.items || []).filter((item) => {
-        const key = String(item?.path || "");
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      return { ...section, items };
-    })
-    .filter((section) => (section?.items || []).length > 0);
 }
 
 function scopedStorageKey(prefix, user) {
@@ -145,35 +134,34 @@ function isActivePath(currentPath, targetPath) {
   );
 }
 
-function buildFallbackSections({ homePath, normalizedRole, showAI }) {
-  return [
-    {
-      section: "Home",
-      items: [
-        { label: "Dashboard", path: homePath, icon: "home" },
-        { label: "Profile", path: "/profile", icon: "account" },
-        { label: "Notifications", path: "/notifications", icon: "notifications" },
-        { label: "Reports", path: "/reports", icon: "reports" },
-      ],
-    },
-    showAI
-      ? {
-          section: "AI",
-          items: [
-            { label: "Clinical Assistant", path: "/ai/medical", icon: "ai" },
-            { label: "AI Chatbot", path: "/ai/chatbot", icon: "ai" },
-          ],
-        }
-      : null,
-    {
-      section: "For You",
-      items: getQuickActions(normalizedRole).map((item) => ({ ...item, icon: item.icon || "home" })),
-    },
-  ].filter(Boolean);
+function workspaceFromPath(pathname) {
+  const path = String(pathname || "");
+  const match = path.match(/^\/app\/([^/]+)/);
+  return match ? match[1] : "";
+}
+
+function canonicalizeStoredPath(rawPath) {
+  const raw = String(rawPath || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("/app/")) return raw;
+
+  const [pathname, query = ""] = raw.split("?");
+  const mapped = LEGACY_ROUTE_MAP?.[pathname];
+  if (!mapped) return raw;
+  return query ? `${mapped}?${query}` : mapped;
 }
 
 export default function Sidebar({ open = true, onClose }) {
-  const { user, logout, roleOverride } = useAuth();
+  const {
+    user,
+    logout,
+    canRoleOverride,
+    actualRole,
+    roleOverride,
+    setRoleOverride,
+    strictImpersonation,
+    setStrictImpersonation,
+  } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useSystemSettings();
@@ -185,16 +173,46 @@ export default function Sidebar({ open = true, onClose }) {
   const showReports = hospitalModules.showReports !== false;
   const showAnalytics = hospitalModules.showAnalytics !== false;
 
-  const [dynamicMenu, setDynamicMenu] = useState([]);
-  const [menuLoaded, setMenuLoaded] = useState(false);
   const [recentItems, setRecentItems] = useState([]);
   const [starredPaths, setStarredPaths] = useState([]);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
 
-  const normalizedRole = normalizeRole(user?.role || "");
+  const effectiveRole = normalizeRole(user?.role || "");
   const navigationPrefs = uiPreferences?.navigation || {};
-  const homePath = user ? redirectByRole(user) : "/";
+
+  const workspaces = useMemo(() => {
+    const list = workspacesForUser(user);
+    if (!showAI) return list.filter((ws) => ws.id !== "innovation");
+    return list;
+  }, [showAI, user]);
+
+  const activeWorkspaceId = useMemo(() => {
+    const id = workspaceFromPath(location.pathname);
+    const allowed = new Set(workspaces.map((ws) => ws.id));
+    if (id && allowed.has(id)) return id;
+    return workspaces[0]?.id || "platform";
+  }, [location.pathname, workspaces]);
+
+  const activeNavGroups = useMemo(() => {
+    const allowItem = (item) => {
+      const path = String(item?.path || "");
+      if (!path) return false;
+      if (!showAI && path.startsWith("/app/innovation")) return false;
+      if (!showReports && path.startsWith("/app/platform/reports")) return false;
+      if (!showAnalytics && path.startsWith("/app/platform/analytics")) return false;
+      return true;
+    };
+
+    return (navForWorkspace(activeWorkspaceId) || [])
+      .map((group) => ({
+        ...group,
+        items: (group.items || []).filter(allowItem),
+      }))
+      .filter((group) => group?.slot !== "global")
+      .filter((group) => (group.items || []).length > 0);
+  }, [activeWorkspaceId, showAI, showAnalytics, showReports]);
+
   const canPharmacyOps = [
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
@@ -202,56 +220,33 @@ export default function Sidebar({ open = true, onClose }) {
     "HOSPITAL_ADMIN",
     "HOSPITAL_ADMIN_ASSISTANT",
     "PHARMACIST",
-  ].includes(normalizedRole);
-
-  const allowMenuItem = useCallback(
-    (item) => {
-      const path = String(item?.path || "");
-      if (!showAI && path.startsWith("/ai")) return false;
-      if (!showReports && (path === "/reports" || path.startsWith("/reports"))) return false;
-      if (!showAnalytics && (path === "/analytics" || path.startsWith("/analytics"))) return false;
-      return true;
-    },
-    [showAI, showReports, showAnalytics]
-  );
+  ].includes(effectiveRole);
 
   useEffect(() => {
     if (!user) return;
+    const storedRecent = Array.isArray(navigationPrefs?.recentItems)
+      ? navigationPrefs.recentItems
+      : readRecentItems(user);
+    setRecentItems(
+      (Array.isArray(storedRecent) ? storedRecent : [])
+        .map((item) => ({ ...(item || {}), path: canonicalizeStoredPath(item?.path) }))
+        .filter((item) => item?.path)
+    );
 
-    const cacheKey = makeMenuCacheKey({
-      userId: user?.id,
-      role: user?.actualRole || user?.role,
-      viewRole: roleOverride || "",
-    });
-    const cachedMenu = readMenuCache(cacheKey);
-    if (cachedMenu) {
-      setDynamicMenu(cachedMenu);
-      setMenuLoaded(true);
-    }
-
-    fetchMenu()
-      .then((res) => {
-        const menu = Array.isArray(res?.menu) ? res.menu : [];
-        setDynamicMenu(menu);
-        writeMenuCache(cacheKey, menu);
-        setMenuLoaded(true);
-      })
-      .catch(() => {
-        if (!cachedMenu) setDynamicMenu([]);
-        setMenuLoaded(true);
-      });
-  }, [roleOverride, user?.actualRole, user?.id, user?.role]);
-
-  useEffect(() => {
-    if (!user) return;
-    setRecentItems(Array.isArray(navigationPrefs?.recentItems) ? navigationPrefs.recentItems : readRecentItems(user));
-    setStarredPaths(Array.isArray(navigationPrefs?.starredPaths) ? navigationPrefs.starredPaths : readStarredPaths(user));
+    const storedStarred = Array.isArray(navigationPrefs?.starredPaths)
+      ? navigationPrefs.starredPaths
+      : readStarredPaths(user);
+    setStarredPaths(
+      (Array.isArray(storedStarred) ? storedStarred : [])
+        .map((path) => canonicalizeStoredPath(path))
+        .filter(Boolean)
+    );
     setSidebarWidth(
       Number.isFinite(Number(navigationPrefs?.sidebarWidth))
         ? Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Number(navigationPrefs.sidebarWidth)))
         : readSidebarWidth(user)
     );
-  }, [user?.id, user?.email, user?.role]);
+  }, [navigationPrefs?.recentItems, navigationPrefs?.sidebarWidth, navigationPrefs?.starredPaths, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -315,77 +310,6 @@ export default function Sidebar({ open = true, onClose }) {
     [navigate, onClose, recentItems, setUiPreferences, uiPreferences?.navigation, user]
   );
 
-  const rawSections = useMemo(() => {
-    if (menuLoaded && dynamicMenu.length > 0) return dynamicMenu;
-    return buildFallbackSections({ homePath, normalizedRole, showAI });
-  }, [dynamicMenu, homePath, menuLoaded, normalizedRole, showAI]);
-
-  const menuSections = useMemo(
-    () =>
-      dedupeSectionsByPath(
-        rawSections
-        .map((section) => ({
-          ...section,
-          items: (section.items || []).filter((item) => item?.path && allowMenuItem(item)),
-        }))
-        .filter((section) => section.items.length > 0)
-      ),
-    [allowMenuItem, rawSections]
-  );
-
-  const quickLinks = useMemo(() => {
-    const links = dedupeByPath([
-      { label: "Home", path: homePath, icon: "home" },
-      { label: "Profile", path: "/profile", icon: "account" },
-      {
-        label: "Notifications",
-        path: "/notifications",
-        icon: "notifications",
-        badge: pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : "",
-      },
-      ...getQuickActionsForRole(normalizedRole),
-    ]);
-    return links.slice(0, 6);
-  }, [homePath, normalizedRole, pharmacyRiskAlertCount]);
-
-  const allKnownItems = useMemo(
-    () =>
-      dedupeByPath([
-        ...quickLinks,
-        ...menuSections.flatMap((section) => section.items),
-        ...getQuickActionsForRole(normalizedRole),
-      ]),
-    [menuSections, normalizedRole, quickLinks]
-  );
-
-  const recentVisible = useMemo(() => {
-    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
-    const resolved = recentItems.map((item) => itemByPath.get(item.path)).filter(Boolean);
-    return dedupeByPath(resolved);
-  }, [allKnownItems, recentItems]);
-
-  const starredVisible = useMemo(() => {
-    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
-    return starredPaths.map((path) => itemByPath.get(path)).filter(Boolean);
-  }, [allKnownItems, starredPaths]);
-
-  const recentWithoutStarred = useMemo(() => {
-    if (!starredPaths.length) return recentVisible;
-    const starredSet = new Set(starredPaths);
-    return recentVisible.filter((item) => !starredSet.has(item.path));
-  }, [recentVisible, starredPaths]);
-
-  const menuSectionsWithoutStarred = useMemo(() => {
-    if (!starredPaths.length) return menuSections;
-    const starredSet = new Set(starredPaths);
-    return menuSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => !starredSet.has(item.path)),
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [menuSections, starredPaths]);
-
   const toggleStarred = useCallback((item) => {
     setStarredPaths((prev) =>
       prev.includes(item.path) ? prev.filter((path) => path !== item.path) : [...prev, item.path]
@@ -423,7 +347,53 @@ export default function Sidebar({ open = true, onClose }) {
     onClose?.();
   };
 
+  const allKnownItems = useMemo(() => {
+    const allowItem = (item) => {
+      const path = String(item?.path || "");
+      if (!path) return false;
+      if (!showAI && path.startsWith("/app/innovation")) return false;
+      if (!showReports && path.startsWith("/app/platform/reports")) return false;
+      if (!showAnalytics && path.startsWith("/app/platform/analytics")) return false;
+      return true;
+    };
+
+    const navItems = workspaces
+      .flatMap((ws) => (navForWorkspace(ws.id) || []).flatMap((group) => group.items || []))
+      .filter(allowItem);
+
+    // Cross-cutting destinations (these are not tied to a single workspace module list).
+    const utilityItems = [
+      { label: "Profile", path: "/app/platform/account/profile", icon: "account" },
+      { label: "Notifications", path: "/app/platform/inbox/notifications", icon: "notifications" },
+      { label: "Communication Center", path: "/app/platform/inbox/communication", icon: "notifications" },
+    ];
+
+    return dedupeByPath([...navItems, ...utilityItems]);
+  }, [showAI, showAnalytics, showReports, workspaces]);
+
+  const starredVisible = useMemo(() => {
+    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
+    return starredPaths.map((path) => itemByPath.get(path)).filter(Boolean);
+  }, [allKnownItems, starredPaths]);
+
+  const recentVisible = useMemo(() => {
+    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
+    const resolved = recentItems.map((item) => itemByPath.get(item.path)).filter(Boolean);
+    return dedupeByPath(resolved);
+  }, [allKnownItems, recentItems]);
+
   if (!user) return null;
+
+  const resetRoleView = () => {
+    setRoleOverride("");
+    setStrictImpersonation(false);
+    const target = redirectByRole({ role: actualRole || user?.actualRole || user?.role });
+    navigate(target);
+    onClose?.();
+  };
+
+  const viewingRole = normalizeRole(user?.role || "");
+  const signedInRole = normalizeRole(actualRole || user?.actualRole || "");
 
   return (
     <aside
@@ -432,8 +402,78 @@ export default function Sidebar({ open = true, onClose }) {
       onWheel={(event) => event.stopPropagation()}
     >
       <div className="sidebar-scroll">
+        <div className="sidebar-workspace-shell">
+          <div className="sidebar-role-row" aria-label={translateText("Workspace role view")}>
+            {signedInRole ? (
+              <span className="sidebar-role-chip">{translateText(`Signed-in: ${signedInRole.replaceAll("_", " ")}`)}</span>
+            ) : null}
+            {viewingRole ? (
+              <span className="sidebar-role-chip ghost">{translateText(`Viewing: ${viewingRole.replaceAll("_", " ")}`)}</span>
+            ) : null}
+          </div>
+
+          {canRoleOverride ? (
+            <>
+              <div className="sidebar-search-label">{translateText("Workspace role view")}</div>
+              <select
+                className="sidebar-workspace-select"
+                value={roleOverride || ""}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setRoleOverride(next);
+                  const target = redirectByRole({ role: next || signedInRole || user?.role });
+                  navigate(target);
+                  onClose?.();
+                }}
+                aria-label={translateText("Role view")}
+              >
+                <option value="">{translateText("Signed-in role")}{signedInRole ? ` (${signedInRole.replaceAll("_", " ")})` : ""}</option>
+                {ROLE_VIEW_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </select>
+
+              <label className="sidebar-inline-check">
+                <input
+                  type="checkbox"
+                  checked={Boolean(strictImpersonation)}
+                  onChange={(e) => setStrictImpersonation(Boolean(e.target.checked))}
+                />
+                {translateText("Strict impersonation")}
+              </label>
+
+              <div className="sidebar-workspace-actions">
+                <button type="button" className="btn-secondary" onClick={resetRoleView}>
+                  {translateText("Reset")}
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          <div className="sidebar-search-label">{translateText("Workspace")}</div>
+          <select
+            className="sidebar-workspace-select"
+            value={activeWorkspaceId}
+            onChange={(e) => {
+              const next = e.target.value;
+              const path = WORKSPACE_HOME_PATH?.[next] || redirectByRole(user);
+              navigate(path);
+              onClose?.();
+            }}
+            aria-label={translateText("Workspace switcher")}
+          >
+            {workspaces.map((ws) => (
+              <option key={ws.id} value={ws.id}>
+                {ws.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="sidebar-search-shell">
-          <div className="sidebar-search-label">{translateText("Global search / command")}</div>
+          <div className="sidebar-search-label">{translateText("Global actions")}</div>
           <button
             type="button"
             className="sidebar-command-button"
@@ -463,9 +503,9 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ) : null}
 
-        {recentWithoutStarred.length > 0 ? (
-          <SidebarCluster title="Recent" hint={`${recentWithoutStarred.length} items`}>
-            {recentWithoutStarred.map((item) => (
+        {recentVisible.length > 0 ? (
+          <SidebarCluster title="Recent" hint={`${recentVisible.length} items`}>
+            {recentVisible.map((item) => (
               <SidebarItem
                 key={`recent-${item.path}`}
                 item={item}
@@ -478,15 +518,19 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ) : null}
 
-        {menuSectionsWithoutStarred.map((section) => (
-          <SidebarCluster key={section.section} title={section.section} hint={`${section.items.length} tools`}>
-            {section.items.map((item) => (
+        {activeNavGroups.map((group) => (
+          <SidebarCluster key={group.group} title={group.group} hint={`${(group.items || []).length} tools`}>
+            {(group.items || []).map((item) => (
               <SidebarItem
-                key={`${section.section}-${item.path}`}
+                key={`${group.group}-${item.path}`}
                 item={item}
                 active={isActivePath(location.pathname, item.path)}
                 onSelect={handleSelect}
-                badge={item.path === "/notifications" && pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : item.badge}
+                badge={
+                  item.path === "/app/platform/inbox/notifications" && pharmacyRiskAlertCount > 0
+                    ? String(pharmacyRiskAlertCount)
+                    : item.badge
+                }
                 isStarred={starredPaths.includes(item.path)}
                 onToggleStar={toggleStarred}
               />
@@ -494,10 +538,8 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ))}
 
-        {menuSectionsWithoutStarred.length === 0 ? (
-          <div className="sidebar-empty-note">
-            {translateText("No tools are available in this workspace yet.")}
-          </div>
+        {activeNavGroups.length === 0 ? (
+          <div className="sidebar-empty-note">{translateText("No tools are available in this workspace yet.")}</div>
         ) : null}
       </div>
 
@@ -507,18 +549,30 @@ export default function Sidebar({ open = true, onClose }) {
             type="button"
             className="nav-btn sidebar-utility-btn"
             onClick={() => {
-              navigate("/notifications");
+              navigate("/app/platform/inbox/notifications");
               onClose?.();
             }}
           >
             <NavIcon name="notifications" />
             {translateText("Notifications")}
+            {pharmacyRiskAlertCount > 0 ? <span className="notif-badge">{pharmacyRiskAlertCount}</span> : null}
           </button>
           <button
             type="button"
             className="nav-btn sidebar-utility-btn"
             onClick={() => {
-              navigate(settingsPathForRole(normalizedRole));
+              navigate("/app/platform/account/profile");
+              onClose?.();
+            }}
+          >
+            <NavIcon name="account" />
+            {translateText("Profile")}
+          </button>
+          <button
+            type="button"
+            className="nav-btn sidebar-utility-btn"
+            onClick={() => {
+              navigate(settingsPathForRole(effectiveRole));
               onClose?.();
             }}
           >
@@ -540,7 +594,12 @@ export default function Sidebar({ open = true, onClose }) {
         <LegalLinks compact className="sidebar-legal-links" />
       </div>
 
-      <button type="button" className="sidebar-resize-handle" onMouseDown={startResize} aria-label="Resize sidebar" />
+      <button
+        type="button"
+        className="sidebar-resize-handle"
+        onMouseDown={startResize}
+        aria-label="Resize sidebar"
+      />
     </aside>
   );
 }
@@ -590,8 +649,4 @@ function SidebarItem({ item, active, onSelect, badge = "", isStarred = false, on
       ) : null}
     </div>
   );
-}
-
-function getQuickActions(role) {
-  return getQuickActionsForRole(role);
 }

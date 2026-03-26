@@ -1,85 +1,85 @@
 export function settingsPathForRole(role) {
-  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) return "/super-admin/settings";
-  if (["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(role)) return "/hospital-admin/customization";
-  return "/profile";
+  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) return "/app/platform/settings/system";
+  if (["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(role)) return "/app/platform/facility/customization";
+  return "/app/platform/account/profile";
 }
 
 export function getQuickActionsForRole(role) {
   const common = [
-    { label: "Open Reports", path: "/reports", icon: "reports" },
-    { label: "View Notifications", path: "/notifications", icon: "notifications" },
+    { label: "Open Reports", path: "/app/platform/reports/index", icon: "reports" },
+    { label: "View Notifications", path: "/app/platform/inbox/notifications", icon: "notifications" },
   ];
 
   const roleActions = {
     SUPER_ADMIN: [
-      { label: "Super Admin Dashboard", path: "/super-admin", icon: "home" },
-      { label: "System Settings", path: "/super-admin/settings", icon: "settings" },
-      { label: "Unified Assistant", path: "/system-admin/unified-assistant", icon: "ai" },
-      { label: "Manage Hospitals", path: "/super-admin/hospitals", icon: "admin" },
+      { label: "Platform Home", path: "/app/platform/home/index", icon: "home" },
+      { label: "System Settings", path: "/app/platform/settings/system", icon: "settings" },
+      { label: "Unified Assistant", path: "/app/platform/ai/unified-assistant", icon: "ai" },
+      { label: "Hospital Registry", path: "/app/governance/registry/hospitals", icon: "admin" },
     ],
     SYSTEM_ADMIN: [
-      { label: "System Dashboard", path: "/system-admin", icon: "home" },
-      { label: "Unified Assistant", path: "/system-admin/unified-assistant", icon: "ai" },
-      { label: "Integration Hub", path: "/system-admin/integration-hub", icon: "settings" },
-      { label: "Compliance Center", path: "/system-admin/compliance-center", icon: "shield" },
+      { label: "Governance Home", path: "/app/governance/home/index", icon: "home" },
+      { label: "Unified Assistant", path: "/app/platform/ai/unified-assistant", icon: "ai" },
+      { label: "Integration Hub", path: "/app/platform/integrations/hub", icon: "settings" },
+      { label: "Compliance Center", path: "/app/platform/compliance/center", icon: "shield" },
     ],
     HOSPITAL_ADMIN: [
-      { label: "Hospital Overview", path: "/hospital-admin", icon: "home" },
-      { label: "Staff Directory", path: "/hospital-admin/staff", icon: "staff" },
-      { label: "Transfer Command Center", path: "/hospital-admin/transfer-command-center", icon: "requests" },
-      { label: "Revenue Intelligence", path: "/hospital-admin/revenue-intelligence", icon: "analytics" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Staff Directory", path: "/app/people/staff/index", icon: "staff" },
+      { label: "Transfer Command", path: "/app/operations/transfers/command", icon: "requests" },
+      { label: "Revenue Intelligence", path: "/app/revenue/intelligence/index", icon: "analytics" },
     ],
     HOSPITAL_ADMIN_ASSISTANT: [
-      { label: "Hospital Overview", path: "/hospital-admin", icon: "home" },
-      { label: "Ward Board", path: "/hospital-admin/ward-board", icon: "analytics" },
-      { label: "Approvals", path: "/hospital-admin/approvals", icon: "notifications" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Bed Board", path: "/app/operations/bed-board/index", icon: "analytics" },
+      { label: "Approvals", path: "/app/people/approvals/index", icon: "notifications" },
     ],
     HR_MANAGER: [
-      { label: "HR Dashboard", path: "/hr-manager", icon: "home" },
-      { label: "Training Tracker", path: "/admin/training-tracker", icon: "analytics" },
-      { label: "Register Staff", path: "/hospital-admin/register-staff", icon: "hr" },
+      { label: "People Home", path: "/app/people/home/index", icon: "home" },
+      { label: "Training Tracker", path: "/app/people/training/tracker", icon: "analytics" },
+      { label: "Register Staff", path: "/app/people/staff/register", icon: "hr" },
     ],
     PAYROLL_OFFICER: [
-      { label: "Payroll Dashboard", path: "/payroll-officer", icon: "home" },
-      { label: "Payment Operations", path: "/payments/full", icon: "payroll" },
+      { label: "Revenue Home", path: "/app/revenue/home/index", icon: "home" },
+      { label: "Payment Operations", path: "/app/revenue/payments/index", icon: "payroll" },
     ],
     DEVELOPER: [
-      { label: "Developer Console", path: "/developer", icon: "settings" },
-      { label: "Queue Replay", path: "/developer/queue-replay", icon: "settings" },
-      { label: "Decision Cockpit", path: "/developer/decision-cockpit", icon: "analytics" },
+      { label: "Developer Console", path: "/app/platform/dev/home", icon: "settings" },
+      { label: "Queue Replay", path: "/app/platform/queues/replay", icon: "settings" },
+      { label: "Decision Cockpit", path: "/app/platform/trust/decision-cockpit", icon: "analytics" },
     ],
     DOCTOR: [
-      { label: "Doctor Dashboard", path: "/doctor", icon: "home" },
-      { label: "My Schedule", path: "/doctor/schedule", icon: "appointments" },
-      { label: "OPD Clinic", path: "/doctor/opd", icon: "doctor" },
-      { label: "Clinical Order Copilot", path: "/doctor/clinical-order-copilot", icon: "ai" },
+      { label: "Care Home", path: "/app/care/home/index", icon: "home" },
+      { label: "My Schedule", path: "/app/operations/scheduling/my-schedule", icon: "appointments" },
+      { label: "OPD Workspace", path: "/app/care/encounters/opd", icon: "doctor" },
+      { label: "Clinical Order Copilot", path: "/app/innovation/copilot/clinical-order", icon: "ai" },
     ],
     NURSE: [
-      { label: "Nurse Dashboard", path: "/nurse", icon: "home" },
-      { label: "My Shift", path: "/nurse/shift", icon: "nurse" },
-      { label: "Assigned Patients", path: "/nurse/patients", icon: "staff" },
+      { label: "Care Home", path: "/app/care/home/index", icon: "home" },
+      { label: "My Shift", path: "/app/people/schedule/shift", icon: "nurse" },
+      { label: "Assigned Patients", path: "/app/care/patients/index", icon: "staff" },
     ],
     LAB_TECH: [
-      { label: "Lab Dashboard", path: "/lab-tech", icon: "home" },
-      { label: "Test Queue", path: "/lab-tech/test-queue", icon: "lab" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Test Queue", path: "/app/operations/lab/test-queue", icon: "lab" },
     ],
     PHARMACIST: [
-      { label: "Pharmacy Dashboard", path: "/pharmacy", icon: "home" },
-      { label: "Prescription Queue", path: "/pharmacy/queue", icon: "pharmacy" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Prescription Queue", path: "/app/operations/pharmacy/prescription-queue", icon: "pharmacy" },
     ],
     COMMUNITY_HEALTH_WORKER: [
-      { label: "CHW Dashboard", path: "/community-health-worker", icon: "home" },
-      { label: "Referrals", path: "/community-health-worker", icon: "reports" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Referrals", path: "/app/care/referrals/index", icon: "reports" },
     ],
     RECEPTIONIST: [
-      { label: "Reception Dashboard", path: "/receptionist", icon: "home" },
-      { label: "Booking Desk", path: "/receptionist/booking-desk", icon: "appointments" },
+      { label: "Operations Home", path: "/app/operations/home/index", icon: "home" },
+      { label: "Booking Desk", path: "/app/operations/front-desk/booking-desk", icon: "appointments" },
     ],
     PATIENT: [
-      { label: "Patient Dashboard", path: "/patient", icon: "home" },
-      { label: "My Appointments", path: "/patient/appointments", icon: "appointments" },
-      { label: "Family Records", path: "/patient/family-records", icon: "staff" },
-      { label: "Billing", path: "/patient/billing", icon: "payments" },
+      { label: "Portal Home", path: "/app/portal/home/index", icon: "home" },
+      { label: "My Appointments", path: "/app/portal/appointments/index", icon: "appointments" },
+      { label: "Family Records", path: "/app/portal/family/records", icon: "staff" },
+      { label: "Billing", path: "/app/portal/billing/index", icon: "payments" },
     ],
   };
 
