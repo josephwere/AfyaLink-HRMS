@@ -1,4 +1,5 @@
 import apiFetch from "../utils/apiFetch";
+import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export async function listTrainingTrackers(params = {}) {
   const query = new URLSearchParams();
@@ -8,7 +9,10 @@ export async function listTrainingTrackers(params = {}) {
   if (params.hospital) query.set("hospital", params.hospital);
   if (params.limit) query.set("limit", String(params.limit));
   const q = query.toString();
-  return apiFetch(`/api/training/tracker${q ? `?${q}` : ""}`);
+  return guardedConsoleFetch(`/api/training/tracker${q ? `?${q}` : ""}`, {
+    warmupKey: "training",
+    timeoutSequence: [28000, 42000, 60000],
+  }).then(({ payload }) => payload);
 }
 
 export async function upsertTrainingTracker(payload) {

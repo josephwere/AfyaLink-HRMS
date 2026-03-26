@@ -319,28 +319,29 @@ export default function DashboardHomeShell({
 }) {
   const { translateText } = useAppLanguage();
   const hasRail = Array.isArray(contextCards) && contextCards.length > 0;
+  const hasStats = Array.isArray(stats) && stats.length > 0;
 
   return (
     <div className={`dashboard premium-shell dashboard-home-shell ${className}`.trim()}>
-      <section className="premium-card dashboard-home-hero">
-        <div className="dashboard-home-hero-main">
-          <div className="dashboard-home-hero-copy">
-            {kicker ? <div className="premium-shell-kicker">{translateText(kicker)}</div> : null}
-            <h1 className="premium-shell-title">{translateText(title)}</h1>
-            {subtitle ? <p className="premium-shell-subtitle">{translateText(subtitle)}</p> : null}
+      {hasStats ? (
+        <section className="dashboard-home-pinned-summary" aria-label={translateText("Summary")}>
+          <div className="dashboard-home-stats dashboard-home-stats-pinned">
+            {stats.map((item) => (
+              <div className="premium-shell-stat dashboard-home-stat" key={`${item.label}-${item.value}`}>
+                <span>{translateText(item.label)}</span>
+                <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
+                {item.note ? <small>{translateText(item.note)}</small> : null}
+              </div>
+            ))}
           </div>
+        </section>
+      ) : null}
 
-          {Array.isArray(stats) && stats.length > 0 ? (
-            <div className="dashboard-home-stats">
-              {stats.map((item) => (
-                <div className="premium-shell-stat dashboard-home-stat" key={`${item.label}-${item.value}`}>
-                  <span>{translateText(item.label)}</span>
-                  <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
-                  {item.note ? <small>{translateText(item.note)}</small> : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
+      <section className="premium-card dashboard-home-hero">
+        <div className="dashboard-home-hero-copy">
+          {kicker ? <div className="premium-shell-kicker">{translateText(kicker)}</div> : null}
+          <h1 className="premium-shell-title">{translateText(title)}</h1>
+          {subtitle ? <p className="premium-shell-subtitle">{translateText(subtitle)}</p> : null}
         </div>
 
         {Array.isArray(actions) && actions.length > 0 ? (

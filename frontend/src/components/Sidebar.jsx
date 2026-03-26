@@ -72,6 +72,21 @@ function dedupeByPath(items = []) {
   });
 }
 
+function dedupeSectionsByPath(sections = []) {
+  const seen = new Set();
+  return sections
+    .map((section) => {
+      const items = (section?.items || []).filter((item) => {
+        const key = String(item?.path || "");
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      return { ...section, items };
+    })
+    .filter((section) => (section?.items || []).length > 0);
+}
+
 function scopedStorageKey(prefix, user) {
   const scope = user?.id || user?.email || user?.role || "anonymous";
   return `${prefix}_${scope}`;
@@ -321,12 +336,14 @@ export default function Sidebar({ open = true, onClose }) {
 
   const menuSections = useMemo(
     () =>
-      rawSections
+      dedupeSectionsByPath(
+        rawSections
         .map((section) => ({
           ...section,
           items: (section.items || []).filter((item) => item?.path && allowMenuItem(item)),
         }))
-        .filter((section) => section.items.length > 0),
+        .filter((section) => section.items.length > 0)
+      ),
     [allowMenuItem, rawSections]
   );
 
@@ -375,6 +392,17 @@ export default function Sidebar({ open = true, onClose }) {
     const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
     return starredPaths.map((path) => itemByPath.get(path)).filter(Boolean);
   }, [allKnownItems, starredPaths]);
+
+  const filteredSectionsWithoutStarred = useMemo(() => {
+    if (!starredPaths.length) return filteredSections;
+    const starredSet = new Set(starredPaths);
+    return filteredSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => !starredSet.has(item.path)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [filteredSections, starredPaths]);
 
   const toggleStarred = useCallback((item) => {
     setStarredPaths((prev) =>
@@ -508,38 +536,6 @@ export default function Sidebar({ open = true, onClose }) {
           />
         </div>
 
-        <SidebarCluster title="For You" hint={`${quickLinks.length} shortcuts`}>
-          <div className="sidebar-quick-panel">
-            {quickLinks.map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                className={`sidebar-quick-button ${isActivePath(location.pathname, item.path) ? "active" : ""}`.trim()}
-                onClick={() => handleSelect(item)}
-              >
-                <NavIcon name={item.icon || "home"} />
-                <span>{translateText(item.label)}</span>
-                {item.badge ? <span className="notif-badge">{translateText(item.badge)}</span> : null}
-              </button>
-            ))}
-          </div>
-        </SidebarCluster>
-
-        {recentVisible.length > 0 ? (
-          <SidebarCluster title="Recent" hint={`${recentVisible.length} items`}>
-            {recentVisible.map((item) => (
-              <SidebarItem
-                key={`recent-${item.path}`}
-                item={item}
-                active={isActivePath(location.pathname, item.path)}
-                onSelect={handleSelect}
-                isStarred={starredPaths.includes(item.path)}
-                onToggleStar={toggleStarred}
-              />
-            ))}
-          </SidebarCluster>
-        ) : null}
-
         {starredVisible.length > 0 ? (
           <SidebarCluster title="Starred" hint={`${starredVisible.length} items`}>
             {starredVisible.map((item) => (
@@ -555,7 +551,7 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ) : null}
 
-        {filteredSections.map((section) => (
+        {filteredSectionsWithoutStarred.map((section) => (
           <SidebarCluster key={section.section} title={section.section} hint={`${section.items.length} tools`}>
             {section.items.map((item) => (
               <SidebarItem
@@ -571,7 +567,7 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ))}
 
-        {filteredSections.length === 0 ? (
+        {filteredSectionsWithoutStarred.length === 0 ? (
           <div className="sidebar-empty-note">
             {translateText("No tools match this filter yet. Try a simpler keyword.")}
           </div>
@@ -579,42 +575,6 @@ export default function Sidebar({ open = true, onClose }) {
       </div>
 
       <div className="sidebar-footer sticky-footer">
-        <div className="sidebar-utility-rail">
-          <button
-            type="button"
-            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/notifications") ? "active" : ""}`.trim()}
-            onClick={() => handleSelect({ label: "Notifications", path: "/notifications", icon: "notifications" })}
-          >
-            <NavIcon name="notifications" />
-            <span>{translateText("Notifications")}</span>
-            {pharmacyRiskAlertCount > 0 ? <span className="notif-badge">{pharmacyRiskAlertCount}</span> : null}
-          </button>
-          <button
-            type="button"
-            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, settingsPathForRole(normalizedRole)) ? "active" : ""}`.trim()}
-            onClick={() => handleSelect({ label: "Settings", path: settingsPathForRole(normalizedRole), icon: "settings" })}
-          >
-            <NavIcon name="settings" />
-            <span>{translateText("Settings")}</span>
-          </button>
-          <button
-            type="button"
-            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/profile") ? "active" : ""}`.trim()}
-            onClick={() => handleSelect({ label: "Account", path: "/profile", icon: "account" })}
-          >
-            <NavIcon name="account" />
-            <span>{translateText("Account")}</span>
-          </button>
-          <button
-            type="button"
-            className={`nav-btn sidebar-utility-btn ${isActivePath(location.pathname, "/ai/chatbot") ? "active" : ""}`.trim()}
-            onClick={() => handleSelect({ label: "AI Assistant", path: "/ai/chatbot", icon: "ai" })}
-          >
-            <NavIcon name="ai" />
-            <span>{translateText("AI Assistant")}</span>
-          </button>
-        </div>
-
         <div className="sidebar-theme-toggle" role="group" aria-label="Theme mode">
           <button
             type="button"

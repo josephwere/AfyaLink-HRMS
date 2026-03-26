@@ -3622,7 +3622,8 @@ body.auth-route {
   display: block;
   margin-top: 8px;
   font-size: 24px;
-  line-height: 1;
+  line-height: 1.14;
+  padding-bottom: 2px;
 }
 
 .premium-inline-note {
@@ -3636,6 +3637,44 @@ body.auth-route {
 
 .dashboard-home-shell {
   gap: 18px;
+}
+
+.dashboard-home-pinned-summary {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--app-accent) 10%, transparent) 0, transparent 38%),
+    linear-gradient(180deg, color-mix(in oklab, var(--app-surface) 92%, white 8%), var(--app-surface));
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 22px 52px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+.dashboard-home-stats.dashboard-home-stats-pinned {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.dashboard-home-pinned-summary .premium-shell-stat {
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+
+.dashboard-home-pinned-summary .premium-shell-stat span {
+  font-size: 11px;
+}
+
+.dashboard-home-pinned-summary .premium-shell-stat strong {
+  font-size: 20px;
+}
+
+.dashboard-home-pinned-summary .dashboard-home-stat small {
+  margin-top: 6px;
 }
 
 .dashboard-daily-brief {
@@ -5045,12 +5084,17 @@ button.card.stat {
 }
 
 .stat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
   font-size: 11px;
   font-weight: 700;
   padding: 3px 7px;
   border-radius: 999px;
   letter-spacing: 0.02em;
   border: none;
+  line-height: 1.2;
 }
 
 .stat-badge-good {
@@ -5079,6 +5123,7 @@ button.card.stat {
   font-size: 22px;
   font-weight: 700;
   margin-top: 6px;
+  line-height: 1.2;
 }
 
 .card-sub {
@@ -5936,7 +5981,8 @@ button.card.stat {
 .mini-stat-card__value {
   font-size: 26px;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.14;
+  padding-bottom: 2px;
 }
 
 .page-admin-dashboard__stats {
@@ -7600,7 +7646,7 @@ button.card.stat {
   background: rgba(255, 255, 255, 0.72);
   color: #1f2937;
   font-size: 0.82rem;
-  line-height: 1;
+  line-height: 1.2;
   white-space: nowrap;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(10px);
