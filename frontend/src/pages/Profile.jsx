@@ -1,5 +1,5 @@
 // frontend/src/pages/Profile.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ import {
   loadAccessibilityPrefs,
   saveAccessibilityPrefs,
 } from "../utils/accessibilityPrefs";
+import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 
@@ -82,6 +83,8 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const loadRetryRef = useRef(null);
   const [authProvider, setAuthProvider] = useState("local");
   const [hasPassword, setHasPassword] = useState(true);
 
@@ -212,6 +215,12 @@ export default function Profile() {
   useEffect(() => {
     restoreCooldown();
     loadStatus();
+    return () => {
+      if (loadRetryRef.current) {
+        clearTimeout(loadRetryRef.current);
+        loadRetryRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -261,20 +270,35 @@ export default function Profile() {
   }, [cooldown]);
 
   /* -------------------------
-     Load 2FA + email status
+     Load Profile Workspace (guarded)
+     Avoid showing a generic "security settings" error for transient cold starts.
   -------------------------- */
-  const loadStatus = async () => {
+  const loadStatus = async (attempt = 1) => {
+    if (loadRetryRef.current) {
+      clearTimeout(loadRetryRef.current);
+      loadRetryRef.current = null;
+    }
+
+    if (attempt === 1) {
+      setLoading(true);
+      setError("");
+      setProfileLoaded(false);
+    }
+
     try {
-      const [data2FA, me] = await Promise.all([
-        apiFetch("/api/2fa/status"),
-        apiFetch("/api/profile"),
-      ]);
-      setTwoFAEnabled(Boolean(data2FA?.enabled));
-      setTwoFAMethod(data2FA?.method || "OTP");
+      const res = await guardedConsoleFetch("/api/profile", {
+        warmupPath: "/readyz",
+        timeoutSequence: [20000, 30000, 45000],
+      });
+      const me = res?.payload || res;
+
+      setTwoFAEnabled(Boolean(me?.twoFactorEnabled));
+      setTwoFAMethod(me?.twoFactorMethod || "OTP");
       setEmailVerified(Boolean(me?.emailVerified));
       setPhoneVerified(Boolean(me?.phoneVerified));
       setAuthProvider(me?.authProvider || "local");
-      setHasPassword(Boolean(me?.hasPassword ?? me?.password));
+      setHasPassword(Boolean(me?.hasPassword));
+
       const parsedPhone = splitDialAndLocal(me?.phone || "");
       setPhoneCountry(parsedPhone.countryCode || "");
       setPhoneLocal(parsedPhone.local || "");
@@ -283,6 +307,7 @@ export default function Profile() {
       setLicenseNumber(me?.licenseNumber || "");
       setLicenseExpiry(me?.licenseExpiry ? me.licenseExpiry.slice(0, 10) : "");
       setVerificationWarning(me?.verificationWarning || null);
+
       setBasic({
         gender: me?.gender || "",
         dateOfBirth: me?.dateOfBirth ? me.dateOfBirth.slice(0, 10) : "",
@@ -292,17 +317,21 @@ export default function Profile() {
         emergencyRelationship: me?.emergencyContact?.relationship || "",
         emergencyPhone: me?.emergencyContact?.phone || "",
       });
+
       setEmployment({
         employeeId: me?.employment?.employeeId || "",
         department: me?.employment?.department || "",
         reportingManager: me?.employment?.reportingManager || "",
         employmentType: me?.employment?.employmentType || "",
         hireDate: me?.employment?.hireDate ? me.employment.hireDate.slice(0, 10) : "",
-        contractStart: me?.employment?.contractStart ? me.employment.contractStart.slice(0, 10) : "",
+        contractStart: me?.employment?.contractStart
+          ? me.employment.contractStart.slice(0, 10)
+          : "",
         contractEnd: me?.employment?.contractEnd ? me.employment.contractEnd.slice(0, 10) : "",
         workLocation: me?.employment?.workLocation || "",
         branch: me?.employment?.branch || "",
       });
+
       setCredentials({
         specialization: me?.credentials?.specialization || "",
         subSpecialization: me?.credentials?.subSpecialization || "",
@@ -312,6 +341,7 @@ export default function Profile() {
         certifications: (me?.credentials?.certifications || []).join(", "),
         educationHistory: (me?.credentials?.educationHistory || []).join(", "),
       });
+
       setFinancial({
         bankName: me?.financial?.bankName || "",
         bankAccountName: me?.financial?.bankAccountName || "",
@@ -323,12 +353,14 @@ export default function Profile() {
         allowances: me?.financial?.allowances ?? "",
         deductions: me?.financial?.deductions ?? "",
       });
+
       setSystemProfile({
         status: me?.systemProfile?.status || "ACTIVE",
         accessExpiresAt: me?.systemProfile?.accessExpiresAt
           ? me.systemProfile.accessExpiresAt.slice(0, 10)
           : "",
       });
+
       setInsurance({
         providerCode: me?.insuranceProfile?.providerCode || "",
         providerName: me?.insuranceProfile?.providerName || "",
@@ -340,6 +372,7 @@ export default function Profile() {
         currency: me?.insuranceProfile?.currency || "KES",
         status: me?.insuranceProfile?.status || "PENDING",
       });
+
       setFamilyPrefs({
         receiveMinorAlerts: me?.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
         showDailyMinorSummary: me?.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
@@ -348,9 +381,21 @@ export default function Profile() {
       setLinkedMinors([]);
       setFamilyLoaded(false);
       setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
-    } catch {
-      setError("Unable to load security settings");
-    } finally {
+
+      setProfileLoaded(true);
+      setError("");
+      setLoading(false);
+    } catch (err) {
+      const maxAttempts = 2;
+      if (attempt < maxAttempts) {
+        loadRetryRef.current = setTimeout(() => loadStatus(attempt + 1), 900 * attempt);
+        return;
+      }
+      setProfileLoaded(false);
+      setError(
+        err?.message ||
+          "Profile workspace is taking longer than usual. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -532,7 +577,11 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (activeSection !== "familyMonitoring" || familyLoaded) return;
+    const isFamilySection =
+      activeSection === "familyPreferences" ||
+      activeSection === "familyLinkChild" ||
+      activeSection === "familyLinkedChildren";
+    if (!isFamilySection || familyLoaded) return;
     refreshFamilyMonitoring({ silent: false });
   }, [activeSection, familyLoaded]);
 
@@ -635,7 +684,7 @@ export default function Profile() {
       setTwoFAMethod(next ? "OTP" : "OTP");
       setTwoFAMsg(next ? "OTP 2FA enabled." : "2FA disabled.");
     } catch {
-      setError("Failed to update 2FA setting");
+      setTwoFAMsg("Failed to update 2FA setting. Please try again.");
     }
   };
 
@@ -1633,11 +1682,25 @@ export default function Profile() {
         badge: emailVerified && phoneVerified ? "Ready" : "Attention",
       },
       {
-        key: "phoneNationalId",
+        key: "phoneVerification",
         group: "Account",
-        title: "Phone & National ID",
-        description: "Verify your phone, national ID, and professional license from one place.",
-        badge: phoneVerified ? "Phone verified" : "OTP needed",
+        title: "Phone Verification",
+        description: "Verify your phone number for OTP, security, and recovery workflows.",
+        badge: phoneVerified ? "Verified" : "OTP needed",
+      },
+      {
+        key: "nationalId",
+        group: "Account",
+        title: "National ID",
+        description: "Store your national ID for compliance, family linking, and claims.",
+        badge: idNumber ? "On file" : "Missing",
+      },
+      {
+        key: "professionalLicense",
+        group: "Account",
+        title: "Professional License",
+        description: "Keep your license number and expiry up to date for clinical roles.",
+        badge: licenseNumber ? "On file" : "Optional",
       },
       {
         key: "basicInfo",
@@ -1685,11 +1748,29 @@ export default function Profile() {
       },
       isPatientProfile || linkedMinorCount
         ? {
-            key: "familyMonitoring",
+            key: "familyPreferences",
             group: "Care & Coverage",
-            title: "Family & Minor Monitoring",
-            description: "Link children or dependents and manage parent or guardian visibility.",
+            title: "Family Preferences",
+            description: "Control alerts and dashboard summaries for linked children.",
             badge: linkedMinorCount ? `${linkedMinorCount} linked` : "No links",
+          }
+        : null,
+      isPatientProfile || linkedMinorCount
+        ? {
+            key: "familyLinkChild",
+            group: "Care & Coverage",
+            title: "Link a Child",
+            description: "Find a minor profile and link it to your account as a parent or guardian.",
+            badge: "Search",
+          }
+        : null,
+      isPatientProfile || linkedMinorCount
+        ? {
+            key: "familyLinkedChildren",
+            group: "Care & Coverage",
+            title: "Linked Children",
+            description: "Review linked minors and remove access if needed.",
+            badge: linkedMinorCount ? `${linkedMinorCount} linked` : "None",
           }
         : null,
       isStaffProfile
@@ -1749,27 +1830,29 @@ export default function Profile() {
     ].filter(Boolean);
 
     return sections;
-  }, [
-    actualRole,
-    basic.dateOfBirth,
-    basic.nationality,
-    canManageGovPrefs,
-    canRoleOverride,
-    credentials.specialization,
-    emailVerified,
-    employment.department,
-    financial.bankName,
-    hasPassword,
-    insurance.status,
-    isAdminProfile,
-    isPatientProfile,
-    isStaffProfile,
-    linkedMinorCount,
-    phoneVerified,
-    resolvedTrainingRole,
-    selectedLanguageLabel,
-    showSecretsOnHover,
-    strictImpersonation,
+	  }, [
+	    actualRole,
+	    basic.dateOfBirth,
+	    basic.nationality,
+	    canManageGovPrefs,
+	    canRoleOverride,
+	    credentials.specialization,
+	    emailVerified,
+	    employment.department,
+	    financial.bankName,
+	    hasPassword,
+	    idNumber,
+	    insurance.status,
+	    isAdminProfile,
+	    isPatientProfile,
+	    isStaffProfile,
+	    licenseNumber,
+	    linkedMinorCount,
+	    phoneVerified,
+	    resolvedTrainingRole,
+	    selectedLanguageLabel,
+	    showSecretsOnHover,
+	    strictImpersonation,
     systemProfile.status,
     twoFAEnabled,
     twoFAMethod,
@@ -1892,17 +1975,17 @@ export default function Profile() {
             </div>
           </DismissibleSection>
         );
-      case "phoneNationalId":
+      case "phoneVerification":
         return (
           <DismissibleSection
-            title="Phone & National ID"
+            title="Phone Verification"
             eyebrow="Account"
-            aside={<span className="action-pill">{phoneVerified ? "Phone verified" : "Phone OTP"}</span>}
+            aside={<span className="action-pill">{phoneVerified ? "Verified" : "OTP needed"}</span>}
           >
             <p className="muted">
               {phoneVerified
                 ? "Your phone number is verified."
-                : "Verify your phone number to keep your account active."}
+                : "Verify your phone number to keep your account active and unlock OTP-based security features."}
             </p>
 
             <CountryPhoneInput
@@ -1939,9 +2022,16 @@ export default function Profile() {
               </button>
             </div>
             {phoneMsg && <p style={{ marginTop: 8 }}>{phoneMsg}</p>}
+          </DismissibleSection>
+        );
 
-            <hr style={{ margin: "18px 0" }} />
-
+      case "nationalId":
+        return (
+          <DismissibleSection
+            title="National ID"
+            eyebrow="Account"
+            aside={<span className="action-pill">{idNumber ? "On file" : "Missing"}</span>}
+          >
             <label>National ID Number</label>
             <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
 
@@ -1964,9 +2054,16 @@ export default function Profile() {
               {idSaving ? "Saving..." : "Save National ID"}
             </button>
             {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
+          </DismissibleSection>
+        );
 
-            <hr style={{ margin: "18px 0" }} />
-
+      case "professionalLicense":
+        return (
+          <DismissibleSection
+            title="Professional License"
+            eyebrow="Account"
+            aside={<span className="action-pill">{licenseNumber ? "On file" : "Optional"}</span>}
+          >
             <label>Professional License Number</label>
             <input
               value={licenseNumber}
@@ -2387,10 +2484,10 @@ export default function Profile() {
             {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
           </DismissibleSection>
         );
-      case "familyMonitoring":
+      case "familyPreferences":
         return (
           <DismissibleSection
-            title="Family & Minor Monitoring"
+            title="Family Preferences"
             eyebrow="Care & Coverage"
             aside={<span className="action-pill">{linkedMinorCount ? `${linkedMinorCount} linked` : "No links"}</span>}
           >
@@ -2421,8 +2518,20 @@ export default function Profile() {
                 Refresh Linked Children
               </button>
             </div>
+            {familyMsg ? <p style={{ marginTop: 8 }}>{familyMsg}</p> : null}
+          </DismissibleSection>
+        );
 
-            <hr style={{ margin: "18px 0" }} />
+      case "familyLinkChild":
+        return (
+          <DismissibleSection
+            title="Link a Child"
+            eyebrow="Care & Coverage"
+            aside={<span className="action-pill">{familyBusy ? "Working" : "Search"}</span>}
+          >
+            <p className="muted">
+              Search for a minor profile in your hospital scope and link them to your account.
+            </p>
 
             <label>Child name</label>
             <input
@@ -2455,6 +2564,9 @@ export default function Profile() {
               <button type="button" className="primary" onClick={searchMinorProfiles} disabled={familyBusy}>
                 {familyBusy ? "Working..." : "Find Child Profile"}
               </button>
+              <button type="button" className="secondary" onClick={refreshFamilyMonitoring} disabled={familyBusy}>
+                Refresh Linked Children
+              </button>
             </div>
             {familyMsg ? <p style={{ marginTop: 8 }}>{familyMsg}</p> : null}
 
@@ -2482,50 +2594,62 @@ export default function Profile() {
                 </div>
               </div>
             ) : null}
+          </DismissibleSection>
+        );
 
-            <div style={{ marginTop: 18 }}>
-              <h4 style={{ marginBottom: 8 }}>Linked Children</h4>
-              {linkedMinors.length ? (
-                <div className="panel-grid">
-                  {linkedMinors.map((item) => (
-                    <div key={item.patientId} className="card">
-                      <div className="profile-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                        <div>
-                          <strong>{item.name}</strong>
-                          <p className="muted" style={{ marginTop: 6 }}>
-                            {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
-                          </p>
-                          {item.consentPolicy ? (
-                            <p className="muted" style={{ marginTop: 6 }}>
-                              {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
-                                ? `Teen shared access active (${item.consentPolicy.countryCode}).`
-                                : `Parent proxy access active (${item.consentPolicy.countryCode}).`}
-                            </p>
-                          ) : null}
-                        </div>
-                        <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
-                          Remove
-                        </button>
-                      </div>
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
-                      </p>
-                      <p className="muted">
-                        Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
-                          ? "Detailed teen clinical notes are hidden in shared-access mode."
-                          : item.latestDiagnosis || "No diagnosis captured yet"}
-                      </p>
-                      <p className="muted">
-                        Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}
-                      </p>
-                      {item.notes ? <p className="muted">Notes: {item.notes}</p> : null}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted">No linked children yet.</p>
-              )}
+      case "familyLinkedChildren":
+        return (
+          <DismissibleSection
+            title="Linked Children"
+            eyebrow="Care & Coverage"
+            aside={<span className="action-pill">{linkedMinorCount ? `${linkedMinorCount} linked` : "None"}</span>}
+          >
+            <div className="profile-row profile-actions-row" style={{ marginTop: 2 }}>
+              <button type="button" className="secondary" onClick={refreshFamilyMonitoring} disabled={familyBusy}>
+                {familyBusy ? "Refreshing..." : "Refresh"}
+              </button>
             </div>
+
+            {linkedMinors.length ? (
+              <div className="panel-grid" style={{ marginTop: 14 }}>
+                {linkedMinors.map((item) => (
+                  <div key={item.patientId} className="card">
+                    <div className="profile-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                      <div>
+                        <strong>{item.name}</strong>
+                        <p className="muted" style={{ marginTop: 6 }}>
+                          {item.relationship || "Parent"} • Age {item.age ?? "—"} • {item.hospitalName || "Hospital not set"}
+                        </p>
+                        {item.consentPolicy ? (
+                          <p className="muted" style={{ marginTop: 6 }}>
+                            {item.consentPolicy.mode === "SHARED_TEEN_ACCESS"
+                              ? `Teen shared access active (${item.consentPolicy.countryCode}).`
+                              : `Parent proxy access active (${item.consentPolicy.countryCode}).`}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button type="button" className="danger" onClick={() => unlinkMinorProfile(item.patientId)} disabled={familyBusy}>
+                        Remove
+                      </button>
+                    </div>
+                    <p className="muted" style={{ marginTop: 8 }}>
+                      Upcoming appointments: {item.upcomingAppointments} • Encounters: {item.totalEncounters} • Records: {item.medicalRecordsCount}
+                    </p>
+                    <p className="muted">
+                      Latest diagnosis: {item.consentPolicy?.permissions?.detailedClinicalNotes === false
+                        ? "Detailed teen clinical notes are hidden in shared-access mode."
+                        : item.latestDiagnosis || "No diagnosis captured yet"}
+                    </p>
+                    <p className="muted">
+                      Latest appointment: {item.latestAppointmentAt ? new Date(item.latestAppointmentAt).toLocaleString() : "None yet"}
+                    </p>
+                    {item.notes ? <p className="muted">Notes: {item.notes}</p> : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted" style={{ marginTop: 12 }}>No linked children yet.</p>
+            )}
           </DismissibleSection>
         );
       case "systemData":
@@ -2835,6 +2959,25 @@ export default function Profile() {
     );
   }
 
+  if (!profileLoaded) {
+    return (
+      <div className="profile-container profile-settings-home">
+        <div className="card premium-card profile-settings-loading">
+          <div className="profile-panel-eyebrow">Settings Home</div>
+          <h2>Workspace still warming up</h2>
+          <p className="muted">
+            {error || "We could not load your profile settings yet. Please retry."}
+          </p>
+          <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
+            <button type="button" className="primary" onClick={() => loadStatus(1)}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container profile-settings-home">
       {renderVerificationWarning()}
@@ -2891,8 +3034,6 @@ export default function Profile() {
 
         <section className="profile-settings-stage">{renderActiveSection()}</section>
       </div>
-
-      {error && <p style={{ color: "red", marginTop: 16 }}>{error}</p>}
     </div>
   );
 }

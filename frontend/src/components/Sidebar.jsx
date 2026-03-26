@@ -4,14 +4,12 @@ import { useAuth } from "../utils/auth";
 import { fetchMenu, makeMenuCacheKey, readMenuCache, writeMenuCache } from "../services/menuApi";
 import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
-import { useTheme } from "../utils/theme.jsx";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
-import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import LegalLinks from "./LegalLinks";
 
 const RECENT_LIMIT = 6;
@@ -182,18 +180,9 @@ function buildFallbackSections({ homePath, normalizedRole, showAI }) {
 }
 
 export default function Sidebar({ open = true, onClose }) {
-  const {
-    user,
-    logout,
-    roleOverride,
-    strictImpersonation,
-    setRoleOverride,
-    setStrictImpersonation,
-    canRoleOverride,
-  } = useAuth();
+  const { user, logout, roleOverride } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   const { settings } = useSystemSettings();
   const { translateText } = useAppLanguage();
   const { uiPreferences, setUiPreferences } = useUiPreferences();
@@ -212,12 +201,10 @@ export default function Sidebar({ open = true, onClose }) {
   const [starredPaths, setStarredPaths] = useState([]);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
-  const [viewRole, setViewRole] = useState("");
 
   const normalizedRole = normalizeRole(user?.role || "");
   const navigationPrefs = uiPreferences?.navigation || {};
   const homePath = user ? redirectByRole(user) : "/";
-  const showRoleChip = user?.actualRole && user.actualRole !== user.role;
   const canPharmacyOps = [
     "SUPER_ADMIN",
     "SYSTEM_ADMIN",
@@ -275,11 +262,6 @@ export default function Sidebar({ open = true, onClose }) {
         : readSidebarWidth(user)
     );
   }, [user?.id, user?.email, user?.role]);
-
-  useEffect(() => {
-    if (!canRoleOverride) return;
-    setViewRole(roleOverride || user?.actualRole || user?.role || "");
-  }, [canRoleOverride, roleOverride, user?.actualRole, user?.role]);
 
   useEffect(() => {
     if (!user) return;
@@ -455,21 +437,6 @@ export default function Sidebar({ open = true, onClose }) {
     onClose?.();
   };
 
-  const runRoleSwitch = () => {
-    if (!viewRole) return;
-    setRoleOverride(viewRole);
-    navigate(redirectByRole({ role: viewRole }));
-    onClose?.();
-  };
-
-  const resetRoleSwitch = () => {
-    const actual = user?.actualRole || user?.role;
-    setRoleOverride("");
-    setViewRole(actual || "");
-    navigate(redirectByRole({ role: actual }));
-    onClose?.();
-  };
-
   if (!user) return null;
 
   return (
@@ -487,49 +454,8 @@ export default function Sidebar({ open = true, onClose }) {
               appName
             )}
           </div>
-          <div className="brand-sub">{translateText(appTagline || `${normalizedRole} Workspace`)}</div>
+          <div className="brand-sub">{translateText(appTagline || "Secure Healthcare Systems")}</div>
         </div>
-        <div className="sidebar-role-row">
-          <span className="sidebar-role-chip">{translateText(normalizedRole.replaceAll("_", " "))}</span>
-          {showRoleChip ? (
-            <span className="sidebar-role-chip ghost">{translateText(`Viewing ${user.role}`)}</span>
-          ) : null}
-        </div>
-        {canRoleOverride ? (
-          <div className="sidebar-workspace-shell">
-            <label className="sidebar-search-label" htmlFor="sidebar-workspace-switcher">
-              {translateText("Workspace switcher")}
-            </label>
-            <select
-              id="sidebar-workspace-switcher"
-              className="sidebar-workspace-select"
-              value={viewRole}
-              onChange={(event) => setViewRole(event.target.value)}
-            >
-              {ROLE_VIEW_OPTIONS.map((role) => (
-                <option key={role} value={role}>
-                  {translateText(role)}
-                </option>
-              ))}
-            </select>
-            <label className="sidebar-inline-check">
-              <input
-                type="checkbox"
-                checked={Boolean(strictImpersonation)}
-                onChange={(event) => setStrictImpersonation(event.target.checked)}
-              />
-              <span>{translateText("Strict impersonation")}</span>
-            </label>
-            <div className="sidebar-workspace-actions">
-              <button type="button" className="btn-primary" onClick={runRoleSwitch}>
-                {translateText("Switch view")}
-              </button>
-              <button type="button" className="btn-secondary" onClick={resetRoleSwitch}>
-                {translateText("Reset")}
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
 
       <div className="sidebar-scroll">
@@ -589,30 +515,6 @@ export default function Sidebar({ open = true, onClose }) {
       </div>
 
       <div className="sidebar-footer sticky-footer">
-        <div className="sidebar-theme-toggle" role="group" aria-label="Theme mode">
-          <button
-            type="button"
-            className={`sidebar-theme-btn ${theme === "light" ? "active" : ""}`.trim()}
-            onClick={() => setTheme("light")}
-          >
-            {translateText("Light")}
-          </button>
-          <button
-            type="button"
-            className={`sidebar-theme-btn ${theme === "dark" ? "active" : ""}`.trim()}
-            onClick={() => setTheme("dark")}
-          >
-            {translateText("Dark")}
-          </button>
-          <button
-            type="button"
-            className={`sidebar-theme-btn ${theme === "system" ? "active" : ""}`.trim()}
-            onClick={() => setTheme("system")}
-          >
-            {translateText("System")}
-          </button>
-        </div>
-
         <button
           type="button"
           className="nav-btn sidebar-signout-btn"

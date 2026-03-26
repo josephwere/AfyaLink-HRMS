@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
-import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import { getSearchCatalog } from "../config/searchCatalog";
 import { useTheme } from "../utils/theme.jsx";
 import { triggerAction } from "../services/actionApi";
@@ -144,15 +143,7 @@ function Icon({ name }) {
 }
 
 export default function Navbar({ onToggleSidebar }) {
-  const {
-    user,
-    logout,
-    roleOverride,
-    strictImpersonation,
-    setRoleOverride,
-    setStrictImpersonation,
-    canRoleOverride,
-  } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { cycleTheme } = useTheme();
@@ -166,7 +157,6 @@ export default function Navbar({ onToggleSidebar }) {
   const [search, setSearch] = useState("");
   const [remoteResults, setRemoteResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [viewRole, setViewRole] = useState("");
   const [transferStatus, setTransferStatus] = useState(
     localStorage.getItem("afyalink_transfer_status") || ""
   );
@@ -337,11 +327,6 @@ export default function Navbar({ onToggleSidebar }) {
     setProfileOpen(false);
     setNotifOpen(false);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!canRoleOverride) return;
-    setViewRole(roleOverride || user?.actualRole || user?.role || "");
-  }, [canRoleOverride, roleOverride, user?.actualRole, user?.role]);
 
   useEffect(() => {
     localStorage.setItem("afyalink_transfer_status", transferStatus);
@@ -646,57 +631,6 @@ export default function Navbar({ onToggleSidebar }) {
               <button type="button" onClick={() => navigate("/reports")}>
                 About AfyaLink
               </button>
-              {canRoleOverride && (
-                <div className="profile-menu-section">
-                  <div className="profile-menu-subtitle">Role View Switcher</div>
-                  <label className="profile-inline-check profile-switcher-check">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(strictImpersonation)}
-                      onChange={(e) => setStrictImpersonation(e.target.checked)}
-                    />
-                    <span>Strict impersonation</span>
-                  </label>
-                  <select
-                    className="profile-role-select"
-                    value={viewRole}
-                    onChange={(e) => setViewRole(e.target.value)}
-                  >
-                    {ROLE_VIEW_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {translateText(role)}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="profile-role-actions">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => {
-                        if (!viewRole) return;
-                        setRoleOverride(viewRole);
-                        setProfileOpen(false);
-                        navigate(redirectByRole({ role: viewRole }));
-                      }}
-                    >
-                      Switch View
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => {
-                        const actual = user?.actualRole || user?.role;
-                        setRoleOverride("");
-                        setViewRole(actual || "");
-                        setProfileOpen(false);
-                        navigate(redirectByRole({ role: actual }));
-                      }}
-                    >
-                      Reset
-                    </button>
-                  </div>
-                </div>
-              )}
               {!isGuest ? (
                 <button type="button" className="danger" onClick={logout}>
                   Sign Out
