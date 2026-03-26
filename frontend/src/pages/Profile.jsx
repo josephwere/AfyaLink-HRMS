@@ -12,6 +12,7 @@ import { getCountryOptions, splitDialAndLocal } from "../utils/countryDialCodes"
 import { exportRichTextDocument } from "../utils/fileExport";
 import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
+import { normalizeRole } from "../utils/normalizeRole";
 import {
   applyAccessibilityPrefs,
   getDefaultAccessibilityPrefs,
@@ -1771,7 +1772,7 @@ export default function Profile() {
         ? {
             key: "roleSwitcher",
             group: "Administration",
-            title: "Role View Switcher",
+            title: "Workspace role view",
             description: "Preview any role experience from one account without leaving your profile.",
             badge: strictImpersonation ? "Strict mode" : "Founder view",
           }
@@ -2042,64 +2043,74 @@ export default function Profile() {
     );
   };
 
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case "roleSwitcher":
-        return (
-          <DismissibleSection
-            title="Role View Switcher"
-            eyebrow="Administration"
-            className="profile-hero-card"
-            aside={<span className="action-pill">{strictImpersonation ? "Strict role" : "Founder mode"}</span>}
-          >
-            <p className="muted">
-              Use this to switch and test account types. Your actual account stays{" "}
-              <strong>{user?.actualRole || user?.role}</strong>.
-            </p>
-            <label className="profile-inline-check" style={{ marginBottom: 12 }}>
+  const formatRoleLabel = (value) => String(value || "").replaceAll("_", " ").trim() || "User";
+
+  const switchWorkspaceRole = (nextRole) => {
+    if (!user || !canRoleOverride) return;
+    const normalized = normalizeRole(nextRole);
+    const signedIn = normalizeRole(user?.actualRole || user?.role || "");
+    if (!normalized) {
+      setRoleOverride("");
+      navigate(redirectByRole({ role: signedIn || user.role }));
+      return;
+    }
+    setRoleOverride(normalized);
+    navigate(redirectByRole({ role: normalized }));
+  };
+
+  const resetWorkspaceView = () => {
+    if (!user || !canRoleOverride) return;
+    const signedIn = normalizeRole(user?.actualRole || user?.role || "");
+    setRoleOverride("");
+    setStrictImpersonation(false);
+    navigate(redirectByRole({ role: signedIn || user.role }));
+  };
+
+	  const renderActiveSection = () => {
+	    switch (activeSection) {
+	      case "roleSwitcher":
+	        return (
+	          <DismissibleSection
+	            title="Workspace role view"
+	            eyebrow="Administration"
+	            className="profile-hero-card"
+	            aside={<span className="action-pill">{strictImpersonation ? "Strict mode" : "Founder view"}</span>}
+	          >
+	            <div className="profile-status-grid" style={{ marginBottom: 12 }}>
+	              <div className="profile-status-pill ok">
+	                <strong>Signed-in:</strong> {formatRoleLabel(user?.actualRole || user?.role)}
+	              </div>
+	              <div className="profile-status-pill">
+	                <strong>Viewing:</strong> {formatRoleLabel(roleOverride || user?.actualRole || user?.role)}
+	              </div>
+	            </div>
+
+	            <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
+	              <select value={roleOverride || ""} onChange={(e) => switchWorkspaceRole(e.target.value)}>
+	                <option value="">
+	                  Signed-in role ({formatRoleLabel(user?.actualRole || user?.role)})
+	                </option>
+	                {ROLE_VIEW_OPTIONS.filter(
+                  (role) => normalizeRole(role) !== normalizeRole(user?.actualRole || user?.role || "")
+                ).map((role) => (
+                  <option key={role} value={role}>
+                    {formatRoleLabel(role)}
+                  </option>
+                ))}
+              </select>
+              <button type="button" className="btn-secondary" onClick={resetWorkspaceView}>
+                Reset
+              </button>
+            </div>
+
+            <label className="profile-inline-check" style={{ marginTop: 12 }}>
               <input
                 type="checkbox"
                 checked={Boolean(strictImpersonation)}
                 onChange={(e) => setStrictImpersonation(e.target.checked)}
               />
-              <span>Lock to exact role permissions (strict impersonation)</span>
+              <span>Strict impersonation</span>
             </label>
-            <p className="muted" style={{ marginTop: 0 }}>
-              {strictImpersonation
-                ? "Strict mode: access is limited to the switched role."
-                : "Full access mode: founder and developer elevated permissions remain active while viewing another role."}
-            </p>
-            <div className="profile-row profile-actions-row">
-              <select value={viewRole} onChange={(e) => setViewRole(e.target.value)}>
-                {viewableRoles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="primary"
-                onClick={() => {
-                  setRoleOverride(viewRole);
-                  navigate(redirectByRole({ role: viewRole }));
-                }}
-              >
-                Switch Role View
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  const actual = user?.actualRole || user?.role;
-                  setRoleOverride("");
-                  setViewRole(actual);
-                  navigate(redirectByRole({ role: actual }));
-                }}
-              >
-                Reset to My Role
-              </button>
-            </div>
           </DismissibleSection>
         );
       case "verificationStatus":
@@ -3095,14 +3106,13 @@ export default function Profile() {
     activeSection === SETTINGS_HOME_KEY ? (
       renderSettingsHome()
     ) : profileLoaded ? (
-      renderActiveSection()
-    ) : (
-      <div className="card premium-card profile-settings-loading">
-        <div className="profile-panel-eyebrow">Settings Home</div>
-        <h2>{loading ? "Loading your workspace" : "Workspace still warming up"}</h2>
-        <p className="muted">
-          {loading
-            ? "Pulling your account, security, and role-specific settings."
+	      renderActiveSection()
+	    ) : (
+	      <div className="card premium-card profile-settings-loading">
+	        <h2>{loading ? "Loading your workspace" : "Workspace still warming up"}</h2>
+	        <p className="muted">
+	          {loading
+	            ? "Pulling your account, security, and role-specific settings."
             : error || "We could not load your profile settings yet. Please retry."}
         </p>
         <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
@@ -3113,9 +3123,9 @@ export default function Profile() {
       </div>
     );
 
-  return (
-    <div className="profile-container profile-settings-home">
-      {profileLoaded ? renderVerificationWarning() : null}
+	  return (
+	    <div className="profile-container profile-settings-home">
+	      {profileLoaded ? renderVerificationWarning() : null}
 
       <section className="card premium-card profile-settings-hero">
         <div className="profile-settings-hero-copy">
@@ -3152,51 +3162,44 @@ export default function Profile() {
         ))}
       </div>
 
-      <div className="profile-settings-shell">
-        <aside className="card profile-settings-nav">
-          <div className="profile-settings-nav-group">
-            <div className="profile-settings-nav-title">Overview</div>
-            <div className="profile-settings-nav-list">
-              <button
-                type="button"
-                className={`profile-settings-nav-button ${activeSection === SETTINGS_HOME_KEY ? "active" : ""}`.trim()}
-                onClick={() => setActiveSection(SETTINGS_HOME_KEY)}
-              >
-                <span className="profile-settings-nav-button-head">
-                  <strong>Settings Home</strong>
-                  <span className="action-pill">Browse</span>
-                </span>
-                <span className="profile-settings-nav-button-copy">
-                  Jump to any profile workspace panel without scrolling a long stacked page.
-                </span>
-              </button>
-            </div>
-          </div>
-          {Object.entries(groupedProfileSections).map(([group, sections]) => (
-            <div key={group} className="profile-settings-nav-group">
-              <div className="profile-settings-nav-title">{group}</div>
-              <div className="profile-settings-nav-list">
-                {sections.map((section) => (
-                  <button
-                    key={section.key}
-                    type="button"
-                    className={`profile-settings-nav-button ${activeSection === section.key ? "active" : ""}`.trim()}
-                    onClick={() => setActiveSection(section.key)}
-                  >
-                    <span className="profile-settings-nav-button-head">
-                      <strong>{section.title}</strong>
-                      <span className="action-pill">{section.badge}</span>
-                    </span>
-                    <span className="profile-settings-nav-button-copy">{section.description}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </aside>
+	      <div
+	        className={`profile-settings-shell ${activeSection === SETTINGS_HOME_KEY ? "is-home" : ""}`.trim()}
+	      >
+	        <aside className="card profile-settings-nav">
+	          {Object.entries(groupedProfileSections).map(([group, sections]) => (
+	            <div key={group} className="profile-settings-nav-group">
+	              <div className="profile-settings-nav-title">{group}</div>
+	              <div className="profile-settings-nav-list">
+	                {sections.map((section) => (
+	                  <button
+	                    key={section.key}
+	                    type="button"
+	                    className={`profile-settings-nav-button ${activeSection === section.key ? "active" : ""}`.trim()}
+	                    title={section.description}
+	                    onClick={() => setActiveSection(section.key)}
+	                  >
+	                    <span className="profile-settings-nav-button-head">
+	                      <strong>{section.title}</strong>
+	                      <span className="action-pill">{section.badge}</span>
+	                    </span>
+	                  </button>
+	                ))}
+	              </div>
+	            </div>
+	          ))}
+	        </aside>
 
-        <section className="profile-settings-stage">{stageContent}</section>
-      </div>
-    </div>
-  );
-}
+	        <section className="profile-settings-stage">
+	          {activeSection && activeSection !== SETTINGS_HOME_KEY ? (
+	            <div className="profile-row profile-actions-row" style={{ marginBottom: 12 }}>
+	              <button type="button" className="btn-secondary" onClick={() => setActiveSection(SETTINGS_HOME_KEY)}>
+	                Back to Settings Home
+	              </button>
+	            </div>
+	          ) : null}
+	          {stageContent}
+	        </section>
+	      </div>
+	    </div>
+	  );
+	}

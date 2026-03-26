@@ -8,7 +8,6 @@ import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
-import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
 import LegalLinks from "./LegalLinks";
@@ -174,23 +173,13 @@ function buildFallbackSections({ homePath, normalizedRole, showAI }) {
 }
 
 export default function Sidebar({ open = true, onClose }) {
-  const {
-    user,
-    logout,
-    roleOverride,
-    canRoleOverride,
-    strictImpersonation,
-    setRoleOverride,
-    setStrictImpersonation,
-  } = useAuth();
+  const { user, logout, roleOverride } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useSystemSettings();
   const { translateText } = useAppLanguage();
   const { uiPreferences, setUiPreferences } = useUiPreferences();
 
-  const appName = settings?.branding?.appName || "AfyaLink";
-  const appTagline = settings?.branding?.tagline || null;
   const hospitalModules = settings?.hospitalCustomization?.modules || {};
   const showAI = hospitalModules.showAI !== false;
   const showReports = hospitalModules.showReports !== false;
@@ -204,7 +193,6 @@ export default function Sidebar({ open = true, onClose }) {
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
 
   const normalizedRole = normalizeRole(user?.role || "");
-  const actualRole = normalizeRole(user?.actualRole || user?.role || "");
   const navigationPrefs = uiPreferences?.navigation || {};
   const homePath = user ? redirectByRole(user) : "/";
   const canPharmacyOps = [
@@ -435,34 +423,6 @@ export default function Sidebar({ open = true, onClose }) {
     onClose?.();
   };
 
-  const formatRoleLabel = (value) =>
-    translateText(String(value || "").replaceAll("_", " ").trim() || "User");
-
-  const switchWorkspaceRole = useCallback(
-    (nextRole) => {
-      if (!user || !canRoleOverride) return;
-      const normalized = normalizeRole(nextRole);
-      if (!normalized) {
-        setRoleOverride("");
-        navigate(redirectByRole({ role: actualRole || user.role }));
-        onClose?.();
-        return;
-      }
-      setRoleOverride(normalized);
-      navigate(redirectByRole({ role: normalized }));
-      onClose?.();
-    },
-    [actualRole, canRoleOverride, navigate, onClose, setRoleOverride, user]
-  );
-
-  const resetWorkspaceView = useCallback(() => {
-    if (!user || !canRoleOverride) return;
-    setRoleOverride("");
-    setStrictImpersonation(false);
-    navigate(redirectByRole({ role: actualRole || user.role }));
-    onClose?.();
-  }, [actualRole, canRoleOverride, navigate, onClose, setRoleOverride, setStrictImpersonation, user]);
-
   if (!user) return null;
 
   return (
@@ -471,69 +431,6 @@ export default function Sidebar({ open = true, onClose }) {
       style={{ "--sidebar-width": `${sidebarWidth}px` }}
       onWheel={(event) => event.stopPropagation()}
     >
-      <div className="sidebar-header sticky sidebar-header-premium">
-        <div className="sidebar-brand-lockup">
-          <div className="brand-mark">
-            {settings?.branding?.logo ? (
-              <span className="brand-logo" style={{ backgroundImage: `url(${settings.branding.logo})` }} />
-            ) : (
-              appName
-            )}
-          </div>
-          <div className="brand-sub">{translateText(appTagline || "Secure Healthcare Systems")}</div>
-        </div>
-
-        <div className="sidebar-role-row" aria-label={translateText("Signed-in role")}>
-          <span className="sidebar-role-chip ghost">
-            {translateText("Signed-in")}: {formatRoleLabel(actualRole || normalizedRole)}
-          </span>
-          <span className="sidebar-role-chip">
-            {translateText("Viewing")}: {formatRoleLabel(roleOverride || actualRole || normalizedRole)}
-          </span>
-          {canRoleOverride ? (
-            <span className="sidebar-role-chip ghost">
-              {strictImpersonation ? translateText("Strict mode") : translateText("Founder view")}
-            </span>
-          ) : null}
-        </div>
-
-        {canRoleOverride ? (
-          <div className="sidebar-workspace-shell" aria-label={translateText("Workspace switcher")}>
-            <div className="sidebar-search-label">{translateText("Workspace role view")}</div>
-            <select
-              className="sidebar-workspace-select"
-              value={roleOverride || ""}
-              onChange={(event) => switchWorkspaceRole(event.target.value)}
-              aria-label={translateText("Workspace role view")}
-            >
-              <option value="">
-                {translateText("Signed-in role")} {actualRole ? `(${formatRoleLabel(actualRole)})` : ""}
-              </option>
-              {ROLE_VIEW_OPTIONS.filter((role) => role !== actualRole).map((role) => (
-                <option key={role} value={role}>
-                  {formatRoleLabel(role)}
-                </option>
-              ))}
-            </select>
-
-            <label className="sidebar-inline-check">
-              <input
-                type="checkbox"
-                checked={Boolean(strictImpersonation)}
-                onChange={(event) => setStrictImpersonation(event.target.checked)}
-              />
-              {translateText("Strict impersonation")}
-            </label>
-
-            <div className="sidebar-workspace-actions">
-              <button type="button" className="btn-secondary" onClick={resetWorkspaceView}>
-                {translateText("Reset")}
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
       <div className="sidebar-scroll">
         <div className="sidebar-search-shell">
           <div className="sidebar-search-label">{translateText("Global search / command")}</div>
@@ -641,7 +538,6 @@ export default function Sidebar({ open = true, onClose }) {
           {translateText("Sign Out")}
         </button>
         <LegalLinks compact className="sidebar-legal-links" />
-        <div>{appName} • {translateText("Secure")}</div>
       </div>
 
       <button type="button" className="sidebar-resize-handle" onMouseDown={startResize} aria-label="Resize sidebar" />

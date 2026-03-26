@@ -4685,6 +4685,14 @@ button.premium-shell-stat {
   align-items: start;
 }
 
+.profile-settings-shell.is-home {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-settings-shell.is-home .profile-settings-nav {
+  display: none;
+}
+
 .card.profile-settings-nav {
   position: sticky;
   top: 92px;
