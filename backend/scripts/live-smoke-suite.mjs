@@ -213,8 +213,50 @@ async function unauthCase({ method, path, timeoutMs = 15000 }) {
     });
     return false;
   }
-  const ok = res.status >= 200 && res.status < 400;
-  printLine({ label: "PUBLIC", method, path, status: res.status, ms, ok });
+
+  let ok = res.status >= 200 && res.status < 400;
+  let note = "";
+  let fullMs = ms;
+
+  if (ok && path === "/api/system-settings/public") {
+    const bodyStart = Date.now();
+    const data = await readJsonSafe(res);
+    fullMs = ms + (Date.now() - bodyStart);
+
+    const branding = data?.branding && typeof data.branding === "object" ? data.branding : {};
+    const ai = data?.ai && typeof data.ai === "object" ? data.ai : {};
+    const sidebarIcons = branding?.sidebarIcons && typeof branding.sidebarIcons === "object" ? branding.sidebarIcons : {};
+
+    const dataUrlFields = [];
+    for (const key of ["appIcon", "favicon", "logo", "loginBackground", "homeBackground"]) {
+      if (String(branding?.[key] || "").startsWith("data:")) {
+        dataUrlFields.push(`branding.${key}`);
+      }
+    }
+    if (Object.values(sidebarIcons).some((value) => String(value || "").startsWith("data:"))) {
+      dataUrlFields.push("branding.sidebarIcons");
+    }
+    if (String(ai?.icon || "").startsWith("data:")) {
+      dataUrlFields.push("ai.icon");
+    }
+
+    const approxBytes = (() => {
+      try {
+        return Buffer.byteLength(JSON.stringify(data || {}), "utf8");
+      } catch {
+        return null;
+      }
+    })();
+
+    if (dataUrlFields.length) {
+      ok = false;
+      note = `(data-url-assets: ${dataUrlFields.join(", ")})`;
+    } else if (approxBytes != null) {
+      note = `(bytes=${approxBytes})`;
+    }
+  }
+
+  printLine({ label: "PUBLIC", method, path, status: res.status, ms: fullMs, ok, note });
   return ok;
 }
 
