@@ -51,111 +51,9 @@ export async function startBackgroundJobs(logger = console) {
 }
 
 /* ======================================================
-   🧠 ROUTES
+   🧠 ROUTES (LAZY)
+   Keep startup memory low by lazy-importing route modules on first use.
 ====================================================== */
-import authRoutes from "./routes/authRoutes.js";
-import adminRoutes from "./routes/admin.js";
-import userRoutes from "./routes/userRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
-import hospitalRoutes from "./routes/hospitalRoutes.js";
-import hospitalAdminRoutes from "./routes/hospitalAdminRoutes.js";
-import hospitalAdminStaffRoutes from "./routes/hospitalAdmin.js";
-import staffRoutes from "./routes/staffRoutes.js";
-import superAdminRoutes from "./routes/superAdmin.js";
-
-import emergencyRoutes from "./routes/emergencyRoutes.js";
-import adminEmergencyRoutes from "./routes/adminEmergencyRoutes.js";
-import emergencyDashboardRoutes from "./routes/emergencyDashboardRoutes.js";
-import breakGlassRoutes from "./routes/breakGlassRoutes.js";
-
-import workflowRoutes from "./routes/workflowRoutes.js";
-import workflowAdminRoutes from "./routes/workflowAdminRoutes.js";
-import workflowReplayRoutes from "./routes/workflowReplayRoutes.js";
-import adminWorkflowRoutes from "./routes/adminWorkflowRoutes.js";
-
-import patientRoutes from "./routes/patientRoutes.js";
-import encounterRoutes from "./routes/encounterRoutes.js";
-import appointmentRoutes from "./routes/appointmentRoutes.js";
-import appointmentsAdminRoutes from "./routes/appointments_adminRoutes.js";
-
-import labRoutes from "./routes/labRoutes.js";
-import pharmacyRoutes from "./routes/pharmacyRoutes.js";
-import bedsRoutes from "./routes/bedsRoutes.js";
-import triageRoutes from "./routes/triageRoutes.js";
-
-import billingRoutes from "./routes/billingRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
-import mpesaRoutes from "./routes/mpesa.routes.js";
-import stripeRoutes from "./routes/stripeRoutes.js";
-import flutterwaveRoutes from "./routes/flutterwaveRoutes.js";
-import transactionsRoutes from "./routes/transactionsRoutes.js";
-import paymentSettingsRoutes from "./routes/paymentSettingsRoutes.js";
-
-import inventoryRoutes from "./routes/inventoryRoutes.js";
-import financialRoutes from "./routes/financialRoutes.js";
-import transferRoutes from "./routes/transferRoutes.js";
-
-import analyticsRoutes from "./routes/analyticsRoutes.js";
-import reportsRoutes from "./routes/reportsRoutes.js";
-import medicalLegalRoutes from "./routes/medicalLegalRoutes.js";
-
-import aiRoutes from "./routes/aiRoutes.js";
-import aiAdminRoutes from "./routes/ai_adminRoutes.js";
-import mlRoutes from "./routes/mlRoutes.js";
-
-import connectorsRoutes from "./routes/connectorsRoutes.js";
-import webhookReceiverRoutes from "./routes/webhookReceiverRoutes.js";
-import integrationWebhookRoutes from "./routes/integrationWebhookRoutes.js";
-import dlqRoutes from "./routes/dlqRoutes.js";
-import dlqInspectRoutes from "./routes/dlqInspectRoutes.js";
-import dlqAdminRoutes from "./routes/dlqAdminRoutes.js";
-
-import mappingRoutes from "./routes/mappingRoutes.js";
-import offlineRoutes from "./routes/offlineRoutes.js";
-
-import signalingTokenRoutes from "./routes/signalingTokenRoutes.js";
-
-import insuranceRoutes from "./routes/insuranceRoutes.js";
-import branchesRoutes from "./routes/branchesRoutes.js";
-import kpiRoutes from "./routes/kpiRoutes.js";
-import menuRoutes from "./routes/menuRoutes.js";
-import accessBookingRoutes from "./routes/accessBookingRoutes.js";
-import accessVerificationRoutes from "./routes/accessVerificationRoutes.js";
-import securityDashboardRoutes from "./routes/securityDashboardRoutes.js";
-import notificationsRoutes from "./routes/notificationsRoutes.js";
-import twoFaRoutes from "./routes/2faRoutes.js";
-import actionRoutes from "./routes/actionRoutes.js";
-import workforceRoutes from "./routes/workforceRoutes.js";
-import systemSettingsRoutes from "./routes/systemSettingsRoutes.js";
-import developerRoutes from "./routes/developerRoutes.js";
-import systemAdminRoutes from "./routes/systemAdminRoutes.js";
-import governmentRoutes from "./routes/governmentRoutes.js";
-import complianceRoutes from "./routes/complianceRoutes.js";
-import dashboardRoutes from "./routes/dashboardRoutes.js";
-import delegatedPermissionRoutes from "./routes/delegatedPermissionRoutes.js";
-import searchRoutes from "./routes/searchRoutes.js";
-import recruitmentAdsRoutes from "./routes/recruitmentAdsRoutes.js";
-import migrationRoutes from "./routes/migrationRoutes.js";
-import communicationRoutes from "./routes/communicationRoutes.js";
-import auditRoutes from "./routes/auditRoutes.js";
-import printingRoutes from "./routes/printingRoutes.js";
-import clinicalDraftRoutes from "./routes/clinicalDraftRoutes.js";
-import communityHealthWorkerRoutes from "./routes/communityHealthWorkerRoutes.js";
-import machineConnectivityRoutes from "./routes/machineConnectivityRoutes.js";
-import trainingTrackerRoutes from "./routes/trainingTrackerRoutes.js";
-import pharmacyNetworkRoutes from "./routes/pharmacyNetworkRoutes.js";
-import sreIncidentRoutes from "./routes/sreIncidentRoutes.js";
-import pilotOpsRoutes from "./routes/pilotOpsRoutes.js";
-import supportRoutes from "./routes/supportRoutes.js";
-import customizationRequestRoutes from "./routes/customizationRequestRoutes.js";
-import staffTransferRoutes from "./routes/staffTransferRoutes.js";
-import geoRoutes from "./routes/geoRoutes.js";
-import claimsRoutes from "./routes/claimsRoutes.js";
-import unifiedAssistantRoutes from "./routes/unifiedAssistantRoutes.js";
-import platformInnovationRoutes from "./routes/platformInnovationRoutes.js";
-
-
-
 
 /* ======================================================
    🚀 APP
@@ -289,18 +187,54 @@ app.use((req, res, next) => {
 /* ======================================================
    🚨 EMERGENCY
 ====================================================== */
-app.use("/api/break-glass", breakGlassRoutes);
-app.use("/api/admin", adminEmergencyRoutes);
-app.use("/api/emergency", emergencyRoutes);
-app.use("/api/admin", emergencyDashboardRoutes);
+app.use(
+  "/api/break-glass",
+  lazyRouter(() => import("./routes/breakGlassRoutes.js"), "breakGlassRoutes")
+);
+app.use(
+  "/api/admin",
+  lazyRouter(() => import("./routes/adminEmergencyRoutes.js"), "adminEmergencyRoutes")
+);
+app.use(
+  "/api/emergency",
+  lazyRouter(() => import("./routes/emergencyRoutes.js"), "emergencyRoutes")
+);
+app.use(
+  "/api/admin",
+  lazyRouter(
+    () => import("./routes/emergencyDashboardRoutes.js"),
+    "emergencyDashboardRoutes"
+  )
+);
 
 /* ======================================================
    🔐 WORKFLOWS (READ-ONLY)
 ====================================================== */
-app.use("/api/workflows", workflowRoutes);
-app.use("/api/workflows/admin", workflowAdminRoutes);
-app.use("/api/workflows/replay", workflowReplayRoutes);
-app.use("/api/admin/workflows", adminWorkflowRoutes);
+app.use(
+  "/api/workflows",
+  lazyRouter(() => import("./routes/workflowRoutes.js"), "workflowRoutes")
+);
+app.use(
+  "/api/workflows/admin",
+  lazyRouter(
+    () => import("./routes/workflowAdminRoutes.js"),
+    "workflowAdminRoutes"
+  )
+);
+app.use(
+  "/api/workflows/replay",
+  lazyRouter(
+    () => import("./routes/workflowReplayRoutes.js"),
+    "workflowReplayRoutes"
+  )
+);
+app.use(
+  "/api/admin/workflows",
+  lazyRouter(
+    () => import("./routes/adminWorkflowRoutes.js"),
+    "adminWorkflowRoutes"
+  )
+);
 
 /* ======================================================
    🧾 AUTO-AUDIT FLAG
@@ -315,111 +249,411 @@ app.use((req, _res, next) => {
 /* ======================================================
    🔑 AUTH & CORE
 ====================================================== */
-app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/2fa", twoFaRoutes);
+app.use(
+  "/api/auth",
+  lazyRouter(() => import("./routes/authRoutes.js"), "authRoutes")
+);
+app.use(
+  "/api/admin",
+  lazyRouter(() => import("./routes/admin.js"), "adminRoutes")
+);
+app.use(
+  "/api/users",
+  lazyRouter(() => import("./routes/userRoutes.js"), "userRoutes")
+);
+app.use(
+  "/api/profile",
+  lazyRouter(() => import("./routes/profileRoutes.js"), "profileRoutes")
+);
+app.use(
+  "/api/2fa",
+  lazyRouter(() => import("./routes/2faRoutes.js"), "twoFaRoutes")
+);
 
 /* ======================================================
    🏥 HOSPITAL CORE
 ====================================================== */
-app.use("/api/hospitals", hospitalRoutes);
-app.use("/api/hospital-admin", hospitalAdminRoutes);
-app.use("/api/hospital-admin", hospitalAdminStaffRoutes);
-app.use("/api/staff", staffRoutes);
-app.use("/api/super-admin", superAdminRoutes);
-app.use("/api/branches", branchesRoutes);
-app.use("/api/access-bookings", accessBookingRoutes);
-app.use("/api/access", accessVerificationRoutes);
-app.use("/api/security", securityDashboardRoutes);
-app.use("/api/notifications", notificationsRoutes);
-app.use("/api/actions", actionRoutes);
-app.use("/api/workforce", workforceRoutes);
-app.use("/api/system-settings", systemSettingsRoutes);
-app.use("/api/developer", developerRoutes);
-app.use("/api/system-admin", systemAdminRoutes);
-app.use("/api/compliance", complianceRoutes);
-app.use("/api/government", governmentRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/delegated-permissions", delegatedPermissionRoutes);
-app.use("/api/search", searchRoutes);
-app.use("/api/recruitment-ads", recruitmentAdsRoutes);
-app.use("/api/migrations", migrationRoutes);
-app.use("/api/communication", communicationRoutes);
-app.use("/api/audit", auditRoutes);
-app.use("/api/printing", printingRoutes);
-app.use("/api/clinical-drafts", clinicalDraftRoutes);
-app.use("/api/chw", communityHealthWorkerRoutes);
-app.use("/api/machine-connectivity", machineConnectivityRoutes);
-app.use("/api/training", trainingTrackerRoutes);
-app.use("/api/pharmacy-network", pharmacyNetworkRoutes);
-app.use("/api/sre/incidents", sreIncidentRoutes);
-app.use("/api/pilot", pilotOpsRoutes);
-app.use("/api/support", supportRoutes);
-app.use("/api/customization-requests", customizationRequestRoutes);
-app.use("/api/staff-transfers", staffTransferRoutes);
-app.use("/api/unified-assistant", unifiedAssistantRoutes);
-app.use("/api/platform-innovation", platformInnovationRoutes);
+app.use(
+  "/api/hospitals",
+  lazyRouter(() => import("./routes/hospitalRoutes.js"), "hospitalRoutes")
+);
+app.use(
+  "/api/hospital-admin",
+  lazyRouter(
+    () => import("./routes/hospitalAdminRoutes.js"),
+    "hospitalAdminRoutes"
+  )
+);
+app.use(
+  "/api/hospital-admin",
+  lazyRouter(() => import("./routes/hospitalAdmin.js"), "hospitalAdminStaffRoutes")
+);
+app.use(
+  "/api/staff",
+  lazyRouter(() => import("./routes/staffRoutes.js"), "staffRoutes")
+);
+app.use(
+  "/api/super-admin",
+  lazyRouter(() => import("./routes/superAdmin.js"), "superAdminRoutes")
+);
+app.use(
+  "/api/branches",
+  lazyRouter(() => import("./routes/branchesRoutes.js"), "branchesRoutes")
+);
+app.use(
+  "/api/access-bookings",
+  lazyRouter(
+    () => import("./routes/accessBookingRoutes.js"),
+    "accessBookingRoutes"
+  )
+);
+app.use(
+  "/api/access",
+  lazyRouter(
+    () => import("./routes/accessVerificationRoutes.js"),
+    "accessVerificationRoutes"
+  )
+);
+app.use(
+  "/api/security",
+  lazyRouter(
+    () => import("./routes/securityDashboardRoutes.js"),
+    "securityDashboardRoutes"
+  )
+);
+app.use(
+  "/api/notifications",
+  lazyRouter(
+    () => import("./routes/notificationsRoutes.js"),
+    "notificationsRoutes"
+  )
+);
+app.use(
+  "/api/actions",
+  lazyRouter(() => import("./routes/actionRoutes.js"), "actionRoutes")
+);
+app.use(
+  "/api/workforce",
+  lazyRouter(() => import("./routes/workforceRoutes.js"), "workforceRoutes")
+);
+app.use(
+  "/api/system-settings",
+  lazyRouter(
+    () => import("./routes/systemSettingsRoutes.js"),
+    "systemSettingsRoutes"
+  )
+);
+app.use(
+  "/api/developer",
+  lazyRouter(() => import("./routes/developerRoutes.js"), "developerRoutes")
+);
+app.use(
+  "/api/system-admin",
+  lazyRouter(() => import("./routes/systemAdminRoutes.js"), "systemAdminRoutes")
+);
+app.use(
+  "/api/compliance",
+  lazyRouter(() => import("./routes/complianceRoutes.js"), "complianceRoutes")
+);
+app.use(
+  "/api/government",
+  lazyRouter(() => import("./routes/governmentRoutes.js"), "governmentRoutes")
+);
+app.use(
+  "/api/dashboard",
+  lazyRouter(() => import("./routes/dashboardRoutes.js"), "dashboardRoutes")
+);
+app.use(
+  "/api/delegated-permissions",
+  lazyRouter(
+    () => import("./routes/delegatedPermissionRoutes.js"),
+    "delegatedPermissionRoutes"
+  )
+);
+app.use(
+  "/api/search",
+  lazyRouter(() => import("./routes/searchRoutes.js"), "searchRoutes")
+);
+app.use(
+  "/api/recruitment-ads",
+  lazyRouter(
+    () => import("./routes/recruitmentAdsRoutes.js"),
+    "recruitmentAdsRoutes"
+  )
+);
+app.use(
+  "/api/migrations",
+  lazyRouter(() => import("./routes/migrationRoutes.js"), "migrationRoutes")
+);
+app.use(
+  "/api/communication",
+  lazyRouter(
+    () => import("./routes/communicationRoutes.js"),
+    "communicationRoutes"
+  )
+);
+app.use(
+  "/api/audit",
+  lazyRouter(() => import("./routes/auditRoutes.js"), "auditRoutes")
+);
+app.use(
+  "/api/printing",
+  lazyRouter(() => import("./routes/printingRoutes.js"), "printingRoutes")
+);
+app.use(
+  "/api/clinical-drafts",
+  lazyRouter(
+    () => import("./routes/clinicalDraftRoutes.js"),
+    "clinicalDraftRoutes"
+  )
+);
+app.use(
+  "/api/chw",
+  lazyRouter(
+    () => import("./routes/communityHealthWorkerRoutes.js"),
+    "communityHealthWorkerRoutes"
+  )
+);
+app.use(
+  "/api/machine-connectivity",
+  lazyRouter(
+    () => import("./routes/machineConnectivityRoutes.js"),
+    "machineConnectivityRoutes"
+  )
+);
+app.use(
+  "/api/training",
+  lazyRouter(
+    () => import("./routes/trainingTrackerRoutes.js"),
+    "trainingTrackerRoutes"
+  )
+);
+app.use(
+  "/api/pharmacy-network",
+  lazyRouter(
+    () => import("./routes/pharmacyNetworkRoutes.js"),
+    "pharmacyNetworkRoutes"
+  )
+);
+app.use(
+  "/api/sre/incidents",
+  lazyRouter(() => import("./routes/sreIncidentRoutes.js"), "sreIncidentRoutes")
+);
+app.use(
+  "/api/pilot",
+  lazyRouter(() => import("./routes/pilotOpsRoutes.js"), "pilotOpsRoutes")
+);
+app.use(
+  "/api/support",
+  lazyRouter(() => import("./routes/supportRoutes.js"), "supportRoutes")
+);
+app.use(
+  "/api/customization-requests",
+  lazyRouter(
+    () => import("./routes/customizationRequestRoutes.js"),
+    "customizationRequestRoutes"
+  )
+);
+app.use(
+  "/api/staff-transfers",
+  lazyRouter(
+    () => import("./routes/staffTransferRoutes.js"),
+    "staffTransferRoutes"
+  )
+);
+app.use(
+  "/api/unified-assistant",
+  lazyRouter(
+    () => import("./routes/unifiedAssistantRoutes.js"),
+    "unifiedAssistantRoutes"
+  )
+);
+app.use(
+  "/api/platform-innovation",
+  lazyRouter(
+    () => import("./routes/platformInnovationRoutes.js"),
+    "platformInnovationRoutes"
+  )
+);
 
 
 /* ======================================================
    🧑‍⚕️ CLINICAL
 ====================================================== */
-app.use("/api/patients", patientRoutes);
-app.use("/api/encounters", encounterRoutes);
-app.use("/api/appointments", appointmentRoutes);
-app.use("/api/appointments_admin", appointmentsAdminRoutes);
-app.use("/api/geo", geoRoutes);
-app.use("/api/claims", claimsRoutes);
-app.use("/api/labs", labRoutes);
-app.use("/api/pharmacy", pharmacyRoutes);
-app.use("/api/beds", bedsRoutes);
-app.use("/api/triage", triageRoutes);
+app.use(
+  "/api/patients",
+  lazyRouter(() => import("./routes/patientRoutes.js"), "patientRoutes")
+);
+app.use(
+  "/api/encounters",
+  lazyRouter(() => import("./routes/encounterRoutes.js"), "encounterRoutes")
+);
+app.use(
+  "/api/appointments",
+  lazyRouter(
+    () => import("./routes/appointmentRoutes.js"),
+    "appointmentRoutes"
+  )
+);
+app.use(
+  "/api/appointments_admin",
+  lazyRouter(
+    () => import("./routes/appointments_adminRoutes.js"),
+    "appointmentsAdminRoutes"
+  )
+);
+app.use(
+  "/api/geo",
+  lazyRouter(() => import("./routes/geoRoutes.js"), "geoRoutes")
+);
+app.use(
+  "/api/claims",
+  lazyRouter(() => import("./routes/claimsRoutes.js"), "claimsRoutes")
+);
+app.use(
+  "/api/labs",
+  lazyRouter(() => import("./routes/labRoutes.js"), "labRoutes")
+);
+app.use(
+  "/api/pharmacy",
+  lazyRouter(() => import("./routes/pharmacyRoutes.js"), "pharmacyRoutes")
+);
+app.use(
+  "/api/beds",
+  lazyRouter(() => import("./routes/bedsRoutes.js"), "bedsRoutes")
+);
+app.use(
+  "/api/triage",
+  lazyRouter(() => import("./routes/triageRoutes.js"), "triageRoutes")
+);
 
 /* ======================================================
    💳 BILLING & PAYMENTS
 ====================================================== */
-app.use("/api/billing", billingRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/payments/mpesa", mpesaRoutes);
-app.use("/api/payments/stripe", stripeRoutes);
-app.use("/api/payments/flutterwave", flutterwaveRoutes);
-app.use("/api/transactions", transactionsRoutes);
-app.use("/api/payment-settings", paymentSettingsRoutes);
+app.use(
+  "/api/billing",
+  lazyRouter(() => import("./routes/billingRoutes.js"), "billingRoutes")
+);
+app.use(
+  "/api/payments",
+  lazyRouter(() => import("./routes/paymentRoutes.js"), "paymentRoutes")
+);
+app.use(
+  "/api/payments/mpesa",
+  lazyRouter(() => import("./routes/mpesa.routes.js"), "mpesaRoutes")
+);
+app.use(
+  "/api/payments/stripe",
+  lazyRouter(() => import("./routes/stripeRoutes.js"), "stripeRoutes")
+);
+app.use(
+  "/api/payments/flutterwave",
+  lazyRouter(
+    () => import("./routes/flutterwaveRoutes.js"),
+    "flutterwaveRoutes"
+  )
+);
+app.use(
+  "/api/transactions",
+  lazyRouter(
+    () => import("./routes/transactionsRoutes.js"),
+    "transactionsRoutes"
+  )
+);
+app.use(
+  "/api/payment-settings",
+  lazyRouter(
+    () => import("./routes/paymentSettingsRoutes.js"),
+    "paymentSettingsRoutes"
+  )
+);
 
 /* ======================================================
    📊 FINANCE & INVENTORY
 ====================================================== */
-app.use("/api/inventory", inventoryRoutes);
-app.use("/api/financials", financialRoutes);
-app.use("/api/transfers", transferRoutes);
+app.use(
+  "/api/inventory",
+  lazyRouter(() => import("./routes/inventoryRoutes.js"), "inventoryRoutes")
+);
+app.use(
+  "/api/financials",
+  lazyRouter(() => import("./routes/financialRoutes.js"), "financialRoutes")
+);
+app.use(
+  "/api/transfers",
+  lazyRouter(() => import("./routes/transferRoutes.js"), "transferRoutes")
+);
 
 /* ======================================================
    📈 ANALYTICS & REPORTS
 ====================================================== */
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/reports", reportsRoutes);
-app.use("/api/medical-legal", medicalLegalRoutes);
+app.use(
+  "/api/analytics",
+  lazyRouter(() => import("./routes/analyticsRoutes.js"), "analyticsRoutes")
+);
+app.use(
+  "/api/reports",
+  lazyRouter(() => import("./routes/reportsRoutes.js"), "reportsRoutes")
+);
+app.use(
+  "/api/medical-legal",
+  lazyRouter(
+    () => import("./routes/medicalLegalRoutes.js"),
+    "medicalLegalRoutes"
+  )
+);
 
 /* ======================================================
    🤖 AI / ML
 ====================================================== */
-app.use("/api/ai", aiRoutes);
-app.use("/api/ai_admin", aiAdminRoutes);
-app.use("/api/ml", mlRoutes);
+app.use("/api/ai", lazyRouter(() => import("./routes/aiRoutes.js"), "aiRoutes"));
+app.use(
+  "/api/ai_admin",
+  lazyRouter(() => import("./routes/ai_adminRoutes.js"), "aiAdminRoutes")
+);
+app.use("/api/ml", lazyRouter(() => import("./routes/mlRoutes.js"), "mlRoutes"));
 
 /* ======================================================
    🔌 INTEGRATIONS
 ====================================================== */
-app.use("/api/connectors", connectorsRoutes);
-app.use("/api/webhooks", webhookReceiverRoutes);
-app.use("/api/integrations/webhook", integrationWebhookRoutes);
-app.use("/api/integrations/dlq", dlqRoutes);
-app.use("/api/integrations/dlq-inspect", dlqInspectRoutes);
-app.use("/api/integrations/dlq-admin", dlqAdminRoutes);
-app.use("/api/mapping", mappingRoutes);
-app.use("/api/offline", offlineRoutes);
+app.use(
+  "/api/connectors",
+  lazyRouter(() => import("./routes/connectorsRoutes.js"), "connectorsRoutes")
+);
+app.use(
+  "/api/webhooks",
+  lazyRouter(
+    () => import("./routes/webhookReceiverRoutes.js"),
+    "webhookReceiverRoutes"
+  )
+);
+app.use(
+  "/api/integrations/webhook",
+  lazyRouter(
+    () => import("./routes/integrationWebhookRoutes.js"),
+    "integrationWebhookRoutes"
+  )
+);
+app.use(
+  "/api/integrations/dlq",
+  lazyRouter(() => import("./routes/dlqRoutes.js"), "dlqRoutes")
+);
+app.use(
+  "/api/integrations/dlq-inspect",
+  lazyRouter(() => import("./routes/dlqInspectRoutes.js"), "dlqInspectRoutes")
+);
+app.use(
+  "/api/integrations/dlq-admin",
+  lazyRouter(() => import("./routes/dlqAdminRoutes.js"), "dlqAdminRoutes")
+);
+app.use(
+  "/api/mapping",
+  lazyRouter(() => import("./routes/mappingRoutes.js"), "mappingRoutes")
+);
+app.use(
+  "/api/offline",
+  lazyRouter(() => import("./routes/offlineRoutes.js"), "offlineRoutes")
+);
 
 /* ======================================================
    🧬 CRDT / SIGNALING
@@ -434,14 +668,29 @@ app.use(
   "/api/crdt/resource",
   lazyRouter(() => import("./routes/crdtResourceRoutes.js"), "crdtResourceRoutes")
 );
-app.use("/api/signaling", signalingTokenRoutes);
+app.use(
+  "/api/signaling",
+  lazyRouter(
+    () => import("./routes/signalingTokenRoutes.js"),
+    "signalingTokenRoutes"
+  )
+);
 
 /* ======================================================
    🛡️ INSURANCE / KPI / MENU
 ====================================================== */
-app.use("/api/insurance", insuranceRoutes);
-app.use("/api/admin/kpis", kpiRoutes);
-app.use("/api/menu", menuRoutes);
+app.use(
+  "/api/insurance",
+  lazyRouter(() => import("./routes/insuranceRoutes.js"), "insuranceRoutes")
+);
+app.use(
+  "/api/admin/kpis",
+  lazyRouter(() => import("./routes/kpiRoutes.js"), "kpiRoutes")
+);
+app.use(
+  "/api/menu",
+  lazyRouter(() => import("./routes/menuRoutes.js"), "menuRoutes")
+);
 
 /* ======================================================
    ❤️ HEALTH CHECK

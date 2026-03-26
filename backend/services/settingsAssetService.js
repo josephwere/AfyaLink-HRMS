@@ -32,13 +32,13 @@ async function persistDataUrlAsset(dataUrl, { req, scope, scopeId, field }) {
 
 async function persistRecord(record, options) {
   if (!record || typeof record !== "object") return record;
-  const entries = await Promise.all(
-    Object.entries(record).map(async ([key, value]) => [
-      key,
-      await persistDataUrlAsset(value, { ...options, field: key }),
-    ])
-  );
-  return Object.fromEntries(entries);
+  // Process sequentially to keep peak memory low when migrating many base64 assets
+  // (important for small-memory Render instances).
+  const next = {};
+  for (const [key, value] of Object.entries(record)) {
+    next[key] = await persistDataUrlAsset(value, { ...options, field: key });
+  }
+  return next;
 }
 
 export async function persistSystemSettingsAssets({ req, branding, ai }) {
