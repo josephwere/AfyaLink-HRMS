@@ -159,12 +159,24 @@ export async function storeAssetBuffer({
   const provider = resolveStorageProvider();
 
   if (provider === "cloudinary") {
-    return storeInCloudinary({
-      buffer,
-      mime,
-      folder: path.posix.join("afyalink", folder),
-      publicId,
-    });
+    try {
+      return await storeInCloudinary({
+        buffer,
+        mime,
+        folder: path.posix.join("afyalink", folder),
+        publicId,
+      });
+    } catch (error) {
+      // Cloudinary is optional; on misconfig or transient failures, fall back to local
+      // so public branding never becomes a multi-MB data URL payload again.
+      const allowFallback = String(process.env.ASSET_STORAGE_ALLOW_LOCAL_FALLBACK || "1") !== "0";
+      if (!allowFallback) throw error;
+      try {
+        return await storeLocally({ buffer, req, folder, fileName });
+      } catch {
+        throw error;
+      }
+    }
   }
 
   return storeLocally({ buffer, req, folder, fileName });

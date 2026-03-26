@@ -45,6 +45,10 @@ function isDataUrl(value) {
   return /^data:[^;]+;base64,/i.test(String(value || ""));
 }
 
+function scrubDataUrl(value) {
+  return isDataUrl(value) ? "" : value;
+}
+
 function toPlainRecord(value) {
   if (!value) return {};
   if (typeof value.toObject === "function") return value.toObject();
@@ -54,18 +58,33 @@ function toPlainRecord(value) {
 }
 
 function buildPublicBrandingPayload(doc) {
-  const branding = doc?.branding && typeof doc.branding === "object" ? doc.branding : {};
-  const ai = doc?.ai && typeof doc.ai === "object" ? doc.ai : {};
+  const rawBranding = doc?.branding && typeof doc.branding === "object" ? doc.branding : {};
+  const rawAi = doc?.ai && typeof doc.ai === "object" ? doc.ai : {};
   const featureAccess = doc?.monetization?.featureAccess;
+  const sidebarIcons = toPlainRecord(rawBranding.sidebarIcons);
+
+  // Public branding must be small and fast. If legacy data URLs are still present,
+  // strip them from the payload (the background migration persists them to /uploads).
+  const branding = {
+    ...rawBranding,
+    appIcon: scrubDataUrl(rawBranding.appIcon),
+    favicon: scrubDataUrl(rawBranding.favicon),
+    logo: scrubDataUrl(rawBranding.logo),
+    loginBackground: scrubDataUrl(rawBranding.loginBackground),
+    homeBackground: scrubDataUrl(rawBranding.homeBackground),
+    sidebarIcons: Object.fromEntries(
+      Object.entries(sidebarIcons || {}).map(([key, value]) => [key, scrubDataUrl(value)])
+    ),
+  };
 
   return {
     branding,
     ai: {
       enabled: doc?.ai?.enabled !== false,
-      icon: ai.icon || "",
-      name: ai.name || "NeuroEdge",
-      greeting: ai.greeting || "Hi, how can I help?",
-      url: ai.url || "",
+      icon: scrubDataUrl(rawAi.icon) || "",
+      name: rawAi.name || "NeuroEdge",
+      greeting: rawAi.greeting || "Hi, how can I help?",
+      url: rawAi.url || "",
     },
     monetization: {
       featureAccess: {
