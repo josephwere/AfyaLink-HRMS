@@ -93,6 +93,10 @@ function normalizePublicSettings(data) {
   const branding = data?.branding && typeof data.branding === "object" ? data.branding : {};
   const ai = data?.ai && typeof data.ai === "object" ? data.ai : {};
   const monetization = data?.monetization && typeof data.monetization === "object" ? data.monetization : {};
+  const patientSelfService =
+    data?.patientSelfService && typeof data.patientSelfService === "object"
+      ? data.patientSelfService
+      : {};
   return {
     branding,
     ai: {
@@ -108,6 +112,16 @@ function normalizePublicSettings(data) {
         ...(monetization?.featureAccess || {}),
         ai: monetization?.featureAccess?.ai || "FREE",
       },
+    },
+    patientSelfService: {
+      defaultLanguage: patientSelfService.defaultLanguage || "en",
+      enabledLanguages: Array.isArray(patientSelfService.enabledLanguages)
+        ? patientSelfService.enabledLanguages
+        : ["en", "sw", "fr"],
+      allowLanguageSwitch: patientSelfService.allowLanguageSwitch !== false,
+      voiceFirstIntake: patientSelfService.voiceFirstIntake === true,
+      whatsappSupport: patientSelfService.whatsappSupport === true,
+      helpLine: patientSelfService.helpLine || "",
     },
     updatedAt: data?.updatedAt || null,
   };

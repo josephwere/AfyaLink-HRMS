@@ -18,6 +18,7 @@ import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWo
 import { runTrainingOverdueSweep } from "./workers/trainingOverdueWorker.js";
 import { runAiAssistantBootstrap } from "./utils/aiAssistantBootstrap.js";
 import { deliverDailyRoleQuotes } from "./services/dailyRoleQuoteService.js";
+import { runSystemSettingsAssetMigration } from "./workers/systemSettingsAssetMigration.js";
 
 dotenv.config();
 
@@ -150,6 +151,9 @@ const start = async () => {
         seedSuperAdmin().catch((err) => console.error("❌ Super Admin seed failed:", err));
         runAiAssistantBootstrap().catch((err) => console.error("❌ AI bootstrap failed:", err));
         startBackgroundJobs().catch((err) => console.error("❌ Background jobs failed:", err));
+        runSystemSettingsAssetMigration().catch((err) =>
+          console.error("❌ System settings asset migration failed:", err)
+        );
         scheduleCronJobs();
       })
       .catch((err) => {

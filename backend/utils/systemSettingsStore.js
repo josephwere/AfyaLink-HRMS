@@ -3,6 +3,19 @@ import SystemSettings from "../models/SystemSettings.js";
 export const SYSTEM_SETTINGS_KEY = "GLOBAL";
 
 export async function getSystemSettingsDoc({ lean = false, createIfMissing = true } = {}) {
+  // Lean reads are on the critical path for auth/bootstrap (public branding).
+  // They must be fast: no writes, no double round-trips.
+  if (lean) {
+    let doc = await SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY }).lean();
+    if (!doc) {
+      doc = await SystemSettings.findOne().lean();
+    }
+    if (doc) return doc;
+    if (!createIfMissing) return null;
+    const created = await SystemSettings.create({ key: SYSTEM_SETTINGS_KEY });
+    return created.toObject?.() || created;
+  }
+
   let doc = await SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY });
   if (!doc) {
     doc = await SystemSettings.findOne();
@@ -45,17 +58,11 @@ export async function getSystemSettingsDoc({ lean = false, createIfMissing = tru
     if (changed) {
       await doc.save();
     }
-    if (lean) {
-      return SystemSettings.findById(doc._id).lean();
-    }
     return doc;
   }
 
   if (!createIfMissing) return null;
 
   const created = await SystemSettings.create({ key: SYSTEM_SETTINGS_KEY });
-  if (lean) {
-    return SystemSettings.findById(created._id).lean();
-  }
   return created;
 }

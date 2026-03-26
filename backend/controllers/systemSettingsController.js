@@ -1,10 +1,11 @@
-import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
+import { getSystemSettingsDoc, SYSTEM_SETTINGS_KEY } from "../utils/systemSettingsStore.js";
 import { getIO } from "../utils/socket.js";
 import { getEmailProviderInfo } from "../utils/mailer.js";
 import { recordSettingsRevision } from "../services/settingsRevisionService.js";
 import { persistSystemSettingsAssets } from "../services/settingsAssetService.js";
 import { getObjectStorageStatus } from "../services/objectStorageService.js";
 import SettingsRevision from "../models/SettingsRevision.js";
+import SystemSettings from "../models/SystemSettings.js";
 
 function splitCsv(value) {
   return String(value || "")
@@ -22,31 +23,40 @@ function maskEmail(value) {
   return `${visible}@${domain}`;
 }
 
-export const getSystemSettings = async (_req, res) => {
-  const doc = await getSystemSettingsDoc({ lean: true });
-  res.set("Cache-Control", "no-store");
-  res.json(doc);
-};
+const PUBLIC_BRANDING_CACHE_TTL_MS = 60 * 1000;
+const PUBLIC_BRANDING_WAIT_MS = 1800;
+const PUBLIC_BRANDING_REFRESH_MAX_MS = 120 * 1000;
 
-export const getPublicBranding = async (_req, res) => {
-  const doc = await getSystemSettingsDoc({ lean: true });
-  res.set("Cache-Control", "no-store");
+let publicBrandingCache = null;
+let publicBrandingCacheAt = 0;
+let publicBrandingInFlight = null;
 
-  return res.json({
-    branding: doc?.branding || {},
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function invalidatePublicBrandingCache() {
+  publicBrandingCache = null;
+  publicBrandingCacheAt = 0;
+}
+
+function buildPublicBrandingPayload(doc) {
+  const branding = doc?.branding && typeof doc.branding === "object" ? doc.branding : {};
+  const ai = doc?.ai && typeof doc.ai === "object" ? doc.ai : {};
+  const featureAccess = doc?.monetization?.featureAccess;
+
+  return {
+    branding,
     ai: {
       enabled: doc?.ai?.enabled !== false,
-      icon: doc?.ai?.icon || "",
-      name: doc?.ai?.name || "NeuroEdge",
-      greeting: doc?.ai?.greeting || "Hi, how can I help?",
-      url: doc?.ai?.url || "",
+      icon: ai.icon || "",
+      name: ai.name || "NeuroEdge",
+      greeting: ai.greeting || "Hi, how can I help?",
+      url: ai.url || "",
     },
     monetization: {
       featureAccess: {
-        ai:
-          doc?.monetization?.featureAccess?.get?.("ai") ||
-          doc?.monetization?.featureAccess?.ai ||
-          "FREE",
+        ai: featureAccess?.get?.("ai") || featureAccess?.ai || "FREE",
       },
     },
     patientSelfService: {
@@ -60,7 +70,91 @@ export const getPublicBranding = async (_req, res) => {
       helpLine: doc?.patientSelfService?.helpLine || "",
     },
     updatedAt: doc?.updatedAt || null,
-  });
+  };
+}
+
+async function fetchPublicBrandingDoc({ maxTimeMs = PUBLIC_BRANDING_REFRESH_MAX_MS } = {}) {
+  const projection = {
+    branding: 1,
+    ai: 1,
+    monetization: 1,
+    patientSelfService: 1,
+    updatedAt: 1,
+  };
+
+  const query = SystemSettings.findOne({ key: SYSTEM_SETTINGS_KEY })
+    .select(projection)
+    .lean();
+  if (Number.isFinite(maxTimeMs) && maxTimeMs > 0 && query.maxTimeMS) {
+    query.maxTimeMS(maxTimeMs);
+  }
+  let doc = await query;
+  if (!doc) {
+    const fallback = SystemSettings.findOne().select(projection).lean();
+    if (Number.isFinite(maxTimeMs) && maxTimeMs > 0 && fallback.maxTimeMS) {
+      fallback.maxTimeMS(maxTimeMs);
+    }
+    doc = await fallback;
+  }
+  return doc;
+}
+
+async function refreshPublicBrandingCache() {
+  try {
+    const doc = await fetchPublicBrandingDoc();
+    if (!doc) return null;
+    const payload = buildPublicBrandingPayload(doc);
+    publicBrandingCache = payload;
+    publicBrandingCacheAt = Date.now();
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function startPublicBrandingRefresh() {
+  if (!publicBrandingInFlight) {
+    publicBrandingInFlight = refreshPublicBrandingCache().finally(() => {
+      publicBrandingInFlight = null;
+    });
+  }
+  return publicBrandingInFlight;
+}
+
+export const getSystemSettings = async (_req, res) => {
+  const doc = await getSystemSettingsDoc({ lean: true });
+  res.set("Cache-Control", "no-store");
+  res.json(doc);
+};
+
+export const getPublicBranding = async (_req, res) => {
+  // Public settings are used by unauthenticated pages (login/register/forgot password).
+  // This endpoint must never hang: serve from cache quickly and refresh in the background.
+  res.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=300");
+
+  if (publicBrandingCache && Date.now() - publicBrandingCacheAt < PUBLIC_BRANDING_CACHE_TTL_MS) {
+    res.set("X-Afya-Branding-Cache", "HIT");
+    return res.json(publicBrandingCache);
+  }
+
+  const refresh = startPublicBrandingRefresh();
+  const winner = await Promise.race([
+    refresh.catch(() => null),
+    sleep(PUBLIC_BRANDING_WAIT_MS).then(() => null),
+  ]);
+
+  if (winner) {
+    res.set("X-Afya-Branding-Cache", "REFRESH");
+    return res.json(winner);
+  }
+
+  if (publicBrandingCache) {
+    res.set("X-Afya-Branding-Cache", "STALE");
+    return res.json(publicBrandingCache);
+  }
+
+  res.set("X-Afya-Branding-Cache", "MISS");
+  return res.json(buildPublicBrandingPayload(null));
 };
 
 export const updateSystemSettings = async (req, res) => {
@@ -181,6 +275,7 @@ export const updateSystemSettings = async (req, res) => {
   }
 
   await doc.save();
+  invalidatePublicBrandingCache();
 
   try {
     await recordSettingsRevision({
@@ -290,6 +385,7 @@ export const restoreSystemSettingsRevision = async (req, res) => {
   doc.monetization = snapshot.monetization || {};
   doc.migrations = snapshot.migrations || {};
   await doc.save();
+  invalidatePublicBrandingCache();
 
   try {
     await recordSettingsRevision({

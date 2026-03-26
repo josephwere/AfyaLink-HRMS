@@ -222,7 +222,18 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
 app.use(metricsMiddleware);
-app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+app.use(
+  "/uploads",
+  express.static(path.resolve(process.cwd(), "uploads"), {
+    maxAge: "365d",
+    immutable: true,
+    setHeaders: (res) => {
+      // Stored assets use content-hashed filenames (see objectStorageService),
+      // so they are safe to cache aggressively.
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    },
+  })
+);
 
 /* ======================================================
    🚦 TRAFFIC GUARDS (SCALE HARDENING)
