@@ -26,6 +26,7 @@ function maskEmail(value) {
 const PUBLIC_BRANDING_CACHE_TTL_MS = 60 * 1000;
 const PUBLIC_BRANDING_WAIT_MS = 1800;
 const PUBLIC_BRANDING_REFRESH_MAX_MS = 120 * 1000;
+const MIGRATION_KEY = "system_settings_assets_v1";
 
 let publicBrandingCache = null;
 let publicBrandingCacheAt = 0;
@@ -38,6 +39,18 @@ function sleep(ms) {
 function invalidatePublicBrandingCache() {
   publicBrandingCache = null;
   publicBrandingCacheAt = 0;
+}
+
+function isDataUrl(value) {
+  return /^data:[^;]+;base64,/i.test(String(value || ""));
+}
+
+function toPlainRecord(value) {
+  if (!value) return {};
+  if (typeof value.toObject === "function") return value.toObject();
+  if (value instanceof Map) return Object.fromEntries(value.entries());
+  if (typeof value === "object") return value;
+  return {};
 }
 
 function buildPublicBrandingPayload(doc) {
@@ -103,7 +116,68 @@ async function refreshPublicBrandingCache() {
   try {
     const doc = await fetchPublicBrandingDoc();
     if (!doc) return null;
-    const payload = buildPublicBrandingPayload(doc);
+
+    // Self-heal legacy settings where branding assets were stored as giant data URLs.
+    // Persist them to object storage (/uploads or Cloudinary) and then cache the small URL payload.
+    let nextDoc = doc;
+    try {
+      const branding = doc?.branding && typeof doc.branding === "object" ? doc.branding : {};
+      const ai = doc?.ai && typeof doc.ai === "object" ? doc.ai : {};
+      const sidebarIcons = toPlainRecord(branding.sidebarIcons);
+      const shouldPersist =
+        [
+          branding.appIcon,
+          branding.favicon,
+          branding.logo,
+          branding.loginBackground,
+          branding.homeBackground,
+          ai.icon,
+          ...Object.values(sidebarIcons || {}),
+        ].some(isDataUrl);
+
+      if (shouldPersist) {
+        const normalizedBranding = { ...branding, sidebarIcons };
+        const persisted = await persistSystemSettingsAssets({
+          req: null,
+          branding: normalizedBranding,
+          ai,
+        });
+
+        const nextBranding = persisted?.branding || normalizedBranding;
+        const nextAi = persisted?.ai || ai;
+
+        // Best-effort DB write so future restarts don't re-download megabytes of JSON.
+        try {
+          await SystemSettings.updateOne(
+            { _id: doc._id },
+            {
+              $set: {
+                branding: nextBranding,
+                ai: nextAi,
+                [`migrations.${MIGRATION_KEY}`]: {
+                  migratedAt: new Date().toISOString(),
+                  source: "public-branding-cache",
+                },
+              },
+              $currentDate: { updatedAt: true },
+            }
+          );
+        } catch {
+          // Ignore persist failures; caching the URL payload still improves UX for this process lifetime.
+        }
+
+        nextDoc = {
+          ...doc,
+          branding: nextBranding,
+          ai: nextAi,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+    } catch {
+      // Ignore asset persistence failures; serve whatever we have.
+    }
+
+    const payload = buildPublicBrandingPayload(nextDoc);
     publicBrandingCache = payload;
     publicBrandingCacheAt = Date.now();
     return payload;
