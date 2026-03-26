@@ -469,7 +469,7 @@ export default function SystemSettings() {
     : "waiting";
 
   return (
-    <div className="dashboard">
+    <div className="dashboard system-settings-page">
       <div className="welcome-panel">
         <div>
           <h2>System Settings</h2>
@@ -497,7 +497,8 @@ export default function SystemSettings() {
 
       {msg && <div className="card">{msg}</div>}
 
-      <section className="section">
+      <div className="system-settings-grid">
+      <section className="section system-settings-span-full">
         <h3>Settings History & Restore</h3>
         <div className="card">
           <div className="card-header-actions">
@@ -736,16 +737,53 @@ export default function SystemSettings() {
           <p className="muted" style={{ marginTop: 0 }}>
             Uploaded branding is now persisted as backend-served asset URLs instead of large inline blobs, which is safer for redeploys and faster to cache behind a CDN later.
           </p>
-          <label>Main App Icon</label>
-          <input type="file" accept="image/*" onChange={(e) => handleFile("appIcon", e.target.files?.[0])} />
-          <label>Favicon (.ico or png)</label>
-          <input type="file" accept="image/*" onChange={(e) => handleFile("favicon", e.target.files?.[0])} />
-          <label>Logo (Navbar/Sidebar)</label>
-          <input type="file" accept="image/*" onChange={(e) => handleFile("logo", e.target.files?.[0])} />
-          <label>Login Background Image</label>
-          <input type="file" accept="image/*" onChange={(e) => handleFile("loginBackground", e.target.files?.[0])} />
-          <label>Home Background Image</label>
-          <input type="file" accept="image/*" onChange={(e) => handleFile("homeBackground", e.target.files?.[0])} />
+          <div className="system-settings-upload-grid">
+            <div className="system-settings-upload">
+              <label htmlFor="branding-app-icon">Main App Icon</label>
+              <input
+                id="branding-app-icon"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFile("appIcon", e.target.files?.[0])}
+              />
+            </div>
+            <div className="system-settings-upload">
+              <label htmlFor="branding-favicon">Favicon (.ico or png)</label>
+              <input
+                id="branding-favicon"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFile("favicon", e.target.files?.[0])}
+              />
+            </div>
+            <div className="system-settings-upload">
+              <label htmlFor="branding-logo">Logo (Navbar/Sidebar)</label>
+              <input
+                id="branding-logo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFile("logo", e.target.files?.[0])}
+              />
+            </div>
+            <div className="system-settings-upload">
+              <label htmlFor="branding-login-bg">Login Background Image</label>
+              <input
+                id="branding-login-bg"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFile("loginBackground", e.target.files?.[0])}
+              />
+            </div>
+            <div className="system-settings-upload">
+              <label htmlFor="branding-home-bg">Home Background Image</label>
+              <input
+                id="branding-home-bg"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFile("homeBackground", e.target.files?.[0])}
+              />
+            </div>
+          </div>
           <button
             type="button"
             className="btn-primary"
@@ -757,26 +795,34 @@ export default function SystemSettings() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section system-settings-span-full">
         <h3>Sidebar Icons</h3>
         <div className="card form">
-          {sidebarIconList.map((item) => (
-            <div key={item.key} className="icon-upload-row">
-              <label>{item.label} Icon</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleSidebarIcon(item.key, e.target.files?.[0])}
-              />
-              {form.branding.sidebarIcons?.[item.key] && (
-                <img
-                  src={form.branding.sidebarIcons[item.key]}
-                  alt={`${item.label} icon`}
-                  className="icon-preview"
-                />
-              )}
-            </div>
-          ))}
+          <div className="system-settings-icon-grid">
+            {sidebarIconList.map((item) => {
+              const inputId = `sidebar-icon-${item.key}`;
+              return (
+                <div key={item.key} className="system-settings-icon-tile">
+                  <div className="system-settings-icon-tile-head">
+                    <label htmlFor={inputId}>{item.label} Icon</label>
+                    {form.branding.sidebarIcons?.[item.key] ? (
+                      <img
+                        src={form.branding.sidebarIcons[item.key]}
+                        alt={`${item.label} icon`}
+                        className="icon-preview"
+                      />
+                    ) : null}
+                  </div>
+                  <input
+                    id={inputId}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleSidebarIcon(item.key, e.target.files?.[0])}
+                  />
+                </div>
+              );
+            })}
+          </div>
           <button
             type="button"
             className="btn-primary"
@@ -830,29 +876,35 @@ export default function SystemSettings() {
               Set All Premium
             </button>
           </div>
-          {monetizationFeatures.map((item) => (
-            <div key={item.key} className="profile-row profile-actions-row">
-              <label style={{ flex: 1 }}>{item.label}</label>
-              <select
-                value={form.monetization.featureAccess?.[item.key] || "FREE"}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    monetization: {
-                      ...f.monetization,
-                      featureAccess: {
-                        ...(f.monetization.featureAccess || {}),
-                        [item.key]: e.target.value,
-                      },
-                    },
-                  }))
-                }
-              >
-                <option value="FREE">FREE</option>
-                <option value="PREMIUM">PREMIUM</option>
-              </select>
-            </div>
-          ))}
+          <div className="system-settings-feature-grid">
+            {monetizationFeatures.map((item) => {
+              const inputId = `feature-access-${item.key}`;
+              return (
+                <div key={item.key} className="system-settings-feature-row">
+                  <label htmlFor={inputId}>{item.label}</label>
+                  <select
+                    id={inputId}
+                    value={form.monetization.featureAccess?.[item.key] || "FREE"}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        monetization: {
+                          ...f.monetization,
+                          featureAccess: {
+                            ...(f.monetization.featureAccess || {}),
+                            [item.key]: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                  >
+                    <option value="FREE">FREE</option>
+                    <option value="PREMIUM">PREMIUM</option>
+                  </select>
+                </div>
+              );
+            })}
+          </div>
           <button
             type="button"
             className="btn-primary"
@@ -893,14 +945,15 @@ export default function SystemSettings() {
             />
             Enable Floating AI
           </label>
-          <label>AI Name</label>
+          <label htmlFor="ai-name">AI Name</label>
           <input
+            id="ai-name"
             value={form.ai.name}
             onChange={(e) =>
               setForm((f) => ({ ...f, ai: { ...f.ai, name: e.target.value } }))
             }
           />
-          <label>AI Floating Icon</label>
+          <label htmlFor="ai-floating-icon">AI Floating Icon</label>
           {form.ai.icon || DEFAULT_AI_ICON ? (
             <div className="row" style={{ alignItems: "center", gap: "10px" }}>
               <img
@@ -922,6 +975,7 @@ export default function SystemSettings() {
             </div>
           ) : null}
           <input
+            id="ai-floating-icon"
             type="file"
             accept="image/*"
             onChange={async (e) => {
@@ -931,16 +985,18 @@ export default function SystemSettings() {
               setForm((f) => ({ ...f, ai: { ...f.ai, icon: dataUrl } }));
             }}
           />
-          <label>AI URL</label>
+          <label htmlFor="ai-url">AI URL</label>
           <input
+            id="ai-url"
             placeholder="https://neuroedge.ai/chat"
             value={form.ai.url}
             onChange={(e) =>
               setForm((f) => ({ ...f, ai: { ...f.ai, url: e.target.value } }))
             }
           />
-          <label>Greeting</label>
+          <label htmlFor="ai-greeting">Greeting</label>
           <input
+            id="ai-greeting"
             value={form.ai.greeting}
             onChange={(e) =>
               setForm((f) => ({ ...f, ai: { ...f.ai, greeting: e.target.value } }))
@@ -1090,75 +1146,77 @@ export default function SystemSettings() {
           <p className="muted">
             These thresholds drive denial-pressure alerts, collection-cycle scoring, and prior-authorization backlog warnings across the revenue workspace.
           </p>
-          <label>
-            Denial risk threshold
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={form.revenueCycle.denialRiskThreshold}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  revenueCycle: {
-                    ...f.revenueCycle,
-                    denialRiskThreshold: Number(e.target.value || 65),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Overdue invoice age (days)
-            <input
-              type="number"
-              min="1"
-              value={form.revenueCycle.overdueInvoiceDays}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  revenueCycle: {
-                    ...f.revenueCycle,
-                    overdueInvoiceDays: Number(e.target.value || 14),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Prior auth SLA (hours)
-            <input
-              type="number"
-              min="1"
-              value={form.revenueCycle.preauthPendingSlaHours}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  revenueCycle: {
-                    ...f.revenueCycle,
-                    preauthPendingSlaHours: Number(e.target.value || 24),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Target collection cycle (days)
-            <input
-              type="number"
-              min="1"
-              value={form.revenueCycle.targetCollectionDays}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  revenueCycle: {
-                    ...f.revenueCycle,
-                    targetCollectionDays: Number(e.target.value || 7),
-                  },
-                }))
-              }
-            />
-          </label>
+          <div className="system-settings-field-grid">
+            <label>
+              Denial risk threshold
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={form.revenueCycle.denialRiskThreshold}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    revenueCycle: {
+                      ...f.revenueCycle,
+                      denialRiskThreshold: Number(e.target.value || 65),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Overdue invoice age (days)
+              <input
+                type="number"
+                min="1"
+                value={form.revenueCycle.overdueInvoiceDays}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    revenueCycle: {
+                      ...f.revenueCycle,
+                      overdueInvoiceDays: Number(e.target.value || 14),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Prior auth SLA (hours)
+              <input
+                type="number"
+                min="1"
+                value={form.revenueCycle.preauthPendingSlaHours}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    revenueCycle: {
+                      ...f.revenueCycle,
+                      preauthPendingSlaHours: Number(e.target.value || 24),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Target collection cycle (days)
+              <input
+                type="number"
+                min="1"
+                value={form.revenueCycle.targetCollectionDays}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    revenueCycle: {
+                      ...f.revenueCycle,
+                      targetCollectionDays: Number(e.target.value || 7),
+                    },
+                  }))
+                }
+              />
+            </label>
+          </div>
           <label>
             <input
               type="checkbox"
@@ -1320,80 +1378,82 @@ export default function SystemSettings() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section system-settings-span-full">
         <h3>Compliance Policy Library</h3>
         <div className="card form">
           <p className="muted">
             Founder-grade retention, export, and regional privacy controls that feed the compliance center and all protected workflows.
           </p>
-          <label>
-            Audit retention days
-            <input
-              type="number"
-              min="30"
-              value={form.compliance.auditRetentionDays}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  compliance: {
-                    ...f.compliance,
-                    auditRetentionDays: Number(e.target.value || 365),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Messaging retention days
-            <input
-              type="number"
-              min="30"
-              value={form.compliance.messagingRetentionDays}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  compliance: {
-                    ...f.compliance,
-                    messagingRetentionDays: Number(e.target.value || 180),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Evidence-pack retention days
-            <input
-              type="number"
-              min="30"
-              value={form.compliance.evidencePackRetentionDays}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  compliance: {
-                    ...f.compliance,
-                    evidencePackRetentionDays: Number(e.target.value || 365),
-                  },
-                }))
-              }
-            />
-          </label>
-          <label>
-            Clinical record retention years
-            <input
-              type="number"
-              min="1"
-              value={form.compliance.clinicalRecordRetentionYears}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  compliance: {
-                    ...f.compliance,
-                    clinicalRecordRetentionYears: Number(e.target.value || 7),
-                  },
-                }))
-              }
-            />
-          </label>
+          <div className="system-settings-field-grid">
+            <label>
+              Audit retention days
+              <input
+                type="number"
+                min="30"
+                value={form.compliance.auditRetentionDays}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    compliance: {
+                      ...f.compliance,
+                      auditRetentionDays: Number(e.target.value || 365),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Messaging retention days
+              <input
+                type="number"
+                min="30"
+                value={form.compliance.messagingRetentionDays}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    compliance: {
+                      ...f.compliance,
+                      messagingRetentionDays: Number(e.target.value || 180),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Evidence-pack retention days
+              <input
+                type="number"
+                min="30"
+                value={form.compliance.evidencePackRetentionDays}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    compliance: {
+                      ...f.compliance,
+                      evidencePackRetentionDays: Number(e.target.value || 365),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Clinical record retention years
+              <input
+                type="number"
+                min="1"
+                value={form.compliance.clinicalRecordRetentionYears}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    compliance: {
+                      ...f.compliance,
+                      clinicalRecordRetentionYears: Number(e.target.value || 7),
+                    },
+                  }))
+                }
+              />
+            </label>
+          </div>
           <label>
             Default compliance region
             <select
@@ -1570,7 +1630,7 @@ export default function SystemSettings() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section system-settings-span-full">
         <h3>Family Access & Teen Consent Policy</h3>
         <div className="card form">
           <p className="muted">
@@ -1762,6 +1822,7 @@ export default function SystemSettings() {
           </button>
         </div>
       </section>
+      </div>
     </div>
   );
 }

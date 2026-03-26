@@ -324,6 +324,36 @@ export default function DashboardHomeShell({
   const navigate = useNavigate();
   const hasRail = Array.isArray(contextCards) && contextCards.length > 0;
   const hasStats = Array.isArray(stats) && stats.length > 0;
+  const arrangedChildren = useMemo(() => {
+    const nodes = React.Children.toArray(children);
+    if (!nodes.length) return [];
+
+    const output = [];
+    let buffer = [];
+
+    const flush = (seed) => {
+      if (!buffer.length) return;
+      output.push(
+        <div key={`dashboard-custom-grid-${seed}`} className="dashboard-home-custom-grid">
+          {buffer}
+        </div>
+      );
+      buffer = [];
+    };
+
+    nodes.forEach((node, idx) => {
+      const isSection = React.isValidElement(node) && node.type === DashboardSection;
+      if (isSection) {
+        buffer.push(node);
+        return;
+      }
+      flush(`before-${idx}`);
+      output.push(node);
+    });
+
+    flush("end");
+    return output;
+  }, [children]);
 
   return (
     <div className={`dashboard premium-shell dashboard-home-shell ${className}`.trim()}>
@@ -391,7 +421,7 @@ export default function DashboardHomeShell({
             />
           ) : null}
 
-          {children}
+          {arrangedChildren.length ? arrangedChildren : null}
 
           {pinnedTools.length > 0 ? (
             <DashboardCardShelf
