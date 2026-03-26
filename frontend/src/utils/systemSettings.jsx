@@ -127,6 +127,43 @@ function normalizePublicSettings(data) {
   };
 }
 
+function sanitizePublicSettingsForStorage(settings) {
+  // Never store multi-megabyte data-URL assets in localStorage.
+  // Large data URLs can exceed quota and make navigation feel "stuck" when read back.
+  const stripHugeDataUrl = (value, limit = 4096) => {
+    const text = String(value || "");
+    if (!text.startsWith("data:")) return value || "";
+    return text.length > limit ? "" : text;
+  };
+
+  const branding = settings?.branding && typeof settings.branding === "object" ? settings.branding : {};
+  const sidebarIcons =
+    branding?.sidebarIcons && typeof branding.sidebarIcons === "object"
+      ? branding.sidebarIcons
+      : {};
+
+  const sanitizedBranding = {
+    ...branding,
+    appIcon: stripHugeDataUrl(branding.appIcon),
+    favicon: stripHugeDataUrl(branding.favicon),
+    logo: stripHugeDataUrl(branding.logo),
+    loginBackground: stripHugeDataUrl(branding.loginBackground),
+    homeBackground: stripHugeDataUrl(branding.homeBackground),
+    sidebarIcons: Object.fromEntries(
+      Object.entries(sidebarIcons).map(([key, value]) => [key, stripHugeDataUrl(value)])
+    ),
+  };
+
+  const ai = settings?.ai && typeof settings.ai === "object" ? settings.ai : {};
+  const sanitizedAi = { ...ai, icon: stripHugeDataUrl(ai.icon) };
+
+  return {
+    ...(settings || {}),
+    branding: sanitizedBranding,
+    ai: sanitizedAi,
+  };
+}
+
 function getStoredRole() {
   try {
     return String(JSON.parse(localStorage.getItem("user") || "{}")?.role || "").toUpperCase();
@@ -183,8 +220,9 @@ export function SystemSettingsProvider({ children }) {
   const writePublicCache = useCallback((next) => {
     try {
       const normalized = normalizePublicSettings(next);
-      localStorage.setItem(PUBLIC_SETTINGS_CACHE_KEY, JSON.stringify(normalized));
-      localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(normalized.branding || {}));
+      const sanitized = sanitizePublicSettingsForStorage(normalized);
+      localStorage.setItem(PUBLIC_SETTINGS_CACHE_KEY, JSON.stringify(sanitized));
+      localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(sanitized.branding || {}));
     } catch {
       // ignore cache write issues
     }
