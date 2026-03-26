@@ -7,7 +7,7 @@ const seedSuperAdmin = async () => {
     const password = process.env.SUPER_ADMIN_PASSWORD;
 
     if (!email || !password) {
-      console.log("ℹ️ SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD not set. Skipping seed.");
+      console.log("ℹ️ SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD not set. retry seed.");
       return;
     }
 

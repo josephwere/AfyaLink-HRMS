@@ -47,7 +47,7 @@ export const exportMedicalReport = async (req, res) => {
       .sort({ createdAt: 1 })
       .limit(2000);
 
-    const pdf = generateMedicalReport({
+    const pdf = await generateMedicalReport({
       encounter,
       workflow,
       audit,

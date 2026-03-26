@@ -1,8 +1,20 @@
 import fetch from 'node-fetch';
-import OpenAI from 'openai';
 
 const NEUROEDGE_KEY = process.env.NEUROEDGE_API_KEY || '';
 const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+let openAiClientPromise = null;
+
+async function getOpenAiClient() {
+  if (!OPENAI_KEY) throw new Error("OpenAI key not configured");
+  if (!openAiClientPromise) {
+    openAiClientPromise = (async () => {
+      const mod = await import("openai");
+      const OpenAI = mod?.default || mod;
+      return new OpenAI({ apiKey: OPENAI_KEY });
+    })();
+  }
+  return openAiClientPromise;
+}
 
 async function callNeuroEdge(path, body){
   const BASE = process.env.NEUROEDGE_API_BASE || 'https://api.neuroedge.example/v1';
@@ -18,8 +30,7 @@ async function callNeuroEdge(path, body){
 }
 
 async function callOpenAI(prompt, opts = {}){
-  if(!OPENAI_KEY) throw new Error('OpenAI key not configured');
-  const client = new OpenAI({ apiKey: OPENAI_KEY });
+  const client = await getOpenAiClient();
   // Use chat completions for structured responses
   const resp = await client.chat.completions.create({
     model: opts.model || 'gpt-4o-mini',

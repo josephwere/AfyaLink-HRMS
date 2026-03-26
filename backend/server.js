@@ -9,17 +9,6 @@ import { validateRuntimeEnv } from "./config/validateEnv.js";
 import app, { startBackgroundJobs } from "./app.js";
 import { initSocket } from "./utils/socket.js";
 
-import seedSuperAdmin from "./seed/superAdmin.js";
-import { cleanupExpiredBreakGlass } from "./workers/breakGlassCleanup.js";
-import { cleanupUnverifiedUsers } from "./workers/verificationCleanup.js";
-import { cleanupExpiredEmergencyAccess } from "./workers/emergencyCleanup.js";
-import { runWorkforceAutomationSweep } from "./workers/workforceAutomationSweep.js";
-import { runSubscriptionLifecycleSweep } from "./workers/subscriptionLifecycleWorker.js";
-import { runTrainingOverdueSweep } from "./workers/trainingOverdueWorker.js";
-import { runAiAssistantBootstrap } from "./utils/aiAssistantBootstrap.js";
-import { deliverDailyRoleQuotes } from "./services/dailyRoleQuoteService.js";
-import { runSystemSettingsAssetMigration } from "./workers/systemSettingsAssetMigration.js";
-
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
@@ -53,17 +42,90 @@ const isAllowedOrigin = (origin) => {
   return false;
 };
 
+async function safeBootstrapStep(label, fn) {
+  try {
+    await fn();
+  } catch (error) {
+    console.error(`[BOOTSTRAP] ${label} failed`, error);
+  }
+}
+
+async function bootstrapAfterDbConnect() {
+  await safeBootstrapStep("seedSuperAdmin", async () => {
+    const { default: seedSuperAdmin } = await import("./seed/superAdmin.js");
+    await seedSuperAdmin();
+  });
+
+  await safeBootstrapStep("aiAssistantBootstrap", async () => {
+    const { runAiAssistantBootstrap } = await import("./utils/aiAssistantBootstrap.js");
+    await runAiAssistantBootstrap();
+  });
+
+  await safeBootstrapStep("backgroundJobs", async () => {
+    await startBackgroundJobs();
+  });
+
+  await safeBootstrapStep("systemSettingsAssetMigration", async () => {
+    const { runSystemSettingsAssetMigration } = await import(
+      "./workers/systemSettingsAssetMigration.js"
+    );
+    await runSystemSettingsAssetMigration();
+  });
+
+  scheduleCronJobs();
+}
+
 function scheduleCronJobs() {
   if (process.env.DISABLE_CRON === "1") {
     console.warn("[CRON] disabled via DISABLE_CRON=1");
     return;
   }
 
-  cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
-  cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
-  cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
+  const tz = "Africa/Nairobi";
+
+  // Lazy-import cron tasks so the web process stays lean on cold start (Render 512MB, etc).
+  cron.schedule(
+    "0 0 * * *",
+    async () => {
+      try {
+        const { cleanupUnverifiedUsers } = await import("./workers/verificationCleanup.js");
+        await cleanupUnverifiedUsers();
+      } catch (err) {
+        console.error("[CRON] cleanupUnverifiedUsers failed", err);
+      }
+    },
+    { timezone: tz }
+  );
+
+  cron.schedule(
+    "*/5 * * * *",
+    async () => {
+      try {
+        const { cleanupExpiredBreakGlass } = await import("./workers/breakGlassCleanup.js");
+        await cleanupExpiredBreakGlass();
+      } catch (err) {
+        console.error("[CRON] cleanupExpiredBreakGlass failed", err);
+      }
+    },
+    { timezone: tz }
+  );
+
+  cron.schedule(
+    "*/5 * * * *",
+    async () => {
+      try {
+        const { cleanupExpiredEmergencyAccess } = await import("./workers/emergencyCleanup.js");
+        await cleanupExpiredEmergencyAccess();
+      } catch (err) {
+        console.error("[CRON] cleanupExpiredEmergencyAccess failed", err);
+      }
+    },
+    { timezone: tz }
+  );
+
   cron.schedule("*/10 * * * *", async () => {
     try {
+      const { runWorkforceAutomationSweep } = await import("./workers/workforceAutomationSweep.js");
       const result = await runWorkforceAutomationSweep();
       if (result.escalated > 0) {
         console.log(
@@ -73,9 +135,12 @@ function scheduleCronJobs() {
     } catch (err) {
       console.error("[WORKFORCE_SWEEP] failed", err);
     }
-  }, { timezone: "Africa/Nairobi" });
+  }, { timezone: tz });
   cron.schedule("0 * * * *", async () => {
     try {
+      const { runSubscriptionLifecycleSweep } = await import(
+        "./workers/subscriptionLifecycleWorker.js"
+      );
       const result = await runSubscriptionLifecycleSweep();
       if (result.updated > 0) {
         console.log(`[SUBSCRIPTION_SWEEP] scanned=${result.scanned} updated=${result.updated}`);
@@ -83,9 +148,10 @@ function scheduleCronJobs() {
     } catch (err) {
       console.error("[SUBSCRIPTION_SWEEP] failed", err);
     }
-  }, { timezone: "Africa/Nairobi" });
+  }, { timezone: tz });
   cron.schedule("15 */3 * * *", async () => {
     try {
+      const { runTrainingOverdueSweep } = await import("./workers/trainingOverdueWorker.js");
       const result = await runTrainingOverdueSweep();
       if (result.created > 0) {
         console.log(`[TRAINING_SWEEP] scanned=${result.scanned} created=${result.created}`);
@@ -93,9 +159,10 @@ function scheduleCronJobs() {
     } catch (err) {
       console.error("[TRAINING_SWEEP] failed", err);
     }
-  }, { timezone: "Africa/Nairobi" });
+  }, { timezone: tz });
   cron.schedule("5 6 * * *", async () => {
     try {
+      const { deliverDailyRoleQuotes } = await import("./services/dailyRoleQuoteService.js");
       const result = await deliverDailyRoleQuotes();
       if (result.created > 0) {
         console.log(`[DAILY_ROLE_QUOTES] date=${result.quoteDate} scanned=${result.scanned} created=${result.created}`);
@@ -103,7 +170,7 @@ function scheduleCronJobs() {
     } catch (err) {
       console.error("[DAILY_ROLE_QUOTES] failed", err);
     }
-  }, { timezone: "Africa/Nairobi" });
+  }, { timezone: tz });
 }
 
 /* ======================================================
@@ -148,13 +215,9 @@ const start = async () => {
     // Connect DB and start background components without blocking the HTTP listener.
     connectDB()
       .then(() => {
-        seedSuperAdmin().catch((err) => console.error("❌ Super Admin seed failed:", err));
-        runAiAssistantBootstrap().catch((err) => console.error("❌ AI bootstrap failed:", err));
-        startBackgroundJobs().catch((err) => console.error("❌ Background jobs failed:", err));
-        runSystemSettingsAssetMigration().catch((err) =>
-          console.error("❌ System settings asset migration failed:", err)
-        );
-        scheduleCronJobs();
+        bootstrapAfterDbConnect().catch((err) => {
+          console.error("[BOOTSTRAP] unexpected bootstrap failure", err);
+        });
       })
       .catch((err) => {
         console.error("❌ DB bootstrap failed", err);

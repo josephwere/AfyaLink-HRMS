@@ -1,4 +1,3 @@
-import PDFDocument from "pdfkit";
 import crypto from "crypto";
 import { signData } from "./pkiSigner.js";
 
@@ -7,6 +6,7 @@ import EvidenceAnchor from "../models/EvidenceAnchor.js";
 import { anchorHash } from "./blockchainAnchor.js";
 
 export const generateCourtPDF = async (title, data, meta = {}) => {
+  const { default: PDFDocument } = await import("pdfkit");
   const doc = new PDFDocument({ margin: 50 });
   const chunks = [];
 

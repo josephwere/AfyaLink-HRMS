@@ -4,7 +4,6 @@ import LabOrder from "../models/LabOrder.js";
 import MachineDevice from "../models/MachineDevice.js";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
-import PDFDocument from "pdfkit";
 import crypto from "crypto";
 import { buildMachineKey, hashMachineKey } from "../middleware/machineAuthMiddleware.js";
 import { parseHL7Patient, parseHL7ToSegments } from "../services/hl7Parser.js";
@@ -708,6 +707,7 @@ export async function exportMachineAlertTimelinePdf(req, res, next) {
     const timeline = await buildMachineAlertTimeline(hospital, alertId);
     if (!timeline) return res.status(404).json({ message: "Machine alert not found" });
 
+    const { default: PDFDocument } = await import("pdfkit");
     const doc = new PDFDocument({ size: "A4", margin: 40 });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(

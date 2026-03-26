@@ -113,10 +113,6 @@ import dlqAdminRoutes from "./routes/dlqAdminRoutes.js";
 import mappingRoutes from "./routes/mappingRoutes.js";
 import offlineRoutes from "./routes/offlineRoutes.js";
 
-import crdtRoutes from "./routes/crdtRoutes.js";
-import crdtApiRoutes from "./routes/crdtApiRoutes.js";
-import crdtChunkRoutes from "./routes/crdtChunkRoutes.js";
-import crdtResourceRoutes from "./routes/crdtResourceRoutes.js";
 import signalingTokenRoutes from "./routes/signalingTokenRoutes.js";
 
 import insuranceRoutes from "./routes/insuranceRoutes.js";
@@ -169,6 +165,28 @@ app.set("trust proxy", 1);
 
 function isDbReady() {
   return mongoose.connection?.readyState === 1;
+}
+
+function lazyRouter(loadRouter, label = "lazy-router") {
+  let routerPromise;
+  return async function lazyExpressRouter(req, res, next) {
+    try {
+      if (!routerPromise) {
+        routerPromise = loadRouter()
+          .then((mod) => mod?.default ?? mod)
+          .catch((error) => {
+            // Allow retry on the next request if the import fails once.
+            routerPromise = null;
+            throw error;
+          });
+      }
+      const router = await routerPromise;
+      return router(req, res, next);
+    } catch (error) {
+      error.message = `[${label}] ${error.message}`;
+      return next(error);
+    }
+  };
 }
 
 /* ======================================================
@@ -406,10 +424,16 @@ app.use("/api/offline", offlineRoutes);
 /* ======================================================
    🧬 CRDT / SIGNALING
 ====================================================== */
-app.use("/api/crdt", crdtRoutes);
-app.use("/api/crdt-api", crdtApiRoutes);
-app.use("/api/crdt/chunks", crdtChunkRoutes);
-app.use("/api/crdt/resource", crdtResourceRoutes);
+app.use("/api/crdt", lazyRouter(() => import("./routes/crdtRoutes.js"), "crdtRoutes"));
+app.use("/api/crdt-api", lazyRouter(() => import("./routes/crdtApiRoutes.js"), "crdtApiRoutes"));
+app.use(
+  "/api/crdt/chunks",
+  lazyRouter(() => import("./routes/crdtChunkRoutes.js"), "crdtChunkRoutes")
+);
+app.use(
+  "/api/crdt/resource",
+  lazyRouter(() => import("./routes/crdtResourceRoutes.js"), "crdtResourceRoutes")
+);
 app.use("/api/signaling", signalingTokenRoutes);
 
 /* ======================================================

@@ -1,16 +1,15 @@
-import PDFDocument from "pdfkit";
-
 /**
  * MEDICAL–LEGAL REPORT PDF
  * 🔒 Immutable
  * ⚖️ Court-ready
  */
-export function generateMedicalReport({
+export async function generateMedicalReport({
   encounter,
   workflow,
   audit,
   hospital,
 }) {
+  const { default: PDFDocument } = await import("pdfkit");
   const doc = new PDFDocument({ margin: 40 });
 
   /* ================= HEADER ================= */

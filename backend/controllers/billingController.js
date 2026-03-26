@@ -1,5 +1,4 @@
 import Transaction from "../models/Transaction.js";
-import PDFDocument from "pdfkit";
 import workflowService from "../services/workflowService.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { recordExportEvent } from "../utils/exportAudit.js";
@@ -154,6 +153,7 @@ export async function invoicePdf(req, res) {
 
   if (!tx) return res.status(404).send("Invoice not found");
 
+  const { default: PDFDocument } = await import("pdfkit");
   const doc = new PDFDocument({ size: "A4", margin: 50 });
 
   res.setHeader("Content-Type", "application/pdf");
