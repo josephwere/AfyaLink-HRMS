@@ -3635,6 +3635,14 @@ body.auth-route {
   font-size: 14px;
 }
 
+.subtle-banner {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
+  background: color-mix(in oklab, var(--app-surface) 92%, var(--app-accent-2) 8%);
+  color: var(--app-text);
+}
+
 .dashboard-home-shell {
   gap: 18px;
 }
@@ -3657,7 +3665,7 @@ body.auth-route {
 
 .dashboard-home-stats.dashboard-home-stats-pinned {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .dashboard-home-pinned-summary .premium-shell-stat {
@@ -3679,7 +3687,7 @@ body.auth-route {
 
 .dashboard-daily-brief {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .dashboard-daily-brief-copy h3 {
@@ -3689,7 +3697,7 @@ body.auth-route {
 .dashboard-daily-brief-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .dashboard-daily-brief-item {
@@ -3732,7 +3740,7 @@ body.auth-route {
 .dashboard-home-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .dashboard-home-stat small {
@@ -3765,14 +3773,14 @@ body.auth-route {
 
 .dashboard-home-rail {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   position: sticky;
   top: 72px;
 }
 
 .dashboard-context-card {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .dashboard-context-head {
@@ -3847,7 +3855,7 @@ body.auth-route {
 }
 
 .dashboard-home-section {
-  gap: 14px;
+  gap: 16px;
 }
 
 .dashboard-home-section-head {
@@ -3870,8 +3878,8 @@ body.auth-route {
 
 .dashboard-shelf-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .dashboard-home-bottom-grid {
@@ -4025,13 +4033,16 @@ body.auth-route {
 }
 
 .info-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
 .app-grid.tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .app-tile {
@@ -4053,8 +4064,9 @@ body.auth-route {
 
 .panel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
 .panel {
@@ -4896,6 +4908,9 @@ body.auth-route {
 }
 
 .card.stat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 16px;
   border: 1px solid color-mix(in oklab, var(--app-accent-2) 14%, var(--app-border));
 }
@@ -4946,6 +4961,7 @@ button.card.stat {
 .action-card {
   display: grid;
   gap: 14px;
+  height: 100%;
   width: 100%;
   text-align: left;
   background: var(--app-surface);
@@ -5070,15 +5086,22 @@ button.card.stat {
 }
 
 .card-title {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .card-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
@@ -5130,6 +5153,11 @@ button.card.stat {
   font-size: 12px;
   color: #6b7280;
   margin-top: 4px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .card h3 {

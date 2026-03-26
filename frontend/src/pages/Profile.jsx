@@ -21,6 +21,71 @@ import {
 import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
+const PROFILE_CACHE_VERSION = 1;
+
+function profileCacheKey(user) {
+  const id = user?._id || user?.id || user?.email || user?.phone || "anonymous";
+  return `afyalink_profile_cache_v${PROFILE_CACHE_VERSION}:${String(id)}`;
+}
+
+function readCachedProfile(user) {
+  if (typeof window === "undefined" || !user) return null;
+  try {
+    const raw = localStorage.getItem(profileCacheKey(user));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.v !== PROFILE_CACHE_VERSION || !parsed.profile) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(user, profile) {
+  if (typeof window === "undefined" || !user || !profile) return;
+  try {
+    localStorage.setItem(
+      profileCacheKey(user),
+      JSON.stringify({
+        v: PROFILE_CACHE_VERSION,
+        storedAt: new Date().toISOString(),
+        profile,
+      })
+    );
+  } catch {
+    // Ignore storage quota failures for profile snapshot caching.
+  }
+}
+
+function toCachedProfilePayload(me) {
+  if (!me || typeof me !== "object") return null;
+  return {
+    twoFactorEnabled: Boolean(me?.twoFactorEnabled),
+    twoFactorMethod: me?.twoFactorMethod || "OTP",
+    emailVerified: Boolean(me?.emailVerified),
+    phoneVerified: Boolean(me?.phoneVerified),
+    authProvider: me?.authProvider || "local",
+    hasPassword: Boolean(me?.hasPassword),
+    phone: me?.phone || "",
+    nationalIdNumber: me?.nationalIdNumber || "",
+    nationalIdCountry: me?.nationalIdCountry || "",
+    licenseNumber: me?.licenseNumber || "",
+    licenseExpiry: me?.licenseExpiry || "",
+    verificationWarning: me?.verificationWarning || null,
+    gender: me?.gender || "",
+    dateOfBirth: me?.dateOfBirth || "",
+    nationality: me?.nationality || "",
+    address: me?.address || "",
+    emergencyContact: me?.emergencyContact || {},
+    employment: me?.employment || {},
+    credentials: me?.credentials || {},
+    financial: me?.financial || {},
+    systemProfile: me?.systemProfile || {},
+    insuranceProfile: me?.insuranceProfile || {},
+    familyMonitoring: me?.familyMonitoring || {},
+    uiPreferences: me?.uiPreferences || {},
+  };
+}
 
 function DismissibleSection({ title, children, className = "", eyebrow = "", aside = null }) {
   return (
@@ -85,6 +150,7 @@ export default function Profile() {
   const [error, setError] = useState("");
   const [profileLoaded, setProfileLoaded] = useState(false);
   const loadRetryRef = useRef(null);
+  const [syncing, setSyncing] = useState(false);
   const [authProvider, setAuthProvider] = useState("local");
   const [hasPassword, setHasPassword] = useState(true);
 
@@ -214,14 +280,28 @@ export default function Profile() {
 
   useEffect(() => {
     restoreCooldown();
-    loadStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const cached = readCachedProfile(user);
+    if (cached?.profile) {
+      applyProfilePayload(cached.profile);
+      setProfileLoaded(true);
+      setLoading(false);
+      setError("");
+    }
+
+    loadStatus(1, { showSpinner: !cached?.profile });
+
     return () => {
       if (loadRetryRef.current) {
         clearTimeout(loadRetryRef.current);
         loadRetryRef.current = null;
       }
     };
-  }, []);
+  }, [user?._id, user?.id, user?.email]);
 
   useEffect(() => {
     setViewRole(roleOverride || user?.actualRole || user?.role || "");
@@ -269,20 +349,122 @@ export default function Profile() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
+  const applyProfilePayload = (me) => {
+    setTwoFAEnabled(Boolean(me?.twoFactorEnabled));
+    setTwoFAMethod(me?.twoFactorMethod || "OTP");
+    setEmailVerified(Boolean(me?.emailVerified));
+    setPhoneVerified(Boolean(me?.phoneVerified));
+    setAuthProvider(me?.authProvider || "local");
+    setHasPassword(Boolean(me?.hasPassword));
+
+    const parsedPhone = splitDialAndLocal(me?.phone || "");
+    setPhoneCountry(parsedPhone.countryCode || "");
+    setPhoneLocal(parsedPhone.local || "");
+    setIdNumber(me?.nationalIdNumber || "");
+    setIdCountry(me?.nationalIdCountry || "");
+    setLicenseNumber(me?.licenseNumber || "");
+    setLicenseExpiry(me?.licenseExpiry ? String(me.licenseExpiry).slice(0, 10) : "");
+    setVerificationWarning(me?.verificationWarning || null);
+
+    setBasic({
+      gender: me?.gender || "",
+      dateOfBirth: me?.dateOfBirth ? String(me.dateOfBirth).slice(0, 10) : "",
+      nationality: me?.nationality || "",
+      address: me?.address || "",
+      emergencyName: me?.emergencyContact?.name || "",
+      emergencyRelationship: me?.emergencyContact?.relationship || "",
+      emergencyPhone: me?.emergencyContact?.phone || "",
+    });
+
+    setEmployment({
+      employeeId: me?.employment?.employeeId || "",
+      department: me?.employment?.department || "",
+      reportingManager: me?.employment?.reportingManager || "",
+      employmentType: me?.employment?.employmentType || "",
+      hireDate: me?.employment?.hireDate ? String(me.employment.hireDate).slice(0, 10) : "",
+      contractStart: me?.employment?.contractStart ? String(me.employment.contractStart).slice(0, 10) : "",
+      contractEnd: me?.employment?.contractEnd ? String(me.employment.contractEnd).slice(0, 10) : "",
+      workLocation: me?.employment?.workLocation || "",
+      branch: me?.employment?.branch || "",
+    });
+
+    const certifications = Array.isArray(me?.credentials?.certifications)
+      ? me.credentials.certifications
+      : typeof me?.credentials?.certifications === "string"
+        ? me.credentials.certifications.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+    const educationHistory = Array.isArray(me?.credentials?.educationHistory)
+      ? me.credentials.educationHistory
+      : typeof me?.credentials?.educationHistory === "string"
+        ? me.credentials.educationHistory.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+
+    setCredentials({
+      specialization: me?.credentials?.specialization || "",
+      subSpecialization: me?.credentials?.subSpecialization || "",
+      cmeCredits: me?.credentials?.cmeCredits ?? "",
+      researchPublications: me?.credentials?.researchPublications ?? "",
+      testAuthorizationLevel: me?.credentials?.testAuthorizationLevel || "",
+      certifications: certifications.join(", "),
+      educationHistory: educationHistory.join(", "),
+    });
+
+    setFinancial({
+      bankName: me?.financial?.bankName || "",
+      bankAccountName: me?.financial?.bankAccountName || "",
+      bankAccountNumber: me?.financial?.bankAccountNumber || "",
+      bankBranch: me?.financial?.bankBranch || "",
+      taxId: me?.financial?.taxId || "",
+      pensionInfo: me?.financial?.pensionInfo || "",
+      salaryStructure: me?.financial?.salaryStructure || "",
+      allowances: me?.financial?.allowances ?? "",
+      deductions: me?.financial?.deductions ?? "",
+    });
+
+    setSystemProfile({
+      status: me?.systemProfile?.status || "ACTIVE",
+      accessExpiresAt: me?.systemProfile?.accessExpiresAt
+        ? String(me.systemProfile.accessExpiresAt).slice(0, 10)
+        : "",
+    });
+
+    setInsurance({
+      providerCode: me?.insuranceProfile?.providerCode || "",
+      providerName: me?.insuranceProfile?.providerName || "",
+      memberNumber: me?.insuranceProfile?.memberNumber || "",
+      balance:
+        me?.insuranceProfile?.balance === null || me?.insuranceProfile?.balance === undefined
+          ? ""
+          : String(me.insuranceProfile.balance),
+      currency: me?.insuranceProfile?.currency || "KES",
+      status: me?.insuranceProfile?.status || "PENDING",
+    });
+
+    setFamilyPrefs({
+      receiveMinorAlerts: me?.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
+      showDailyMinorSummary: me?.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
+    });
+    setLinkedMinorCount(Number(me?.familyMonitoring?.linkedMinorCount || 0));
+    setLinkedMinors([]);
+    setFamilyLoaded(false);
+    setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
+  };
+
   /* -------------------------
      Load Profile Workspace (guarded)
      Avoid showing a generic "security settings" error for transient cold starts.
   -------------------------- */
-  const loadStatus = async (attempt = 1) => {
+  const loadStatus = async (attempt = 1, { showSpinner = true } = {}) => {
     if (loadRetryRef.current) {
       clearTimeout(loadRetryRef.current);
       loadRetryRef.current = null;
     }
 
     if (attempt === 1) {
-      setLoading(true);
+      setSyncing(true);
+      setLoading(Boolean(showSpinner));
       setError("");
-      setProfileLoaded(false);
+      if (showSpinner) setProfileLoaded(false);
     }
 
     try {
@@ -292,111 +474,30 @@ export default function Profile() {
       });
       const me = res?.payload || res;
 
-      setTwoFAEnabled(Boolean(me?.twoFactorEnabled));
-      setTwoFAMethod(me?.twoFactorMethod || "OTP");
-      setEmailVerified(Boolean(me?.emailVerified));
-      setPhoneVerified(Boolean(me?.phoneVerified));
-      setAuthProvider(me?.authProvider || "local");
-      setHasPassword(Boolean(me?.hasPassword));
-
-      const parsedPhone = splitDialAndLocal(me?.phone || "");
-      setPhoneCountry(parsedPhone.countryCode || "");
-      setPhoneLocal(parsedPhone.local || "");
-      setIdNumber(me?.nationalIdNumber || "");
-      setIdCountry(me?.nationalIdCountry || "");
-      setLicenseNumber(me?.licenseNumber || "");
-      setLicenseExpiry(me?.licenseExpiry ? me.licenseExpiry.slice(0, 10) : "");
-      setVerificationWarning(me?.verificationWarning || null);
-
-      setBasic({
-        gender: me?.gender || "",
-        dateOfBirth: me?.dateOfBirth ? me.dateOfBirth.slice(0, 10) : "",
-        nationality: me?.nationality || "",
-        address: me?.address || "",
-        emergencyName: me?.emergencyContact?.name || "",
-        emergencyRelationship: me?.emergencyContact?.relationship || "",
-        emergencyPhone: me?.emergencyContact?.phone || "",
-      });
-
-      setEmployment({
-        employeeId: me?.employment?.employeeId || "",
-        department: me?.employment?.department || "",
-        reportingManager: me?.employment?.reportingManager || "",
-        employmentType: me?.employment?.employmentType || "",
-        hireDate: me?.employment?.hireDate ? me.employment.hireDate.slice(0, 10) : "",
-        contractStart: me?.employment?.contractStart
-          ? me.employment.contractStart.slice(0, 10)
-          : "",
-        contractEnd: me?.employment?.contractEnd ? me.employment.contractEnd.slice(0, 10) : "",
-        workLocation: me?.employment?.workLocation || "",
-        branch: me?.employment?.branch || "",
-      });
-
-      setCredentials({
-        specialization: me?.credentials?.specialization || "",
-        subSpecialization: me?.credentials?.subSpecialization || "",
-        cmeCredits: me?.credentials?.cmeCredits ?? "",
-        researchPublications: me?.credentials?.researchPublications ?? "",
-        testAuthorizationLevel: me?.credentials?.testAuthorizationLevel || "",
-        certifications: (me?.credentials?.certifications || []).join(", "),
-        educationHistory: (me?.credentials?.educationHistory || []).join(", "),
-      });
-
-      setFinancial({
-        bankName: me?.financial?.bankName || "",
-        bankAccountName: me?.financial?.bankAccountName || "",
-        bankAccountNumber: me?.financial?.bankAccountNumber || "",
-        bankBranch: me?.financial?.bankBranch || "",
-        taxId: me?.financial?.taxId || "",
-        pensionInfo: me?.financial?.pensionInfo || "",
-        salaryStructure: me?.financial?.salaryStructure || "",
-        allowances: me?.financial?.allowances ?? "",
-        deductions: me?.financial?.deductions ?? "",
-      });
-
-      setSystemProfile({
-        status: me?.systemProfile?.status || "ACTIVE",
-        accessExpiresAt: me?.systemProfile?.accessExpiresAt
-          ? me.systemProfile.accessExpiresAt.slice(0, 10)
-          : "",
-      });
-
-      setInsurance({
-        providerCode: me?.insuranceProfile?.providerCode || "",
-        providerName: me?.insuranceProfile?.providerName || "",
-        memberNumber: me?.insuranceProfile?.memberNumber || "",
-        balance:
-          me?.insuranceProfile?.balance === null || me?.insuranceProfile?.balance === undefined
-            ? ""
-            : String(me.insuranceProfile.balance),
-        currency: me?.insuranceProfile?.currency || "KES",
-        status: me?.insuranceProfile?.status || "PENDING",
-      });
-
-      setFamilyPrefs({
-        receiveMinorAlerts: me?.familyMonitoring?.preferences?.receiveMinorAlerts !== false,
-        showDailyMinorSummary: me?.familyMonitoring?.preferences?.showDailyMinorSummary !== false,
-      });
-      setLinkedMinorCount(Number(me?.familyMonitoring?.linkedMinorCount || 0));
-      setLinkedMinors([]);
-      setFamilyLoaded(false);
-      setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
+      applyProfilePayload(me);
+      const cachePayload = toCachedProfilePayload(me);
+      if (cachePayload) writeCachedProfile(user, cachePayload);
 
       setProfileLoaded(true);
       setError("");
       setLoading(false);
+      setSyncing(false);
     } catch (err) {
       const maxAttempts = 2;
       if (attempt < maxAttempts) {
-        loadRetryRef.current = setTimeout(() => loadStatus(attempt + 1), 900 * attempt);
+        loadRetryRef.current = setTimeout(
+          () => loadStatus(attempt + 1, { showSpinner }),
+          900 * attempt
+        );
         return;
       }
-      setProfileLoaded(false);
+      if (showSpinner) setProfileLoaded(false);
       setError(
         err?.message ||
           "Profile workspace is taking longer than usual. Please try again."
       );
       setLoading(false);
+      setSyncing(false);
     }
   };
 
@@ -2947,40 +3048,28 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="profile-container profile-settings-home">
-        <div className="card premium-card profile-settings-loading">
-          <div className="profile-panel-eyebrow">Settings Home</div>
-          <h2>Loading your workspace</h2>
-          <p className="muted">Pulling your account, security, and role-specific settings.</p>
-        </div>
+  const stageContent = profileLoaded ? (
+    renderActiveSection()
+  ) : (
+    <div className="card premium-card profile-settings-loading">
+      <div className="profile-panel-eyebrow">Settings Home</div>
+      <h2>{loading ? "Loading your workspace" : "Workspace still warming up"}</h2>
+      <p className="muted">
+        {loading
+          ? "Pulling your account, security, and role-specific settings."
+          : error || "We could not load your profile settings yet. Please retry."}
+      </p>
+      <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
+        <button type="button" className="primary" onClick={() => loadStatus(1)} disabled={loading}>
+          {loading ? "Loading..." : "Retry"}
+        </button>
       </div>
-    );
-  }
-
-  if (!profileLoaded) {
-    return (
-      <div className="profile-container profile-settings-home">
-        <div className="card premium-card profile-settings-loading">
-          <div className="profile-panel-eyebrow">Settings Home</div>
-          <h2>Workspace still warming up</h2>
-          <p className="muted">
-            {error || "We could not load your profile settings yet. Please retry."}
-          </p>
-          <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
-            <button type="button" className="primary" onClick={() => loadStatus(1)}>
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="profile-container profile-settings-home">
-      {renderVerificationWarning()}
+      {profileLoaded ? renderVerificationWarning() : null}
 
       <section className="card premium-card profile-settings-hero">
         <div className="profile-settings-hero-copy">
@@ -2994,8 +3083,18 @@ export default function Profile() {
           <span className="action-pill">{roleOverride ? `Viewing ${roleOverride}` : actualRole}</span>
           <span className="action-pill">{authProvider === "google" ? "Google sign-in" : "Local sign-in"}</span>
           <span className="action-pill">{selectedLanguageLabel}</span>
+          {syncing ? <span className="action-pill">Syncing…</span> : null}
         </div>
       </section>
+
+      {profileLoaded && error ? (
+        <div className="card premium-card subtle-banner" style={{ marginTop: 16 }}>
+          <strong>Last sync failed.</strong>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {error}
+          </div>
+        </div>
+      ) : null}
 
       <div className="profile-settings-summary-grid">
         {summaryCards.map((item) => (
@@ -3032,7 +3131,7 @@ export default function Profile() {
           ))}
         </aside>
 
-        <section className="profile-settings-stage">{renderActiveSection()}</section>
+        <section className="profile-settings-stage">{stageContent}</section>
       </div>
     </div>
   );
