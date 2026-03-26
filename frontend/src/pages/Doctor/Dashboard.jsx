@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
 import { useAuth } from "../../utils/auth";
 import { getDoctorDashboard } from "../../services/dashboardApi";
 import apiFetch from "../../utils/apiFetch";
-import { runBurnoutScore } from "../../services/mlApi";
 import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
@@ -18,37 +16,8 @@ export default function Dashboard() {
   const [appointments, setAppointments] = useState([]);
   const [encounterByPatient, setEncounterByPatient] = useState({});
   const [alerts, setAlerts] = useState([]);
-  const [availability, setAvailability] = useState([]);
-  const [burnout, setBurnout] = useState(null);
-  const [burnoutTrend, setBurnoutTrend] = useState([]);
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
   const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  const burnoutStatus = (score) => {
-    const n = Number(score || 0);
-    if (n >= 75) return "risk";
-    if (n >= 45) return "warn";
-    return "good";
-  };
-  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
-
-  const loadBurnout = async () => {
-    try {
-      const r = await runBurnoutScore({
-        hoursPerWeek: 56,
-        nightShifts: 7,
-        consecutiveDays: 7,
-        overtimeHours: 14,
-        leaveBalanceDays: 6,
-        incidentsIn30d: 1,
-      });
-      setBurnout(r || null);
-      setBurnoutTrend((prev) => [...prev, Number(r?.score || 0)].slice(-12));
-    } catch {
-      setBurnout(null);
-    }
-  };
 
   useEffect(() => {
     const loadEncounterSnapshots = async (appointmentRows) => {
@@ -107,49 +76,11 @@ export default function Dashboard() {
       .then((res) => {
         const items = Array.isArray(res?.items) ? res.items : [];
         setTransfers(items);
-        setTransferError("");
       })
-      .catch((err) => {
+      .catch(() => {
         setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
       });
-
-    if (user?.id) {
-      guardedConsoleFetch(`/api/appointments/doctors/${user.id}/availability`, {
-        warmupKey: "doctor-dashboard-availability",
-      })
-        .then((result) => {
-          const res = result?.payload || {};
-          setAvailability(Array.isArray(res?.items) ? res.items : []);
-        })
-        .catch(() => setAvailability([]));
-    }
-
-    loadBurnout();
-    const timer = setInterval(loadBurnout, 45000);
-    return () => clearInterval(timer);
   }, []);
-
-  const summary = useMemo(
-    () => [
-      { title: "Today’s Appointments", value: data?.appointmentsToday ?? "—" },
-      { title: "Inpatients Assigned", value: data?.activeEncounters ?? "—" },
-      { title: "Surgeries Scheduled", value: data?.upcomingAppointments ?? "—" },
-      { title: "Pending Lab Results", value: data?.pendingLabResults ?? "—" },
-      {
-        title: "Consultation Status",
-        value: (() => {
-          const today = availability.find((row) => Number(row.dayOfWeek) === new Date().getDay());
-          if (!today) return "Default";
-          if (today.consultationAvailable === false) return "Closed";
-          if (today.isAvailable === false) return "Bookings Off";
-          return "Open";
-        })(),
-      },
-      { title: "License Expiry (Days)", value: data?.licenseExpiryDays ?? "—" },
-    ],
-    [data, availability]
-  );
 
   const firstMissingRequirement = (encounter) => {
     const items = Array.isArray(encounter?.closeout?.missingRequirements)
@@ -177,28 +108,6 @@ export default function Dashboard() {
     const completed = transfers.filter((t) => t.status === "Completed").length;
     return { pending, approved, completed, total: transfers.length };
   }, [transfers]);
-  const openDoctorSummary = (title) => {
-    switch (title) {
-      case "Today’s Appointments":
-        navigate("/doctor/schedule");
-        break;
-      case "Inpatients Assigned":
-        navigate("/doctor/ward-board");
-        break;
-      case "Surgeries Scheduled":
-        navigate("/doctor/surgery");
-        break;
-      case "Pending Lab Results":
-        navigate("/doctor/lab-results");
-        break;
-      case "Consultation Status":
-      case "License Expiry (Days)":
-        navigate("/doctor/settings");
-        break;
-      default:
-        break;
-    }
-  };
 
   const resolveEscalation = async (encounter, patientKey) => {
     if (!encounter?._id) return;
@@ -230,24 +139,24 @@ export default function Dashboard() {
         { label: "Ward Board", path: "/doctor/ward-board", variant: "secondary" },
       ]}
       stats={[
-        { label: "Today’s Appointments", value: data?.appointmentsToday ?? "—", note: "Today's patient load" },
-        { label: "Inpatients Assigned", value: data?.activeEncounters ?? "—", note: "Active responsibility" },
-        { label: "Pending Lab Results", value: data?.pendingLabResults ?? "—", note: "Awaiting review" },
-        { label: "Open Escalations", value: data?.escalationSummary?.openCount ?? "—", note: "Needs clinician review" },
+        { label: "Today’s Appointments", value: data?.appointmentsToday ?? "—", note: "Today's patient load", path: "/doctor/schedule" },
+        { label: "Inpatients Assigned", value: data?.activeEncounters ?? "—", note: "Active responsibility", path: "/doctor/ward-board" },
+        { label: "Pending Lab Results", value: data?.pendingLabResults ?? "—", note: "Awaiting review", path: "/doctor/lab-results" },
+        { label: "Open Escalations", value: data?.escalationSummary?.openCount ?? "—", note: "Needs clinician review", path: "/doctor/escalations" },
       ]}
       brief={{
         kicker: "Daily brief",
         title: "What needs clinical attention now",
-        body: "Start with today's appointments, escalation blockers, transfer continuity, and any rising wellbeing risk.",
+        body: "Start with today's appointments, escalation blockers, and transfer continuity so patient care stays fast and clear.",
         items: [
           { label: "Appointments today", value: data?.appointmentsToday ?? "—" },
           { label: "Open escalations", value: data?.escalationSummary?.openCount ?? "—", tone: Number(data?.escalationSummary?.openCount || 0) > 0 ? "warn" : "good" },
-          { label: "Burnout band", value: burnout?.band ?? "—", tone: burnoutStatus(burnout?.score) },
+          { label: "Pending transfers", value: transferStats.pending, tone: transferStats.pending > 0 ? "warn" : "good" },
         ],
       }}
       runway={[
-        { id: "doctor-runway-patients", title: "Open patients", description: "Jump into patient-facing work without searching through the clinic queue.", eyebrow: "Patients", path: "/doctor/patients", badge: "Live" },
-        { id: "doctor-runway-notes", title: "Write notes", description: "Continue OPD documentation, closeout tasks, and consultation flow.", eyebrow: "Clinical", path: "/doctor/opd", badge: "OPD" },
+        { id: "doctor-runway-schedule", title: "Today’s schedule", description: "Open the day plan and appointment board fast.", eyebrow: "Schedule", path: "/doctor/schedule", badge: "Today" },
+        { id: "doctor-runway-consult", title: "Start consultation", description: "Jump straight into OPD documentation and closeout tasks.", eyebrow: "Clinical", path: "/doctor/opd", badge: "OPD" },
         { id: "doctor-runway-escalations", title: "Resolve escalations", description: "Work through nurse-raised blockers before they delay patient throughput.", eyebrow: "Escalations", path: "/doctor/escalations", badge: "Review" },
         { id: "doctor-runway-transfers", title: "Transfer continuity", description: "Review handovers, transfer statuses, and inter-facility routing from one place.", eyebrow: "Continuity", path: "/doctor/transfers", badge: "Shared" },
       ]}
@@ -280,43 +189,6 @@ export default function Dashboard() {
         },
       ]}
     >
-
-      <DashboardSection title={translateText("Clinical KPIs")} subtitle={translateText("The high-level clinical signals that shape today's workload.")}>
-        <div className="grid info-grid">
-          {summary.map((s) => (
-            <StatCard
-              key={s.title}
-              title={translateText(s.title)}
-              value={typeof s.value === "string" ? translateText(s.value) : s.value}
-              onClick={() => openDoctorSummary(s.title)}
-            />
-          ))}
-          <StatCard title={translateText("Open Escalations")} value={data?.escalationSummary?.openCount ?? "—"} onClick={() => navigate("/doctor/escalations")} />
-        </div>
-      </DashboardSection>
-
-      <DashboardSection title="AI Wellbeing Signal" subtitle="A lightweight wellbeing signal so clinical load never gets ignored.">
-        <div className="grid info-grid">
-          <StatCard
-            title="Burnout Risk Score"
-            value={burnout?.score ?? "—"}
-            trend={burnoutTrend}
-            subtitle="Auto-refresh 45s"
-            status={burnoutStatus(burnout?.score)}
-            badge={badgeFromStatus(burnoutStatus(burnout?.score))}
-            why={`Score ${burnout?.score ?? 0}; keep below 45 to remain in low-risk band.`}
-            onClick={() => navigate("/doctor/leave")}
-            onBadgeClick={() => navigate("/doctor/leave")}
-          />
-          <StatCard title="Risk Band" value={burnout?.band ?? "—"} onClick={() => navigate("/doctor/leave")} />
-          <StatCard title="Recommendations" value={Array.isArray(burnout?.recommendations) ? burnout.recommendations.length : "—"} onClick={() => navigate("/doctor/leave")} />
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate("/system-admin/clinical-intelligence")}>
-            Open Clinical Intelligence
-          </button>
-        </div>
-      </DashboardSection>
 
       <DashboardSection className="doctor-main-grid" title="Today’s schedule + alerts" subtitle="Appointments, current blockers, and the fastest action paths for the day.">
         <div className="card doctor-schedule-card">
@@ -412,111 +284,6 @@ export default function Dashboard() {
               </button>
             ))}
             {alerts.length === 0 && <div className="muted">No alerts</div>}
-          </div>
-        </div>
-      </DashboardSection>
-
-      <DashboardSection className="doctor-main-grid" title="Transfer continuity" subtitle="Recent transfers and handoff status.">
-        <div className="card doctor-schedule-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
-            </div>
-            <div className="action-pill">Pending: {transferStats.pending}</div>
-          </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
-          <div className="grid info-grid" style={{ marginTop: 12 }}>
-            <StatCard title="Total" value={transferStats.total || "—"} onClick={() => navigate("/doctor/transfers")} />
-            <StatCard title="Approved" value={transferStats.approved || 0} onClick={() => navigate("/doctor/transfers")} />
-            <StatCard title="Completed" value={transferStats.completed || 0} onClick={() => navigate("/doctor/transfers")} />
-          </div>
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="doctor-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id} style={{ cursor: "pointer" }} onClick={() => navigate("/doctor/transfers")}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
-                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
-                  </tr>
-                ))}
-                {transfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-          <div className="doctor-actions-row" style={{ marginTop: 12 }}>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/transfers")}>
-              Open Transfers
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/doctor/opd")}>
-              Create Transfer
-            </button>
-          </div>
-        </div>
-        <div className="card doctor-alerts-card">
-          <h3>Continuity Tips</h3>
-          <div className="alert-stack">
-            <div className="alert-item">Confirm consent scope before sharing labs or reports.</div>
-            <div className="alert-item">Use the handover summary to reduce repeat diagnostics.</div>
-            <div className="alert-item">If a transfer is pending over 24h, escalate in the command center.</div>
-          </div>
-        </div>
-      </DashboardSection>
-
-      <DashboardSection title="Ward Escalations" subtitle="Nurse-raised blockers that still need clinician review.">
-        <div className="card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Ward Escalations</h3>
-              <p className="muted">Nurse-raised blockers that still need clinician review.</p>
-            </div>
-            <div className="action-pill warning">Open: {data?.escalationSummary?.openCount ?? 0}</div>
-          </div>
-          <div className="alert-stack" style={{ marginTop: 12 }}>
-            {(data?.escalationSummary?.items || []).slice(0, 6).map((item) => (
-              <div key={item.id} className="card">
-                <div className="card-header-actions">
-                  <div>
-                    <strong>{item.patientName}</strong>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      {item.resolvedAt ? "Resolved" : "Needs review"}
-                      {item.missingRequirements?.length ? ` • Missing: ${item.missingRequirements.join(", ")}` : ""}
-                    </div>
-                  </div>
-                  <div className={`action-pill${item.resolvedAt ? "" : " warning"}`}>
-                    {item.resolvedAt ? "Resolved" : "Open"}
-                  </div>
-                </div>
-                <p className="muted" style={{ marginTop: 8 }}>{item.body || item.title}</p>
-                <div className="doctor-actions-row" style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => navigate(item.path || (item.patientId ? `/doctor/opd?patientId=${encodeURIComponent(item.patientId)}` : "/doctor/opd"))}
-                  >
-                    Open Visit
-                  </button>
-                </div>
-              </div>
-            ))}
-            {!(data?.escalationSummary?.items || []).length ? (
-              <div className="action-pill">No nurse escalations right now.</div>
-            ) : null}
           </div>
         </div>
       </DashboardSection>

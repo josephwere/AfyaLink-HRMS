@@ -8,6 +8,7 @@ import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
+import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
 import LegalLinks from "./LegalLinks";
@@ -52,13 +53,6 @@ function NavIcon({ name }) {
       {custom ? <img className="nav-icon-img" src={custom} alt="" /> : icons[name] || "•"}
     </span>
   );
-}
-
-function matchesQuery(label, query, translateText) {
-  if (!query) return true;
-  const source = String(label || "").toLowerCase();
-  const translated = String(translateText(label || "")).toLowerCase();
-  return source.includes(query) || translated.includes(query);
 }
 
 function dedupeByPath(items = []) {
@@ -180,7 +174,15 @@ function buildFallbackSections({ homePath, normalizedRole, showAI }) {
 }
 
 export default function Sidebar({ open = true, onClose }) {
-  const { user, logout, roleOverride } = useAuth();
+  const {
+    user,
+    logout,
+    roleOverride,
+    canRoleOverride,
+    strictImpersonation,
+    setRoleOverride,
+    setStrictImpersonation,
+  } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useSystemSettings();
@@ -196,13 +198,13 @@ export default function Sidebar({ open = true, onClose }) {
 
   const [dynamicMenu, setDynamicMenu] = useState([]);
   const [menuLoaded, setMenuLoaded] = useState(false);
-  const [navQuery, setNavQuery] = useState("");
   const [recentItems, setRecentItems] = useState([]);
   const [starredPaths, setStarredPaths] = useState([]);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
 
   const normalizedRole = normalizeRole(user?.role || "");
+  const actualRole = normalizeRole(user?.actualRole || user?.role || "");
   const navigationPrefs = uiPreferences?.navigation || {};
   const homePath = user ? redirectByRole(user) : "/";
   const canPharmacyOps = [
@@ -343,17 +345,6 @@ export default function Sidebar({ open = true, onClose }) {
     [allowMenuItem, rawSections]
   );
 
-  const filteredSections = useMemo(() => {
-    const query = navQuery.trim().toLowerCase();
-    if (!query) return menuSections;
-    return menuSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => matchesQuery(item.label, query, translateText)),
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [menuSections, navQuery, translateText]);
-
   const quickLinks = useMemo(() => {
     const links = dedupeByPath([
       { label: "Home", path: homePath, icon: "home" },
@@ -380,8 +371,9 @@ export default function Sidebar({ open = true, onClose }) {
   );
 
   const recentVisible = useMemo(() => {
-    const allowedPaths = new Set(allKnownItems.map((item) => item.path));
-    return recentItems.filter((item) => allowedPaths.has(item.path));
+    const itemByPath = new Map(allKnownItems.map((item) => [item.path, item]));
+    const resolved = recentItems.map((item) => itemByPath.get(item.path)).filter(Boolean);
+    return dedupeByPath(resolved);
   }, [allKnownItems, recentItems]);
 
   const starredVisible = useMemo(() => {
@@ -389,16 +381,22 @@ export default function Sidebar({ open = true, onClose }) {
     return starredPaths.map((path) => itemByPath.get(path)).filter(Boolean);
   }, [allKnownItems, starredPaths]);
 
-  const filteredSectionsWithoutStarred = useMemo(() => {
-    if (!starredPaths.length) return filteredSections;
+  const recentWithoutStarred = useMemo(() => {
+    if (!starredPaths.length) return recentVisible;
     const starredSet = new Set(starredPaths);
-    return filteredSections
+    return recentVisible.filter((item) => !starredSet.has(item.path));
+  }, [recentVisible, starredPaths]);
+
+  const menuSectionsWithoutStarred = useMemo(() => {
+    if (!starredPaths.length) return menuSections;
+    const starredSet = new Set(starredPaths);
+    return menuSections
       .map((section) => ({
         ...section,
         items: section.items.filter((item) => !starredSet.has(item.path)),
       }))
       .filter((section) => section.items.length > 0);
-  }, [filteredSections, starredPaths]);
+  }, [menuSections, starredPaths]);
 
   const toggleStarred = useCallback((item) => {
     setStarredPaths((prev) =>
@@ -437,6 +435,34 @@ export default function Sidebar({ open = true, onClose }) {
     onClose?.();
   };
 
+  const formatRoleLabel = (value) =>
+    translateText(String(value || "").replaceAll("_", " ").trim() || "User");
+
+  const switchWorkspaceRole = useCallback(
+    (nextRole) => {
+      if (!user || !canRoleOverride) return;
+      const normalized = normalizeRole(nextRole);
+      if (!normalized) {
+        setRoleOverride("");
+        navigate(redirectByRole({ role: actualRole || user.role }));
+        onClose?.();
+        return;
+      }
+      setRoleOverride(normalized);
+      navigate(redirectByRole({ role: normalized }));
+      onClose?.();
+    },
+    [actualRole, canRoleOverride, navigate, onClose, setRoleOverride, user]
+  );
+
+  const resetWorkspaceView = useCallback(() => {
+    if (!user || !canRoleOverride) return;
+    setRoleOverride("");
+    setStrictImpersonation(false);
+    navigate(redirectByRole({ role: actualRole || user.role }));
+    onClose?.();
+  }, [actualRole, canRoleOverride, navigate, onClose, setRoleOverride, setStrictImpersonation, user]);
+
   if (!user) return null;
 
   return (
@@ -456,24 +482,73 @@ export default function Sidebar({ open = true, onClose }) {
           </div>
           <div className="brand-sub">{translateText(appTagline || "Secure Healthcare Systems")}</div>
         </div>
+
+        <div className="sidebar-role-row" aria-label={translateText("Signed-in role")}>
+          <span className="sidebar-role-chip ghost">
+            {translateText("Signed-in")}: {formatRoleLabel(actualRole || normalizedRole)}
+          </span>
+          <span className="sidebar-role-chip">
+            {translateText("Viewing")}: {formatRoleLabel(roleOverride || actualRole || normalizedRole)}
+          </span>
+          {canRoleOverride ? (
+            <span className="sidebar-role-chip ghost">
+              {strictImpersonation ? translateText("Strict mode") : translateText("Founder view")}
+            </span>
+          ) : null}
+        </div>
+
+        {canRoleOverride ? (
+          <div className="sidebar-workspace-shell" aria-label={translateText("Workspace switcher")}>
+            <div className="sidebar-search-label">{translateText("Workspace role view")}</div>
+            <select
+              className="sidebar-workspace-select"
+              value={roleOverride || ""}
+              onChange={(event) => switchWorkspaceRole(event.target.value)}
+              aria-label={translateText("Workspace role view")}
+            >
+              <option value="">
+                {translateText("Signed-in role")} {actualRole ? `(${formatRoleLabel(actualRole)})` : ""}
+              </option>
+              {ROLE_VIEW_OPTIONS.filter((role) => role !== actualRole).map((role) => (
+                <option key={role} value={role}>
+                  {formatRoleLabel(role)}
+                </option>
+              ))}
+            </select>
+
+            <label className="sidebar-inline-check">
+              <input
+                type="checkbox"
+                checked={Boolean(strictImpersonation)}
+                onChange={(event) => setStrictImpersonation(event.target.checked)}
+              />
+              {translateText("Strict impersonation")}
+            </label>
+
+            <div className="sidebar-workspace-actions">
+              <button type="button" className="btn-secondary" onClick={resetWorkspaceView}>
+                {translateText("Reset")}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="sidebar-scroll">
         <div className="sidebar-search-shell">
-          <label className="sidebar-search-label" htmlFor="sidebar-jump-search">
-            {translateText("Global search / command")}
-          </label>
-          <button type="button" className="sidebar-command-button" onClick={openGlobalSearch}>
+          <div className="sidebar-search-label">{translateText("Global search / command")}</div>
+          <button
+            type="button"
+            className="sidebar-command-button"
+            onClick={openGlobalSearch}
+            title={translateText("Open command palette (Ctrl+K)")}
+            aria-label={translateText("Open command palette")}
+          >
             <NavIcon name="search" />
-            <span>{translateText("Open command palette")}</span>
+            <span>
+              {translateText("Open command palette")} <span className="muted">Ctrl+K</span>
+            </span>
           </button>
-          <input
-            id="sidebar-jump-search"
-            className="sidebar-search-input"
-            value={navQuery}
-            onChange={(event) => setNavQuery(event.target.value)}
-            placeholder={translateText("Filter grouped tools in this workspace")}
-          />
         </div>
 
         {starredVisible.length > 0 ? (
@@ -491,7 +566,22 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ) : null}
 
-        {filteredSectionsWithoutStarred.map((section) => (
+        {recentWithoutStarred.length > 0 ? (
+          <SidebarCluster title="Recent" hint={`${recentWithoutStarred.length} items`}>
+            {recentWithoutStarred.map((item) => (
+              <SidebarItem
+                key={`recent-${item.path}`}
+                item={item}
+                active={isActivePath(location.pathname, item.path)}
+                onSelect={handleSelect}
+                isStarred={starredPaths.includes(item.path)}
+                onToggleStar={toggleStarred}
+              />
+            ))}
+          </SidebarCluster>
+        ) : null}
+
+        {menuSectionsWithoutStarred.map((section) => (
           <SidebarCluster key={section.section} title={section.section} hint={`${section.items.length} tools`}>
             {section.items.map((item) => (
               <SidebarItem
@@ -507,14 +597,38 @@ export default function Sidebar({ open = true, onClose }) {
           </SidebarCluster>
         ))}
 
-        {filteredSectionsWithoutStarred.length === 0 ? (
+        {menuSectionsWithoutStarred.length === 0 ? (
           <div className="sidebar-empty-note">
-            {translateText("No tools match this filter yet. Try a simpler keyword.")}
+            {translateText("No tools are available in this workspace yet.")}
           </div>
         ) : null}
       </div>
 
       <div className="sidebar-footer sticky-footer">
+        <div className="sidebar-utility-rail" aria-label={translateText("Account shortcuts")}>
+          <button
+            type="button"
+            className="nav-btn sidebar-utility-btn"
+            onClick={() => {
+              navigate("/notifications");
+              onClose?.();
+            }}
+          >
+            <NavIcon name="notifications" />
+            {translateText("Notifications")}
+          </button>
+          <button
+            type="button"
+            className="nav-btn sidebar-utility-btn"
+            onClick={() => {
+              navigate(settingsPathForRole(normalizedRole));
+              onClose?.();
+            }}
+          >
+            <NavIcon name="settings" />
+            {translateText("Settings")}
+          </button>
+        </div>
         <button
           type="button"
           className="nav-btn sidebar-signout-btn"

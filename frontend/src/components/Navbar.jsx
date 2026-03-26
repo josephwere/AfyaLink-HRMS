@@ -2,12 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { redirectByRole } from "../utils/redirectByRole";
-import { getSearchCatalog } from "../config/searchCatalog";
 import { useTheme } from "../utils/theme.jsx";
 import { triggerAction } from "../services/actionApi";
 import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
-import { globalSearch } from "../services/searchApi";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -137,6 +135,12 @@ function Icon({ name }) {
         <path d="M12 10v4M12 17h.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     ),
+    search: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M16.5 16.5 21 21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    ),
   };
 
   return <span className="icon">{icons[name] || null}</span>;
@@ -154,9 +158,6 @@ export default function Navbar({ onToggleSidebar }) {
   const [notifItems, setNotifItems] = useState([]);
   const [notifCategory, setNotifCategory] = useState("ALL");
   const [notifRead, setNotifRead] = useState("ALL");
-  const [search, setSearch] = useState("");
-  const [remoteResults, setRemoteResults] = useState([]);
-  const [searching, setSearching] = useState(false);
   const [transferStatus, setTransferStatus] = useState(
     localStorage.getItem("afyalink_transfer_status") || ""
   );
@@ -166,90 +167,19 @@ export default function Navbar({ onToggleSidebar }) {
   const refreshIntervalMs = 15000;
   const logo = settings?.branding?.logo;
   const profileRef = useRef(null);
-  const searchInputRef = useRef(null);
 
   const isGuest = user?.role === "GUEST";
   const currentRole = String(user?.role || "").toUpperCase();
   const homePath = user ? redirectByRole(user) : "/";
-  const canManageAds = ["HOSPITAL_ADMIN", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(currentRole);
-  const adsPath = canManageAds ? "/hospital-admin/recruitment-ads" : "/careers";
-  const catalog = useMemo(
-    () =>
-      getSearchCatalog(user).map((item) => ({
-        ...item,
-        translatedLabel: translateText(item.label),
-      })),
-    [translateText, user]
-  );
+  const showTransferFilters = useMemo(() => {
+    const path = String(location.pathname || "").toLowerCase();
+    return path.includes("transfer");
+  }, [location.pathname]);
 
   const unreadCount = useMemo(
     () => notifItems.filter((n) => !n.read).length,
     [notifItems]
   );
-
-  const localResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return catalog
-      .filter((item) => {
-        const english = String(item.label || "").toLowerCase();
-        const translated = String(item.translatedLabel || "").toLowerCase();
-        return english.includes(q) || translated.includes(q);
-      })
-      .slice(0, 8)
-      .map(({ translatedLabel, ...item }) => ({
-        ...item,
-        label: translatedLabel || item.label,
-      }));
-  }, [catalog, search]);
-
-  useEffect(() => {
-    const query = search.trim();
-    if (!user || query.length < 2) {
-      setRemoteResults([]);
-      setSearching(false);
-      return;
-    }
-
-    setSearching(true);
-    const role = String(user?.role || "").toUpperCase();
-    const canViewHospitals = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role);
-    const canViewWorkers = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
-    const id = setTimeout(() => {
-      globalSearch({ q: query, limit: 6 })
-        .then((data) => {
-          const hospitals = (data?.hospitals || []).map((h) => ({
-            label: translateText(`Hospital: ${h.name}${h.code ? ` (${h.code})` : ""}`),
-            path: canViewHospitals
-              ? `/super-admin/hospitals?q=${encodeURIComponent(h.name || h.code || "")}`
-              : homePath,
-          }));
-          const workers = (data?.workers || []).map((w) => ({
-            label: `${w.name} • ${translateText(String(w.role || ""))}`,
-            path: canViewWorkers
-              ? `/hospital-admin/staff?q=${encodeURIComponent(w.name || w.email || "")}`
-              : "/profile",
-          }));
-          setRemoteResults([...hospitals, ...workers]);
-        })
-        .catch(() => setRemoteResults([]))
-        .finally(() => setSearching(false));
-    }, 250);
-
-    return () => clearTimeout(id);
-  }, [homePath, search, translateText, user]);
-
-  const results = useMemo(() => {
-    const seen = new Set();
-    return [...remoteResults, ...localResults]
-      .filter((item) => {
-        const key = `${item.path}|${item.label}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 10);
-  }, [localResults, remoteResults]);
 
   const canOpenNotificationPath = useCallback(
     (path) => {
@@ -312,6 +242,11 @@ export default function Navbar({ onToggleSidebar }) {
     }
   }, []);
 
+  const openCommandPalette = useCallback(async () => {
+    await safeTrigger("OPEN_COMMAND_PALETTE");
+    window.dispatchEvent(new CustomEvent("afyalink:open-command-palette"));
+  }, [safeTrigger]);
+
   useEffect(() => {
     if (!notifOpen) return;
     fetchNotifications();
@@ -372,87 +307,46 @@ export default function Navbar({ onToggleSidebar }) {
       </div>
 
       <div className="navbar-center">
-        <div className="search-wrap topbar-search">
-          <input
-            ref={searchInputRef}
-            className="search-input"
-            placeholder="Search people, tasks, reports, help"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {search ? (
-            <button
-              type="button"
-              className="search-btn"
-              onClick={() => setSearch("")}
-              aria-label="Clear search"
-              title="Clear"
+        {showTransferFilters ? (
+          <div className="transfer-filter">
+            <select
+              value={transferStatus}
+              onChange={(e) => setTransferStatus(e.target.value)}
+              aria-label="Transfer status filter"
             >
-              Clear
-            </button>
-          ) : null}
-          {(results.length > 0 || searching) && (
-            <div className="search-results">
-              {searching ? (
-                <div className="search-result">
-                  <span className="result-title">Searching...</span>
-                </div>
-              ) : null}
-              {results.map((item) => (
-                <button
-                  type="button"
-                  key={`${item.path}-${item.label}`}
-                  className="search-result"
-                  onClick={() => {
-                    navigate(item.path);
-                    setSearch("");
-                  }}
-                >
-                  <span className="result-title">{item.label}</span>
-                  <span className="result-path">{item.path}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          className="icon-btn ghost topbar-ad-btn"
-          onClick={() => navigate(adsPath)}
-          title={canManageAds ? "Recruitment ads" : "Careers"}
-        >
-          <Icon name="megaphone" />
-          {canManageAds ? "Ads" : "Careers"}
-        </button>
-
-        <div className="transfer-filter">
-          <select
-            value={transferStatus}
-            onChange={(e) => setTransferStatus(e.target.value)}
-            aria-label="Transfer status filter"
-          >
-            <option value="">All statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Completed">Completed</option>
-          </select>
-          <select
-            value={transferScope}
-            onChange={(e) => setTransferScope(e.target.value)}
-            aria-label="Transfer scope filter"
-          >
-            <option value="">Facility scope</option>
-            <option value="from">Outbound</option>
-            <option value="to">Inbound</option>
-            <option value="mine">My requests</option>
-            <option value="global">Global</option>
-          </select>
-        </div>
+              <option value="">All statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <select
+              value={transferScope}
+              onChange={(e) => setTransferScope(e.target.value)}
+              aria-label="Transfer scope filter"
+            >
+              <option value="">Facility scope</option>
+              <option value="from">Outbound</option>
+              <option value="to">Inbound</option>
+              <option value="mine">My requests</option>
+              <option value="global">Global</option>
+            </select>
+          </div>
+        ) : null}
       </div>
 
       <div className="navbar-right">
+        {user ? (
+          <button
+            type="button"
+            className="icon-btn ghost"
+            title={translateText("Command palette (Ctrl+K)")}
+            aria-label={translateText("Open command palette")}
+            onClick={openCommandPalette}
+          >
+            <Icon name="search" />
+          </button>
+        ) : null}
         <div className="profile-wrap">
           <button type="button"
             className="icon-btn ghost"

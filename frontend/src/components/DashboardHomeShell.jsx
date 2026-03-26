@@ -321,6 +321,7 @@ export default function DashboardHomeShell({
   children,
 }) {
   const { translateText } = useAppLanguage();
+  const navigate = useNavigate();
   const hasRail = Array.isArray(contextCards) && contextCards.length > 0;
   const hasStats = Array.isArray(stats) && stats.length > 0;
 
@@ -329,13 +330,32 @@ export default function DashboardHomeShell({
       {hasStats ? (
         <section className="dashboard-home-pinned-summary" aria-label={translateText("Summary")}>
           <div className="dashboard-home-stats dashboard-home-stats-pinned">
-            {stats.map((item) => (
-              <div className="premium-shell-stat dashboard-home-stat" key={`${item.label}-${item.value}`}>
-                <span>{translateText(item.label)}</span>
-                <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
-                {item.note ? <small>{translateText(item.note)}</small> : null}
-              </div>
-            ))}
+            {stats.map((item) => {
+              const isClickable = typeof item?.onClick === "function" || Boolean(item?.path);
+              const StatTag = isClickable ? "button" : "div";
+              const handleClick = () => {
+                if (typeof item?.onClick === "function") {
+                  item.onClick(navigate);
+                  return;
+                }
+                if (item?.path) navigate(item.path);
+              };
+              return (
+                <StatTag
+                  key={`${item.label}-${item.value}`}
+                  type={isClickable ? "button" : undefined}
+                  className={`premium-shell-stat dashboard-home-stat${isClickable ? " stat-clickable" : ""}`.trim()}
+                  onClick={isClickable ? handleClick : undefined}
+                  onMouseEnter={item?.path ? () => prefetchRouteByPath(item.path) : undefined}
+                  onFocus={item?.path ? () => prefetchRouteByPath(item.path) : undefined}
+                  aria-label={translateText(item.label)}
+                >
+                  <span>{translateText(item.label)}</span>
+                  <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
+                  {item.note ? <small>{translateText(item.note)}</small> : null}
+                </StatTag>
+              );
+            })}
           </div>
         </section>
       ) : null}

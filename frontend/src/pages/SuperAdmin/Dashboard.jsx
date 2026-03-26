@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
-import { useAuth } from "../../utils/auth";
-import apiFetch from "../../utils/apiFetch";
-import { triggerAction } from "../../services/actionApi";
 import { getSuperAdminDashboard } from "../../services/dashboardApi";
 import { getDeveloperOverview } from "../../services/developerApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
@@ -13,12 +9,10 @@ import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [ops, setOps] = useState(null);
-  const [msg, setMsg] = useState("");
   const [training, setTraining] = useState({
     total: 0,
     notStarted: 0,
@@ -114,10 +108,10 @@ export default function Dashboard() {
         { label: "System Settings", path: "/super-admin/settings", variant: "secondary" },
       ]}
       stats={[
-        { label: "Hospitals", value: data?.totalHospitals ?? "—", note: "Global footprint" },
-        { label: "Total staff", value: data?.totalUsers ?? "—", note: "Cross-role workforce" },
-        { label: "Active patients", value: data?.totalPatients ?? "—", note: "Patient network reach" },
-        { label: "Pending transfers", value: pendingTransfers, note: "Continuity watch" },
+        { label: "Hospitals", value: data?.totalHospitals ?? "—", note: "Global footprint", path: "/super-admin/hospitals" },
+        { label: "Total staff", value: data?.totalUsers ?? "—", note: "Cross-role workforce", path: "/admin/access-control" },
+        { label: "Active patients", value: data?.totalPatients ?? "—", note: "Patient network reach", path: "/system-admin/patient-identity-registry" },
+        { label: "Pending transfers", value: pendingTransfers, note: "Continuity watch", path: "/system-admin/county-command-center" },
       ]}
       brief={{
         kicker: "Daily brief",
@@ -162,38 +156,24 @@ export default function Dashboard() {
             { label: "Open Settings", path: "/super-admin/settings", variant: "secondary" },
           ],
         },
+        {
+          title: "Ops signals",
+          subtitle: "Queues and adoption signals that change what the founder should do next.",
+          items: [
+            { label: "Active sessions", value: data?.activeHospitals ?? "—" },
+            { label: "Pending requests", value: data?.pendingRequests ?? "—", tone: Number(data?.pendingRequests || 0) > 0 ? "warn" : "good" },
+            { label: "Workforce pending", value: ops?.queues?.workforce?.totalPending ?? "—", tone: Number(ops?.queues?.workforce?.totalPending || 0) > 0 ? "warn" : "good" },
+            { label: "Unlinked pharmacists", value: unlinkedPharmacists, tone: unlinkedPharmacists > 0 ? "warn" : "good" },
+            { label: "Training completion %", value: training.completionRate, tone: Number(training.completionRate || 0) < 60 ? "warn" : "good" },
+          ],
+          actions: [
+            { label: "Open Alerts", path: "/notifications", variant: "secondary" },
+            { label: "Open Training Tracker", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "secondary" },
+          ],
+        },
       ]}
     >
-      {msg && <div className="card">{msg}</div>}
-
-      <DashboardSection title={translateText("Global Snapshot")} subtitle={translateText("The top-level metrics that define platform reach and network health.")}>
-        <div className="grid info-grid">
-          <StatCard
-            title="Total Hospitals"
-            value={data?.totalHospitals ?? "—"}
-            onClick={() => navigate("/super-admin/hospitals")}
-          />
-          <StatCard title="Total Staff" value={data?.totalUsers ?? "—"} onClick={() => navigate("/admin/access-control")} />
-          <StatCard title="Active Patients" value={data?.totalPatients ?? "—"} onClick={() => navigate("/system-admin/patient-identity-registry")} />
-          <StatCard title="Payroll This Month" value={data?.paymentsThisMonth ?? "—"} onClick={() => navigate("/payments/full")} />
-          <StatCard title="Workforce Pending" value={ops?.queues?.workforce?.totalPending ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
-          <StatCard title="Workforce Breached" value={ops?.queues?.workforce?.breached ?? "—"} onClick={() => navigate("/developer/queue-replay")} />
-          <StatCard title="Total Pharmacists" value={data?.pharmacists ?? "—"} onClick={() => navigate("/super-admin/pharmacies")} />
-          <StatCard
-            title="Unlinked Pharmacists"
-            value={unlinkedPharmacists}
-            onClick={() => navigate("/system-admin/pharmacy-access-audit")}
-          />
-          <StatCard
-            title="Training Completion %"
-            value={training.completionRate}
-            subtitle={`${training.completed}/${training.total} completed`}
-            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
-          />
-        </div>
-      </DashboardSection>
-
-      <DashboardSection className="doctor-main-grid" title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
+      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>
@@ -236,77 +216,6 @@ export default function Dashboard() {
               {translateText("Transfer Command Center")}
             </button>
           </div>
-        </div>
-        <div className="card doctor-alerts-card">
-          <h3>{translateText("Continuity Actions")}</h3>
-          <div className="alert-stack">
-            <div className="alert-item">{translateText("Review consent gaps before transfer exports.")}</div>
-            <div className="alert-item">{translateText("Monitor handover completion for inter-facility transfers.")}</div>
-            <div className="alert-item">{translateText("Escalate delays through county command center.")}</div>
-          </div>
-        </div>
-      </DashboardSection>
-
-      <DashboardSection title="Training Tracker" subtitle="Adoption and overdue-readiness pressure across the network.">
-        <div className="grid info-grid">
-          <StatCard title="Total Trainees" value={training.total} onClick={() => navigate("/admin/training-tracker")} />
-          <StatCard title="Not Started" value={training.notStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
-          <StatCard title="In Progress" value={training.inProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
-          <StatCard title="Completed" value={training.completed} onClick={() => navigate("/admin/training-tracker?status=COMPLETED")} />
-          <StatCard title="Overdue Not Started" value={training.overdueNotStarted} onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")} />
-          <StatCard title="Overdue In Progress" value={training.overdueInProgress} onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")} />
-        </div>
-      </DashboardSection>
-
-      <DashboardSection className="doctor-main-grid" title="Executive runway" subtitle="Fast action surfaces for finance, audit, security, and operational control.">
-        <div className="card doctor-schedule-card">
-          <h3>Main Tasks</h3>
-          <div className="panel-grid">
-            <button
-              type="button"
-              className="action-link"
-              onClick={async () => {
-                try {
-                  await triggerAction("REVENUE_OVERVIEW");
-                  setMsg("");
-                } catch (e) {
-                  setMsg(e?.message || "Unable to load revenue action right now.");
-                } finally {
-                  navigate("/payments/full");
-                }
-              }}
-            >
-              Revenue Graph
-            </button>
-            <button type="button" className="action-link" onClick={() => navigate("/analytics")}>Workforce Distribution</button>
-            <button type="button" className="action-link" onClick={() => navigate("/reports")}>Compliance Alerts</button>
-            <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
-            <button type="button" className="action-link" onClick={() => navigate("/security-admin")}>Security Incidents</button>
-            <button type="button" className="action-link" onClick={() => navigate("/system-admin")}>System Status Monitor</button>
-            <button type="button" className="action-link" onClick={() => navigate("/super-admin/pharmacies")}>Pharmacy Registry</button>
-            <button type="button" className="action-link" onClick={() => navigate("/system-admin/pharmacy-access-audit")}>Pharmacy Access Audit</button>
-            <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?role=HOSPITAL_ADMIN&status=NOT_STARTED")}>Training Tracker Board</button>
-          </div>
-        </div>
-
-        <div className="card doctor-alerts-card">
-          <h3>Alerts</h3>
-          <div className="alert-stack">
-            <div className="action-pill">{translateText("Active Sessions")}: {data?.activeHospitals ?? "—"}</div>
-            <div className="action-pill">{translateText("Pending Requests")}: {data?.pendingRequests ?? "—"}</div>
-            <div className="action-pill">{translateText("Invoices")}: {data?.invoicesThisMonth ?? "—"}</div>
-            <div className="action-pill">{translateText("Hospitals With Pharmacists")}: {data?.hospitalsWithPharmacists ?? "—"}</div>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/notifications")}>{translateText("Open Alerts")}</button>
-          </div>
-        </div>
-      </DashboardSection>
-
-      <DashboardSection title={translateText("System Administration")} subtitle={translateText("Cross-platform management tools kept one click away.")}>
-        <div className="action-list">
-          <button type="button" className="action-link" onClick={() => navigate("/admin/realtime")}>{translateText("Integration Hub")}</button>
-          <button type="button" className="action-link" onClick={() => navigate("/admin/crdt-patients")}>{translateText("Offline Sync")}</button>
-          <button type="button" className="action-link" onClick={() => navigate("/admin/audit-logs")}>{translateText("Audit Trails")}</button>
-          <button type="button" className="action-link" onClick={() => navigate("/reports")}>{translateText("Regulatory Reports")}</button>
         </div>
       </DashboardSection>
     </DashboardHomeShell>
