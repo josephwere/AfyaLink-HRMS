@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import { StatCard } from "../../components/Cards";
 import { getHospitalAdminDashboard } from "../../services/dashboardApi";
@@ -76,7 +76,9 @@ export default function ConsultationMonitor() {
           <p className="muted">Live hospital view for requested, active, completed, and blocked consultation calls.</p>
         </div>
         <div className="welcome-actions">
-          <a className="btn-secondary" href="/hospital-admin/escalations">Open Escalation Queue</a>
+          <Link className="btn-secondary" to="/hospital-admin/escalations">
+            Open Escalation Queue
+          </Link>
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Loading..." : "Refresh"}
           </button>
@@ -134,9 +136,9 @@ export default function ConsultationMonitor() {
                 </div>
                 <p className="muted" style={{ marginTop: 8 }}>{item.body || item.title}</p>
                 <div className="doctor-actions-row" style={{ marginTop: 8 }}>
-                  <a className="btn-secondary" href={item.path || "/hospital-admin/ward-board"}>
+                  <Link className="btn-secondary" to={item.path || "/hospital-admin/ward-board"}>
                     Open Workflow
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}

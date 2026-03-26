@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 import {
   getAssetDeliveryHealth,
@@ -793,9 +794,9 @@ export default function SystemSettings() {
           <p className="muted">
             Use the Payment Settings page to set Stripe, Mpesa, Flutterwave, and card settings.
           </p>
-          <a className="action-link" href="/admin/payment-settings">
+          <Link className="action-link" to="/admin/payment-settings">
             Open Payment Settings
-          </a>
+          </Link>
         </div>
       </section>
 

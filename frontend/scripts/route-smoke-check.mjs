@@ -37,13 +37,27 @@ while ((match = namedImportRegex.exec(source)) !== null) {
   }
 }
 
+// Support Vite/React lazy route declarations:
+// const Foo = lazy(() => import("./pages/Foo"));
+const lazyRouteRegex = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*lazy\s*\(\s*\(\s*\)\s*=>\s*import\s*\(/g;
+while ((match = lazyRouteRegex.exec(source)) !== null) {
+  importedNames.add(match[1]);
+}
+
 const routeElementNames = new Set();
 const routeElementRegex = /element=\{\s*<([A-Z][A-Za-z0-9_]*)\b/g;
 while ((match = routeElementRegex.exec(source)) !== null) {
   routeElementNames.add(match[1]);
 }
 
-const localsAllowed = new Set(["LayoutShell", "RequireRoleRoute", "RootEntry", "PublicOnly", "AppLayout"]);
+const localsAllowed = new Set([
+  "LayoutShell",
+  "RequireRoleRoute",
+  "RootEntry",
+  "PublicOnly",
+  "AppLayout",
+  "PatientSelfServiceRoute",
+]);
 for (const n of localsAllowed) importedNames.add(n);
 
 const missing = [...routeElementNames].filter((n) => !importedNames.has(n));

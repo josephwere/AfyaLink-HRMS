@@ -235,10 +235,10 @@ export default function SecurityAdminDashboard() {
             </table>
           </div>
           <div className="doctor-actions-row" style={{ marginTop: 12 }}>
-            <button type="button" className="btn-secondary" onClick={() => window.location.assign("/hospital-admin/transfer-command-center")}>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
               Transfer Command Center
             </button>
-            <button type="button" className="btn-secondary" onClick={() => window.location.assign("/security-admin")}
+            <button type="button" className="btn-secondary" onClick={() => navigate("/security-admin")}
             >Security Incidents</button>
           </div>
         </div>

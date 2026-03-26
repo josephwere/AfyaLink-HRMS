@@ -9,6 +9,7 @@ import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { getQuickActionsForRole, settingsPathForRole } from "../utils/workspaceNavigation";
+import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
 import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import LegalLinks from "./LegalLinks";
@@ -651,6 +652,8 @@ function SidebarItem({ item, active, onSelect, badge = "", isStarred = false, on
     <div
       className={`nav-btn sidebar-nav-btn ${active ? "active" : ""}`.trim()}
       onClick={() => onSelect(item)}
+      onMouseEnter={() => prefetchRouteByPath(item?.path)}
+      onFocus={() => prefetchRouteByPath(item?.path)}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {

@@ -1,4 +1,5 @@
 // frontend/src/components/RoleNav.jsx
+import { Link } from "react-router-dom";
 import { NAV_BY_ROLE } from "../config/navByRole";
 import { useAuth } from "../utils/auth";
 
@@ -9,9 +10,9 @@ export default function RoleNav() {
   return (
     <nav>
       {items.map((i) => (
-        <a key={i} href={`/${i.toLowerCase()}`}>
+        <Link key={i} to={`/${i.toLowerCase()}`}>
           {i}
-        </a>
+        </Link>
       ))}
     </nav>
   );

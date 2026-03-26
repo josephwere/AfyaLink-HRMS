@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
+import { prefetchRouteByPath } from "../utils/routePrefetch";
 
 function Sparkline({ points = [] }) {
   const nums = (points || []).map((v) => Number(v)).filter((v) => Number.isFinite(v));
@@ -56,6 +57,8 @@ export const StatCard = ({
     <div
       className={`card premium-card stat stat-${status} stat-${variant}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
       onClick={typeof handleOpen === "function" ? handleOpen : undefined}
+      onMouseEnter={path ? () => prefetchRouteByPath(path) : undefined}
+      onFocus={path ? () => prefetchRouteByPath(path) : undefined}
       role={typeof handleOpen === "function" ? "button" : undefined}
       tabIndex={typeof handleOpen === "function" ? 0 : undefined}
       onKeyDown={
@@ -115,6 +118,8 @@ export const ActionCard = ({
     <div
       className={`card premium-card action-card action-card-${variant}${handleOpen ? " stat-clickable" : ""}`}
       onClick={handleOpen || undefined}
+      onMouseEnter={path ? () => prefetchRouteByPath(path) : undefined}
+      onFocus={path ? () => prefetchRouteByPath(path) : undefined}
       role={handleOpen ? "button" : undefined}
       tabIndex={handleOpen ? 0 : undefined}
       onKeyDown={

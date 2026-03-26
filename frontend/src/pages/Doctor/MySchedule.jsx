@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
 import ConsultationRoom from "../../components/ConsultationRoom";
 
@@ -147,11 +147,9 @@ export default function MySchedule() {
         method: "POST",
         body: { note: "Clinician reviewed ward escalation and resumed visit workflow." },
       });
-      await load();
-      window.location.assign(
-        `/doctor/opd?patientId=${encodeURIComponent(patientKey)}${
-          firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""
-        }`
+      const focus = firstMissingRequirement(encounter);
+      navigate(
+        `/doctor/opd?patientId=${encodeURIComponent(patientKey)}${focus ? `&focus=${encodeURIComponent(focus)}` : ""}`
       );
     } catch (err) {
       setMsg(err?.message || "Failed to resolve escalation.");
@@ -171,9 +169,9 @@ export default function MySchedule() {
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Loading..." : "Refresh"}
           </button>
-          <a className="btn-primary" href="/doctor/settings">
+          <Link className="btn-primary" to="/doctor/settings">
             Edit Availability
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -307,7 +305,7 @@ export default function MySchedule() {
                               className="action-pill"
                               style={{ cursor: "pointer" }}
                               onClick={() =>
-                                window.location.assign(
+                                navigate(
                                   `/doctor/opd?patientId=${encodeURIComponent(patientKey)}${missing ? `&focus=${encodeURIComponent(missing)}` : ""}`
                                 )
                               }

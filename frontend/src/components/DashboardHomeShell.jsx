@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ActionCard } from "./Cards";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
+import { prefetchRouteByPath } from "../utils/routePrefetch";
 
 function DashboardActionButton({ action }) {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ function DashboardActionButton({ action }) {
       type="button"
       className={action?.variant === "secondary" ? "btn-secondary" : "btn-primary"}
       onClick={handleClick}
+      onMouseEnter={() => prefetchRouteByPath(action?.path)}
+      onFocus={() => prefetchRouteByPath(action?.path)}
       disabled={action?.disabled || (!action?.path && typeof action?.onClick !== "function")}
     >
       {translateText(action?.label || "Open")}
