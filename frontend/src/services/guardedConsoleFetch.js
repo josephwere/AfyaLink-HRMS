@@ -1,6 +1,8 @@
 import apiFetch from "../utils/apiFetch";
 
 const DEFAULT_WARMUP_TIMEOUT_MS = 4500;
+const DEFAULT_WARMUP_MAX_WAIT_MS = 45000;
+const DEFAULT_WARM_OK_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_TIMEOUT_SEQUENCE = [26000, 38000];
 const RETRYABLE_ERROR_HINTS = [
   "timed out",
@@ -10,11 +12,18 @@ const RETRYABLE_ERROR_HINTS = [
 ];
 
 const warmPromises = new Map();
+const warmState = new Map();
 
 function delay(ms) {
   return new Promise((resolve) => {
     globalThis.setTimeout(resolve, ms);
   });
+}
+
+function isWarmCached(key) {
+  const lastOkAt = warmState.get(key);
+  if (!lastOkAt) return false;
+  return Date.now() - lastOkAt < DEFAULT_WARM_OK_TTL_MS;
 }
 
 function isRetryableConsoleError(error) {
@@ -39,13 +48,30 @@ function toConsoleFriendlyError(error, warmed, attempts) {
 
 export async function warmConsoleRuntime(
   key = "default",
-  { path = "/healthz", timeoutMs = DEFAULT_WARMUP_TIMEOUT_MS } = {}
+  {
+    path = "/readyz",
+    timeoutMs = DEFAULT_WARMUP_TIMEOUT_MS,
+    maxWaitMs = DEFAULT_WARMUP_MAX_WAIT_MS,
+  } = {}
 ) {
+  if (isWarmCached(key)) return true;
   if (!warmPromises.has(key)) {
     const promise = (async () => {
       try {
-        await apiFetch(path, { timeoutMs });
-        return true;
+        const startedAt = Date.now();
+        let attempt = 0;
+        while (Date.now() - startedAt < maxWaitMs) {
+          attempt += 1;
+          try {
+            await apiFetch(path, { timeoutMs, _skipOfflineQueue: true });
+            warmState.set(key, Date.now());
+            return true;
+          } catch {
+            // keep retrying until maxWaitMs
+          }
+          await delay(Math.min(1800, 250 + attempt * 220));
+        }
+        return false;
       } catch {
         return false;
       }
@@ -62,11 +88,12 @@ export async function guardedConsoleFetch(
   {
     requestOptions = {},
     warmupKey = "default",
-    warmupPath = "/healthz",
+    warmupPath = "/readyz",
     timeoutSequence = DEFAULT_TIMEOUT_SEQUENCE,
   } = {}
 ) {
-  const warmed = await warmConsoleRuntime(warmupKey, { path: warmupPath });
+  const runtimeKey = warmupPath === "/readyz" ? "backend-ready" : warmupKey;
+  const warmed = await warmConsoleRuntime(runtimeKey, { path: warmupPath });
   let lastError = null;
 
   for (let attemptIndex = 0; attemptIndex < timeoutSequence.length; attemptIndex += 1) {

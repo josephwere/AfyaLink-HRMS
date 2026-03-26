@@ -1,0 +1,28 @@
+name: Keep Render Warm
+
+on:
+  schedule:
+    # GitHub schedules are best-effort and can drift; 10 minutes keeps Render from hibernating.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping health endpoints
+        run: |
+          set -u
+          URLS=(
+            "https://afya-link-hrms-frontend-4.onrender.com/healthz"
+            "https://afya-link-hrms-frontend-4.onrender.com/readyz"
+            "https://afya-link-hrms-4.vercel.app/healthz"
+          )
+
+          for url in "${URLS[@]}"; do
+            echo "Pinging $url"
+            # Don't fail the workflow on transient 503/timeout; the goal is to keep the service warm.
+            curl -sS -o /dev/null -m 20 -w "  http=%{http_code} total=%{time_total}s\n" "$url" || true
+          done
+

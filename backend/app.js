@@ -23,19 +23,31 @@ dotenvExpand.expand(env);
 import "./utils/logger.js";
 
 /* ======================================================
-   🔥 BACKGROUND JOBS
+   🔥 BACKGROUND JOBS (DEFERRED)
+   Do not block web server cold-start on job imports.
 ====================================================== */
-const shouldLoadBackgroundJobs =
-  process.env.NODE_ENV !== "test" &&
-  process.env.DISABLE_BACKGROUND_JOBS !== "1" &&
-  !process.env.JEST_WORKER_ID;
+export async function startBackgroundJobs(logger = console) {
+  const shouldLoadBackgroundJobs =
+    process.env.NODE_ENV !== "test" &&
+    process.env.DISABLE_BACKGROUND_JOBS !== "1" &&
+    !process.env.JEST_WORKER_ID;
 
-if (shouldLoadBackgroundJobs) {
-  await import("./jobs/emergencyCleanup.js");
-  await import("./jobs/hospitalVerificationRecheck.js");
-  await import("./workers/backgroundJobWorker.js");
-  await import("./workers/notificationWorker.js");
-  await import("./workers/workflowSlaWorker.js");
+  if (!shouldLoadBackgroundJobs) {
+    return { started: false, reason: "disabled" };
+  }
+
+  try {
+    await import("./jobs/emergencyCleanup.js");
+    await import("./jobs/hospitalVerificationRecheck.js");
+    await import("./workers/backgroundJobWorker.js");
+    await import("./workers/notificationWorker.js");
+    await import("./workers/workflowSlaWorker.js");
+    logger.info?.("[BACKGROUND_JOBS] started");
+    return { started: true };
+  } catch (error) {
+    logger.error?.("[BACKGROUND_JOBS] failed to start", error);
+    return { started: false, reason: "error" };
+  }
 }
 
 /* ======================================================
@@ -155,6 +167,10 @@ import platformInnovationRoutes from "./routes/platformInnovationRoutes.js";
 const app = express();
 app.set("trust proxy", 1);
 
+function isDbReady() {
+  return mongoose.connection?.readyState === 1;
+}
+
 /* ======================================================
    🌍 CORS — OAuth & Vercel SAFE
 ====================================================== */
@@ -213,6 +229,33 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 ====================================================== */
 app.use("/api/auth", authLimiter);
 app.use("/api/ai/gateway", aiGatewayLimiter);
+
+/* ======================================================
+   🧊 DB READINESS GATE (FAST FAIL)
+   Avoid hanging requests during cold start / DB reconnects.
+====================================================== */
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "afyalink-backend",
+    dbReady: isDbReady(),
+    uptimeSec: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api")) return next();
+  if (req.path === "/api/health") return next();
+  if (isDbReady()) return next();
+
+  return res.status(503).json({
+    ok: false,
+    reason: "DATABASE_NOT_READY",
+    code: "DATABASE_NOT_READY",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 /* ======================================================
    🚨 EMERGENCY

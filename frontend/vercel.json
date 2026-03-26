@@ -9,6 +9,10 @@
       "destination": "https://afya-link-hrms-frontend-4.onrender.com/healthz"
     },
     {
+      "source": "/readyz",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/readyz"
+    },
+    {
       "source": "/socket.io/(.*)",
       "destination": "https://afya-link-hrms-frontend-4.onrender.com/socket.io/$1"
     },

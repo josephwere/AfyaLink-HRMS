@@ -1,13 +1,12 @@
 import http from "http";
 import dotenv from "dotenv";
 import cron from "node-cron";
-import cors from "cors";
 import { Server as IOServer } from "socket.io";
 import mongoose from "mongoose";
 
 import connectDB from "./config/db.js";
 import { validateRuntimeEnv } from "./config/validateEnv.js";
-import app from "./app.js";
+import app, { startBackgroundJobs } from "./app.js";
 import { initSocket } from "./utils/socket.js";
 
 import seedSuperAdmin from "./seed/superAdmin.js";
@@ -53,6 +52,59 @@ const isAllowedOrigin = (origin) => {
   return false;
 };
 
+function scheduleCronJobs() {
+  if (process.env.DISABLE_CRON === "1") {
+    console.warn("[CRON] disabled via DISABLE_CRON=1");
+    return;
+  }
+
+  cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
+  cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
+  cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
+  cron.schedule("*/10 * * * *", async () => {
+    try {
+      const result = await runWorkforceAutomationSweep();
+      if (result.escalated > 0) {
+        console.log(
+          `[WORKFORCE_SWEEP] escalated=${result.escalated} scannedPolicies=${result.scannedPolicies}`
+        );
+      }
+    } catch (err) {
+      console.error("[WORKFORCE_SWEEP] failed", err);
+    }
+  }, { timezone: "Africa/Nairobi" });
+  cron.schedule("0 * * * *", async () => {
+    try {
+      const result = await runSubscriptionLifecycleSweep();
+      if (result.updated > 0) {
+        console.log(`[SUBSCRIPTION_SWEEP] scanned=${result.scanned} updated=${result.updated}`);
+      }
+    } catch (err) {
+      console.error("[SUBSCRIPTION_SWEEP] failed", err);
+    }
+  }, { timezone: "Africa/Nairobi" });
+  cron.schedule("15 */3 * * *", async () => {
+    try {
+      const result = await runTrainingOverdueSweep();
+      if (result.created > 0) {
+        console.log(`[TRAINING_SWEEP] scanned=${result.scanned} created=${result.created}`);
+      }
+    } catch (err) {
+      console.error("[TRAINING_SWEEP] failed", err);
+    }
+  }, { timezone: "Africa/Nairobi" });
+  cron.schedule("5 6 * * *", async () => {
+    try {
+      const result = await deliverDailyRoleQuotes();
+      if (result.created > 0) {
+        console.log(`[DAILY_ROLE_QUOTES] date=${result.quoteDate} scanned=${result.scanned} created=${result.created}`);
+      }
+    } catch (err) {
+      console.error("[DAILY_ROLE_QUOTES] failed", err);
+    }
+  }, { timezone: "Africa/Nairobi" });
+}
+
 /* ======================================================
    🚀 SERVER START
 ====================================================== */
@@ -67,80 +119,6 @@ const start = async () => {
     for (const warn of envCheck.warnings) {
       console.warn(`⚠️ ${warn}`);
     }
-
-    await connectDB();
-    await seedSuperAdmin();
-    await runAiAssistantBootstrap();
-
-    // ✅ CORS MUST BE FIRST
-    app.use(
-      cors({
-        origin: (origin, callback) => {
-          if (isAllowedOrigin(origin)) {
-            callback(null, true);
-          } else {
-            callback(new Error(`CORS blocked: ${origin}`));
-          }
-        },
-        credentials: true,
-      })
-    );
-
-    // ✅ Required for Google OAuth popup
-    app.use((req, res, next) => {
-      res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
-      res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-      next();
-    });
-
-    /* ======================================================
-       ⏰ CRON JOBS
-    ====================================================== */
-    cron.schedule("0 0 * * *", cleanupUnverifiedUsers, { timezone: "Africa/Nairobi" });
-    cron.schedule("*/5 * * * *", cleanupExpiredBreakGlass, { timezone: "Africa/Nairobi" });
-    cron.schedule("*/5 * * * *", cleanupExpiredEmergencyAccess, { timezone: "Africa/Nairobi" });
-    cron.schedule("*/10 * * * *", async () => {
-      try {
-        const result = await runWorkforceAutomationSweep();
-        if (result.escalated > 0) {
-          console.log(
-            `[WORKFORCE_SWEEP] escalated=${result.escalated} scannedPolicies=${result.scannedPolicies}`
-          );
-        }
-      } catch (err) {
-        console.error("[WORKFORCE_SWEEP] failed", err);
-      }
-    }, { timezone: "Africa/Nairobi" });
-    cron.schedule("0 * * * *", async () => {
-      try {
-        const result = await runSubscriptionLifecycleSweep();
-        if (result.updated > 0) {
-          console.log(`[SUBSCRIPTION_SWEEP] scanned=${result.scanned} updated=${result.updated}`);
-        }
-      } catch (err) {
-        console.error("[SUBSCRIPTION_SWEEP] failed", err);
-      }
-    }, { timezone: "Africa/Nairobi" });
-    cron.schedule("15 */3 * * *", async () => {
-      try {
-        const result = await runTrainingOverdueSweep();
-        if (result.created > 0) {
-          console.log(`[TRAINING_SWEEP] scanned=${result.scanned} created=${result.created}`);
-        }
-      } catch (err) {
-        console.error("[TRAINING_SWEEP] failed", err);
-      }
-    }, { timezone: "Africa/Nairobi" });
-    cron.schedule("5 6 * * *", async () => {
-      try {
-        const result = await deliverDailyRoleQuotes();
-        if (result.created > 0) {
-          console.log(`[DAILY_ROLE_QUOTES] date=${result.quoteDate} scanned=${result.scanned} created=${result.created}`);
-        }
-      } catch (err) {
-        console.error("[DAILY_ROLE_QUOTES] failed", err);
-      }
-    }, { timezone: "Africa/Nairobi" });
 
     const server = http.createServer(app);
 
@@ -165,6 +143,18 @@ const start = async () => {
       console.log(`🚀 AfyaLink HRMS backend running on port ${PORT}`);
       console.log("🌍 Allowed origins:", allowedOrigins);
     });
+
+    // Connect DB and start background components without blocking the HTTP listener.
+    connectDB()
+      .then(() => {
+        seedSuperAdmin().catch((err) => console.error("❌ Super Admin seed failed:", err));
+        runAiAssistantBootstrap().catch((err) => console.error("❌ AI bootstrap failed:", err));
+        startBackgroundJobs().catch((err) => console.error("❌ Background jobs failed:", err));
+        scheduleCronJobs();
+      })
+      .catch((err) => {
+        console.error("❌ DB bootstrap failed", err);
+      });
   } catch (err) {
     console.error("❌ Server startup failed", err);
     process.exit(1);

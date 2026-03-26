@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
-import { fetchMenu } from "../services/menuApi";
+import { fetchMenu, makeMenuCacheKey, readMenuCache, writeMenuCache } from "../services/menuApi";
 import { redirectByRole } from "../utils/redirectByRole";
 import { normalizeRole } from "../utils/normalizeRole";
 import { useTheme } from "../utils/theme.jsx";
@@ -240,16 +240,29 @@ export default function Sidebar({ open = true, onClose }) {
   useEffect(() => {
     if (!user) return;
 
+    const cacheKey = makeMenuCacheKey({
+      userId: user?.id,
+      role: user?.actualRole || user?.role,
+      viewRole: roleOverride || "",
+    });
+    const cachedMenu = readMenuCache(cacheKey);
+    if (cachedMenu) {
+      setDynamicMenu(cachedMenu);
+      setMenuLoaded(true);
+    }
+
     fetchMenu()
       .then((res) => {
-        setDynamicMenu(Array.isArray(res?.menu) ? res.menu : []);
+        const menu = Array.isArray(res?.menu) ? res.menu : [];
+        setDynamicMenu(menu);
+        writeMenuCache(cacheKey, menu);
         setMenuLoaded(true);
       })
       .catch(() => {
-        setDynamicMenu([]);
+        if (!cachedMenu) setDynamicMenu([]);
         setMenuLoaded(true);
       });
-  }, [user]);
+  }, [roleOverride, user?.actualRole, user?.id, user?.role]);
 
   useEffect(() => {
     if (!user) return;

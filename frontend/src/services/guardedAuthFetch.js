@@ -1,8 +1,11 @@
 import apiFetch from "../utils/apiFetch";
 
 const AUTH_WARMUP_TIMEOUT_MS = 4000;
+const AUTH_WARMUP_MAX_WAIT_MS = 45000;
+const AUTH_WARM_OK_TTL_MS = 2 * 60 * 1000;
 const AUTH_TIMEOUT_SEQUENCE = [20000, 35000, 50000];
 const warmPromises = new Map();
+const warmState = new Map();
 
 export function isRetriableAuthMessage(message) {
   const lower = String(message || "").toLowerCase();
@@ -69,17 +72,37 @@ export function normalizeAuthUiError(
 
 export async function warmAuthRuntime(
   key = "auth-runtime",
-  { path = "/healthz", timeoutMs = AUTH_WARMUP_TIMEOUT_MS } = {}
+  {
+    path = "/readyz",
+    timeoutMs = AUTH_WARMUP_TIMEOUT_MS,
+    maxWaitMs = AUTH_WARMUP_MAX_WAIT_MS,
+  } = {}
 ) {
+  const lastOkAt = warmState.get(key);
+  if (lastOkAt && Date.now() - lastOkAt < AUTH_WARM_OK_TTL_MS) {
+    return true;
+  }
   if (!warmPromises.has(key)) {
     const promise = (async () => {
       try {
-        await apiFetch(path, {
-          method: "GET",
-          timeoutMs,
-          _skipOfflineQueue: true,
-        });
-        return true;
+        const startedAt = Date.now();
+        let attempt = 0;
+        while (Date.now() - startedAt < maxWaitMs) {
+          attempt += 1;
+          try {
+            await apiFetch(path, {
+              method: "GET",
+              timeoutMs,
+              _skipOfflineQueue: true,
+            });
+            warmState.set(key, Date.now());
+            return true;
+          } catch {
+            // keep retrying until maxWaitMs
+          }
+          await sleep(Math.min(1800, 250 + attempt * 220));
+        }
+        return false;
       } catch {
         return false;
       } finally {
@@ -96,7 +119,7 @@ export async function guardedAuthFetch(
   options = {},
   {
     warmupKey = "auth-runtime",
-    warmupPath = "/healthz",
+    warmupPath = "/readyz",
     timeoutSequence = AUTH_TIMEOUT_SEQUENCE,
     retryDelayMs = 700,
   } = {}
