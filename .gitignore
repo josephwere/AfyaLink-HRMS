@@ -1,6 +1,25 @@
+# Build outputs
 frontend/dist/
+
+# Dependencies (never commit)
 frontend/node_modules/
+backend/node_modules/
+
+# Runtime data
 backend/uploads/
+
+# Environment secrets
+backend/.env
+frontend/.env
+.env
+.env.local
+.env.*.local
+
+# Python tooling (proposal helpers)
+**/__pycache__/
+*.pyc
+.venv/
+proposals/.venv/
 
 # OS / editor
 .DS_Store
