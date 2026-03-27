@@ -20,6 +20,7 @@ export default function AppShell() {
   const { settings } = useSystemSettings();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
 
@@ -132,11 +133,11 @@ export default function AppShell() {
     const mobile = window.matchMedia("(max-width: 900px)").matches;
     if (!mobile) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+    document.body.style.overflow = sidebarOpen || contextOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [sidebarOpen, user]);
+  }, [contextOpen, sidebarOpen, user]);
 
   useEffect(() => {
     const onSecurity = (event) => {
@@ -325,7 +326,19 @@ export default function AppShell() {
 
   return (
     <>
-      {user && <Navbar onToggleSidebar={() => setSidebarOpen((v) => !v)} />}
+      {user && (
+        <Navbar
+          onToggleSidebar={() => {
+            setSidebarOpen((v) => !v);
+            setContextOpen(false);
+          }}
+          onToggleContextRail={() => {
+            setContextOpen((v) => !v);
+            setSidebarOpen(false);
+          }}
+          contextOpen={contextOpen}
+        />
+      )}
       {user && sidebarOpen && (
         <button
           className="sidebar-backdrop"
@@ -333,8 +346,17 @@ export default function AppShell() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+      {user && contextOpen && (
+        <button
+          className="context-backdrop"
+          aria-label="Close context panel"
+          onClick={() => setContextOpen(false)}
+        />
+      )}
 
-      <div className={`app-grid ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
+      <div
+        className={`app-grid ${sidebarOpen ? "" : "sidebar-collapsed"} ${contextOpen ? "" : "context-collapsed"}`.trim()}
+      >
         {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
         <main className="main">
@@ -382,7 +404,7 @@ export default function AppShell() {
           <Outlet />
         </main>
 
-        <ContextRail />
+        <ContextRail open={contextOpen} onClose={() => setContextOpen(false)} />
       </div>
 
       {user && <CommandPalette />}
@@ -390,4 +412,3 @@ export default function AppShell() {
     </>
   );
 }
-

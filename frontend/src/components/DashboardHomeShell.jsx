@@ -326,6 +326,7 @@ export default function DashboardHomeShell({
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
   const hasRail = Array.isArray(contextCards) && contextCards.length > 0;
+  const [railOpen, setRailOpen] = useState(false);
   const hasStats = Array.isArray(stats) && stats.length > 0;
   const arrangedChildren = useMemo(() => {
     const nodes = React.Children.toArray(children);
@@ -401,16 +402,27 @@ export default function DashboardHomeShell({
           {subtitle ? <p className="premium-shell-subtitle">{translateText(subtitle)}</p> : null}
         </div>
 
-        {Array.isArray(actions) && actions.length > 0 ? (
+        {((Array.isArray(actions) && actions.length > 0) || hasRail) ? (
           <div className="dashboard-home-actions">
-            {actions.map((action) => (
-              <DashboardActionButton key={`${action.label}-${action.path || "inline"}`} action={action} />
-            ))}
+            {Array.isArray(actions)
+              ? actions.map((action) => (
+                  <DashboardActionButton key={`${action.label}-${action.path || "inline"}`} action={action} />
+                ))
+              : null}
+            {hasRail ? (
+              <button
+                type="button"
+                className={`btn-secondary${railOpen ? " active" : ""}`}
+                onClick={() => setRailOpen((v) => !v)}
+              >
+                {translateText("Context")}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </section>
 
-      <div className={`dashboard-home-layout ${hasRail ? "with-rail" : ""}`.trim()}>
+      <div className="dashboard-home-layout">
         <div className="dashboard-home-main">
           <DashboardDailyBrief brief={brief} />
           {runway.length > 0 ? (
@@ -462,14 +474,41 @@ export default function DashboardHomeShell({
             </div>
           ) : null}
         </div>
-        {hasRail ? (
-          <aside className="dashboard-home-rail">
-            {contextCards.map((card) => (
-              <ContextRailCard key={card.title} card={card} />
-            ))}
-          </aside>
-        ) : null}
       </div>
+
+      {hasRail && railOpen ? (
+        <div
+          className="drawer-backdrop"
+          onClick={() => setRailOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="drawer-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="drawer-header">
+              <div>
+                <h3>{translateText("Context")}</h3>
+                <p className="muted" style={{ margin: "6px 0 0" }}>
+                  {translateText("Signals, AI prompts, and alerts tied to the active workflow.")}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="icon-btn ghost"
+                onClick={() => setRailOpen(false)}
+                aria-label={translateText("Close context")}
+                title={translateText("Close")}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 16 }}>
+              {contextCards.map((card) => (
+                <ContextRailCard key={card.title} card={card} />
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

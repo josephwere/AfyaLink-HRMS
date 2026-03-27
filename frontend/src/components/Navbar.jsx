@@ -35,12 +35,18 @@ function Icon({ name }) {
         />
       </svg>
     ),
+    panel: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.5" y="4.5" width="17" height="15" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M15 5v14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    ),
   };
 
   return <span className="icon">{icons[name] || null}</span>;
 }
 
-export default function Navbar({ onToggleSidebar }) {
+export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOpen = false }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { cycleTheme } = useTheme();
@@ -96,6 +102,18 @@ export default function Navbar({ onToggleSidebar }) {
           </button>
         ) : null}
 
+        {user ? (
+          <button
+            type="button"
+            className={`icon-btn ghost${contextOpen ? " active" : ""}`}
+            title={translateText("Context panel")}
+            aria-label={translateText("Toggle context panel")}
+            onClick={onToggleContextRail}
+          >
+            <Icon name="panel" />
+          </button>
+        ) : null}
+
         <button
           type="button"
           className="icon-btn ghost"
@@ -126,4 +144,3 @@ export default function Navbar({ onToggleSidebar }) {
     </header>
   );
 }
-

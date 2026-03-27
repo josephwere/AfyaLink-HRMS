@@ -9,15 +9,34 @@ import { useAuth } from "../../utils/auth";
  * - shows current route context
  * - reserves slots for AI + alerts + next actions
  */
-export default function ContextRail() {
+export default function ContextRail({ open = false, onClose }) {
   const location = useLocation();
   const { user } = useAuth();
 
   return (
-    <aside className="context-rail" aria-label="Context panel">
+    <aside
+      className={`context-rail${open ? " is-open" : ""}`}
+      aria-label="Context panel"
+      aria-hidden={!open}
+    >
       <div className="card context-rail-card">
-        <div className="context-rail-kicker">Context</div>
-        <strong className="context-rail-title">{user?.name || "Workspace"}</strong>
+        <div className="context-rail-card-header">
+          <div>
+            <div className="context-rail-kicker">Context</div>
+            <strong className="context-rail-title">{user?.name || "Workspace"}</strong>
+          </div>
+          {typeof onClose === "function" ? (
+            <button
+              type="button"
+              className="icon-btn ghost context-rail-close-btn"
+              onClick={onClose}
+              aria-label="Close context panel"
+              title="Close"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
         <div className="muted" style={{ marginTop: 6 }}>
           {location.pathname}
         </div>
@@ -40,4 +59,3 @@ export default function ContextRail() {
     </aside>
   );
 }
-
