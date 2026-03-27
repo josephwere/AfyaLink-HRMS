@@ -25,6 +25,18 @@
       "destination": "/assets/$1"
     },
     {
+      "source": "/background.png",
+      "destination": "/background.png"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "/logo.png"
+    },
+    {
+      "source": "/neuroedge%20logo.png",
+      "destination": "/neuroedge%20logo.png"
+    },
+    {
       "source": "/sw.js",
       "destination": "/sw.js"
     },

@@ -361,40 +361,6 @@ export default function DashboardHomeShell({
 
   return (
     <div className={`dashboard premium-shell dashboard-home-shell ${className}`.trim()}>
-      {hasStats ? (
-        <section className="dashboard-home-pinned-summary" aria-label={translateText("Summary")}>
-          <div className="dashboard-home-stats dashboard-home-stats-pinned">
-            {stats.map((item) => {
-              const resolvedPath = canonicalizePath(item?.path);
-              const isClickable = typeof item?.onClick === "function" || Boolean(resolvedPath);
-              const StatTag = isClickable ? "button" : "div";
-              const handleClick = () => {
-                if (typeof item?.onClick === "function") {
-                  item.onClick(navigate);
-                  return;
-                }
-                if (resolvedPath) navigate(resolvedPath);
-              };
-              return (
-                <StatTag
-                  key={`${item.label}-${item.value}`}
-                  type={isClickable ? "button" : undefined}
-                  className={`premium-shell-stat dashboard-home-stat${isClickable ? " stat-clickable" : ""}`.trim()}
-                  onClick={isClickable ? handleClick : undefined}
-                  onMouseEnter={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
-                  onFocus={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
-                  aria-label={translateText(item.label)}
-                >
-                  <span>{translateText(item.label)}</span>
-                  <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
-                  {item.note ? <small>{translateText(item.note)}</small> : null}
-                </StatTag>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
       <section className="premium-card dashboard-home-hero">
         <div className="dashboard-home-hero-copy">
           {kicker ? <div className="premium-shell-kicker">{translateText(kicker)}</div> : null}
@@ -424,6 +390,40 @@ export default function DashboardHomeShell({
 
       <div className="dashboard-home-layout">
         <div className="dashboard-home-main">
+          {hasStats ? (
+            <section className="dashboard-home-pinned-summary" aria-label={translateText("Summary")}>
+              <div className="dashboard-home-stats dashboard-home-stats-pinned">
+                {stats.map((item) => {
+                  const resolvedPath = canonicalizePath(item?.path);
+                  const isClickable = typeof item?.onClick === "function" || Boolean(resolvedPath);
+                  const StatTag = isClickable ? "button" : "div";
+                  const handleClick = () => {
+                    if (typeof item?.onClick === "function") {
+                      item.onClick(navigate);
+                      return;
+                    }
+                    if (resolvedPath) navigate(resolvedPath);
+                  };
+                  return (
+                    <StatTag
+                      key={`${item.label}-${item.value}`}
+                      type={isClickable ? "button" : undefined}
+                      className={`premium-shell-stat dashboard-home-stat${isClickable ? " stat-clickable" : ""}`.trim()}
+                      onClick={isClickable ? handleClick : undefined}
+                      onMouseEnter={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
+                      onFocus={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
+                      aria-label={translateText(item.label)}
+                    >
+                      <span>{translateText(item.label)}</span>
+                      <strong>{typeof item.value === "string" ? translateText(item.value) : item.value}</strong>
+                      {item.note ? <small>{translateText(item.note)}</small> : null}
+                    </StatTag>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
           <DashboardDailyBrief brief={brief} />
           {runway.length > 0 ? (
             <DashboardCardShelf

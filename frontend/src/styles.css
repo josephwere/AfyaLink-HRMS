@@ -3767,14 +3767,10 @@ button.premium-shell-stat {
 }
 
 .dashboard-home-pinned-summary {
-  position: sticky;
-  top: 0;
-  z-index: 6;
   padding: 14px;
   border-radius: var(--app-radius);
   border: 1px solid var(--app-border);
-  background: color-mix(in oklab, var(--app-surface) 82%, transparent);
-  backdrop-filter: blur(14px);
+  background: var(--app-surface);
   box-shadow: var(--app-shadow);
 }
 
@@ -3785,7 +3781,7 @@ button.premium-shell-stat {
 
 .dashboard-home-pinned-summary .premium-shell-stat {
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: var(--app-radius);
 }
 
 .dashboard-home-pinned-summary .premium-shell-stat span {
