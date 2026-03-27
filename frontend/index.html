@@ -10,6 +10,53 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    // Self-heal common "stale chunk" failures after a deploy by clearing SW + caches once.
+    (function () {
+      try {
+        var KEY = "__afyalink_sw_recover_v1__";
+        if (sessionStorage.getItem(KEY)) return;
+
+        function shouldRecover(reason) {
+          var msg = "";
+          if (typeof reason === "string") msg = reason;
+          else if (reason && typeof reason.message === "string") msg = reason.message;
+          else msg = String(reason || "");
+          return msg.includes("Failed to fetch dynamically imported module");
+        }
+
+        async function recover() {
+          sessionStorage.setItem(KEY, "1");
+          try {
+            if ("serviceWorker" in navigator) {
+              var regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map(function (r) { return r.unregister(); }));
+            }
+          } catch (err) {}
+          try {
+            if ("caches" in window) {
+              var keys = await caches.keys();
+              await Promise.all(
+                keys
+                  .filter(function (k) { return k.indexOf("afyalink-") === 0; })
+                  .map(function (k) { return caches.delete(k); })
+              );
+            }
+          } catch (err) {}
+          location.reload();
+        }
+
+        window.addEventListener("error", function (e) {
+          if (shouldRecover(e && e.message)) recover();
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          if (shouldRecover(e && e.reason)) recover();
+        });
+      } catch (err) {
+        // Never block app startup.
+      }
+    })();
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
