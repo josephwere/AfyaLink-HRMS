@@ -94,7 +94,7 @@ export default function AIAutofillAuditSummary({
             <h3>{title}</h3>
             <p className="muted">{subtitle}</p>
           </div>
-          <Link to="/admin/ai-autofill-audit" className="btn-secondary">
+          <Link to="/app/platform/ai/autofill-audit" className="btn-secondary">
             Open Full Audit
           </Link>
         </div>

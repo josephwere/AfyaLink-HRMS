@@ -115,6 +115,7 @@ export const WORKSPACE_NAV = Object.freeze({
       group: "Diagnostics",
       items: [
         { id: "ops-lab-queue", label: "Lab Test Queue", path: "/app/operations/lab/test-queue", icon: "lab" },
+        { id: "ops-lab-encounters", label: "Encounter Lab Queue", path: "/app/operations/lab/encounter-queue", icon: "lab" },
         { id: "ops-lab-samples", label: "Sample Tracking", path: "/app/operations/lab/samples", icon: "lab" },
         { id: "ops-lab-qc", label: "Quality Control", path: "/app/operations/lab/qc", icon: "lab" },
       ],
@@ -134,6 +135,7 @@ export const WORKSPACE_NAV = Object.freeze({
       items: [
         { id: "rev-home", label: "Home", path: "/app/revenue/home/index", icon: "home" },
         { id: "rev-payments", label: "Payments", path: "/app/revenue/payments/index", icon: "payroll" },
+        { id: "rev-transactions", label: "Transactions", path: "/app/revenue/transactions/index", icon: "reports" },
         { id: "rev-claims", label: "Claims", path: "/app/revenue/claims/index", icon: "reports" },
         { id: "rev-intel", label: "Revenue Intelligence", path: "/app/revenue/intelligence/index", icon: "analytics" },
       ],
@@ -176,6 +178,7 @@ export const WORKSPACE_NAV = Object.freeze({
       group: "Insights",
       items: [
         { id: "platform-analytics", label: "Analytics", path: "/app/platform/analytics/index", icon: "analytics" },
+        { id: "platform-hospital-kpis", label: "Hospital KPIs", path: "/app/platform/analytics/hospital-kpis", icon: "analytics" },
         { id: "platform-reports", label: "Reports", path: "/app/platform/reports/index", icon: "reports" },
       ],
     },

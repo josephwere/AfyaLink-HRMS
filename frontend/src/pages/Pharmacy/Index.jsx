@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
+import { Link } from "react-router-dom";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import apiFetch from "../../utils/apiFetch";
 import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function PharmacyDashboard() {
-  const navigate = useNavigate();
   const { translateText } = useAppLanguage();
   const [items, setItems] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -35,106 +34,123 @@ export default function PharmacyDashboard() {
   const lowStock = items.filter((i) => Number(i?.qty || 0) <= Number(i?.minStock || 0)).length;
   const pendingPrescriptions = prescriptions.filter((item) => item.status === "CREATED").length;
   const dispensedToday = prescriptions.filter((item) => item.status === "DISPENSED").length;
+  const pendingTransfers = transfers.filter(
+    (t) => String(t?.status || "").toUpperCase() === "PENDING"
+  ).length;
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Pharmacy Dashboard")}</h2>
-          <p className="muted">{translateText("Simple pharmacy view for dispensing, stock, and expiry checks.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/pharmacy/queue")}>{translateText("Prescription Queue")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/inventory")}>{translateText("Inventory")}</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>{translateText("Reports")}</button>
-        </div>
-      </div>
-
-      <section className="section">
-        <h3>{translateText("Pharmacy Snapshot")}</h3>
-        <div className="grid info-grid">
-          <StatCard title={translateText("Pending Prescriptions")} value={pendingPrescriptions} onClick={() => navigate("/pharmacy/queue")} />
-          <StatCard title={translateText("Dispensed")} value={dispensedToday} onClick={() => navigate("/pharmacy/queue")} />
-          <StatCard title={translateText("Low Stock Alerts")} value={lowStock} onClick={() => navigate("/pharmacy/inventory")} />
-          <StatCard title={translateText("Expiring Drugs")} value={translateText("Live")} onClick={() => navigate("/pharmacy/expiry")} />
-          <StatCard title={translateText("Controlled Drugs")} value={translateText("Tracked")} onClick={() => navigate("/pharmacy/controlled")} />
-        </div>
-      </section>
-
-      <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
-          <h3>{translateText("Dispensing Queue")}</h3>
-          <div className="table-wrap">
-            <table className="doctor-table">
-              <thead>
-                <tr><th>{translateText("Patient")}</th><th>{translateText("Prescription")}</th><th>{translateText("Status")}</th><th>{translateText("Doctor")}</th></tr>
-              </thead>
-              <tbody>
-                {prescriptions.slice(0, 10).map((i) => (
-                  <tr key={i._id}>
-                    <td>
-                      {i?.patientRecord?.firstName
-                        ? `${i.patientRecord.firstName} ${i.patientRecord.lastName || ""}`.trim()
-                        : "-"}
-                    </td>
-                    <td>{i.summary || i?.appointment?.serviceType || "-"}</td>
-                    <td>{translateText(i.status)}</td>
-                    <td>{i?.doctor?.name || "-"}</td>
-                  </tr>
-                ))}
-                {prescriptions.length === 0 && <tr><td colSpan="4" className="muted">{translateText("No prescriptions")}</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div className="card doctor-alerts-card">
-          <h3>{translateText("Interaction Alerts")}</h3>
-          <div className="alert-stack">
-            <div className="action-pill">{translateText("Drug interaction checks active")}</div>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/pharmacy/reports")}>{translateText("Open Safety Reports")}</button>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="card">
-          <div className="card-header-actions">
-            <div>
-              <h3>{translateText("Transfer Continuity")}</h3>
-              <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
-            </div>
-            <div className="action-pill">
-              {translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
-          </div>
-          {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="doctor-table">
-              <thead>
-                <tr>
-                  <th>{translateText("Patient")}</th>
-                  <th>{translateText("Route")}</th>
-                  <th>{translateText("Status")}</th>
+    <DashboardHomeShell
+      shellKey="operations_pharmacy_home"
+      kicker={translateText("Operations")}
+      title={translateText("Pharmacy")}
+      subtitle={translateText("Dispensing queue, stock risk, and safety checks without stacked dashboards.")}
+      actions={[
+        { label: translateText("Prescription Queue"), path: "/app/operations/pharmacy/prescription-queue" },
+        { label: translateText("Inventory"), path: "/app/operations/pharmacy/inventory", variant: "secondary" },
+        { label: translateText("Expiry Alerts"), path: "/app/operations/pharmacy/expiry", variant: "secondary" },
+        { label: translateText("Reports"), path: "/app/operations/pharmacy/reports", variant: "secondary" },
+      ]}
+      stats={[
+        { label: translateText("Pending Prescriptions"), value: pendingPrescriptions, path: "/app/operations/pharmacy/prescription-queue" },
+        { label: translateText("Dispensed"), value: dispensedToday, path: "/app/operations/pharmacy/prescription-queue" },
+        { label: translateText("Low Stock Alerts"), value: lowStock, path: "/app/operations/pharmacy/inventory" },
+        { label: translateText("Expiring Drugs"), value: translateText("Live"), path: "/app/operations/pharmacy/expiry" },
+        { label: translateText("Controlled Drugs"), value: translateText("Tracked"), path: "/app/operations/pharmacy/controlled" },
+      ]}
+    >
+      <DashboardSection title={translateText("Dispensing Queue")} subtitle={translateText("Latest prescriptions awaiting action.")}>
+        <div className="table-wrap">
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Prescription")}</th>
+                <th>{translateText("Status")}</th>
+                <th>{translateText("Doctor")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {prescriptions.slice(0, 10).map((i) => (
+                <tr key={i._id}>
+                  <td>
+                    {i?.patientRecord?.firstName
+                      ? `${i.patientRecord.firstName} ${i.patientRecord.lastName || ""}`.trim()
+                      : "—"}
+                  </td>
+                  <td>{i.summary || i?.appointment?.serviceType || "—"}</td>
+                  <td>{translateText(i.status)}</td>
+                  <td>{i?.doctor?.name || "—"}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
-                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{translateText(t.status)}</td>
-                  </tr>
-                ))}
-                {transfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="muted">{translateText("No transfers yet.")}</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+              ))}
+              {prescriptions.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="muted">
+                    {translateText("No prescriptions")}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </DashboardSection>
+
+      <DashboardSection title={translateText("Interaction Alerts")} subtitle={translateText("Safety posture and quick next actions.")}>
+        <div className="alert-stack">
+          <div className="action-pill">{translateText("Drug interaction checks active")}</div>
+          <div className="doctor-actions-row" style={{ marginTop: 10 }}>
+            <Link className="btn-secondary" to="/app/operations/pharmacy/reports">
+              {translateText("Open Safety Reports")}
+            </Link>
           </div>
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+
+      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
+        <div className="action-pill" style={{ marginBottom: 12 }}>
+          {translateText("Pending")}: {pendingTransfers}
+        </div>
+        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        <div className="table-wrap">
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Route")}</th>
+                <th>{translateText("Status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t._id}>
+                  <td>
+                    {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
+                  </td>
+                  <td>
+                    {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
+                    {t?.toHospital?.name || t?.toHospital?.code || "—"}
+                  </td>
+                  <td>{translateText(t.status)}</td>
+                </tr>
+              ))}
+              {transfers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="muted">
+                    {translateText("No transfers yet.")}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </DashboardSection>
+
+      <DashboardSection title={translateText("Continuity Actions")} subtitle={translateText("What to do next.")}>
+        <div className="alert-stack">
+          <div className="alert-item">{translateText("Route prescriptions to nearest linked pharmacy.")}</div>
+          <div className="alert-item">{translateText("Attach substitution notes before transfer completion.")}</div>
+          <div className="alert-item">{translateText("Flag stock-outs for transfer handover summary.")}</div>
+        </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

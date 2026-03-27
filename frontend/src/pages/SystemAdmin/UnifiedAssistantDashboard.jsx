@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ConsultationRoom from "../../components/ConsultationRoom";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { useSocket } from "../../utils/socket";
@@ -151,46 +152,46 @@ function resolveUnifiedRecordPath(kind, record) {
   switch (entityKind) {
     case "patient": {
       const lookup = record?.nationalId || record?.countryId || patientName(record);
-      return buildRouteWithParams("/system-admin/patient-identity-registry", {
+      return buildRouteWithParams("/app/governance/registry/patient-identity", {
         q: lookup,
         highlight: lookup,
       });
     }
     case "hospital": {
       const lookup = record?.verification?.registrationNumber || record?.code || record?.name;
-      return buildRouteWithParams("/system-admin/government-hospital-registry", {
+      return buildRouteWithParams("/app/governance/registry/hospitals", {
         q: lookup,
         highlight: lookup,
       });
     }
     case "claim":
-      return buildRouteWithParams("/system-admin/government-claims", {
+      return buildRouteWithParams("/app/governance/claims/index", {
         claimId: record?._id,
         hospitalId: record?.hospital?._id || record?.hospitalSnapshot?._id || "",
         patientId: record?.patient?.nationalId || record?.patientSnapshot?.nationalId || "",
       });
     case "ticket":
-      return buildRouteWithParams("/admin/support-tickets", {
+      return buildRouteWithParams("/app/platform/support/tickets", {
         ticketId: record?._id,
         q: record?.ticketKey || record?.title || "",
       });
     case "call":
-      return buildRouteWithParams("/hospital-admin/consultation-monitor", {
+      return buildRouteWithParams("/app/operations/consultations/monitor", {
         callId: record?._id,
         status: record?.status || "",
       });
     case "user":
-      return buildRouteWithParams("/admin/access-control", {
+      return buildRouteWithParams("/app/platform/security/access-control", {
         userId: record?._id,
         q: record?.email || record?.name || record?.phone || "",
       });
     case "audit":
-      return buildRouteWithParams("/developer", {
+      return buildRouteWithParams("/app/platform/dev/home", {
         auditId: record?._id,
         resource: record?.resource || "",
       });
     case "invoice":
-      return buildRouteWithParams("/hospital-admin/financials", {
+      return buildRouteWithParams("/app/revenue/financials/index", {
         invoiceId: record?._id,
         q: record?.invoiceNumber || record?.patient?.email || record?.patient?.name || "",
       });
@@ -739,7 +740,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord, onNavig
   if (!selection || !record) {
     return (
       <div className="assistant-right-stack">
-        <DetailCard title="Financial Overview" onOpen={() => onNavigatePath?.("/hospital-admin/financials")}>
+        <DetailCard title="Financial Overview" onOpen={() => onNavigatePath?.("/app/revenue/financials/index")}>
           {Object.entries(overview?.financialSummary?.claims || {}).slice(0, 4).map(([status, row]) => (
             <div key={status} className="assistant-mini-row">
               <span>{status}</span>
@@ -749,13 +750,13 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord, onNavig
           {!Object.keys(overview?.financialSummary?.claims || {}).length ? <div className="muted">No claim totals available.</div> : null}
         </DetailCard>
 
-        <DetailCard title="System Logs" onOpen={() => onNavigatePath?.("/developer")}>
+        <DetailCard title="System Logs" onOpen={() => onNavigatePath?.("/app/platform/dev/home")}>
           {(overview?.developerSignals || []).map((signal) => (
             <button
               type="button"
               key={signal._id}
               className="assistant-log-row assistant-log-row-button"
-              onClick={() => onNavigatePath?.(buildRouteWithParams("/developer", { auditId: signal._id, resource: signal.resource }))}
+              onClick={() => onNavigatePath?.(buildRouteWithParams("/app/platform/dev/home", { auditId: signal._id, resource: signal.resource }))}
             >
               <strong>{signal.action}</strong>
               <div className="muted">{signal.error || signal.resource || "No error detail"}</div>
@@ -765,7 +766,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord, onNavig
           {!overview?.developerSignals?.length ? <div className="muted">No recent system errors.</div> : null}
         </DetailCard>
 
-        <DetailCard title="Hospital Watchlist" onOpen={() => onNavigatePath?.("/system-admin/government-hospital-registry")}>
+        <DetailCard title="Hospital Watchlist" onOpen={() => onNavigatePath?.("/app/governance/registry/hospitals")}>
           {(overview?.hospitalWatchlist || []).map((hospital) => (
             <button
               type="button"
@@ -862,7 +863,7 @@ function SidebarContext({ selection, recordData, overview, onOpenRecord, onNavig
   return (
     <div className="assistant-right-stack">
       {(related?.claims || related?.claimSummary) ? (
-        <DetailCard title="Claims / Financial" onOpen={() => onNavigatePath?.("/hospital-admin/financials")}>
+        <DetailCard title="Claims / Financial" onOpen={() => onNavigatePath?.("/app/revenue/financials/index")}>
           {safeArray(related?.claims).map((claim) => (
             <div key={claim._id} className="assistant-mini-row">
               <span>{claim.status}</span>
@@ -1331,7 +1332,7 @@ export default function UnifiedAssistantDashboard() {
         setMessage("Financial controls for this role are already surfaced inside the workspace.");
         return;
       }
-      navigate("/hospital-admin/financials");
+      navigate("/app/revenue/financials/index");
       return;
     }
     if (target === "fraud") {
@@ -1339,11 +1340,11 @@ export default function UnifiedAssistantDashboard() {
         setMessage("Fraud actions for this role stay inside the unified workspace.");
         return;
       }
-      navigate("/system-admin/fraud-guard");
+      navigate("/app/governance/fraud/index");
       return;
     }
     if (target === "developer") {
-      navigate("/developer");
+      navigate("/app/platform/dev/home");
       return;
     }
     if (target === "records") {
@@ -1417,27 +1418,32 @@ export default function UnifiedAssistantDashboard() {
   const takeoverActive = Boolean(workspaceSettings?.takeover?.active || currentMode === "TAKEOVER");
 
   return (
-    <div className="dashboard assistant-workspace-page">
-      <div className="welcome-panel assistant-workspace-header">
-        <div>
-          <h2>Unified Assistant Dashboard</h2>
-          <p className="muted">
-            Human + AI support workspace for chats, calls, tickets, financial controls, fraud signals, and live records.
-          </p>
-        </div>
-        <div className="welcome-actions">
-          {isGlobal ? (
+    <DashboardHomeShell
+      className="assistant-workspace-page"
+      shellKey="platform_unified_assistant"
+      kicker="Platform"
+      title="Unified Assistant"
+      subtitle="Human + AI support workspace for chats, calls, tickets, financial controls, fraud signals, and live records."
+      actions={[
+        { label: loading ? "Refreshing..." : "Refresh", onClick: () => setRefreshTick((value) => value + 1), variant: "secondary", disabled: loading },
+        { label: "Support Tickets", path: "/app/platform/support/tickets", variant: "secondary" },
+        { label: "Communication Center", path: "/app/platform/inbox/communication", variant: "secondary" },
+      ]}
+    >
+      {isGlobal ? (
+        <DashboardSection
+          title="Hospital scope"
+          subtitle="Limit results to a specific hospital ID when you need focused investigations."
+        >
+          <div className="grid info-grid">
             <input
               value={hospitalScope}
               onChange={(event) => setHospitalScope(event.target.value)}
               placeholder="Hospital ID scope"
             />
-          ) : null}
-          <button type="button" className="btn-secondary" onClick={() => setRefreshTick((value) => value + 1)} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-      </div>
+          </div>
+        </DashboardSection>
+      ) : null}
 
       <section className="section assistant-workspace-search-section">
         <div className="card premium-card assistant-workspace-search-card">
@@ -1461,19 +1467,19 @@ export default function UnifiedAssistantDashboard() {
                   if (overview?.channels?.[0]) setSelection({ type: "channel", item: overview.channels[0] });
                 }}
               />
-              <MetricChip
-                label="Calls"
-                value={overview?.summary?.activeCalls ?? 0}
-                onClick={() => {
-                  if (canOpenConsultationMonitor) navigate("/hospital-admin/consultation-monitor");
-                  else if (overview?.calls?.[0]) setSelection({ type: "call", item: overview.calls[0] });
-                }}
-              />
+                <MetricChip
+                  label="Calls"
+                  value={overview?.summary?.activeCalls ?? 0}
+                  onClick={() => {
+                    if (canOpenConsultationMonitor) navigate("/app/operations/consultations/monitor");
+                    else if (overview?.calls?.[0]) setSelection({ type: "call", item: overview.calls[0] });
+                  }}
+                />
               <MetricChip
                 label="Tickets"
                 value={overview?.summary?.openTickets ?? 0}
                 onClick={() => {
-                  if (canRouteOutsideWorkspace) navigate("/admin/support-tickets");
+                  if (canRouteOutsideWorkspace) navigate("/app/platform/support/tickets");
                   else if (overview?.tickets?.[0]) setSelection({ type: "ticket", item: overview.tickets[0] });
                 }}
               />
@@ -1481,7 +1487,7 @@ export default function UnifiedAssistantDashboard() {
                 label="Fraud Alerts"
                 value={overview?.summary?.fraudAlerts ?? 0}
                 onClick={() => {
-                  if (canOpenFraudGuard) navigate("/system-admin/fraud-guard");
+                  if (canOpenFraudGuard) navigate("/app/governance/fraud/index");
                   else if (overview?.alerts?.[0]) setSelection({ type: "alert", item: overview.alerts[0] });
                 }}
               />
@@ -1489,7 +1495,7 @@ export default function UnifiedAssistantDashboard() {
                 label="Pending Claims"
                 value={overview?.summary?.pendingClaims ?? 0}
                 onClick={() => {
-                  if (canRouteOutsideWorkspace) navigate("/system-admin/government-claims");
+                  if (canRouteOutsideWorkspace) navigate("/app/governance/claims/index");
                   else if (overview?.alerts?.[0]) setSelection({ type: "alert", item: overview.alerts[0] });
                 }}
               />
@@ -1497,7 +1503,7 @@ export default function UnifiedAssistantDashboard() {
                 label="System Errors"
                 value={overview?.summary?.systemErrors ?? 0}
                 onClick={() => {
-                  if (canRouteOutsideWorkspace) navigate("/developer");
+                  if (canRouteOutsideWorkspace) navigate("/app/platform/dev/home");
                   else setMessage("System errors stay in the Live Context panel for this role.");
                 }}
               />
@@ -1671,7 +1677,7 @@ export default function UnifiedAssistantDashboard() {
                 {aiLoading ? "Asking AI..." : "AI Suggest"}
               </button>
               {selection?.type === "call" && canOpenConsultationMonitor ? (
-                <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/consultation-monitor")}>
+                <button type="button" className="btn-secondary" onClick={() => navigate("/app/operations/consultations/monitor")}>
                   Open Consultation Monitor
                 </button>
               ) : null}
@@ -1805,7 +1811,7 @@ export default function UnifiedAssistantDashboard() {
                         {callActionLoading === `block-${selectedCall._id}` ? "Blocking..." : "Block Call"}
                       </button>
                     ) : null}
-                    {canOpenConsultationMonitor ? <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/consultation-monitor")}>Consultation Monitor</button> : null}
+                    {canOpenConsultationMonitor ? <button type="button" className="btn-secondary" onClick={() => navigate("/app/operations/consultations/monitor")}>Consultation Monitor</button> : null}
                   </div>
 
                   {activeConsultationCall && String(activeConsultationCall?._id) === String(selectedCall?._id) ? (
@@ -1843,7 +1849,7 @@ export default function UnifiedAssistantDashboard() {
                   <button
                     type="button"
                     className="btn-primary"
-                    onClick={() => (canOpenFraudGuard ? navigate("/system-admin/fraud-guard") : setMessage("Fraud review stays inside this workspace for your role."))}
+                    onClick={() => (canOpenFraudGuard ? navigate("/app/governance/fraud/index") : setMessage("Fraud review stays inside this workspace for your role."))}
                   >
                     Open Fraud Guard
                   </button>
@@ -2062,6 +2068,6 @@ export default function UnifiedAssistantDashboard() {
           <button type="button" className="btn-primary" onClick={() => openMainAction("ai")} disabled={!selection || aiLoading}>Ask AI</button>
         </div>
       </section>
-    </div>
+    </DashboardHomeShell>
   );
 }

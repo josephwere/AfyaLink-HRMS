@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   createChwChildGrowth,
   createChwChronic,
@@ -18,6 +17,8 @@ import {
 } from "../../services/chwApi";
 import apiFetch from "../../utils/apiFetch";
 import { listTransfers } from "../../services/transferApi";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import {
   enqueueOfflineAction,
   listOfflineActions,
@@ -27,7 +28,7 @@ import {
 const CATEGORIES = ["GENERAL", "MATERNAL_CHILD", "VACCINATION", "CHRONIC", "SURVEILLANCE"];
 
 export default function CommunityHealthWorkerDashboard() {
-  const navigate = useNavigate();
+  const { translateText } = useAppLanguage();
   const [dash, setDash] = useState(null);
   const [households, setHouseholds] = useState([]);
   const [visits, setVisits] = useState([]);
@@ -372,34 +373,39 @@ export default function CommunityHealthWorkerDashboard() {
     );
   };
 
-  return (
-    <div className="dashboard chw-dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>Community Health Dashboard</h2>
-          <p className="muted">
-            Offline-first household care, maternal/child follow-up, vaccination, surveillance, and referrals.
-          </p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate("/communication")}>Communication</button>
-          <button type="button" className="btn-secondary" onClick={captureGeo} disabled={busy}>Capture GPS</button>
-        </div>
-      </div>
+  const online = typeof navigator !== "undefined" ? navigator.onLine : true;
+  const brief = {
+    kicker: translateText("Sync"),
+    title: online ? translateText("Online") : translateText("Offline"),
+    body: translateText("Pending offline actions") + `: ${pendingOffline}`,
+    items: [
+      {
+        label: translateText("Pending offline actions"),
+        value: pendingOffline,
+        tone: pendingOffline > 0 ? "warn" : "good",
+      },
+      {
+        label: translateText("Network"),
+        value: online ? translateText("Online") : translateText("Offline"),
+        tone: online ? "good" : "risk",
+      },
+    ],
+  };
 
-      <section className="section">
-        <div className="grid info-grid">
-          {kpis.map((k) => (
-            <div className="card" key={k.label}>
-              <h3>{k.label}</h3>
-              <p>{k.value}</p>
-            </div>
-          ))}
-        </div>
-        <p className="muted">
-          Sync status: {navigator.onLine ? "Online" : "Offline"} • Pending offline actions: {pendingOffline}
-        </p>
-      </section>
+  return (
+    <DashboardHomeShell
+      shellKey="operations_chw"
+      kicker={translateText("Operations")}
+      title={translateText("Community Health")}
+      subtitle={translateText("Offline-first household care, maternal/child follow-up, vaccination, surveillance, and referrals.")}
+      actions={[
+        { label: translateText("Refresh"), onClick: load, variant: "secondary", disabled: busy },
+        { label: translateText("Communication Center"), path: "/app/platform/inbox/communication", variant: "secondary" },
+        { label: translateText("Capture GPS"), onClick: captureGeo, variant: "secondary", disabled: busy },
+      ]}
+      stats={kpis.map((k) => ({ label: translateText(k.label), value: k.value }))}
+      brief={brief}
+    >
 
       {msg ? <section className="section"><div className="card"><p className="muted">{msg}</p></div></section> : null}
 
@@ -669,6 +675,6 @@ export default function CommunityHealthWorkerDashboard() {
           </div>
         </div>
       </section>
-    </div>
+    </DashboardHomeShell>
   );
 }

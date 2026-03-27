@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { getEmergencyCommandDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function EmergencyCommandDashboard() {
-  const navigate = useNavigate();
   const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
@@ -26,66 +24,74 @@ export default function EmergencyCommandDashboard() {
       });
   }, []);
 
-  return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("Emergency Command Dashboard")}</h2>
-          <p className="muted">{translateText("Simple view for emergency and dispatch flow.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/ops/triage")}>{translateText("Open Triage")}</button>
-        </div>
-      </div>
-      <section className="section">
-        <h3>{translateText("Live Metrics")}</h3>
-        <div className="grid info-grid">
-          <StatCard title={translateText("Active Emergencies")} value={data?.activeEmergencies ?? "-"} onClick={() => navigate("/ops/triage")} />
-          <StatCard title={translateText("Escalated Incidents")} value={data?.escalatedIncidents ?? "-"} onClick={() => navigate("/security-admin")} />
-          <StatCard title={translateText("Ambulance Dispatches Today")} value={data?.ambulanceDispatchesToday ?? "-"} onClick={() => navigate("/communication")} />
-          <StatCard title={translateText("Triage Backlog")} value={data?.triageBacklog ?? "-"} onClick={() => navigate("/ops/triage")} />
-        </div>
-      </section>
+  const pendingTransfers = transfers.filter(
+    (t) => String(t?.status || "").toUpperCase() === "PENDING"
+  ).length;
 
-      <section className="section">
-        <div className="card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
-            </div>
-            <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
-          </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="doctor-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
-                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
-                  </tr>
-                ))}
-                {transfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+  return (
+    <DashboardHomeShell
+      shellKey="operations_emergency_command"
+      kicker={translateText("Operations")}
+      title={translateText("Emergency Command")}
+      subtitle={translateText("Escalations, dispatch, and triage routing in one command surface.")}
+      actions={[
+        { label: translateText("Open Triage"), path: "/app/operations/triage/index" },
+        { label: translateText("Communication Center"), path: "/app/platform/inbox/communication", variant: "secondary" },
+        { label: translateText("Security Admin"), path: "/app/platform/security/admin/home", variant: "secondary" },
+      ]}
+      stats={[
+        { label: translateText("Active Emergencies"), value: data?.activeEmergencies ?? "—", path: "/app/operations/triage/index" },
+        { label: translateText("Escalated Incidents"), value: data?.escalatedIncidents ?? "—", path: "/app/platform/security/admin/home" },
+        { label: translateText("Dispatches Today"), value: data?.ambulanceDispatchesToday ?? "—", path: "/app/platform/inbox/communication" },
+        { label: translateText("Triage Backlog"), value: data?.triageBacklog ?? "—", path: "/app/operations/triage/index" },
+      ]}
+    >
+      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
+        <div className="action-pill" style={{ marginBottom: 12 }}>
+          {translateText("Pending")}: {pendingTransfers}
         </div>
-      </section>
-    </div>
+        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        <div className="table-wrap">
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Route")}</th>
+                <th>{translateText("Status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t._id}>
+                  <td>
+                    {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
+                  </td>
+                  <td>
+                    {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
+                    {t?.toHospital?.name || t?.toHospital?.code || "—"}
+                  </td>
+                  <td>{translateText(t.status)}</td>
+                </tr>
+              ))}
+              {transfers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="muted">
+                    {translateText("No transfers yet.")}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </DashboardSection>
+
+      <DashboardSection title={translateText("Command Actions")} subtitle={translateText("Quick next steps for escalation workflows.")}>
+        <div className="alert-stack">
+          <div className="alert-item">{translateText("Confirm triage escalations are acknowledged within SLA.")}</div>
+          <div className="alert-item">{translateText("Use Communication Center to coordinate dispatch updates.")}</div>
+          <div className="alert-item">{translateText("Hand off active incidents to Security Admin if needed.")}</div>
+        </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

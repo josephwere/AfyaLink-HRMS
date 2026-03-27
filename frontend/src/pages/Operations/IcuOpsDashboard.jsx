@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { getIcuOpsDashboard } from "../../services/dashboardApi";
 import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function IcuOpsDashboard() {
-  const navigate = useNavigate();
   const { translateText } = useAppLanguage();
   const [data, setData] = useState(null);
   const [transfers, setTransfers] = useState([]);
@@ -26,68 +24,74 @@ export default function IcuOpsDashboard() {
       });
   }, []);
 
-  return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{translateText("ICU & Ward Operations")}</h2>
-          <p className="muted">{translateText("Simple ICU/ward view for admissions and high-risk follow-up.")}</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/doctor/ward")}>
-            {translateText("Open Ward Workspace")}
-          </button>
-        </div>
-      </div>
-      <section className="section">
-        <h3>{translateText("Live Metrics")}</h3>
-        <div className="grid info-grid">
-          <StatCard title={translateText("Active Inpatients")} value={data?.activeInpatients ?? "—"} onClick={() => navigate("/doctor/ward")} />
-          <StatCard title={translateText("Admissions Today")} value={data?.admissionsToday ?? "—"} onClick={() => navigate("/doctor/ward")} />
-          <StatCard title={translateText("High-Risk Followups")} value={data?.highRiskFollowups ?? "—"} onClick={() => navigate("/doctor/ward-board")} />
-          <StatCard title={translateText("Pending Lab Results")} value={data?.pendingLabResults ?? "—"} onClick={() => navigate("/lab-tech/test-queue")} />
-        </div>
-      </section>
+  const pendingTransfers = transfers.filter(
+    (t) => String(t?.status || "").toUpperCase() === "PENDING"
+  ).length;
 
-      <section className="section">
-        <div className="card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
-            </div>
-            <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
-          </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="doctor-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
-                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
-                  </tr>
-                ))}
-                {transfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+  return (
+    <DashboardHomeShell
+      shellKey="operations_icu"
+      kicker={translateText("Operations")}
+      title={translateText("ICU & Ward Operations")}
+      subtitle={translateText("Admissions, inpatients, and high-risk follow-up in a single workbench.")}
+      actions={[
+        { label: translateText("Open Inpatient Ward"), path: "/app/care/encounters/inpatient" },
+        { label: translateText("Bed Board"), path: "/app/operations/bed-board/index", variant: "secondary" },
+        { label: translateText("Lab Queue"), path: "/app/operations/lab/test-queue", variant: "secondary" },
+      ]}
+      stats={[
+        { label: translateText("Active Inpatients"), value: data?.activeInpatients ?? "—", path: "/app/care/encounters/inpatient" },
+        { label: translateText("Admissions Today"), value: data?.admissionsToday ?? "—", path: "/app/care/encounters/inpatient" },
+        { label: translateText("High-Risk Followups"), value: data?.highRiskFollowups ?? "—", path: "/app/operations/bed-board/index" },
+        { label: translateText("Pending Lab Results"), value: data?.pendingLabResults ?? "—", path: "/app/operations/lab/test-queue" },
+      ]}
+    >
+      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
+        <div className="action-pill" style={{ marginBottom: 12 }}>
+          {translateText("Pending")}: {pendingTransfers}
         </div>
-      </section>
-    </div>
+        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        <div className="table-wrap">
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Route")}</th>
+                <th>{translateText("Status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t._id}>
+                  <td>
+                    {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
+                  </td>
+                  <td>
+                    {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
+                    {t?.toHospital?.name || t?.toHospital?.code || "—"}
+                  </td>
+                  <td>{translateText(t.status)}</td>
+                </tr>
+              ))}
+              {transfers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="muted">
+                    {translateText("No transfers yet.")}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </DashboardSection>
+
+      <DashboardSection title={translateText("Continuity Actions")} subtitle={translateText("What to do next.")}>
+        <div className="alert-stack">
+          <div className="alert-item">{translateText("Confirm bed availability and escalation rules in Bed Board.")}</div>
+          <div className="alert-item">{translateText("Review high-risk follow-ups during shift handover.")}</div>
+          <div className="alert-item">{translateText("Ensure pending labs are routed to the queue with urgency tags.")}</div>
+        </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }

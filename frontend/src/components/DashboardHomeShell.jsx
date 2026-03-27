@@ -4,18 +4,20 @@ import { ActionCard } from "./Cards";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
+import { canonicalizePath } from "../app/routing/canonicalizePath";
 
 function DashboardActionButton({ action }) {
   const navigate = useNavigate();
   const { translateText } = useAppLanguage();
+  const resolvedPath = canonicalizePath(action?.path);
 
   const handleClick = () => {
     if (typeof action?.onClick === "function") {
       action.onClick(navigate);
       return;
     }
-    if (action?.path) {
-      navigate(action.path);
+    if (resolvedPath) {
+      navigate(resolvedPath);
     }
   };
 
@@ -24,9 +26,9 @@ function DashboardActionButton({ action }) {
       type="button"
       className={action?.variant === "secondary" ? "btn-secondary" : "btn-primary"}
       onClick={handleClick}
-      onMouseEnter={() => prefetchRouteByPath(action?.path)}
-      onFocus={() => prefetchRouteByPath(action?.path)}
-      disabled={action?.disabled || (!action?.path && typeof action?.onClick !== "function")}
+      onMouseEnter={() => prefetchRouteByPath(resolvedPath)}
+      onFocus={() => prefetchRouteByPath(resolvedPath)}
+      disabled={action?.disabled || (!resolvedPath && typeof action?.onClick !== "function")}
     >
       {translateText(action?.label || "Open")}
     </button>
@@ -67,8 +69,9 @@ function ContextRailCard({ card }) {
       action.onClick(navigate);
       return;
     }
-    if (action?.path) {
-      navigate(action.path);
+    const resolvedPath = canonicalizePath(action?.path);
+    if (resolvedPath) {
+      navigate(resolvedPath);
     }
   };
 
@@ -361,14 +364,15 @@ export default function DashboardHomeShell({
         <section className="dashboard-home-pinned-summary" aria-label={translateText("Summary")}>
           <div className="dashboard-home-stats dashboard-home-stats-pinned">
             {stats.map((item) => {
-              const isClickable = typeof item?.onClick === "function" || Boolean(item?.path);
+              const resolvedPath = canonicalizePath(item?.path);
+              const isClickable = typeof item?.onClick === "function" || Boolean(resolvedPath);
               const StatTag = isClickable ? "button" : "div";
               const handleClick = () => {
                 if (typeof item?.onClick === "function") {
                   item.onClick(navigate);
                   return;
                 }
-                if (item?.path) navigate(item.path);
+                if (resolvedPath) navigate(resolvedPath);
               };
               return (
                 <StatTag
@@ -376,8 +380,8 @@ export default function DashboardHomeShell({
                   type={isClickable ? "button" : undefined}
                   className={`premium-shell-stat dashboard-home-stat${isClickable ? " stat-clickable" : ""}`.trim()}
                   onClick={isClickable ? handleClick : undefined}
-                  onMouseEnter={item?.path ? () => prefetchRouteByPath(item.path) : undefined}
-                  onFocus={item?.path ? () => prefetchRouteByPath(item.path) : undefined}
+                  onMouseEnter={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
+                  onFocus={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
                   aria-label={translateText(item.label)}
                 >
                   <span>{translateText(item.label)}</span>

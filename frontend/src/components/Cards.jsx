@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
+import { canonicalizePath } from "../app/routing/canonicalizePath";
 
 function Sparkline({ points = [] }) {
   const nums = (points || []).map((v) => Number(v)).filter((v) => Number.isFinite(v));
@@ -47,18 +48,19 @@ export const StatCard = ({
 }) => {
   const navigate = useNavigate();
   const { translateText } = useAppLanguage();
+  const resolvedPath = canonicalizePath(path);
   const handleOpen = typeof onClick === "function"
     ? onClick
-    : path
-      ? () => navigate(path)
+    : resolvedPath
+      ? () => navigate(resolvedPath)
       : null;
 
   return (
     <div
       className={`card premium-card stat stat-${status} stat-${variant}${typeof handleOpen === "function" ? " stat-clickable" : ""}`}
       onClick={typeof handleOpen === "function" ? handleOpen : undefined}
-      onMouseEnter={path ? () => prefetchRouteByPath(path) : undefined}
-      onFocus={path ? () => prefetchRouteByPath(path) : undefined}
+      onMouseEnter={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
+      onFocus={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
       role={typeof handleOpen === "function" ? "button" : undefined}
       tabIndex={typeof handleOpen === "function" ? 0 : undefined}
       onKeyDown={
@@ -111,15 +113,16 @@ export const ActionCard = ({
   const navigate = useNavigate();
   const { translateText } = useAppLanguage();
 
+  const resolvedPath = canonicalizePath(path);
   const handleOpen =
-    typeof onClick === "function" ? onClick : path ? () => navigate(path) : null;
+    typeof onClick === "function" ? onClick : resolvedPath ? () => navigate(resolvedPath) : null;
 
   return (
     <div
       className={`card premium-card action-card action-card-${variant}${handleOpen ? " stat-clickable" : ""}`}
       onClick={handleOpen || undefined}
-      onMouseEnter={path ? () => prefetchRouteByPath(path) : undefined}
-      onFocus={path ? () => prefetchRouteByPath(path) : undefined}
+      onMouseEnter={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
+      onFocus={resolvedPath ? () => prefetchRouteByPath(resolvedPath) : undefined}
       role={handleOpen ? "button" : undefined}
       tabIndex={handleOpen ? 0 : undefined}
       onKeyDown={
@@ -141,7 +144,7 @@ export const ActionCard = ({
         </div>
       </div>
       {description ? <p className="action-card-description">{translateText(description)}</p> : null}
-      <div className="action-card-footer">{translateText(footerLabel)}</div>
+      {handleOpen ? <div className="action-card-footer">{translateText(footerLabel)}</div> : null}
     </div>
   );
 };

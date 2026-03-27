@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { StatCard } from "../../components/Cards";
 import { getHRDashboard } from "../../services/dashboardApi";
 import { runBurnoutScore, runCausalImpact } from "../../services/mlApi";
@@ -9,7 +9,6 @@ import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function HRManagerDashboard() {
   const { translateText } = useAppLanguage();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [burnout, setBurnout] = useState(null);
   const [causal, setCausal] = useState(null);
@@ -51,6 +50,7 @@ export default function HRManagerDashboard() {
     if (n < 3) return "warn";
     return "good";
   };
+
   const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
 
   const loadAi = async () => {
@@ -86,6 +86,7 @@ export default function HRManagerDashboard() {
   useEffect(() => {
     getHRDashboard().then(setData).catch(() => setData(null));
     loadAi();
+
     listTrainingTrackers({ limit: 200 })
       .then((res) => {
         const rows = Array.isArray(res?.items) ? res.items : [];
@@ -107,6 +108,7 @@ export default function HRManagerDashboard() {
         ).length;
         const total = rows.length;
         const completionRate = total ? Math.round((completed / total) * 100) : 0;
+
         setTraining({
           total,
           notStarted,
@@ -129,6 +131,7 @@ export default function HRManagerDashboard() {
           completionRate: 0,
         })
       );
+
     listTransfers({ limit: 8, scope: "facility" })
       .then((res) => {
         const items = Array.isArray(res?.items) ? res.items : [];
@@ -139,193 +142,117 @@ export default function HRManagerDashboard() {
         setTransfers([]);
         setTransferError(err?.message || "Failed to load transfers.");
       });
+
     const timer = setInterval(loadAi, 45000);
     return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>HR Manager Dashboard</h2>
-          <p className="muted">Simple HR view for hiring, staff records, and performance.</p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-primary" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Pipeline</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/staff")}>Employee Profiles</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/workforce/requests")}>Leave Management</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}>Training Tracker</button>
-        </div>
-      </div>
-
-      <section className="section">
-        <h3>Top HR KPIs</h3>
+    <DashboardHomeShell
+      shellKey="people_hr_manager"
+      kicker={translateText("People")}
+      title={translateText("HR Manager")}
+      subtitle={translateText("Hiring, staff readiness, training completeness, and workforce intelligence.")}
+      actions={[
+        { label: translateText("Recruitment Pipeline"), path: "/app/people/staff/register" },
+        { label: translateText("Employee Profiles"), path: "/app/people/staff/index", variant: "secondary" },
+        { label: translateText("Leave Management"), path: "/app/people/requests/index", variant: "secondary" },
+        { label: translateText("Training Tracker"), path: "/app/people/training/tracker?status=IN_PROGRESS", variant: "secondary" },
+      ]}
+      stats={[
+        { label: translateText("Pending Requests"), value: data?.pendingRequests?.total ?? "—", path: "/app/people/requests/index" },
+        { label: translateText("Incomplete Staff"), value: data?.incompleteStaff ?? "—", path: "/app/people/staff/index" },
+        { label: translateText("Training Completion %"), value: training.completionRate, path: "/app/people/training/tracker" },
+        { label: translateText("Burnout Score"), value: burnout?.score ?? "—", path: "/app/people/requests/index?status=PENDING" },
+      ]}
+    >
+      <DashboardSection title={translateText("Training Tracker")} subtitle={translateText("Keep onboarding and compliance training moving without chasing spreadsheets.")}>
         <div className="grid info-grid">
-          <StatCard title="Open Positions" value={data?.newHires ?? "—"} onClick={() => navigate("/hospital-admin/register-staff")} />
-          <StatCard title="Leave Pending" value={data?.pendingRequests?.leave ?? "—"} onClick={() => navigate("/workforce/requests")} />
-          <StatCard title="Turnover %" value={data?.inactiveStaff ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
-          <StatCard title="Compliance Alerts" value={data?.missingLicenses ?? "—"} onClick={() => navigate("/hospital-admin/staff")} />
-          <StatCard
-            title="Training Completion %"
-            value={training.completionRate}
-            trend={trend.trainingCompletion}
-            subtitle={`${training.completed}/${training.total} completed`}
-            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
-          />
+          <StatCard title={translateText("Total Trainees")} value={training.total} path="/app/people/training/tracker" />
+          <StatCard title={translateText("Not Started")} value={training.notStarted} path="/app/people/training/tracker?status=NOT_STARTED" />
+          <StatCard title={translateText("In Progress")} value={training.inProgress} path="/app/people/training/tracker?status=IN_PROGRESS" />
+          <StatCard title={translateText("Completed")} value={training.completed} path="/app/people/training/tracker?status=COMPLETED" />
+          <StatCard title={translateText("Overdue Not Started")} value={training.overdueNotStarted} path="/app/people/training/tracker?status=NOT_STARTED" />
+          <StatCard title={translateText("Overdue In Progress")} value={training.overdueInProgress} path="/app/people/training/tracker?status=IN_PROGRESS" />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>Training Tracker</h3>
-        <div className="grid info-grid">
-          <StatCard
-            title="Total Trainees"
-            value={training.total}
-            onClick={() => navigate("/admin/training-tracker")}
-          />
-          <StatCard
-            title="Not Started"
-            value={training.notStarted}
-            onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}
-          />
-          <StatCard
-            title="In Progress"
-            value={training.inProgress}
-            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
-          />
-          <StatCard
-            title="Completed"
-            value={training.completed}
-            onClick={() => navigate("/admin/training-tracker?status=COMPLETED")}
-          />
-          <StatCard
-            title="Overdue Not Started"
-            value={training.overdueNotStarted}
-            onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}
-          />
-          <StatCard
-            title="Overdue In Progress"
-            value={training.overdueInProgress}
-            onClick={() => navigate("/admin/training-tracker?status=IN_PROGRESS")}
-          />
-        </div>
-      </section>
-
-      <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
-          <h3>Main Tasks</h3>
-          <div className="panel-grid">
-            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/register-staff")}>Recruitment Kanban</button>
-            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff")}>Contracts</button>
-            <button type="button" className="action-link" onClick={() => navigate("/reports")}>Performance Reviews</button>
-            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/staff?q=license")}>Training & Certifications</button>
-            <button type="button" className="action-link" onClick={() => navigate("/admin/training-tracker?status=NOT_STARTED")}>Training Tracker Board</button>
-            <button type="button" className="action-link" onClick={() => navigate("/hospital-admin/register-staff?view=planning")}>Succession Planning</button>
-          </div>
-        </div>
-        <div className="card doctor-alerts-card">
-          <h3>Alerts</h3>
-          <div className="alert-stack">
-            <div className="action-pill">{translateText("Pending Requests")}: {data?.pendingRequests?.total ?? "—"}</div>
-            <div className="action-pill">{translateText("Incomplete Staff")}: {data?.incompleteStaff ?? "—"}</div>
-            <div className="action-pill">{translateText("Inactive Staff")}: {data?.inactiveStaff ?? "—"}</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
-          <div className="card-header-actions">
-            <div>
-              <h3>Transfer Continuity</h3>
-              <p className="muted">Recent transfers and handoff status.</p>
-            </div>
-            <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
-          </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="doctor-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Route</th>
-                  <th>Status</th>
+      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Operational handoffs that affect staffing coverage and leave planning.")}>
+        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        <div className="table-wrap" style={{ marginTop: 12 }}>
+          <table className="doctor-table">
+            <thead>
+              <tr>
+                <th>{translateText("Patient")}</th>
+                <th>{translateText("Route")}</th>
+                <th>{translateText("Status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t) => (
+                <tr key={t._id}>
+                  <td>
+                    {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
+                  </td>
+                  <td>
+                    {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
+                    {t?.toHospital?.name || t?.toHospital?.code || "—"}
+                  </td>
+                  <td>{translateText(t.status)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t._id}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
-                    <td>{t?.fromHospital?.name || t?.fromHospital?.code || "—"} → {t?.toHospital?.name || t?.toHospital?.code || "—"}</td>
-                    <td>{t.status}</td>
-                  </tr>
-                ))}
-                {transfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-          <div className="doctor-actions-row" style={{ marginTop: 12 }}>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/transfer-command-center")}>
-              Transfer Command Center
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/register-staff")}>
-              Staffing Support
-            </button>
-          </div>
+              ))}
+              {transfers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="muted">
+                    {translateText("No transfers yet.")}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
-        <div className="card doctor-alerts-card">
-          <h3>Continuity Actions</h3>
-          <div className="alert-stack">
-            <div className="alert-item">Assign a receiving clinician early for pending transfers.</div>
-            <div className="alert-item">Escalate staffing gaps in transfer-heavy wards.</div>
-            <div className="alert-item">Coordinate leave coverage for high transfer load.</div>
-          </div>
-        </div>
-      </section>
+      </DashboardSection>
 
-      <section className="section">
-        <h3>AI Workforce Intelligence</h3>
+      <DashboardSection title={translateText("AI Workforce Intelligence")} subtitle={translateText("Auto-refresh signals that help prioritize staffing and training interventions.")}>
         <div className="grid info-grid">
           <StatCard
-            title="Burnout Score"
+            title={translateText("Burnout Score")}
             value={burnout?.score ?? "—"}
             trend={trend.burnoutScore}
-            subtitle="Auto-refresh 45s"
+            subtitle={translateText("Auto-refresh 45s")}
             status={burnoutStatus(burnout?.score)}
             badge={badgeFromStatus(burnoutStatus(burnout?.score))}
-            why={`Burnout score ${burnout?.score ?? 0}; >=75 high risk, 45-74 medium.`}
-            onClick={() => navigate("/workforce/requests?status=PENDING")}
-            onBadgeClick={() => navigate("/workforce/requests?status=PENDING")}
+            why={translateText(`Burnout score ${burnout?.score ?? 0}; >=75 high risk, 45-74 medium.`)}
+            path="/app/people/requests/index?status=PENDING"
           />
-          <StatCard title="Burnout Band" value={burnout?.band ?? "—"} onClick={() => navigate("/workforce/requests?status=PENDING")} />
           <StatCard
-            title="Projected KPI"
+            title={translateText("Burnout Band")}
+            value={burnout?.band ?? "—"}
+            path="/app/people/requests/index?status=PENDING"
+          />
+          <StatCard
+            title={translateText("Projected KPI")}
             value={causal?.projected ?? "—"}
             trend={trend.projectedKpi}
-            subtitle="Auto-refresh 45s"
+            subtitle={translateText("Auto-refresh 45s")}
             status={changeStatus(causal?.changePct)}
             badge={badgeFromStatus(changeStatus(causal?.changePct))}
-            why={`Projected KPI is ${causal?.projected ?? 0}; negative expected change means risk.`}
-            onClick={() => navigate("/hospital-admin/register-staff")}
-            onBadgeClick={() => navigate("/hospital-admin/register-staff")}
+            why={translateText(`Projected KPI is ${causal?.projected ?? 0}; negative expected change means risk.`)}
+            path="/app/people/staff/register"
           />
           <StatCard
-            title="Projected Change %"
+            title={translateText("Projected Change %")}
             value={causal?.changePct ?? "—"}
             trend={trend.projectedChange}
-            subtitle="Auto-refresh 45s"
+            subtitle={translateText("Auto-refresh 45s")}
             status={changeStatus(causal?.changePct)}
             badge={badgeFromStatus(changeStatus(causal?.changePct))}
-            why={`Change ${causal?.changePct ?? 0}%; <0 is risk, 0-3 is watch.`}
-            onClick={() => navigate("/hospital-admin/register-staff")}
-            onBadgeClick={() => navigate("/hospital-admin/register-staff")}
+            why={translateText(`Change ${causal?.changePct ?? 0}%; <0 is risk, 0-3 is watch.`)}
+            path="/app/people/staff/register"
           />
         </div>
-      </section>
-    </div>
+      </DashboardSection>
+    </DashboardHomeShell>
   );
 }
+

@@ -111,6 +111,16 @@ export const LEGACY_ROUTE_MAP = Object.freeze({
   "/hospital-admin/digital-twin": "/app/innovation/digital-twin/index",
   "/hospital-admin/interop-marketplace": "/app/innovation/interop-marketplace/index",
 
+  // Ops unit dashboards (legacy)
+  "/ops/triage": "/app/operations/triage/index",
+  "/ops/emergency-command": "/app/operations/emergency/command",
+  "/ops/icu": "/app/operations/units/icu",
+  "/ops/theatre": "/app/operations/units/theatre",
+  "/ops/imaging": "/app/operations/units/imaging",
+  "/ops/neonatal-icu": "/app/operations/units/neonatal-icu",
+  "/ops/dialysis": "/app/operations/units/dialysis",
+  "/ops/oncology-daycare": "/app/operations/units/oncology-daycare",
+
   // Beds shared aliases
   "/admin/beds": "/app/operations/bed-board/index",
   "/nurse/ward-board": "/app/operations/bed-board/index",

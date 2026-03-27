@@ -1,6 +1,6 @@
 import "./theme-d.css";
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "./utils/auth";
 import SocketProvider from "./utils/socket";
@@ -102,6 +102,9 @@ const LaunchReadiness = lazy(() => import("./pages/Admin/LaunchReadiness"));
 const SreIncidentOps = lazy(() => import("./pages/Admin/SreIncidentOps"));
 const SupportTickets = lazy(() => import("./pages/Admin/SupportTickets"));
 const PilotOnboardingOps = lazy(() => import("./pages/Admin/PilotOnboardingOps"));
+const TransactionsDashboard = lazy(() => import("./pages/Admin/TransactionsDashboard"));
+const HospitalKPIDashboard = lazy(() => import("./pages/Admin/HospitalKPIDashboard"));
+const LabEncounterQueue = lazy(() => import("./pages/Lab/Index"));
 
 /* =======================
    DASHBOARDS
@@ -295,6 +298,21 @@ function PublicOnly({ children }) {
   return children;
 }
 
+function LegacyRedirect({ to }) {
+  const location = useLocation();
+  let target = String(to || "/");
+  const search = String(location.search || "");
+  const hash = String(location.hash || "");
+
+  if (search) {
+    if (target.includes("?")) target = `${target}&${search.replace(/^[?]/, "")}`;
+    else target = `${target}${search}`;
+  }
+  if (hash) target = `${target}${hash}`;
+
+  return <Navigate to={target} replace />;
+}
+
 /* =====================================================
    APP
 ===================================================== */
@@ -428,6 +446,12 @@ export default function App() {
           <Route path="/app/operations/bed-board/index" element={<RequireRole roles={["NURSE", "DOCTOR", "SURGEON", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><Beds /></RequireRole>} />
           <Route path="/app/operations/triage/index" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><TriageOpsDashboard /></RequireRole>} />
           <Route path="/app/operations/emergency/command" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "SECURITY_ADMIN", "SECURITY_OFFICER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><EmergencyCommandDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/icu" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><IcuOpsDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/theatre" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><TheatreOpsDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/imaging" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "RADIOLOGIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><ImagingOpsDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/neonatal-icu" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><NeonatalIcuDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/dialysis" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><DialysisOpsDashboard /></RequireRole>} />
+          <Route path="/app/operations/units/oncology-daycare" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><OncologyDaycareDashboard /></RequireRole>} />
           <Route path="/app/operations/consultations/monitor" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminConsultationMonitor /></RequireRole>} />
           <Route path="/app/operations/transfers/command" element={<RequireRole roles={["DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><HospitalAdminTransferCommandCenter /></RequireRole>} />
           <Route path="/app/operations/scheduling/appointments" element={<RequireRole roles={["DOCTOR", "SURGEON", "RECEPTIONIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><SchedulingAppointments /></RequireRole>} />
@@ -443,6 +467,7 @@ export default function App() {
 
           {/* Lab (ops) */}
           <Route path="/app/operations/lab/test-queue" element={<RequireRole roles={["LAB_TECH", "SUPER_ADMIN", "DEVELOPER"]}><LabTestQueue /></RequireRole>} />
+          <Route path="/app/operations/lab/encounter-queue" element={<RequireRole roles={["LAB_TECH", "DOCTOR", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><LabEncounterQueue /></RequireRole>} />
           <Route path="/app/operations/lab/equipment" element={<RequireRole roles={["LAB_TECH", "SUPER_ADMIN", "DEVELOPER"]}><LabEquipmentLogs /></RequireRole>} />
           <Route path="/app/operations/lab/samples" element={<RequireRole roles={["LAB_TECH", "SUPER_ADMIN", "DEVELOPER"]}><LabSampleTracking /></RequireRole>} />
           <Route path="/app/operations/lab/qc" element={<RequireRole roles={["LAB_TECH", "SUPER_ADMIN", "DEVELOPER"]}><LabQualityControl /></RequireRole>} />
@@ -474,6 +499,7 @@ export default function App() {
           {/* Revenue */}
           <Route path="/app/revenue/payments/index" element={<RequireRole roles={["PAYROLL_OFFICER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "PATIENT"]}><PaymentsPageFull /></RequireRole>} />
           <Route path="/app/revenue/payments/settings" element={<RequireRole roles={["SUPER_ADMIN"]}><PaymentSettings /></RequireRole>} />
+          <Route path="/app/revenue/transactions/index" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "PAYROLL_OFFICER", "DEVELOPER"]}><TransactionsDashboard /></RequireRole>} />
           <Route path="/app/revenue/claims/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN"]}><ClaimsDashboard /></RequireRole>} />
           <Route path="/app/revenue/claims/rules" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><ClaimRules /></RequireRole>} />
           <Route path="/app/revenue/intelligence/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"]}><RevenueIntelligence /></RequireRole>} />
@@ -489,6 +515,7 @@ export default function App() {
           <Route path="/app/platform/inbox/notifications" element={<RequireRole roles={SHARED_NOTIFICATION_ROLES}><NotificationsPage /></RequireRole>} />
           <Route path="/app/platform/inbox/communication" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "NURSE", "LAB_TECH", "PHARMACIST", "SECURITY_ADMIN", "SECURITY_OFFICER", "RECEPTIONIST", "SURGEON", "HR_MANAGER", "PAYROLL_OFFICER"]}><CommunicationCenter /></RequireRole>} />
           <Route path="/app/platform/analytics/index" element={<Analytics />} />
+          <Route path="/app/platform/analytics/hospital-kpis" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"]}><HospitalKPIDashboard /></RequireRole>} />
           <Route path="/app/platform/reports/index" element={<Reports />} />
           <Route path="/app/platform/offline/ops" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><OfflineOps /></RequireRole>} />
           <Route path="/app/platform/print/center" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "SECURITY_ADMIN", "HR_MANAGER", "PAYROLL_OFFICER", "DOCTOR", "NURSE", "LAB_TECH", "PHARMACIST"]}><PrintCenter /></RequireRole>} />
@@ -568,7 +595,7 @@ export default function App() {
 
           {/* Legacy URL redirects (old → new). */}
           {Object.entries(LEGACY_ROUTE_MAP).map(([from, to]) => (
-            <Route key={from} path={from} element={<Navigate to={to} replace />} />
+            <Route key={from} path={from} element={<LegacyRedirect to={to} />} />
           ))}
         </Route>
 

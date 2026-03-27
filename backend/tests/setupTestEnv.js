@@ -1,8 +1,33 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { jest as jestGlobals } from "@jest/globals";
+import { createServer } from "node:net";
 
 let mongoServer;
 let usingExternalMongo = false;
+
+// Set Jest timeout at module load so it applies to hooks that call `setup()`.
+// Doing this inside `setup()` is too late to affect the current `beforeAll` timeout.
+if (jestGlobals && typeof jestGlobals.setTimeout === "function") {
+  const externalUriForTimeout =
+    process.env.TEST_MONGO_URI ||
+    (process.env.USE_EXTERNAL_TEST_DB === "1" ? process.env.MONGO_URI : "");
+  const defaultTimeoutMs = externalUriForTimeout ? 30000 : 120000;
+  jestGlobals.setTimeout(Number(process.env.TEST_TIMEOUT_MS || defaultTimeoutMs));
+}
+
+async function getFreeLocalPort(host = "127.0.0.1") {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.on("error", reject);
+    server.listen(0, host, () => {
+      const addr = server.address();
+      const port = typeof addr === "object" && addr ? addr.port : 0;
+      server.close(() => resolve(port));
+    });
+  });
+}
 
 function withTestDbName(uri, dbName) {
   const [base, query = ""] = uri.split("?");
@@ -22,14 +47,11 @@ function extractDbName(uri) {
 }
 
 export default async function setup() {
-  if (typeof jest !== "undefined" && typeof jest.setTimeout === "function") {
-    jest.setTimeout(Number(process.env.TEST_TIMEOUT_MS || 30000));
-  }
   const externalUri =
     process.env.TEST_MONGO_URI ||
     (process.env.USE_EXTERNAL_TEST_DB === "1" ? process.env.MONGO_URI : "");
   let uri = externalUri || "mongodb://127.0.0.1:27017/afyalink_test";
-  const port = Number(process.env.TEST_MONGO_PORT || 0);
+  const requestedPort = Number(process.env.TEST_MONGO_PORT || 0);
   let testDbName = "";
   if (externalUri) {
     usingExternalMongo = true;
@@ -37,9 +59,13 @@ export default async function setup() {
     uri = withTestDbName(externalUri, testDbName);
   } else {
     try {
-      mongoServer = await MongoMemoryServer.create({
+      const port = requestedPort || (await getFreeLocalPort("127.0.0.1"));
+      mongoServer = new MongoMemoryServer({
         instance: { ip: "127.0.0.1", port },
       });
+      // mongodb-memory-server uses get-port internally (binds 0.0.0.0), which is blocked in some sandboxes.
+      // Starting with forceSamePort avoids get-port entirely.
+      await mongoServer.start(true);
       uri = mongoServer.getUri();
     } catch (err) {
       if (!uri) throw err;

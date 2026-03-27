@@ -14,6 +14,7 @@ import {
   Cell,
 } from "recharts";
 import apiFetch from "../../utils/apiFetch";
+import DashboardHomeShell from "../../components/DashboardHomeShell";
 
 const emptyOverview = {
   summary: {
@@ -677,12 +678,12 @@ export default function GovernmentClaimsDashboard() {
     {
       label: "Hospitals Registered",
       value: formatNumber(overview.summary.hospitalsTotal),
-      onClick: () => navigate("/system-admin/government-hospital-registry"),
+      onClick: () => navigate("/app/governance/registry/hospitals"),
     },
     {
       label: "Patients Verified",
       value: formatNumber(overview.summary.patientsVerified),
-      onClick: () => navigate("/system-admin/patient-identity-registry"),
+      onClick: () => navigate("/app/governance/registry/patient-identity"),
     },
     {
       label: "Total Amount",
@@ -692,7 +693,7 @@ export default function GovernmentClaimsDashboard() {
     {
       label: "Compliant Hospitals",
       value: formatNumber(overview.summary.compliantHospitals),
-      onClick: () => navigate("/system-admin/government-hospital-registry"),
+      onClick: () => navigate("/app/governance/registry/hospitals"),
     },
   ];
 
@@ -758,23 +759,17 @@ export default function GovernmentClaimsDashboard() {
   }, [apiStatus.detail, apiStatus.lastChecked, apiStatus.lastSuccessAt]);
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>Government Health Management & Regulatory Dashboard</h2>
-          <p className="muted">
-            End-to-end national oversight for claims, compliance, inspections, and fraud prevention.
-          </p>
-        </div>
-        <div className="welcome-actions">
-          <span className={apiBadgeClass} title={apiBadgeTooltip}>
-            {apiBadgeLabel}
-          </span>
-          <button type="button" className="btn-secondary" onClick={loadAll} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-      </div>
+    <DashboardHomeShell
+      shellKey="governance_government_claims"
+      kicker="Governance"
+      title="Government Claims"
+      subtitle="End-to-end national oversight for claims, compliance, inspections, and fraud prevention."
+      actions={[
+        { label: loading ? "Refreshing..." : "Refresh", onClick: loadAll, variant: "secondary", disabled: loading },
+        { label: "Hospital Registry", path: "/app/governance/registry/hospitals", variant: "secondary" },
+        { label: "Patient Identity", path: "/app/governance/registry/patient-identity", variant: "secondary" },
+      ]}
+    >
 
       <div className="card connection-banner">
         <div className="connection-status">
@@ -1708,6 +1703,6 @@ export default function GovernmentClaimsDashboard() {
           </div>
         </div>
       </section>
-    </div>
+    </DashboardHomeShell>
   );
 }
