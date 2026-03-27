@@ -1802,7 +1802,7 @@ body.auth-route {
 }
 
 .sidebar-legal-links {
-  justify-content: center;
+  justify-content: flex-start;
   margin-top: 6px;
 }
 
@@ -1811,6 +1811,19 @@ body.auth-route {
   overflow-y: auto;
   padding-right: 6px;
   overscroll-behavior: contain;
+  padding-bottom: 18px;
+}
+
+.sidebar-bottom {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border);
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-bottom .sidebar-cluster {
+  margin-bottom: 10px;
 }
 
 .sticky-footer {
@@ -2083,7 +2096,7 @@ body.auth-route {
 }
 
 .sidebar-legal-links .legal-links {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .sidebar-utility-rail {

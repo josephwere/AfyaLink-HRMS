@@ -471,57 +471,41 @@ export default function Sidebar({ open = true, onClose }) {
         {activeNavGroups.length === 0 ? (
           <div className="sidebar-empty-note">{translateText("No tools are available in this workspace yet.")}</div>
         ) : null}
-      </div>
 
-      <div className="sidebar-footer sticky-footer">
-        <div className="sidebar-utility-rail" aria-label={translateText("Account shortcuts")}>
+        <div className="sidebar-bottom" aria-label={translateText("Account")}>
+          <SidebarCluster title="Account">
+            <SidebarItem
+              item={{ label: "Notifications", path: "/app/platform/inbox/notifications", icon: "notifications" }}
+              active={isActivePath(location.pathname, "/app/platform/inbox/notifications")}
+              onSelect={handleSelect}
+              badge={pharmacyRiskAlertCount > 0 ? String(pharmacyRiskAlertCount) : ""}
+            />
+            <SidebarItem
+              item={{ label: "Profile", path: "/app/platform/account/profile", icon: "account" }}
+              active={isActivePath(location.pathname, "/app/platform/account/profile")}
+              onSelect={handleSelect}
+            />
+            <SidebarItem
+              item={{ label: "Settings", path: settingsPathForRole(effectiveRole), icon: "settings" }}
+              active={isActivePath(location.pathname, settingsPathForRole(effectiveRole))}
+              onSelect={handleSelect}
+            />
+          </SidebarCluster>
+
           <button
             type="button"
-            className="nav-btn sidebar-utility-btn"
+            className="nav-btn sidebar-signout-btn"
             onClick={() => {
-              navigate("/app/platform/inbox/notifications");
+              logout();
               onClose?.();
             }}
           >
-            <NavIcon name="notifications" />
-            {translateText("Notifications")}
-            {pharmacyRiskAlertCount > 0 ? <span className="notif-badge">{pharmacyRiskAlertCount}</span> : null}
+            <NavIcon name="security" />
+            {translateText("Sign Out")}
           </button>
-          <button
-            type="button"
-            className="nav-btn sidebar-utility-btn"
-            onClick={() => {
-              navigate("/app/platform/account/profile");
-              onClose?.();
-            }}
-          >
-            <NavIcon name="account" />
-            {translateText("Profile")}
-          </button>
-          <button
-            type="button"
-            className="nav-btn sidebar-utility-btn"
-            onClick={() => {
-              navigate(settingsPathForRole(effectiveRole));
-              onClose?.();
-            }}
-          >
-            <NavIcon name="settings" />
-            {translateText("Settings")}
-          </button>
+
+          <LegalLinks compact className="sidebar-legal-links" />
         </div>
-        <button
-          type="button"
-          className="nav-btn sidebar-signout-btn"
-          onClick={() => {
-            logout();
-            onClose?.();
-          }}
-        >
-          <NavIcon name="security" />
-          {translateText("Sign Out")}
-        </button>
-        <LegalLinks compact className="sidebar-legal-links" />
       </div>
 
       <button
