@@ -37,7 +37,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 if ("serviceWorker" in navigator) {
   if (import.meta.env.PROD) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
+      const buildId = import.meta.env.VITE_BUILD_ID || "v2";
+      navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(buildId)}`).catch(() => {
         // Keep app functional even if service worker registration fails.
       });
     });
