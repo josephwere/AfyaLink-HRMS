@@ -3942,15 +3942,21 @@ button.premium-shell-stat {
   align-items: start;
 }
 
-@media (min-width: 980px) {
+@media (min-width: 860px) {
   .dashboard-home-custom-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1480px) {
+@media (min-width: 1260px) {
   .dashboard-home-custom-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1760px) {
+  .dashboard-home-custom-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -8001,15 +8007,21 @@ button.card.stat {
   align-items: start;
 }
 
-@media (min-width: 980px) {
+@media (min-width: 860px) {
   .system-settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1480px) {
+@media (min-width: 1260px) {
   .system-settings-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1760px) {
+  .system-settings-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

@@ -10,7 +10,6 @@ import { useUiPreferences } from "../utils/uiPreferences";
 import { settingsPathForRole } from "../utils/workspaceNavigation";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { listNotifications } from "../services/notificationsApi";
-import { ROLE_VIEW_OPTIONS } from "../utils/roleViewOptions";
 import { workspacesForUser, navForWorkspace, WORKSPACE_HOME_PATH } from "../app/navigation/workspaces";
 import { LEGACY_ROUTE_MAP } from "../app/routing/legacyRouteMap";
 
@@ -152,16 +151,7 @@ function canonicalizeStoredPath(rawPath) {
 }
 
 export default function Sidebar({ open = true, onClose }) {
-  const {
-    user,
-    logout,
-    canRoleOverride,
-    actualRole,
-    roleOverride,
-    setRoleOverride,
-    strictImpersonation,
-    setStrictImpersonation,
-  } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useSystemSettings();
@@ -384,17 +374,6 @@ export default function Sidebar({ open = true, onClose }) {
 
   if (!user) return null;
 
-  const resetRoleView = () => {
-    setRoleOverride("");
-    setStrictImpersonation(false);
-    const target = redirectByRole({ role: actualRole || user?.actualRole || user?.role });
-    navigate(target);
-    onClose?.();
-  };
-
-  const viewingRole = normalizeRole(user?.role || "");
-  const signedInRole = normalizeRole(actualRole || user?.actualRole || "");
-
   return (
     <aside
       className={`sidebar ${open ? "is-open" : "collapsed"}`}
@@ -403,55 +382,6 @@ export default function Sidebar({ open = true, onClose }) {
     >
       <div className="sidebar-scroll">
         <div className="sidebar-workspace-shell">
-          <div className="sidebar-role-row" aria-label={translateText("Workspace role view")}>
-            {signedInRole ? (
-              <span className="sidebar-role-chip">{translateText(`Signed-in: ${signedInRole.replaceAll("_", " ")}`)}</span>
-            ) : null}
-            {viewingRole ? (
-              <span className="sidebar-role-chip ghost">{translateText(`Viewing: ${viewingRole.replaceAll("_", " ")}`)}</span>
-            ) : null}
-          </div>
-
-          {canRoleOverride ? (
-            <>
-              <div className="sidebar-search-label">{translateText("Workspace role view")}</div>
-              <select
-                className="sidebar-workspace-select"
-                value={roleOverride || ""}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setRoleOverride(next);
-                  const target = redirectByRole({ role: next || signedInRole || user?.role });
-                  navigate(target);
-                  onClose?.();
-                }}
-                aria-label={translateText("Role view")}
-              >
-                <option value="">{translateText("Signed-in role")}{signedInRole ? ` (${signedInRole.replaceAll("_", " ")})` : ""}</option>
-                {ROLE_VIEW_OPTIONS.map((role) => (
-                  <option key={role} value={role}>
-                    {role.replaceAll("_", " ")}
-                  </option>
-                ))}
-              </select>
-
-              <label className="sidebar-inline-check">
-                <input
-                  type="checkbox"
-                  checked={Boolean(strictImpersonation)}
-                  onChange={(e) => setStrictImpersonation(Boolean(e.target.checked))}
-                />
-                {translateText("Strict impersonation")}
-              </label>
-
-              <div className="sidebar-workspace-actions">
-                <button type="button" className="btn-secondary" onClick={resetRoleView}>
-                  {translateText("Reset")}
-                </button>
-              </div>
-            </>
-          ) : null}
-
           <div className="sidebar-search-label">{translateText("Workspace")}</div>
           <select
             className="sidebar-workspace-select"

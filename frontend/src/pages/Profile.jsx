@@ -23,7 +23,6 @@ import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 const PROFILE_CACHE_VERSION = 1;
-const SETTINGS_HOME_KEY = "settingsHome";
 
 function profileCacheKey(user) {
   const id = user?._id || user?.id || user?.email || user?.phone || "anonymous";
@@ -275,7 +274,7 @@ export default function Profile() {
   const [showSecretsOnHover, setShowSecretsOnHover] = useState(false);
   const [uiPrefSaving, setUiPrefSaving] = useState(false);
   const [uiPrefMsg, setUiPrefMsg] = useState("");
-  const [activeSection, setActiveSection] = useState(SETTINGS_HOME_KEY);
+  const [activeSection, setActiveSection] = useState("verificationStatus");
   const [trainingRole, setTrainingRole] = useState("");
   const [trainingMsg, setTrainingMsg] = useState("");
   const [trainingView, setTrainingView] = useState("FULL");
@@ -1973,14 +1972,10 @@ export default function Profile() {
 
   useEffect(() => {
     if (!profileSections.length) return;
-    if (!activeSection) {
-      setActiveSection(SETTINGS_HOME_KEY);
-      return;
-    }
-    if (activeSection === SETTINGS_HOME_KEY) return;
-    if (!profileSections.some((section) => section.key === activeSection)) {
-      setActiveSection(SETTINGS_HOME_KEY);
-    }
+    if (activeSection && profileSections.some((section) => section.key === activeSection)) return;
+    const preferred =
+      profileSections.find((section) => section.key === "verificationStatus")?.key || profileSections[0]?.key;
+    if (preferred) setActiveSection(preferred);
   }, [activeSection, profileSections]);
 
   const summaryCards = [
@@ -2005,43 +2000,6 @@ export default function Profile() {
       meta: isPatientProfile ? "Managed from this profile" : "Applies across the app",
     },
   ];
-
-  const renderSettingsHome = () => {
-    return (
-      <div className="profile-settings-home-stage">
-        {!profileLoaded ? (
-          <div className="card premium-card subtle-banner">
-            <strong>Syncing your profile workspace…</strong>
-            <div className="muted" style={{ marginTop: 6 }}>
-              You can browse settings now. Values and badges will update automatically when the sync finishes.
-            </div>
-          </div>
-        ) : null}
-
-        {Object.entries(groupedProfileSections).map(([group, sections]) => (
-          <div key={group} className="profile-settings-home-group">
-            <div className="profile-settings-nav-title">{group}</div>
-            <div className="profile-settings-home-grid">
-              {sections.map((section) => (
-                <button
-                  key={section.key}
-                  type="button"
-                  className="profile-settings-home-tile"
-                  onClick={() => setActiveSection(section.key)}
-                >
-                  <span className="profile-settings-home-tile-head">
-                    <strong>{section.title}</strong>
-                    <span className="action-pill">{section.badge}</span>
-                  </span>
-                  <span className="profile-settings-home-tile-copy">{section.description}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   const formatRoleLabel = (value) => String(value || "").replaceAll("_", " ").trim() || "User";
 
@@ -3102,26 +3060,23 @@ export default function Profile() {
     }
   };
 
-  const stageContent =
-    activeSection === SETTINGS_HOME_KEY ? (
-      renderSettingsHome()
-    ) : profileLoaded ? (
-	      renderActiveSection()
-	    ) : (
-	      <div className="card premium-card profile-settings-loading">
-	        <h2>{loading ? "Loading your workspace" : "Workspace still warming up"}</h2>
-	        <p className="muted">
-	          {loading
-	            ? "Pulling your account, security, and role-specific settings."
-            : error || "We could not load your profile settings yet. Please retry."}
-        </p>
-        <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
-          <button type="button" className="primary" onClick={() => loadStatus(1)} disabled={loading}>
-            {loading ? "Loading..." : "Retry"}
-          </button>
-        </div>
+  const stageContent = profileLoaded ? (
+    renderActiveSection()
+  ) : (
+    <div className="card premium-card profile-settings-loading">
+      <h2>{loading ? "Loading your workspace" : "Workspace still warming up"}</h2>
+      <p className="muted">
+        {loading
+          ? "Pulling your account, security, and role-specific settings."
+          : error || "We could not load your profile settings yet. Please retry."}
+      </p>
+      <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
+        <button type="button" className="primary" onClick={() => loadStatus(1)} disabled={loading}>
+          {loading ? "Loading..." : "Retry"}
+        </button>
       </div>
-    );
+    </div>
+  );
 
 	  return (
 	    <div className="profile-container profile-settings-home">
@@ -3129,7 +3084,7 @@ export default function Profile() {
 
       <section className="card premium-card profile-settings-hero">
         <div className="profile-settings-hero-copy">
-          <div className="profile-panel-eyebrow">Settings Home</div>
+          <div className="profile-panel-eyebrow">Profile</div>
           <h1>{user?.name || "Your profile workspace"}</h1>
           <p className="muted">
             Open one focused settings panel at a time. Everything here applies immediately to your account and keeps the profile experience cleaner than a long stacked page.
@@ -3162,9 +3117,7 @@ export default function Profile() {
         ))}
       </div>
 
-	      <div
-	        className={`profile-settings-shell ${activeSection === SETTINGS_HOME_KEY ? "is-home" : ""}`.trim()}
-	      >
+	      <div className="profile-settings-shell">
 	        <aside className="card profile-settings-nav">
 	          {Object.entries(groupedProfileSections).map(([group, sections]) => (
 	            <div key={group} className="profile-settings-nav-group">
@@ -3190,13 +3143,6 @@ export default function Profile() {
 	        </aside>
 
 	        <section className="profile-settings-stage">
-	          {activeSection && activeSection !== SETTINGS_HOME_KEY ? (
-	            <div className="profile-row profile-actions-row" style={{ marginBottom: 12 }}>
-	              <button type="button" className="btn-secondary" onClick={() => setActiveSection(SETTINGS_HOME_KEY)}>
-	                Back to Settings Home
-	              </button>
-	            </div>
-	          ) : null}
 	          {stageContent}
 	        </section>
 	      </div>
