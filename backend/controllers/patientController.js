@@ -2,6 +2,8 @@ import crypto from "crypto";
 import Patient from "../models/Patient.js";
 import Hospital from "../models/Hospital.js";
 import User from "../models/User.js";
+// Register Report model so populate("medicalRecords") works in environments that don't eagerly load all models.
+import "../models/Report.js";
 import FamilyAnchorApproval from "../models/FamilyAnchorApproval.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";

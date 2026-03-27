@@ -357,9 +357,7 @@ export const createAppointment = async (req, res, next) => {
     }
 
     if (!patient || !scheduledAt || !hospitalId) {
-      return res
-        .status(400)
-        .json({ msg: "patient, hospital and scheduledAt are required" });
+      return res.status(400).json({ msg: "patient, hospital and scheduledAt are required" });
     }
 
     const scheduledDate = new Date(scheduledAt);

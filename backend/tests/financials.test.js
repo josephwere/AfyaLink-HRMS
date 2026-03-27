@@ -25,7 +25,8 @@ beforeAll(async ()=>{
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
   );
   const p = await request(app).post('/api/patients').set('Authorization', `Bearer ${token}`).send({ firstName:'Bill', lastName:'Payer' });
-  patientId = p.body._id;
+  patientId = p.body.patient?._id;
+  expect(patientId).toBeDefined();
 });
 
 afterAll(async ()=>{ if (teardown) await teardown(); });

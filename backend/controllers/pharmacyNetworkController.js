@@ -1,5 +1,7 @@
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import PharmacyReferral from "../models/PharmacyReferral.js";
+// Register Prescription model so PharmacyReferral.populate("prescription") works in lean/lazy-loaded envs.
+import "../models/Prescription.js";
 import AuditLog from "../models/AuditLog.js";
 import Notification from "../models/Notification.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
