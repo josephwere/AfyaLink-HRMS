@@ -25,7 +25,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  background: var(--app-bg, #f5f6fa);
+  background: var(--home-bg, none) center/cover no-repeat, var(--app-bg, #fafafa);
   color: var(--app-text, #111827);
   overflow-x: hidden;
   overflow-y: auto;
@@ -76,6 +76,8 @@ body.auth-route {
   --app-radius-sm: 10px;
   --app-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   --app-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.12);
+  --home-bg: url(/background.png);
+  --login-bg: url(/background.png);
   --user-zoom: 1;
   --user-line-height: 1.5;
   --user-input-scale: 1;
@@ -146,7 +148,7 @@ body.auth-route {
 .auth-bg {
   min-height: 100dvh;
   height: 100dvh;
-  background: var(--app-bg);
+  background: var(--login-bg, var(--home-bg, none)) center/cover no-repeat, var(--app-bg);
   display: flex;
   align-items: flex-start;
   justify-content: center;

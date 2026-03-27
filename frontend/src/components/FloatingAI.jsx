@@ -161,7 +161,7 @@ export default function FloatingAI() {
   const cameraInputRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
-  const aiIcon = ai?.icon || settings?.branding?.appIcon || DEFAULT_AI_ICON;
+  const aiIcon = ai?.icon || DEFAULT_AI_ICON;
   const greeting = ai?.greeting || "Assistant";
   const assistantProfile = context?.assistantProfile || {};
   const hospitalScope = context?.hospitalScope || String(user?.hospitalId || user?.hospital || "GLOBAL");

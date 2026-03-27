@@ -20,7 +20,7 @@ export default function Chatbot() {
 
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
-  const aiIcon = settings?.ai?.icon || settings?.branding?.appIcon || DEFAULT_AI_ICON;
+  const aiIcon = settings?.ai?.icon || DEFAULT_AI_ICON;
 
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;
