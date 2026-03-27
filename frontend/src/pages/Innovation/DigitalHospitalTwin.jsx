@@ -212,15 +212,15 @@ export default function DigitalHospitalTwin() {
             <span>Beds, machines, doctor availability, appointments, transfers, and emergency state.</span>
           </div>
           <div className="premium-note">
-            <strong>Runtime</strong>
+            <strong>Status</strong>
             <span>
               {refreshing
-                ? "Refreshing live hospital signals while the current twin stays visible."
+                ? "Updating live data while your current view stays visible."
                 : clientMeta?.attempts > 1
-                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                ? `Loaded after ${clientMeta.attempts} attempts.`
                 : clientMeta?.loadedAt
                 ? `Live sync completed ${new Date(clientMeta.loadedAt).toLocaleString()}.`
-                : "Warm-start protection is ready for the first live pull."}
+                : "Ready for the first update."}
             </span>
           </div>
         </div>
@@ -229,11 +229,10 @@ export default function DigitalHospitalTwin() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
+            <span className="developer-tool-eyebrow">Preparing</span>
             <strong>Preparing the live hospital twin</strong>
             <p className="muted">
-              We are warming the backend and waiting for the first operational snapshot so this page
-              does not flash a false timeout on cold start.
+              We are preparing the first operational snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -253,7 +252,7 @@ export default function DigitalHospitalTwin() {
             className="btn-secondary"
             onClick={() => loadSnapshot({ preserveSnapshot: hasSnapshot })}
           >
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}

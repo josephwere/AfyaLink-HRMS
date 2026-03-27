@@ -44,9 +44,9 @@ export default function DLQInspectEdit(){
   }
 
   return (
-    <div>
-      <h2>DLQ Inspect & Edit</h2>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+    <div className="dashboard">
+      <h2>Queue Item Inspector</h2>
+      <div className="grid info-grid" style={{ gap: 12 }}>
         <div className="card">
           <button type="button" className="btn-secondary" onClick={load}>Refresh</button>
           {items.map((it) => (
@@ -64,7 +64,7 @@ export default function DLQInspectEdit(){
               <textarea value={editData} onChange={e=>setEditData(e.target.value)} style={{width:'100%',height:300}} />
               <div className="welcome-actions mt-10">
                 <button type="button" className="btn-primary" onClick={save}>Save</button>
-                <button type="button" className="btn-secondary" onClick={retry}>Retry</button>
+                <button type="button" className="btn-secondary" onClick={retry}>Re-run</button>
               </div>
             </div>
           ) : (

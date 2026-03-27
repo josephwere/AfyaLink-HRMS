@@ -517,7 +517,7 @@ export default function Beds() {
           </div>
         </div>
         <h3>Bed List</h3>
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
+        <div className="grid info-grid" style={{ gap: 12 }}>
           {filteredBeds.map((bed) => (
             <div key={bed._id} className="card">
               <div><strong>{bed.ward}</strong> - {bed.number}</div>

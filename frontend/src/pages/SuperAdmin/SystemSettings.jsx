@@ -605,23 +605,23 @@ export default function SystemSettings() {
             </div>
           </div>
 
-          <div className="panel-grid" style={{ marginTop: 12 }}>
-            <div className="card premium-card">
-              <h4>Provider</h4>
-              <p className="muted">{assetHealth?.provider || "unknown"}</p>
-              <p className="muted">
-                {assetHealth?.provider === "cloudinary"
-                  ? "Global CDN-backed media delivery is enabled."
-                  : "Local asset storage is active."}
-              </p>
-            </div>
-            <div className="card premium-card">
-              <h4>Public Base URL</h4>
-              <p className="muted" style={{ wordBreak: "break-word" }}>
-                {assetHealth?.publicBaseUrl || "Derived from the current backend origin"}
-              </p>
-            </div>
-          </div>
+	          <div className="panel-grid" style={{ marginTop: 12 }}>
+	            <div className="card premium-card">
+	              <h4>Delivery Mode</h4>
+	              <p className="muted">
+	                {assetHealth?.provider === "cloudinary"
+	                  ? "CDN delivery"
+	                  : assetHealth?.provider
+	                    ? "Local storage"
+	                    : "Not configured"}
+	              </p>
+	              <p className="muted">
+	                {assetHealth?.provider === "cloudinary"
+	                  ? "Global content delivery is enabled."
+	                  : "Local asset storage is active."}
+	              </p>
+	            </div>
+	          </div>
 
           <div className="card" style={{ marginTop: 12 }}>
             <h4>Recommended Next Checks</h4>
@@ -640,16 +640,16 @@ export default function SystemSettings() {
         </div>
       </section>
 
-      <section className="section">
-        <h3>Email Delivery Health</h3>
-        <div className="card">
-          <div className="card-header-actions">
-            <div>
-              <strong>Email provider status</strong>
-              <p className="muted" style={{ margin: "6px 0 0" }}>
-                Verify whether Brevo email delivery, sender identity, and contact sync are ready on the live backend.
-              </p>
-            </div>
+	      <section className="section">
+	        <h3>Email Delivery Health</h3>
+	        <div className="card">
+	          <div className="card-header-actions">
+	            <div>
+	              <strong>Email provider status</strong>
+	              <p className="muted" style={{ margin: "6px 0 0" }}>
+	                Verify whether email delivery, sender identity, and contact sync are ready for production workflows.
+	              </p>
+	            </div>
             <div className="welcome-actions" style={{ gap: 8 }}>
               <span className={`action-pill ${emailHealth?.status === "healthy" ? "ok" : "warn"}`}>
                 {emailHealth?.status === "healthy" ? "Healthy" : "Needs attention"}
@@ -665,78 +665,62 @@ export default function SystemSettings() {
             </div>
           </div>
 
-          <div className="panel-grid" style={{ marginTop: 12 }}>
-            <div className="card premium-card">
-              <h4>Active Provider</h4>
-              <p className="muted">{emailHealth?.provider || "unknown"}</p>
-              <p className="muted">
-                Sender: {emailHealth?.sender?.name || "AfyaLink HRMS"}{" "}
-                {emailHealth?.sender?.emailMasked ? `• ${emailHealth.sender.emailMasked}` : ""}
-              </p>
-            </div>
-            <div className="card premium-card">
-              <h4>Brevo API</h4>
-              <p className="muted">
-                {emailHealth?.brevo?.apiConfigured ? "Configured" : "Missing API key"}
-              </p>
-              <p className="muted">
-                Contact sync: {emailHealth?.brevo?.contactSyncEnabled ? "enabled" : "disabled"}
-              </p>
-              <p className="muted">
-                Lists: {emailHealth?.brevo?.defaultListIds?.length ? emailHealth.brevo.defaultListIds.join(", ") : "none"}
-              </p>
-            </div>
-            <div className="card premium-card">
-              <h4>SMTP Fallback</h4>
-              <p className="muted">
-                {emailHealth?.smtp?.configured ? "Configured" : "Not configured"}
-              </p>
-              <p className="muted">
-                {emailHealth?.smtp?.host || "No SMTP host"} • Port {emailHealth?.smtp?.port || "—"}
-              </p>
-              <p className="muted">
-                Login: {emailHealth?.smtp?.loginMasked || "not set"}
-              </p>
-            </div>
-          </div>
+	          <div className="panel-grid" style={{ marginTop: 12 }}>
+	            <div className="card premium-card">
+	              <h4>Provider</h4>
+	              <p className="muted">
+	                {emailHealth?.provider && emailHealth.provider !== "unknown" ? "Configured" : "Not configured"}
+	              </p>
+	              <p className="muted">
+	                Sender: {emailHealth?.sender?.name || "AfyaLink HRMS"}{" "}
+	                {emailHealth?.sender?.emailMasked ? `• ${emailHealth.sender.emailMasked}` : ""}
+	              </p>
+	            </div>
+	            <div className="card premium-card">
+	              <h4>Email integration</h4>
+	              <p className="muted">
+	                {emailHealth?.brevo?.apiConfigured ? "Connected" : "Missing key"}
+	              </p>
+	              <p className="muted">
+	                Contact sync: {emailHealth?.brevo?.contactSyncEnabled ? "enabled" : "disabled"}
+	              </p>
+	            </div>
+	            <div className="card premium-card">
+	              <h4>Secondary channel</h4>
+	              <p className="muted">
+	                {emailHealth?.smtp?.configured ? "Configured" : "Not configured"}
+	              </p>
+	            </div>
+	          </div>
 
-          <div className="panel-grid" style={{ marginTop: 12 }}>
-            <div className="card">
-              <h4>Recommended Next Checks</h4>
+	          <div className="panel-grid" style={{ marginTop: 12 }}>
+	            <div className="card">
+	              <h4>Recommended Next Checks</h4>
               {emailHealth?.recommendations?.length ? (
                 <ul className="muted" style={{ marginTop: 8, paddingLeft: 18 }}>
                   {emailHealth.recommendations.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-              ) : (
-                <p className="muted" style={{ marginTop: 8 }}>
-                  Backend email delivery looks ready. Next run <code>{emailHealth?.brevo?.smokeScript || "npm run smoke:brevo-email"}</code> on the backend host.
-                </p>
-              )}
-            </div>
-            <div className="card">
-              <h4>Smoke Test</h4>
-              <p className="muted" style={{ marginTop: 8 }}>
-                Command: <code>{emailHealth?.brevo?.smokeScript || "npm run smoke:brevo-email"}</code>
-              </p>
-              <p className="muted">
-                Sandbox default: {emailHealth?.brevo?.smokeSandboxDefault ? "enabled" : "disabled"}
-              </p>
-              <p className="muted">
-                Last checked: {emailHealth?.checkedAt ? new Date(emailHealth.checkedAt).toLocaleString() : "waiting"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+	              ) : (
+	                <p className="muted" style={{ marginTop: 8 }}>
+	                  Email delivery looks ready for normal workflows.
+	                </p>
+	              )}
+	              <p className="muted" style={{ marginTop: 8 }}>
+	                Last checked: {emailHealth?.checkedAt ? new Date(emailHealth.checkedAt).toLocaleString() : "waiting"}
+	              </p>
+	            </div>
+	          </div>
+	        </div>
+	      </section>
 
       <section className="section">
         <h3>Branding Assets</h3>
         <div className="card form">
-          <p className="muted" style={{ marginTop: 0 }}>
-            Uploaded branding is now persisted as backend-served asset URLs instead of large inline blobs, which is safer for redeploys and faster to cache behind a CDN later.
-          </p>
+	          <p className="muted" style={{ marginTop: 0 }}>
+	            Uploaded branding is now stored as asset URLs instead of large inline blobs, which is safer for redeploys and faster to cache behind a CDN later.
+	          </p>
           <div className="system-settings-upload-grid">
             <div className="system-settings-upload">
               <label htmlFor="branding-app-icon">Main App Icon</label>
@@ -929,11 +913,11 @@ export default function SystemSettings() {
                   const ranAt = entry.ranAt ? new Date(entry.ranAt).toLocaleString() : "unknown time";
                   return `Completed on ${ranAt} — hospitals updated: ${entry.hospitalsModified ?? 0}.`;
                 }
-                return "Pending — migration will run on next backend start.";
-              })()}
-            </p>
-          </div>
-        </div>
+	                return "Pending — migration will run on next restart.";
+	              })()}
+	            </p>
+	          </div>
+	        </div>
         <div className="card form">
           <label>
             <input

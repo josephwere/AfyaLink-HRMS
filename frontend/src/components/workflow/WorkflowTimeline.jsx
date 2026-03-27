@@ -3,11 +3,11 @@ import { apiFetch } from "../../utils/apiFetch";
 import WorkflowBadge from "./WorkflowBadge";
 import SLABadge from "./SLABadge";
 
+const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
 /**
  * WORKFLOW TIMELINE — READ ONLY
- * 🔒 Backend is the single source of truth
- * 🎨 Visuals via shared WorkflowBadge
+ * Visuals via shared WorkflowBadge
  */
 export default function WorkflowTimeline({ encounterId }) {
   const [data, setData] = useState(null);
@@ -43,8 +43,17 @@ export default function WorkflowTimeline({ encounterId }) {
 
   if (err) {
     return (
-      <div className="card" style={{ color: "red" }}>
-        {err}
+      <div className="card premium-card">
+        <strong>Workflow timeline unavailable</strong>
+        <p className="muted" style={{ marginTop: 8 }}>
+          We couldn’t load the workflow history right now. Try again in a moment.
+        </p>
+        {isDev ? <p className="muted" style={{ marginTop: 8 }}>Debug: {err}</p> : null}
+        <div className="welcome-actions mt-10">
+          <button type="button" className="btn-secondary" onClick={loadTimeline}>
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

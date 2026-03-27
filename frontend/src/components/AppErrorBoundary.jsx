@@ -1,17 +1,19 @@
 import React from "react";
 
+const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
+
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, message: "" };
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, message: String(error?.message || "Unexpected application error") };
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Keep lightweight console trace for debugging.
+    if (!isDev) return;
     // eslint-disable-next-line no-console
     console.error("App runtime error:", error, errorInfo);
   }
@@ -23,9 +25,8 @@ export default class AppErrorBoundary extends React.Component {
           <div className="card premium-card error-boundary-card">
             <h2>Something went wrong</h2>
             <p className="muted">
-              A page error occurred. Reload to recover. If it persists, report the action that caused it.
+              We hit a problem loading this screen. Reload to recover.
             </p>
-            <pre className="premium-code">{this.state.message}</pre>
             <button type="button" className="btn-primary" onClick={() => window.location.reload()}>
               Reload
             </button>

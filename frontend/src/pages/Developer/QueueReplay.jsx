@@ -75,7 +75,7 @@ export default function QueueReplay() {
             <button type="button" className="btn-primary" onClick={load} disabled={loading}>
               {loading ? "Refreshing..." : "Refresh Replay Queue"}
             </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/webhook-retry")}>Open Webhook Retry</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/webhook-retry")}>Open Webhook Recovery</button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/developer/decision-cockpit")}>Open Decision Cockpit</button>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function QueueReplay() {
           <div className="developer-console-pulse neutral">
             <span>Replay-ready</span>
             <strong>{summary.replayReady}</strong>
-            <small>DLQ items still within safe retry limits.</small>
+            <small>DLQ items still within safe replay limits.</small>
           </div>
           <div className="developer-console-pulse neutral">
             <span>Connectors affected</span>
@@ -184,7 +184,7 @@ export default function QueueReplay() {
             <div className="developer-runbook-list">
               <div className="developer-runbook-item"><strong>Repair before replay</strong><p className="muted">Fix payload shape or connector metadata first so the queue does not immediately loop back into failure.</p></div>
               <div className="developer-runbook-item"><strong>Replay the smallest blast radius</strong><p className="muted">Start with one payload, confirm the fix, then widen requeue activity if the connector stabilizes.</p></div>
-              <div className="developer-runbook-item"><strong>Trace the cause</strong><p className="muted">Use audit logs and webhook retry history to distinguish bad payloads from unstable downstream systems.</p></div>
+              <div className="developer-runbook-item"><strong>Trace the cause</strong><p className="muted">Use audit logs and webhook recovery history to distinguish bad payloads from unstable downstream systems.</p></div>
             </div>
             <div className="developer-inline-actions">
               <button type="button" className="btn-secondary" onClick={() => navigate("/admin/audit-logs")}>Audit Logs</button>
@@ -199,7 +199,7 @@ export default function QueueReplay() {
           <div className="card-header-actions">
             <div>
               <h3>Durable Background Jobs</h3>
-              <p className="muted">Retryable jobs for contact sync, outbound communications, and orchestration retries.</p>
+              <p className="muted">Recoverable jobs for contact sync, outbound communications, and orchestration.</p>
             </div>
             <div className="action-pill">{backgroundJobs.length} recent jobs</div>
           </div>
@@ -241,10 +241,10 @@ export default function QueueReplay() {
                 {backgroundJobs.length === 0 && (
                   <tr>
                     <td colSpan="6">
-                      <div className="developer-empty-state compact">
-                        <strong>No background jobs found.</strong>
-                        <p className="muted">When durable retries are active, their state will appear here.</p>
-                      </div>
+                        <div className="developer-empty-state compact">
+                          <strong>No background jobs found.</strong>
+                          <p className="muted">When durable recovery is active, their state will appear here.</p>
+                        </div>
                     </td>
                   </tr>
                 )}

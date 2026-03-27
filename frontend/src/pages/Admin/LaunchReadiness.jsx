@@ -151,7 +151,7 @@ export default function LaunchReadiness() {
             <p>{readinessScore}%</p>
           </div>
           <div className="card">
-            <h3>Backend Health</h3>
+            <h3>System Health</h3>
             <p>{signals.backendHealth?.ok ? "OK" : "Check"}</p>
           </div>
           <div className="card">
@@ -201,26 +201,11 @@ export default function LaunchReadiness() {
         </div>
       </section>
 
-      <section className="section doctor-main-grid">
+      <section className="section">
         <div className="card">
-          <h3>Execution Commands</h3>
-          <pre className="code-inline">
-{`npm --prefix backend run phase0:gate
-npm --prefix backend run phase1:gate
-npm --prefix backend run phase2:gate
-npm --prefix backend run ops:full:gate
-npm --prefix backend run phase3:gate
-npm --prefix backend run phase4:gate
-npm --prefix backend run phase5:gate
-npm --prefix backend run phase6:gate
-npm --prefix backend run readiness:legal-only`}
-          </pre>
-        </div>
-        <div className="card">
-          <h3>Go-Live Rule</h3>
+          <h3>Launch Rule</h3>
           <p className="muted">
-            Only mark technical go-live complete when all phase gates pass and legal-only gate returns
-            <code> GO_TECH_COMPLETE</code>.
+            Proceed only when each phase shows Ready and the rollout stakeholders have signed off on the checklist.
           </p>
         </div>
       </section>

@@ -1160,7 +1160,7 @@ export default function Profile() {
       ],
       daily: [
         "Clear DLQ backlog with controlled replay.",
-        "Review connector retries and mapping failures.",
+        "Review connector delivery failures and mapping issues.",
         "Monitor infrastructure alarms and service latency.",
       ],
       safety: [
@@ -1190,7 +1190,7 @@ export default function Profile() {
     DEVELOPER: {
       goal: "Ship safe changes, debug production issues, and improve reliability.",
       firstHour: [
-        "Open Developer Dashboard: logs, queue replay, webhook retry.",
+        "Open the developer workspace to review recent delivery issues and system incidents.",
         "Check release flags and current incidents.",
         "Validate migration and API compatibility status.",
       ],
@@ -3068,11 +3068,11 @@ export default function Profile() {
       <p className="muted">
         {loading
           ? "Pulling your account, security, and role-specific settings."
-          : error || "We could not load your profile settings yet. Please retry."}
+          : error || "We could not load your profile settings yet. Please try again."}
       </p>
       <div className="profile-row profile-actions-row" style={{ marginTop: 12 }}>
         <button type="button" className="primary" onClick={() => loadStatus(1)} disabled={loading}>
-          {loading ? "Loading..." : "Retry"}
+          {loading ? "Loading..." : "Try again"}
         </button>
       </div>
     </div>

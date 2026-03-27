@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 
+const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
 export default function RealTimeIntegrations() {
   const [source, setSource] = useState("hospital-a");
@@ -44,7 +45,7 @@ export default function RealTimeIntegrations() {
     <div className="dashboard">
       <h2>Real-Time Integrations (Webhooks)</h2>
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+      <div className="grid info-grid" style={{ gap: 12 }}>
         <div className="card form">
           <h4>Send HL7 Message</h4>
           <input
@@ -80,7 +81,10 @@ export default function RealTimeIntegrations() {
 
       <div className="card" style={{ marginTop: 12 }}>
         <h4>Response</h4>
-        <pre>{JSON.stringify(res, null, 2)}</pre>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {res?.error ? String(res.error) : res ? "Message delivered successfully." : "No response yet."}
+        </p>
+        {isDev && res ? <pre className="code-inline">{JSON.stringify(res, null, 2)}</pre> : null}
       </div>
     </div>
   );

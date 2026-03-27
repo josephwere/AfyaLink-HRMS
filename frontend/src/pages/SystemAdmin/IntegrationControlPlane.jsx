@@ -185,12 +185,12 @@ export default function IntegrationControlPlane() {
       <div className="premium-inline-note innovation-console-inline-state">
         <span>
           {refreshing
-            ? "Refreshing live rollout posture while the current control plane stays visible."
+            ? "Updating live data while your current view stays visible."
             : clientMeta?.attempts > 1
-            ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+            ? `Loaded after ${clientMeta.attempts} attempts.`
             : clientMeta?.loadedAt
             ? `Live sync completed ${new Date(clientMeta.loadedAt).toLocaleString()}.`
-            : "Warm-start protection is ready for the first live pull."}
+            : "Ready for the first update."}
         </span>
         {refreshing ? <span className="action-pill">Live sync in progress</span> : null}
       </div>
@@ -198,11 +198,10 @@ export default function IntegrationControlPlane() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
+            <span className="developer-tool-eyebrow">Preparing</span>
             <strong>Preparing live rollout posture</strong>
             <p className="muted">
-              We are waking the backend and waiting for the first control-plane snapshot so this
-              page does not flash a false timeout on cold start.
+              We are preparing the first snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -218,7 +217,7 @@ export default function IntegrationControlPlane() {
         <div className="premium-inline-note innovation-console-inline-state innovation-console-inline-state-warn">
           <span>{error}</span>
           <button type="button" className="btn-secondary" onClick={() => load({ preserveData: hasData })}>
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}

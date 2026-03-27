@@ -46,7 +46,7 @@ export default function Appointments(){
   };
   return (<div className="dashboard">
     <h3>Appointments</h3>
-    <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+    <div className="grid info-grid" style={{ gap: 12 }}>
       <div>
         <form className="card form" onSubmit={submitCreate}>
           <input placeholder="Patient ID" value={form.patient} onChange={e=>setForm({...form, patient:e.target.value})} />

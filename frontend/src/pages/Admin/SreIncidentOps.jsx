@@ -22,7 +22,7 @@ export default function SreIncidentOps() {
     severity: "SEV2",
     summary: "",
     sourceAlert: "",
-    service: "afyalink-backend",
+    service: "AfyaLink",
     runbookUrl: "",
   });
 

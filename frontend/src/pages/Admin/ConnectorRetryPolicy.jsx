@@ -20,8 +20,8 @@ export default function ConnectorRetryPolicy(){
   async function save(){
     if(!sel) return setMsg('Select connector');
     try {
-      const js = await apiFetch('/api/integrations/dlq/connector/' + sel + '/retry-policy', { method:'POST', body: policy });
-      setMsg(JSON.stringify(js));
+      await apiFetch('/api/integrations/dlq/connector/' + sel + '/retry-policy', { method:'POST', body: policy });
+      setMsg("Policy saved.");
     } catch (e) {
       setMsg(e?.message || "Failed to save policy");
     }
@@ -29,7 +29,7 @@ export default function ConnectorRetryPolicy(){
 
   return (
     <div className="dashboard">
-      <h2>Connector Retry Policies</h2>
+      <h2>Connector Delivery Policies</h2>
       <div className="card form">
         <select value={sel} onChange={e=>setSel(e.target.value)}>
           <option value=''>Select</option>

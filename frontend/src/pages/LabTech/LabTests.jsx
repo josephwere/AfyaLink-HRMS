@@ -47,11 +47,11 @@ export default function LabTests(){
   };
   return (<div className="dashboard">
     <h3>Lab Tests</h3>
-    <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
-      <div>
-        <form className="card form" onSubmit={submitCreate}>
-          <input placeholder="Patient ID" value={form.patient} onChange={e=>setForm({...form, patient:e.target.value})} />
-          <input placeholder="Test type" value={form.testType} onChange={e=>setForm({...form, testType:e.target.value})} />
+	    <div className="grid info-grid" style={{ gap: 12 }}>
+	      <div>
+	        <form className="card form" onSubmit={submitCreate}>
+	          <input placeholder="Patient ID" value={form.patient} onChange={e=>setForm({...form, patient:e.target.value})} />
+	          <input placeholder="Test type" value={form.testType} onChange={e=>setForm({...form, testType:e.target.value})} />
           <div>
             <button className="btn-primary" type="submit">Order</button>
           </div>

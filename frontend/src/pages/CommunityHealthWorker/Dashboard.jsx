@@ -511,7 +511,7 @@ export default function CommunityHealthWorkerDashboard() {
 
       <section className="section">
         <h3>Maternal, Child, Vaccination, Chronic, Surveillance, Referrals</h3>
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+        <div className="grid info-grid" style={{ gap: 12 }}>
           <form className="card form" onSubmit={submitMaternal}>
             <h3>Maternal</h3>
             <select value={maternalForm.household} onChange={(e) => setMaternalForm({ ...maternalForm, household: e.target.value })} data-ai-label="Maternal Household" data-ai-aliases="household|maternal household|mother household" data-ai-widget="household-picker">

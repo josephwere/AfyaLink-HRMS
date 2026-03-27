@@ -7,7 +7,6 @@ export default function PharmacyAccessAudit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [copied, setCopied] = useState("");
   const [summary, setSummary] = useState({
     total: 0,
     linked: 0,
@@ -69,18 +68,6 @@ export default function PharmacyAccessAudit() {
   }, []);
 
   const unlinkedRows = items.filter((item) => !item.registeredPharmacy);
-  const dryRunCommand = "npm --prefix backend run pharmacy:link:backfill:dry";
-  const applyCommand = "npm --prefix backend run pharmacy:link:backfill";
-
-  const copyCommand = async (label, value) => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        setCopied(label);
-        window.setTimeout(() => setCopied(""), 1800);
-      }
-    } catch {}
-  };
 
   return (
     <div className="dashboard">
@@ -135,45 +122,12 @@ export default function PharmacyAccessAudit() {
       </section>
 
       <section className="section">
-        <div className="card premium-card form">
-          <h3>Backfill Commands</h3>
-          <p className="muted">
-            Run the dry-run first. Only run the real backfill after reviewing matched, ambiguous, and skipped rows on this page.
-          </p>
-
-          <label>Dry-Run Command</label>
-          <div className="inline-actions">
-            <input value={dryRunCommand} readOnly />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => copyCommand("dry-run", dryRunCommand)}
-            >
-              {copied === "dry-run" ? "Copied" : "Copy"}
-            </button>
-          </div>
-
-          <label>Apply Command</label>
-          <div className="inline-actions">
-            <input value={applyCommand} readOnly />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => copyCommand("apply", applyCommand)}
-            >
-              {copied === "apply" ? "Copied" : "Copy"}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
         <div className="card premium-card">
           <h3>Resolution Runbook</h3>
           <div className="alert-stack">
             <div className="card">
               <strong>1. Review Backfill Ready Matches</strong>
-              <p className="muted">If the matched pharmacy is correct, run the dry-run command first, then apply the real backfill command.</p>
+              <p className="muted">If the matched pharmacy is correct, proceed with the automated linking workflow for this release.</p>
             </div>
             <div className="card">
               <strong>2. Resolve Ambiguous Matches Manually</strong>

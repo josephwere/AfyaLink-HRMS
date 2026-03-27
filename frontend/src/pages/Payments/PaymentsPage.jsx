@@ -302,7 +302,7 @@ export default function PaymentsPage() {
         <div className="card-header-actions">
           <div>
             <h3>{translateText("Pending payment workflow")}</h3>
-            <p className="muted">{translateText("Every transaction stays pinned to its workflow state until the backend confirms the next move.")}</p>
+            <p className="muted">{translateText("Every transaction stays pinned to its workflow state until the system confirms the next move.")}</p>
           </div>
         </div>
 
@@ -315,7 +315,11 @@ export default function PaymentsPage() {
           </div>
         ) : null}
 
-        {msg ? <pre className="premium-code">{msg}</pre> : null}
+        {msg ? (
+          <div className="subtle-banner" style={{ marginTop: 12 }}>
+            {msg}
+          </div>
+        ) : null}
 
         <div className="table-wrap">
           <table className="table premium-table">
@@ -421,7 +425,11 @@ export default function PaymentsPage() {
             )}
           </div>
 
-          {methodMsg ? <pre className="premium-code">{methodMsg}</pre> : null}
+          {methodMsg ? (
+            <div className="subtle-banner" style={{ marginTop: 12 }}>
+              {methodMsg}
+            </div>
+          ) : null}
 
           {bankInvoice?.text ? (
             <button

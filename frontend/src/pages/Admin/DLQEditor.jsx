@@ -34,9 +34,9 @@ export default function DLQEditor(){
   }
 
   return (
-    <div>
-      <h2>DLQ Editor</h2>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+    <div className="dashboard">
+      <h2>Queue Replay</h2>
+      <div className="grid info-grid" style={{ gap: 12 }}>
         <div className="card">
           <button type="button" className="btn-secondary" onClick={load}>Refresh</button>
           {items.map((it) => (
@@ -53,7 +53,7 @@ export default function DLQEditor(){
               <h3>Editing {selected.id}</h3>
               <textarea style={{width:'100%',height:400}} value={payload} onChange={e=>setPayload(e.target.value)} />
               <div style={{ marginTop: 10 }}>
-                <button type="button" className="btn-primary" onClick={()=>saveAndRetry(selected.id)}>Save & Retry</button>
+                <button type="button" className="btn-primary" onClick={()=>saveAndRetry(selected.id)}>Save & Re-run</button>
               </div>
             </div>
           ) : (

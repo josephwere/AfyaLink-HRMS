@@ -207,7 +207,7 @@ export default function PaymentSettings() {
 
       {msg && <div className="card">{msg}</div>}
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
+      <div className="grid info-grid">
         <DismissibleCardSection className="card form" title="Global Mode & Admin Security">
           <label>Mode</label>
           <select value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>

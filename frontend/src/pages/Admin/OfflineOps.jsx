@@ -54,7 +54,7 @@ export default function OfflineOps() {
         <div>
           <h2>Offline Operations Monitor</h2>
           <p className="muted">
-            Queue health for low-connectivity hospitals: pending writes, retry failures, and sync recency.
+            Queue health for low-connectivity hospitals: pending writes, delivery failures, and last sync recency.
           </p>
         </div>
         <div className="welcome-actions">
@@ -74,7 +74,7 @@ export default function OfflineOps() {
         <div className="grid info-grid">
           <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Tracked Clients</h3><p>{server?.summary?.clients ?? 0}</p></div>
           <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Pending Actions</h3><p>{server?.summary?.pendingQueued ?? 0}</p></div>
-          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Retry Failures</h3><p>{server?.summary?.retryFailures ?? 0}</p></div>
+          <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moduleTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Delivery Failures</h3><p>{server?.summary?.retryFailures ?? 0}</p></div>
           <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); clientSignalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Last Sync (Any)</h3><p>{server?.summary?.lastSyncAt ? new Date(server.summary.lastSyncAt).toLocaleString() : "-"}</p></div>
           <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>Server Queue</h3><p>{queueStatus?.counts?.integrationQueue ?? 0}</p></div>
           <div className="card kpi-card-clickable" role="button" tabIndex={0} onClick={() => filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); filtersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><h3>DLQ</h3><p>{queueStatus?.counts?.dlq ?? 0}</p></div>
@@ -118,7 +118,7 @@ export default function OfflineOps() {
                 <tr>
                   <th>Module</th>
                   <th>Pending</th>
-                  <th>Retry Failures</th>
+                  <th>Delivery Failures</th>
                   <th>Clients</th>
                   <th>Last Seen</th>
                 </tr>

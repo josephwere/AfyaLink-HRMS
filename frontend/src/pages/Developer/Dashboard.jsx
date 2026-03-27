@@ -123,7 +123,7 @@ export default function DeveloperDashboard() {
       }}
       runway={[
         { id: "dev-queue-replay", title: "Replay queues", description: "Inspect dead letters, failed jobs, and stuck routing payloads before they spill downstream.", eyebrow: "Queues", path: "/developer/queue-replay", badge: "Replay" },
-        { id: "dev-webhook-retry", title: "Retry webhooks", description: "Recover connector deliveries and unblock event paths without leaving the console.", eyebrow: "Integrations", path: "/developer/webhook-retry", badge: "Retry" },
+        { id: "dev-webhook-retry", title: "Webhook recovery", description: "Recover connector deliveries and unblock event paths without leaving the console.", eyebrow: "Integrations", path: "/developer/webhook-retry", badge: "Recover" },
         { id: "dev-decision-cockpit", title: "Decision cockpit", description: "Watch anomalies, policy denials, and workload spikes in one focused response cockpit.", eyebrow: "Trust", path: "/developer/decision-cockpit", badge: "Watch" },
         { id: "dev-provenance", title: "Verify provenance", description: "Confirm signed payload integrity before widening automation or export behavior.", eyebrow: "Safety", path: "/developer/provenance-verify", badge: "Verify" },
       ]}

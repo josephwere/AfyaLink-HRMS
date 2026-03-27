@@ -63,7 +63,7 @@ export default function DecisionCockpit() {
             <button type="button" className="btn-primary" onClick={load}>Refresh Cockpit</button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/developer/queue-replay")}>Open Queue Replay</button>
             <button type="button" className="btn-secondary" onClick={() => navigate("/developer/provenance-verify")}>Provenance Verify</button>
-            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/webhook-retry")}>Webhook Retry</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate("/developer/webhook-retry")}>Webhook Recovery</button>
           </div>
         </div>
         <div className="developer-console-hero-meta">

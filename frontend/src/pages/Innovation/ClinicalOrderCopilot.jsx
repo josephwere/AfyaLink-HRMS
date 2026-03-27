@@ -283,15 +283,15 @@ export default function ClinicalOrderCopilot() {
             <span>Use it to shorten order planning, preauth prep, and escalation framing.</span>
           </div>
           <div className="premium-note">
-            <strong>Runtime</strong>
+            <strong>Status</strong>
             <span>
               {refreshing
-                ? "Refreshing live signals while the current console stays visible."
+                ? "Updating live data while your current view stays visible."
                 : clientMeta?.attempts > 1
-                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                ? `Loaded after ${clientMeta.attempts} attempts.`
                 : clientMeta?.loadedAt
                 ? `Live sync completed ${formatWhen(clientMeta.loadedAt)}.`
-                : "Warm-start protection is ready for the first live pull."}
+                : "Ready for the first update."}
             </span>
           </div>
         </div>
@@ -300,11 +300,10 @@ export default function ClinicalOrderCopilot() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
-            <strong>Preparing live clinical signals</strong>
+            <span className="developer-tool-eyebrow">Preparing</span>
+            <strong>Preparing live clinical insights</strong>
             <p className="muted">
-              We are waking the backend and holding this page until the first live snapshot is ready.
-              That avoids the cold-start timeout flash on first visit.
+              We are preparing the first live snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -324,7 +323,7 @@ export default function ClinicalOrderCopilot() {
             className="btn-secondary"
             onClick={() => loadSnapshot({ preserveSnapshot: hasSnapshot })}
           >
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}

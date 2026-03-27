@@ -41,9 +41,9 @@ export default function MappingEditor(){
     setEditing(id);
   }
 
-  return (<div>
+  return (<div className="dashboard">
     <h2>Mapping Editor</h2>
-    <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
+    <div className="grid info-grid" style={{ gap: 12 }}>
       <div className="card form">
         <h3>Create / Edit</h3>
         <input placeholder='connector id' value={form.connector} onChange={e=>setForm(f=>({...f,connector:e.target.value}))} />

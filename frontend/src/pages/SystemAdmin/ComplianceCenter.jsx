@@ -163,15 +163,15 @@ export default function ComplianceCenter() {
             <span>{settings.requireRegionalPrivacyNotice === false ? "Optional" : "Required"}</span>
           </div>
           <div className="premium-note">
-            <strong>Runtime</strong>
+            <strong>Status</strong>
             <span>
               {refreshing
-                ? "Refreshing live compliance posture while the current workspace stays visible."
+                ? "Updating live data while your current view stays visible."
                 : clientMeta?.attempts > 1
-                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                ? `Loaded after ${clientMeta.attempts} attempts.`
                 : clientMeta?.loadedAt
                 ? `Live sync completed ${formatDate(clientMeta.loadedAt)}.`
-                : "Warm-start protection is ready for the first live pull."}
+                : "Ready for the first update."}
             </span>
           </div>
         </div>
@@ -180,11 +180,10 @@ export default function ComplianceCenter() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
+            <span className="developer-tool-eyebrow">Preparing</span>
             <strong>Preparing live compliance posture</strong>
             <p className="muted">
-              We are waking the backend and waiting for the first compliance snapshot so this page
-              does not flash a false timeout on cold start.
+              We are preparing the first snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -204,7 +203,7 @@ export default function ComplianceCenter() {
             className="btn-secondary"
             onClick={() => load({ preserveData: hasData })}
           >
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}
@@ -267,7 +266,7 @@ export default function ComplianceCenter() {
               </div>
               <input placeholder="Hold title" value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} />
               <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} />
-              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+              <div className="grid info-grid" style={{ gap: 12 }}>
                 <select value={form.region} onChange={(e) => setForm((prev) => ({ ...prev, region: e.target.value }))}>
                   {["DEFAULT", "KE", "UG", "TZ"].map((code) => <option key={code} value={code}>{code}</option>)}
                 </select>
@@ -357,7 +356,7 @@ export default function ComplianceCenter() {
               <div className="card-header-actions">
                 <div>
                   <h3>Evidence Packs</h3>
-                  <p className="muted">Latest generated compliance evidence bundles available on the backend.</p>
+                  <p className="muted">Latest generated compliance evidence bundles available for export.</p>
                 </div>
                 <button type="button" className="btn-secondary" onClick={() => navigate("/admin/audit-logs")}>Audit logs</button>
               </div>
@@ -369,7 +368,7 @@ export default function ComplianceCenter() {
                       <th>Generated</th>
                       <th>Manifest</th>
                       <th>README</th>
-                      <th>Commands</th>
+                      <th>Checklist</th>
                     </tr>
                   </thead>
                   <tbody>

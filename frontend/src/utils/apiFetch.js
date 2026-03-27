@@ -2,6 +2,8 @@
 
 import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation";
 
+const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
+
 const FALLBACK_API_BASE =
   typeof window !== "undefined"
     ? (() => {
@@ -24,6 +26,45 @@ class ApiError extends Error {
     this.data = data || {};
     this.code = data?.code || null;
   }
+}
+
+function toSafeUiMessage(message, { status, code } = {}) {
+  const raw = typeof message === "string" ? message : String(message || "");
+  if (isDev) return raw || "Request failed";
+
+  // Preserve known user-safe auth/security messages.
+  if (code === "STEP_UP_REQUIRED" || code === "SESSION_RESTRICTED") {
+    return raw || "Additional verification is required.";
+  }
+
+  const lower = raw.toLowerCase();
+  const technicalTokens = [
+    "backend",
+    "frontend",
+    "front-end",
+    "stack",
+    "trace",
+    "stacktrace",
+    "chunk",
+    "module",
+    "vite",
+    "vercel",
+    "node",
+    "react",
+    "endpoint",
+    "http",
+    "exception",
+  ];
+
+  if (status >= 500) {
+    return "We couldn’t complete that request right now. Please try again.";
+  }
+
+  if (technicalTokens.some((token) => lower.includes(token))) {
+    return "We couldn’t complete that request. Please try again.";
+  }
+
+  return raw || "We couldn’t complete that request. Please try again.";
 }
 
 /* ======================================================
@@ -103,7 +144,7 @@ async function apiFetch(path, options = {}, _retry = false) {
         ok: true,
         queued: true,
         offlineQueued: true,
-        message: "Offline: action queued and will sync automatically.",
+        message: "You're offline. We'll send this automatically when you're back online.",
       };
     }
     if (err?.name === "AbortError") {
@@ -132,7 +173,7 @@ async function apiFetch(path, options = {}, _retry = false) {
 
   if (!response.ok) {
     const err = new ApiError(
-      data.msg || data.message || "Request failed",
+      toSafeUiMessage(data.msg || data.message || "Request failed", { status: response.status, code: data?.code }),
       response.status,
       data
     );

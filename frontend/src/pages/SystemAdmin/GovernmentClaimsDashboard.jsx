@@ -368,7 +368,7 @@ export default function GovernmentClaimsDashboard() {
         setApiStatus((prev) => ({
           ...prev,
           state: "warn",
-          detail: "Government endpoints missing on this backend. Refresh after deployment.",
+          detail: "Government endpoints are not available in this environment yet. Refresh after updates.",
           lastChecked: now,
         }));
       }

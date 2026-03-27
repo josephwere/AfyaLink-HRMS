@@ -178,15 +178,15 @@ export default function RevenueIntelligence() {
             <span>{snapshot?.config?.targetCollectionDays ?? 7}-day collection target and {snapshot?.config?.preauthPendingSlaHours ?? 24}-hour preauth SLA.</span>
           </div>
           <div className="premium-note">
-            <strong>Runtime</strong>
+            <strong>Status</strong>
             <span>
               {refreshing
-                ? "Refreshing live revenue signals while the current workspace stays visible."
+                ? "Updating live data while your current view stays visible."
                 : clientMeta?.attempts > 1
-                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                ? `Loaded after ${clientMeta.attempts} attempts.`
                 : clientMeta?.loadedAt
                 ? `Live sync completed ${new Date(clientMeta.loadedAt).toLocaleString()}.`
-                : "Warm-start protection is ready for the first live pull."}
+                : "Ready for the first update."}
             </span>
           </div>
         </div>
@@ -195,11 +195,10 @@ export default function RevenueIntelligence() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
+            <span className="developer-tool-eyebrow">Preparing</span>
             <strong>Preparing live revenue signals</strong>
             <p className="muted">
-              We are waking the backend and waiting for the first revenue snapshot so this page does
-              not flash a false timeout on cold start.
+              We are preparing the first snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -215,7 +214,7 @@ export default function RevenueIntelligence() {
         <div className="premium-inline-note innovation-console-inline-state innovation-console-inline-state-warn">
           <span>{msg}</span>
           <button type="button" className="btn-secondary" onClick={() => load({ preserveSnapshot: hasSnapshot })}>
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}

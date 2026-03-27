@@ -153,7 +153,7 @@ export default function FamilyRecords() {
               {t("addParentIdFirst", "Add your national ID in Profile before self-registering a child. This is the family anchor used by hospitals and parent monitoring.")}
             </div>
           ) : (
-            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 12 }}>
+            <div className="grid info-grid" style={{ gap: 12, marginTop: 12 }}>
               <input
                 placeholder={t("childFirstName", "Child first name")}
                 value={registerForm.firstName}

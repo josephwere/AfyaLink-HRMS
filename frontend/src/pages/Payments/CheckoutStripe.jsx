@@ -7,7 +7,7 @@ export default function CheckoutStripe(){
   const [status, setStatus] = React.useState("");
   const start = async () => {
     try {
-      setStatus("Creating Stripe intent...");
+      setStatus("Preparing Stripe checkout...");
       const js = await apiFetch('/api/payments/stripe/create-intent', {
         method: 'POST',
         body: { amount: 1000, currency: 'usd' },
@@ -18,7 +18,7 @@ export default function CheckoutStripe(){
         setStatus("Stripe is not configured correctly.");
         return;
       }
-      setStatus(`Client secret created:\n${clientSecret}`);
+      setStatus("Stripe intent created successfully.");
     } catch (err) {
       setStatus(err?.message || "Failed to start Stripe checkout");
     }
@@ -48,10 +48,10 @@ export default function CheckoutStripe(){
       </section>
 
       <section className="card premium-card premium-stack">
-        <div className="premium-note-grid">
+          <div className="premium-note-grid">
           <div className="premium-note">
             <strong>Gateway</strong>
-            <span>Uses the configured Stripe publishable key plus the backend payment intent endpoint.</span>
+            <span>Uses the configured Stripe key and payment intent workflow.</span>
           </div>
           <div className="premium-note">
             <strong>Use case</strong>
@@ -63,7 +63,7 @@ export default function CheckoutStripe(){
         </div>
         {status ? (
           <div className="premium-console">
-            <pre>{status}</pre>
+            <p className="muted" style={{ margin: 0, whiteSpace: "pre-wrap" }}>{status}</p>
           </div>
         ) : null}
       </section>

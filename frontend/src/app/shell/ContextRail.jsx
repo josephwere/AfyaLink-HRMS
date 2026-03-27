@@ -1,5 +1,4 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 
 /**
@@ -10,7 +9,6 @@ import { useAuth } from "../../utils/auth";
  * - reserves slots for AI + alerts + next actions
  */
 export default function ContextRail({ open = false, onClose }) {
-  const location = useLocation();
   const { user } = useAuth();
 
   return (
@@ -38,7 +36,7 @@ export default function ContextRail({ open = false, onClose }) {
           ) : null}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          {location.pathname}
+          {user?.role ? `Signed in as ${String(user.role).replaceAll("_", " ")}` : "Signed in"}
         </div>
       </div>
 

@@ -153,7 +153,7 @@ export default function InteropMarketplace() {
       {
         eyebrow: "Runtime",
         title: "Inspect control plane",
-        body: "When a connector is installed but unstable, move into runtime controls, retries, and failure posture immediately.",
+        body: "When a connector is installed but unstable, move into runtime controls, recovery actions, and failure posture immediately.",
         actionLabel: "Open control plane",
         onClick: () => navigate(controlPlanePath),
       },
@@ -237,15 +237,15 @@ export default function InteropMarketplace() {
             <span>FHIR, HL7, DICOM, payments, outreach, and custom connectors.</span>
           </div>
           <div className="premium-note">
-            <strong>Runtime</strong>
+            <strong>Status</strong>
             <span>
               {refreshing
-                ? "Refreshing live connector posture while the current marketplace stays visible."
+                ? "Updating live data while your current view stays visible."
                 : clientMeta?.attempts > 1
-                ? `Loaded after ${clientMeta.attempts} guarded attempts to absorb cold-start latency.`
+                ? `Loaded after ${clientMeta.attempts} attempts.`
                 : clientMeta?.loadedAt
                 ? `Live sync completed ${formatWhen(clientMeta.loadedAt)}.`
-                : "Warm-start protection is ready for the first live pull."}
+                : "Ready for the first update."}
             </span>
           </div>
         </div>
@@ -254,11 +254,10 @@ export default function InteropMarketplace() {
       {initialLoading ? (
         <section className="section">
           <div className="card premium-card innovation-console-state-card">
-            <span className="developer-tool-eyebrow">Warm start</span>
+            <span className="developer-tool-eyebrow">Preparing</span>
             <strong>Preparing live interoperability signals</strong>
             <p className="muted">
-              We are warming the backend and waiting for the first connector snapshot so this page
-              does not flash a false timeout on cold start.
+              We are preparing the first connector snapshot. This can take a moment on the first visit.
             </p>
             <div className="innovation-console-skeleton-grid" aria-hidden="true">
               <div className="innovation-console-skeleton" />
@@ -278,7 +277,7 @@ export default function InteropMarketplace() {
             className="btn-secondary"
             onClick={() => loadSnapshot({ preserveSnapshot: hasSnapshot })}
           >
-            Retry now
+            Try again
           </button>
         </div>
       ) : null}
