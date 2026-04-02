@@ -11,6 +11,8 @@ import FloatingAI from "./components/FloatingAI";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import GlobalProgressBar from "./components/GlobalProgressBar";
+import RouteProgressEvents from "./components/RouteProgressEvents";
 
 import AppShell from "./app/shell/AppShell";
 import { LEGACY_ROUTE_MAP } from "./app/routing/legacyRouteMap";
@@ -220,44 +222,32 @@ const HospitalRegistry = lazy(() => import("./app/features/governance/HospitalRe
 
 function RouteLoadingFallback() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: "32px 20px",
-        background:
-          "radial-gradient(circle at top, rgba(14,165,233,0.12), transparent 35%), linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%)",
-      }}
-    >
-      <div
-        style={{
-          width: "min(420px, 100%)",
-          padding: "28px 24px",
-          borderRadius: "24px",
-          background: "rgba(255,255,255,0.92)",
-          border: "1px solid rgba(148,163,184,0.18)",
-          boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
-          textAlign: "center",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            width: 56,
-            height: 56,
-            margin: "0 auto 18px",
-            borderRadius: "50%",
-            border: "4px solid rgba(14,165,233,0.18)",
-            borderTopColor: "#0ea5e9",
-            animation: "afyalinkSpin 0.9s linear infinite",
-          }}
-        />
-        <h2 style={{ margin: "0 0 8px", fontSize: "1.1rem", color: "#0f172a" }}>Loading your workspace</h2>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-          We’re opening the next screen and only loading the code that page actually needs.
-        </p>
+    <div className="route-skeleton" aria-label="Loading">
+      <div className="route-skeleton-sidebar" aria-hidden="true">
+        <div className="skeleton skeleton-avatar" />
+        <div className="route-skeleton-nav">
+          <div className="skeleton skeleton-line" style={{ width: "72%" }} />
+          <div className="skeleton skeleton-line" style={{ width: "88%" }} />
+          <div className="skeleton skeleton-line" style={{ width: "66%" }} />
+          <div className="skeleton skeleton-line" style={{ width: "82%" }} />
+          <div className="skeleton skeleton-line" style={{ width: "58%" }} />
+          <div className="skeleton skeleton-line" style={{ width: "76%" }} />
+        </div>
+      </div>
+
+      <div className="route-skeleton-main" aria-hidden="true">
+        <div className="route-skeleton-topbar">
+          <div className="skeleton skeleton-line" style={{ width: "34%", height: 14 }} />
+          <div className="skeleton skeleton-pill" style={{ width: 180 }} />
+        </div>
+
+        <div className="route-skeleton-grid">
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card skeleton-card-wide" />
+        </div>
       </div>
     </div>
   );
@@ -320,6 +310,8 @@ export default function App() {
   return (
     <SocketProvider>
       <AppErrorBoundary>
+        <GlobalProgressBar />
+        <RouteProgressEvents />
         <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
         {/* ============ PUBLIC ROUTES ============ */}

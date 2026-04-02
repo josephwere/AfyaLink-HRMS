@@ -21,6 +21,11 @@ export default function Chatbot() {
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
   const aiIcon = settings?.ai?.icon || DEFAULT_AI_ICON;
+  const [iconSrc, setIconSrc] = useState(aiIcon || DEFAULT_AI_ICON);
+
+  useEffect(() => {
+    setIconSrc(aiIcon || DEFAULT_AI_ICON);
+  }, [aiIcon]);
 
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -178,7 +183,19 @@ export default function Chatbot() {
     <div className="dashboard ai-chat-page">
       <div className="ai-chat-topbar">
         <div className="ai-chat-head">
-          {aiIcon ? <img src={aiIcon} alt="" className="ai-chat-logo" /> : null}
+          {iconSrc ? (
+            <img
+              src={iconSrc}
+              alt=""
+              className="ai-chat-logo"
+              decoding="async"
+              loading="lazy"
+              onError={() => {
+                if (iconSrc !== DEFAULT_AI_ICON) setIconSrc(DEFAULT_AI_ICON);
+                else setIconSrc("");
+              }}
+            />
+          ) : null}
           <div>
             <h2>{aiName} Assistant</h2>
             <p className="muted">Ask anything about your health or workflow.</p>

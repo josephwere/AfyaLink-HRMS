@@ -131,7 +131,8 @@ export default function FloatingAI() {
   const [history, setHistory] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatExpanded, setChatExpanded] = useState(true);
-  const [iconOk, setIconOk] = useState(true);
+  const [launcherIconSrc, setLauncherIconSrc] = useState(() => ai?.icon || DEFAULT_AI_ICON);
+  const [launcherIconBroken, setLauncherIconBroken] = useState(false);
   const [formFillPrompt, setFormFillPrompt] = useState("");
   const [formFillBusy, setFormFillBusy] = useState(false);
   const [extractBusy, setExtractBusy] = useState(false);
@@ -161,7 +162,7 @@ export default function FloatingAI() {
   const cameraInputRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
-  const aiIcon = ai?.icon || DEFAULT_AI_ICON;
+  const preferredLauncherIcon = ai?.icon || DEFAULT_AI_ICON;
   const greeting = ai?.greeting || "Assistant";
   const assistantProfile = context?.assistantProfile || {};
   const hospitalScope = context?.hospitalScope || String(user?.hospitalId || user?.hospital || "GLOBAL");
@@ -176,7 +177,7 @@ export default function FloatingAI() {
   const adminRoles = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"];
   const canUseAI = aiEnabled && (aiAccess !== "PREMIUM" || isPatient || isGuest || adminRoles.includes(role));
   const aiLocked = !canUseAI || !isAuthenticated;
-  const hasIcon = Boolean(aiIcon) && iconOk;
+  const hasIcon = Boolean(launcherIconSrc) && !launcherIconBroken;
   const launcherLabel = open ? `Hide ${aiName}` : `${aiName} ${greeting}`;
   const launcherInitials = String(aiName || "AI")
     .split(/\s+/)
@@ -202,8 +203,20 @@ export default function FloatingAI() {
   }, [role]);
 
   useEffect(() => {
-    setIconOk(true);
-  }, [aiIcon]);
+    setLauncherIconSrc(preferredLauncherIcon);
+    setLauncherIconBroken(false);
+  }, [preferredLauncherIcon]);
+
+  const handleLauncherIconError = () => {
+    // If a custom icon breaks, automatically fall back to the shipped NeuroEdge logo
+    // instead of showing a monogram (the "N" users keep seeing).
+    if (launcherIconSrc && launcherIconSrc !== DEFAULT_AI_ICON) {
+      setLauncherIconSrc(DEFAULT_AI_ICON);
+      setLauncherIconBroken(false);
+      return;
+    }
+    setLauncherIconBroken(true);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -1391,7 +1404,7 @@ ${chatAnswer || advice?.recommendations?.join("; ") || "—"}
       >
         <span className={`ai-float-icon${hasIcon ? "" : " ai-float-icon-fallback"}`} aria-hidden="true">
           {hasIcon ? (
-            <img src={aiIcon} alt="" onError={() => setIconOk(false)} />
+            <img src={launcherIconSrc} alt="" onError={handleLauncherIconError} decoding="async" loading="lazy" />
           ) : (
             <span className="ai-float-monogram">{launcherInitials}</span>
           )}

@@ -37,6 +37,10 @@
       "destination": "/neuroedge%20logo.png"
     },
     {
+      "source": "/neuroedge-logo.png",
+      "destination": "/neuroedge-logo.png"
+    },
+    {
       "source": "/sw.js",
       "destination": "/sw.js"
     },

@@ -334,14 +334,39 @@ export default function SystemSettings() {
     return patch;
   };
 
+  const deepMerge = (base, patch) => {
+    if (!isObject(patch)) return patch;
+    const out = { ...(isObject(base) ? base : {}) };
+    for (const [key, value] of Object.entries(patch || {})) {
+      if (isObject(value) && isObject(out[key])) {
+        out[key] = deepMerge(out[key], value);
+      } else {
+        out[key] = value;
+      }
+    }
+    return out;
+  };
+
   const persistPatch = async (patch, successMessage = "Settings saved.") => {
     setLoading(true);
     setMsg(null);
+    const patchKeys = Object.keys(patch || {});
+    const previousBase = (() => {
+      const next = { ...(settings || {}) };
+      // Provider injects customization into the merged `settings` view; never persist it as "base settings".
+      delete next.hospitalCustomization;
+      return next;
+    })();
+
     try {
-      if (!Object.keys(patch).length) {
+      if (!patchKeys.length) {
         setMsg("No changes to save.");
         return;
       }
+
+      // Optimistic UI: apply locally immediately, then confirm with server.
+      setSettings(deepMerge(previousBase, patch));
+
       const res = await updateSystemSettings(patch);
       setMsg(successMessage);
       if (res.settings) {
@@ -352,6 +377,8 @@ export default function SystemSettings() {
         loadHistory();
       }
     } catch (err) {
+      // Roll back optimistic settings if the server rejects the patch.
+      setSettings(previousBase);
       setMsg(err?.message || "Failed to save settings");
     } finally {
       setLoading(false);

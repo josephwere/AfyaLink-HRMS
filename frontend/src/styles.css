@@ -9074,3 +9074,133 @@ button.card.stat {
     display: none;
   }
 }
+
+/* ======================================================
+   Loading Skeletons + Progress Bar
+====================================================== */
+
+.afya-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 2147483647;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.afya-progress.is-visible {
+  opacity: 1;
+}
+
+.afya-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  border-radius: 0 999px 999px 0;
+  transition: width 200ms ease;
+}
+
+.route-skeleton {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.98));
+}
+
+.route-skeleton-sidebar {
+  padding: 18px 16px;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.route-skeleton-nav {
+  display: grid;
+  gap: 12px;
+}
+
+.route-skeleton-main {
+  padding: 18px 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.route-skeleton-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.route-skeleton-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.skeleton {
+  background:
+    linear-gradient(
+      110deg,
+      rgba(226, 232, 240, 0.66) 8%,
+      rgba(255, 255, 255, 0.92) 18%,
+      rgba(226, 232, 240, 0.66) 33%
+    );
+  background-size: 220% 100%;
+  animation: afyalink-shimmer 1.4s linear infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.skeleton-pill {
+  height: 32px;
+  border-radius: 999px;
+}
+
+.skeleton-card {
+  min-height: 96px;
+  border-radius: 18px;
+}
+
+.skeleton-card-wide {
+  grid-column: 1 / -1;
+  min-height: 140px;
+}
+
+.skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+}
+
+@keyframes afyalink-shimmer {
+  to {
+    background-position-x: -220%;
+  }
+}
+
+@media (max-width: 900px) {
+  .route-skeleton {
+    grid-template-columns: 1fr;
+  }
+
+  .route-skeleton-sidebar {
+    display: none;
+  }
+
+  .route-skeleton-main {
+    padding: 16px 14px;
+  }
+
+  .route-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+}
