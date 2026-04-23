@@ -3,13 +3,15 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCookies.js";
+import { sanitizeIdentifier } from "../utils/securitySanitizers.js";
 
 /* ======================================================
    REFRESH ACCESS TOKEN
 ====================================================== */
 export const refreshToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = sanitizeIdentifier(req.body?.refreshToken || req.cookies?.refreshToken || "");
 
     if (!refreshToken) {
       return res.status(401).json({ msg: "Refresh token missing" });
@@ -35,10 +37,17 @@ export const refreshToken = async (req, res) => {
 
     const user = await User.findById(decoded.id);
     if (!user) {
+      clearRefreshTokenCookie(res);
       return res.status(401).json({ msg: "User not found" });
     }
 
+    if (user.active === false) {
+      clearRefreshTokenCookie(res);
+      return res.status(401).json({ msg: "Session expired. Please sign in again." });
+    }
+
     if (!user.refreshTokens.includes(refreshToken)) {
+      clearRefreshTokenCookie(res);
       return res.status(401).json({ msg: "Refresh token revoked" });
     }
 
@@ -64,6 +73,7 @@ export const refreshToken = async (req, res) => {
 
     await user.save();
 
+    setRefreshTokenCookie(res, newRefreshToken);
     res.json({
       accessToken,
       refreshToken: newRefreshToken,

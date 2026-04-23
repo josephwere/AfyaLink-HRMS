@@ -1,22 +1,17 @@
 // frontend/src/utils/apiFetch.js
 
 import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation";
+import {
+  clearBrowserSession,
+  getAccessToken,
+  writeStoredUser,
+  setAccessToken,
+} from "./browserSession";
+import { assertSecureApiBase, resolveApiBase } from "./networkBase";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
-const FALLBACK_API_BASE =
-  typeof window !== "undefined"
-    ? (() => {
-        const host = window.location.hostname;
-        const origin = window.location.origin;
-        const isLocal = host === "localhost" || host === "127.0.0.1";
-        return isLocal ? `${window.location.protocol}//${host}:5000` : origin;
-      })()
-    : "http://localhost:5000";
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  window.__ENV__?.API_URL ||
-  FALLBACK_API_BASE;
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -94,9 +89,11 @@ async function apiFetch(path, options = {}, _retry = false) {
   const { _skipOfflineQueue = false, _skipUiProgress = false, ...requestOptions } = options || {};
   const shouldProgress = !_skipUiProgress && !_skipOfflineQueue;
   if (shouldProgress) emitUiProgress("start", { source: "api" });
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
 
   try {
+    assertSecureApiBase(API_BASE);
+
     const headers = {
       Accept: "application/json",
       ...(requestOptions.headers || {}),
@@ -217,9 +214,6 @@ async function apiFetch(path, options = {}, _retry = false) {
 ====================================================== */
 async function refreshAccessToken() {
   try {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) return false;
-
     const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
@@ -227,7 +221,7 @@ async function refreshAccessToken() {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({}),
     });
 
     if (!res.ok) return false;
@@ -236,10 +230,8 @@ async function refreshAccessToken() {
 
     if (!data?.accessToken) return false;
 
-    localStorage.setItem("token", data.accessToken);
-    if (data.refreshToken) {
-      localStorage.setItem("refreshToken", data.refreshToken);
-    }
+    setAccessToken(data.accessToken);
+    if (data?.user) writeStoredUser(data.user);
     return true;
   } catch {
     return false;
@@ -250,8 +242,7 @@ async function refreshAccessToken() {
    LOGOUT
 ====================================================== */
 export function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
+  clearBrowserSession();
   window.location.href = "/login";
 }
 

@@ -85,13 +85,13 @@ export default function TwoFactor() {
     if (pendingMethod === "TOTP") {
       return {
         badge: "Authenticator required",
-        title: "Approve your sign-in",
+        title: "Enter authenticator code",
         subtitle:
           "Open your authenticator app and enter the current 6-digit code. Recovery codes also work here.",
         helper:
           pendingReason === "RISK_STEP_UP" || pendingReason === "RISK_CRITICAL_RESTRICTED"
-            ? "We asked for an extra check because this sign-in looked unusual."
-            : "Your account is protected with authenticator-based two-factor verification.",
+            ? "This sign-in needs an extra check because the request did not match your usual pattern."
+            : "This account requires an authenticator code before access is granted.",
         destination: null,
         canResend: false,
       };
@@ -99,13 +99,13 @@ export default function TwoFactor() {
 
     return {
       badge: "Security code sent",
-      title: "Finish signing in",
+      title: "Enter security code",
       subtitle:
-        "Enter the one-time security code we sent to your verified contact channel. Recovery codes also work here.",
+        "Enter the one-time code sent to your verified email or phone number. Recovery codes also work here.",
       helper:
         pendingReason === "RISK_STEP_UP" || pendingReason === "RISK_CRITICAL_RESTRICTED"
-          ? "We added this check because the sign-in risk score was elevated."
-          : "Your account requires a second verification step before we open the workspace.",
+          ? "This additional check protects the account when sign-in risk is higher than usual."
+          : "This account requires a second verification step before the workspace opens.",
       destination: pendingIdentifier ? `Last login attempt: ${maskIdentifier(pendingIdentifier)}` : null,
       canResend: true,
     };
@@ -127,7 +127,7 @@ export default function TwoFactor() {
         body: { userId, otp: otp.trim().toUpperCase() },
       });
 
-      complete2FA(data.accessToken, data.refreshToken);
+      complete2FA(data.accessToken, data.refreshToken, data.user);
       clearPending2FAState();
       navigate("/", { replace: true });
     } catch (err) {
@@ -190,6 +190,7 @@ export default function TwoFactor() {
           />
         ) : null}
 
+        <div className="auth-kicker">Access verification</div>
         <div className="auth-2fa-badge">{methodCopy.badge}</div>
         <h1>{methodCopy.title}</h1>
         <p className="subtitle">{methodCopy.subtitle}</p>
@@ -241,21 +242,20 @@ export default function TwoFactor() {
           </div>
         </form>
 
-        <div className="auth-2fa-grid">
-          <div className="card premium-card">
-            <strong>Authenticator app</strong>
-            <p className="muted">
-              Best for fast, phishing-resistant sign-in. Use the current 6-digit code from Google Authenticator,
-              Microsoft Authenticator, Authy, or another TOTP app.
-            </p>
+          <div className="auth-2fa-grid">
+            <div className="card premium-card">
+              <strong>Authenticator app</strong>
+              <p className="muted">
+              Use the current 6-digit code from Google Authenticator, Microsoft Authenticator, Authy, or another TOTP app.
+              </p>
+            </div>
+            <div className="card premium-card">
+              <strong>Recovery code fallback</strong>
+              <p className="muted">
+              If your device is unavailable, paste one saved recovery code here. Each recovery code can be used once.
+              </p>
+            </div>
           </div>
-          <div className="card premium-card">
-            <strong>Recovery code fallback</strong>
-            <p className="muted">
-              If your phone is unavailable, paste one of your saved recovery codes here. Each recovery code works once.
-            </p>
-          </div>
-        </div>
 
         <div className="auth-2fa-footer">
           <button type="button" className="auth-link-button" onClick={switchAccount}>

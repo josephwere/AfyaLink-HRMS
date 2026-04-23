@@ -14,6 +14,7 @@ import { workspacesForUser, navForWorkspace, WORKSPACE_HOME_PATH } from "../app/
 import { LEGACY_ROUTE_MAP } from "../app/routing/legacyRouteMap";
 
 import LegalLinks from "./LegalLinks";
+import AppIcon from "./AppIcon";
 
 const RECENT_LIMIT = 6;
 const SIDEBAR_DEFAULT_WIDTH = 300;
@@ -22,37 +23,11 @@ const SIDEBAR_MAX_WIDTH = 380;
 
 function NavIcon({ name }) {
   const { settings } = useSystemSettings();
-  const icons = {
-    home: "🏠",
-    admin: "🛡️",
-    hr: "👥",
-    payroll: "💳",
-    doctor: "🧑‍⚕️",
-    nurse: "👩‍⚕️",
-    lab: "🧪",
-    pharmacy: "💊",
-    staff: "🧑‍💼",
-    security: "🔐",
-    settings: "⚙️",
-    analytics: "📊",
-    reports: "📄",
-    notifications: "🔔",
-    requests: "📝",
-    inventory: "📦",
-    ai: "🤖",
-    appointments: "📅",
-    printer: "🖨️",
-    shield: "🛡️",
-    account: "👤",
-    star: "★",
-    search: "⌘",
-  };
-
   const custom = settings?.branding?.sidebarIcons?.[name];
 
   return (
     <span className="nav-icon" aria-hidden="true">
-      {custom ? <img className="nav-icon-img" src={custom} alt="" /> : icons[name] || "•"}
+      {custom ? <img className="nav-icon-img" src={custom} alt="" /> : <AppIcon name={name} size={18} />}
     </span>
   );
 }

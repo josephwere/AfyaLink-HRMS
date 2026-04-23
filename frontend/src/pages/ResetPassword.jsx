@@ -70,7 +70,11 @@ export default function ResetPassword() {
   return (
     <AuthPageShell>
       <form className="auth-card" onSubmit={submit}>
+        <div className="auth-kicker">Password recovery</div>
         <h1>Reset password</h1>
+        <p className="subtitle">
+          Set a new password for this account. Use a password you have not used on another site.
+        </p>
 
         {error && <div className="auth-error">{error}</div>}
         {msg && <div className="auth-info">{msg}</div>}

@@ -25,24 +25,25 @@ import {
 
 import { googleLogin } from "../controllers/googleAuthController.js";
 import { refreshToken } from "../controllers/refreshController.js";
+import { authSensitiveLimiter } from "../middleware/trafficGuards.js";
 
 const router = express.Router();
 
 /* =========================
    GOOGLE
 ========================= */
-router.post("/google", googleLogin);
+router.post("/google", authSensitiveLimiter, googleLogin);
 
 /* =========================
    AUTH
 ========================= */
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", authSensitiveLimiter, register);
+router.post("/login", authSensitiveLimiter, login);
 router.post("/logout", protect, logout);
-router.post("/forgot-password", forgotPassword);
-router.post("/forgot-password/phone/request-otp", requestPasswordResetPhoneOtp);
-router.post("/reset-password", resetPassword);
-router.post("/reset-password/phone", resetPasswordWithPhoneOtp);
+router.post("/forgot-password", authSensitiveLimiter, forgotPassword);
+router.post("/forgot-password/phone/request-otp", authSensitiveLimiter, requestPasswordResetPhoneOtp);
+router.post("/reset-password", authSensitiveLimiter, resetPassword);
+router.post("/reset-password/phone", authSensitiveLimiter, resetPasswordWithPhoneOtp);
 
 /* =========================
    CURRENT USER (BOOTSTRAP)
@@ -60,7 +61,7 @@ router.post("/refresh", refreshToken);
    EMAIL VERIFICATION
 ========================= */
 router.get("/verify-email", verifyEmail);
-router.post("/resend-verification", resendVerificationEmail);
+router.post("/resend-verification", authSensitiveLimiter, resendVerificationEmail);
 
 /* =========================
    ADMIN OVERRIDE
@@ -80,20 +81,20 @@ router.post("/change-password", protect, changePassword);
 /* =========================
    2FA
 ========================= */
-router.post("/2fa/verify", verify2FAOtp);
-router.post("/2fa/resend", resend2FA);
+router.post("/2fa/verify", authSensitiveLimiter, verify2FAOtp);
+router.post("/2fa/resend", authSensitiveLimiter, resend2FA);
 
 /* =========================
    SESSION RISK + STEP-UP
 ========================= */
 router.get("/session-risk", protect, getSessionRisk);
-router.post("/step-up/request", protect, requestStepUpOtp);
-router.post("/step-up/verify", protect, verifyStepUpOtp);
+router.post("/step-up/request", protect, authSensitiveLimiter, requestStepUpOtp);
+router.post("/step-up/verify", protect, authSensitiveLimiter, verifyStepUpOtp);
 
 /* =========================
    PHONE VERIFICATION
 ========================= */
-router.post("/phone/request-otp", protect, requestPhoneOtp);
-router.post("/phone/verify", protect, verifyPhoneOtp);
+router.post("/phone/request-otp", protect, authSensitiveLimiter, requestPhoneOtp);
+router.post("/phone/verify", protect, authSensitiveLimiter, verifyPhoneOtp);
 
 export default router;

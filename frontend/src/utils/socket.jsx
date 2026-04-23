@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { getAccessToken } from "./browserSession";
+import { assertSecureApiBase, resolveApiBase } from "./networkBase";
 
 const SocketContext = createContext(undefined);
 
@@ -7,13 +9,12 @@ export default function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getAccessToken();
     if (!token) return;
 
     const SOCKET_URL =
-      import.meta.env.VITE_SOCKET_URL ||
-      import.meta.env.VITE_API_URL ||
-      "http://localhost:5000";
+      resolveApiBase(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || "");
+    assertSecureApiBase(SOCKET_URL);
 
     const s = io(SOCKET_URL, {
       transports: ["websocket"],

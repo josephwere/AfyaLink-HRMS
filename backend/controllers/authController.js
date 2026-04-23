@@ -21,6 +21,14 @@ import {
   resolveFrontendBase,
 } from "../utils/passwordReset.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCookies.js";
+import {
+  sanitizeCode,
+  sanitizeEmail,
+  sanitizeIdentifier,
+  sanitizePhone,
+  sanitizeString,
+} from "../utils/securitySanitizers.js";
 
 /* ======================================================
    HELPERS
@@ -212,20 +220,17 @@ export const register = async (req, res) => {
       nationalIdCountry,
     } = req.body;
 
-    if (!name || !password || (!email && !phone)) {
+    const sanitizedName = sanitizeString(name, { maxLength: 120 });
+    const normalizedEmail = email ? sanitizeEmail(email) : "";
+    const normalizedPhone = phone ? sanitizePhone(phone) : "";
+    const normalizedNationalId = nationalIdNumber ? sanitizeCode(nationalIdNumber) : "";
+    const normalizedNationalIdCountry = nationalIdCountry ? sanitizeCode(nationalIdCountry) : "";
+
+    if (!sanitizedName || !password || (!normalizedEmail && !normalizedPhone)) {
       return res
         .status(400)
         .json({ msg: "Name, password, and email or phone are required" });
     }
-
-    const normalizedEmail = email ? String(email).toLowerCase().trim() : "";
-    const normalizedPhone = phone ? String(phone).trim() : "";
-    const normalizedNationalId = nationalIdNumber
-      ? String(nationalIdNumber).trim().toUpperCase()
-      : "";
-    const normalizedNationalIdCountry = nationalIdCountry
-      ? String(nationalIdCountry).trim().toUpperCase()
-      : "";
 
     if (normalizedEmail && (await User.findOne({ email: normalizedEmail }))) {
       return res.status(400).json({ msg: "Email already registered" });
@@ -248,7 +253,7 @@ export const register = async (req, res) => {
     );
 
     const user = await User.create({
-      name,
+      name: sanitizedName,
       email: normalizedEmail || undefined,
       phone: normalizedPhone || undefined,
       password,
@@ -324,7 +329,7 @@ export const register = async (req, res) => {
 ====================================================== */
 export const forgotPassword = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").toLowerCase().trim();
+    const email = sanitizeEmail(req.body?.email || "");
     if (!email) {
       return res.status(400).json({ msg: "Email is required" });
     }
@@ -350,7 +355,7 @@ export const forgotPassword = async (req, res) => {
 ====================================================== */
 export const requestPasswordResetPhoneOtp = async (req, res) => {
   try {
-    const phone = String(req.body?.phone || "").trim();
+    const phone = sanitizePhone(req.body?.phone || "");
     if (!phone) {
       return res.status(400).json({ msg: "Phone number is required" });
     }
@@ -400,7 +405,7 @@ export const requestPasswordResetPhoneOtp = async (req, res) => {
 ====================================================== */
 export const resetPassword = async (req, res) => {
   try {
-    const token = String(req.body?.token || "");
+    const token = sanitizeIdentifier(req.body?.token || "");
     const password = String(req.body?.password || "");
     if (!token || !password) {
       return res.status(400).json({ msg: "Token and new password are required" });
@@ -451,8 +456,8 @@ export const resetPassword = async (req, res) => {
 ====================================================== */
 export const resetPasswordWithPhoneOtp = async (req, res) => {
   try {
-    const phone = String(req.body?.phone || "").trim();
-    const otp = String(req.body?.otp || "").trim();
+    const phone = sanitizePhone(req.body?.phone || "");
+    const otp = sanitizeIdentifier(req.body?.otp || "");
     const password = String(req.body?.password || "");
 
     if (!phone || !otp || !password) {
@@ -550,7 +555,7 @@ export const verifyEmail = async (req, res) => {
 ====================================================== */
 export const resendVerificationEmail = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = sanitizeEmail(req.body?.email || "");
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -609,7 +614,7 @@ export const resendVerificationEmail = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, phone, identifier, password } = req.body;
-    const loginId = String(email || phone || identifier || "").trim();
+    const loginId = sanitizeIdentifier(email || phone || identifier || "");
 
     if (!loginId || !password) {
       return res.status(400).json({
@@ -632,6 +637,13 @@ export const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         msg: "Invalid credentials",
+      });
+    }
+
+    if (user.active === false) {
+      return res.status(403).json({
+        success: false,
+        msg: "This account is deactivated. Contact support or your administrator.",
       });
     }
 
@@ -783,6 +795,7 @@ export const login = async (req, res) => {
       })
     );
 
+    setRefreshTokenCookie(res, refreshToken);
     res.json({
       success: true,
       accessToken,
@@ -816,7 +829,7 @@ export const logout = async (req, res) => {
       return res.status(401).json({ success: false, msg: "Not authenticated" });
     }
 
-    const { refreshToken } = req.body || {};
+    const refreshToken = sanitizeIdentifier(req.body?.refreshToken || req.cookies?.refreshToken || "");
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, msg: "User not found" });
@@ -845,6 +858,7 @@ export const logout = async (req, res) => {
       hospital: user.hospital || null,
     });
 
+    clearRefreshTokenCookie(res);
     return res.json({ success: true, msg: "Logged out successfully" });
   } catch (err) {
     console.error("LOGOUT ERROR:", err);
@@ -953,7 +967,8 @@ export const googleAuth = async (req, res) => {
 ====================================================== */
 export const verify2FAOtp = async (req, res) => {
   try {
-    const { userId, otp } = req.body;
+    const userId = sanitizeIdentifier(req.body?.userId || "");
+    const otp = sanitizeIdentifier(req.body?.otp || "");
     if (!userId || !otp) {
       return res.status(400).json({ msg: "userId and otp are required" });
     }
@@ -984,7 +999,7 @@ export const verify2FAOtp = async (req, res) => {
       }
     } else {
       const savedOtp = await getStepUpOtp(userId);
-      verified = Boolean(savedOtp && savedOtp === String(otp));
+      verified = Boolean(savedOtp && savedOtp === otp);
       if (verified) await clearStepUpOtp(userId);
     }
 
@@ -1040,6 +1055,7 @@ export const verify2FAOtp = async (req, res) => {
       metadata: { riskLevel: risk.level, riskScore: risk.score },
     });
 
+    setRefreshTokenCookie(res, refreshToken);
     res.json({ accessToken, refreshToken, user });
   } catch {
     res.status(500).json({ msg: "2FA verification failed" });
@@ -1051,7 +1067,7 @@ export const verify2FAOtp = async (req, res) => {
 ====================================================== */
 export const requestPhoneOtp = async (req, res) => {
   try {
-    const { phone } = req.body || {};
+    const phone = sanitizePhone(req.body?.phone || "");
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
@@ -1086,7 +1102,7 @@ export const requestPhoneOtp = async (req, res) => {
 ====================================================== */
 export const verifyPhoneOtp = async (req, res) => {
   try {
-    const { otp } = req.body || {};
+    const otp = sanitizeIdentifier(req.body?.otp || "");
     if (!otp) return res.status(400).json({ msg: "OTP is required" });
 
     const key = `phone:${req.user.id}`;
@@ -1131,7 +1147,7 @@ export const verifyPhoneOtp = async (req, res) => {
 ====================================================== */
 export const resend2FA = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = sanitizeIdentifier(req.body?.userId || "");
     const user = await User.findById(userId).select("+twoFactorSecret");
 
     if (!user || !user.twoFactorEnabled) {
@@ -1203,7 +1219,7 @@ export const requestStepUpOtp = async (req, res) => {
 
 export const verifyStepUpOtp = async (req, res) => {
   try {
-    const { otp } = req.body || {};
+    const otp = sanitizeIdentifier(req.body?.otp || "");
     if (!otp) return res.status(400).json({ msg: "OTP is required" });
 
     const user = await User.findById(req.user.id);

@@ -62,13 +62,12 @@ export default function Notifications({ notifications = [] }) {
         }
 
         .notification-card {
-          background: rgba(255,255,255,0.9);
-          backdrop-filter: blur(12px);
+          background: #ffffff;
           padding: 14px 20px;
-          border-radius: 12px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          box-shadow: none;
+          border: 1px solid #d4d4d8;
           border-left: 6px solid #3b82f6;
-          animation: slideIn 0.4s ease-out;
           font-size: 14px;
           position: relative;
           min-width: 260px;
@@ -85,11 +84,6 @@ export default function Notifications({ notifications = [] }) {
           right: 12px;
           font-size: 11px;
           color: #555;
-        }
-
-        @keyframes slideIn {
-          0% { transform: translateX(100%); opacity: 0; }
-          100% { transform: translateX(0); opacity: 1; }
         }
       `}</style>
     </div>

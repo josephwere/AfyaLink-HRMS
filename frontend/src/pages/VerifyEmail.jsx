@@ -10,6 +10,7 @@ export default function VerifyEmail() {
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
 
   const token = params.get("token");
 
@@ -40,8 +41,9 @@ export default function VerifyEmail() {
       });
 
       setCooldown(data.retryAfter || 60);
+      setMessage("Verification email sent. Check your inbox and spam folder.");
     } catch {
-      alert("Failed to resend verification email");
+      setMessage("We could not send a new verification email. Check the address and try again.");
     } finally {
       setLoading(false);
     }
@@ -51,33 +53,42 @@ export default function VerifyEmail() {
     <AuthPageShell>
       <div className="verify-page">
       {status === "verifying" && (
-        <div className="auth-card auth-status-card premium-card verify-card pulse">
-          <h1>Verifying…</h1>
-          <p>Please wait</p>
+        <div className="auth-card auth-status-card premium-card verify-card">
+          <div className="auth-kicker">Email verification</div>
+          <h1>Checking verification link</h1>
+          <p className="subtitle">Please wait while we confirm that this link is still valid.</p>
         </div>
       )}
 
       {status === "success" && (
-        <div className="auth-card auth-status-card premium-card verify-card success pop">
-          <h1>✅ Email Verified</h1>
-          <p>Your account is now active.</p>
-          <Link to="/login" className="btn">
-            Go to Login
+        <div className="auth-card auth-status-card premium-card verify-card success">
+          <div className="auth-kicker">Email verification</div>
+          <div className="auth-status-icon">OK</div>
+          <h1>Email confirmed</h1>
+          <p className="subtitle">This email address is now ready for sign-in and account recovery.</p>
+          <Link to="/login" className="btn-primary">
+            Go to sign in
           </Link>
         </div>
       )}
 
       {status === "invalid" && (
-        <div className="auth-card auth-status-card premium-card verify-card error shake">
-          <h1>❌ Invalid Link</h1>
-          <p>This verification link is invalid.</p>
+        <div className="auth-card auth-status-card premium-card verify-card error">
+          <div className="auth-kicker">Email verification</div>
+          <div className="auth-status-icon">!</div>
+          <h1>Verification link is not valid</h1>
+          <p className="subtitle">Open the latest verification email and use the newest link.</p>
         </div>
       )}
 
       {status === "error" && (
-        <div className="auth-card auth-status-card premium-card verify-card error shake">
-          <h1>❌ Verification Failed</h1>
-          <p>Link expired or already used.</p>
+        <div className="auth-card auth-status-card premium-card verify-card error">
+          <div className="auth-kicker">Email verification</div>
+          <div className="auth-status-icon">!</div>
+          <h1>Link expired or already used</h1>
+          <p className="subtitle">
+            Enter your email address below and we will send a new verification link.
+          </p>
 
           <input
             type="email"
@@ -87,11 +98,13 @@ export default function VerifyEmail() {
             style={{ marginTop: 12 }}
           />
 
+          {message ? <div className="auth-info">{message}</div> : null}
+
           <button
             type="button"
             onClick={handleResend}
             disabled={loading || cooldown > 0 || !email}
-            className="btn secondary"
+            className="btn-secondary"
           >
             {cooldown > 0
               ? `Resend in ${cooldown}s`

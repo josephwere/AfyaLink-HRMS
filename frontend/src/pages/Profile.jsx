@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../utils/auth";
 import apiFetch from "../utils/apiFetch";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import PasswordInput from "../components/PasswordInput";
@@ -106,6 +106,7 @@ function DismissibleSection({ title, children, className = "", eyebrow = "", asi
 export default function Profile() {
   const {
     user,
+    logout,
     canRoleOverride,
     roleOverride,
     strictImpersonation,
@@ -278,6 +279,12 @@ export default function Profile() {
   const [trainingRole, setTrainingRole] = useState("");
   const [trainingMsg, setTrainingMsg] = useState("");
   const [trainingView, setTrainingView] = useState("FULL");
+  const [privacyMsg, setPrivacyMsg] = useState("");
+  const [privacyError, setPrivacyError] = useState("");
+  const [exportBusy, setExportBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   useEffect(() => {
     restoreCooldown();
@@ -1765,6 +1772,50 @@ export default function Profile() {
     }
   };
 
+  const downloadAccountExport = async () => {
+    setPrivacyMsg("");
+    setPrivacyError("");
+    setExportBusy(true);
+    try {
+      const data = await apiFetch("/api/profile/export", { _skipUiProgress: true });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `afyalink-account-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setPrivacyMsg("Account export downloaded.");
+    } catch (err) {
+      setPrivacyError(err?.message || "We could not export your account data right now.");
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    setPrivacyMsg("");
+    setPrivacyError("");
+    setDeleteBusy(true);
+    try {
+      const data = await apiFetch("/api/profile/delete-account", {
+        method: "POST",
+        body: {
+          confirmText: deleteConfirmText,
+          currentPassword: deletePassword,
+        },
+      });
+      setPrivacyMsg(data?.message || "Account deleted. Signing out.");
+      await logout();
+    } catch (err) {
+      setPrivacyError(err?.message || "We could not delete this account right now.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   const profileSections = useMemo(() => {
     const sections = [
       canRoleOverride
@@ -1824,6 +1875,13 @@ export default function Profile() {
         title: "Password & Login",
         description: "Update your password or create a backup password for direct sign-in.",
         badge: hasPassword ? "Password ready" : "Set password",
+      },
+      {
+        key: "privacyData",
+        group: "Privacy & Legal",
+        title: "Privacy & Data",
+        description: "Export your account data, review legal terms, or permanently delete this account.",
+        badge: "Controls",
       },
       {
         key: "accessibility",
@@ -2002,6 +2060,10 @@ export default function Profile() {
   ];
 
   const formatRoleLabel = (value) => String(value || "").replaceAll("_", " ").trim() || "User";
+  const requiresDeletePassword = authProvider === "local" || hasPassword;
+  const deleteReady =
+    deleteConfirmText.trim().toUpperCase() === "DELETE MY ACCOUNT" &&
+    (!requiresDeletePassword || deletePassword.trim().length > 0);
 
   const switchWorkspaceRole = (nextRole) => {
     if (!user || !canRoleOverride) return;
@@ -3048,6 +3110,89 @@ export default function Profile() {
                     : "Change password"}
               </button>
             </form>
+          </DismissibleSection>
+        );
+      case "privacyData":
+        return (
+          <DismissibleSection
+            title="Privacy & Data"
+            eyebrow="Privacy & Legal"
+            aside={<span className="action-pill">Controls</span>}
+          >
+            <p className="muted">
+              Download a machine-readable copy of your account data, review the legal documents that apply to this
+              service, or permanently delete your account.
+            </p>
+
+            <div className="auth-detail-grid">
+              <div className="auth-detail-card">
+                <strong>Export</strong>
+                <span>Download a JSON export of your account profile and linked device history.</span>
+              </div>
+              <div className="auth-detail-card">
+                <strong>Legal</strong>
+                <span>Open the current Privacy Policy and Terms of Service from this settings area.</span>
+              </div>
+            </div>
+
+            {privacyError ? <div className="auth-error">{privacyError}</div> : null}
+            {privacyMsg ? <div className="auth-success-panel">{privacyMsg}</div> : null}
+
+            <div className="auth-inline-links">
+              <Link className="btn-secondary" to="/privacy">
+                Privacy Policy
+              </Link>
+              <Link className="btn-secondary" to="/terms">
+                Terms of Service
+              </Link>
+            </div>
+
+            <div className="profile-row profile-actions-row">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={downloadAccountExport}
+                disabled={exportBusy}
+              >
+                {exportBusy ? "Preparing export..." : "Export My Data"}
+              </button>
+            </div>
+
+            <div className="privacy-danger-panel">
+              <div className="privacy-danger-copy">
+                <strong>Delete account</strong>
+                <p className="muted">
+                  This immediately disables sign-in for this account and removes direct identifiers where the platform
+                  no longer needs them.
+                </p>
+              </div>
+
+              <label htmlFor="delete-account-confirmation">Confirmation</label>
+              <input
+                id="delete-account-confirmation"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder='Type "DELETE MY ACCOUNT"'
+                autoComplete="off"
+              />
+
+              {requiresDeletePassword ? (
+                <PasswordInput
+                  id="delete-account-password"
+                  label="Current password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  helperText="Required before this account can be deleted."
+                  autoComplete="current-password"
+                />
+              ) : null}
+
+              <div className="profile-row profile-actions-row">
+                <button type="button" className="danger" onClick={deleteAccount} disabled={deleteBusy || !deleteReady}>
+                  {deleteBusy ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            </div>
           </DismissibleSection>
         );
       default:

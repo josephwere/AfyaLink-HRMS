@@ -7,9 +7,17 @@ import {
   useState,
 } from "react";
 import { apiFetch, logout as apiLogout } from "./apiFetch";
+import {
+  clearBrowserSession,
+  getAccessToken,
+  readStoredUser,
+  setAccessToken,
+  writeStoredUser,
+} from "./browserSession";
 import { normalizeRole } from "./normalizeRole";
 import { flushOfflineRegistrations } from "./offlineRegistration";
 import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
+import { assertSecureApiBase, resolveApiBase } from "./networkBase";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -37,15 +45,7 @@ const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
 const STRICT_IMPERSONATION_KEY = "strict_impersonation";
 const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
-const AUTH_API_BASE =
-  import.meta.env.VITE_API_URL ||
-  window.__ENV__?.API_URL ||
-  (() => {
-    const host = window.location.hostname;
-    const origin = window.location.origin;
-    const isLocal = host === "localhost" || host === "127.0.0.1";
-    return isLocal ? `${window.location.protocol}//${host}:5000` : origin;
-  })();
+const AUTH_API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function clearRoleOverrideState() {
   localStorage.removeItem(ROLE_OVERRIDE_KEY);
@@ -154,11 +154,10 @@ export function AuthProvider({ children }) {
 
   const refreshSession = async () => {
     if (refreshInFlightRef.current) return false;
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) return false;
 
     refreshInFlightRef.current = true;
     try {
+      assertSecureApiBase(AUTH_API_BASE);
       const res = await fetch(
         `${AUTH_API_BASE}/api/auth/refresh`,
         {
@@ -168,16 +167,15 @@ export function AuthProvider({ children }) {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({}),
         }
       );
       if (!res.ok) return false;
       const data = await res.json();
       if (!data?.accessToken || !data?.user) return false;
 
-      localStorage.setItem("token", data.accessToken);
-      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      setAccessToken(data.accessToken);
+      writeStoredUser(data.user);
 
       const decoded = parseJwt(data.accessToken);
       setBaseUser({
@@ -194,8 +192,8 @@ export function AuthProvider({ children }) {
   };
 
   const hydrateFromStoredSession = () => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const storedUser = readStoredUser();
+    const token = getAccessToken();
     if (!token || !storedUser) {
       setBaseUser(null);
       return;
@@ -207,9 +205,8 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const parsed = JSON.parse(storedUser);
       setBaseUser({
-        ...parsed,
+        ...storedUser,
         role: decodedRole,
         twoFactorVerified: decoded?.twoFactor !== false,
       });
@@ -225,11 +222,14 @@ export function AuthProvider({ children }) {
     let mounted = true;
     const restore = async () => {
       try {
-        const storedUser = localStorage.getItem("user");
-        const token = localStorage.getItem("token");
-        const refreshToken = localStorage.getItem("refreshToken");
+        const storedUser = readStoredUser();
+        const token = getAccessToken();
 
-        if (!token || !storedUser) {
+        if (!token) {
+          if (storedUser && navigator.onLine) {
+            const refreshed = await refreshSession();
+            if (refreshed) return;
+          }
           if (mounted) setBaseUser(null);
           return;
         }
@@ -239,20 +239,19 @@ export function AuthProvider({ children }) {
 
         const isExpired = decoded?.exp && decoded.exp * 1000 < Date.now();
         if (!decodedRole || isExpired) {
-          if (!navigator.onLine) {
-            const offlineParsed = JSON.parse(storedUser);
+          if (!navigator.onLine && storedUser) {
             if (mounted) {
               setBaseUser({
-                ...offlineParsed,
-                role: normalizeRole(offlineParsed?.role || decodedRole),
+                ...storedUser,
+                role: normalizeRole(storedUser?.role || decodedRole),
                 twoFactorVerified: true,
                 offlineSession: true,
               });
             }
             return;
           }
-          if (!refreshToken) throw new Error("Token expired");
 
+          assertSecureApiBase(AUTH_API_BASE);
           const res = await fetch(
             `${AUTH_API_BASE}/api/auth/refresh`,
             {
@@ -262,7 +261,7 @@ export function AuthProvider({ children }) {
                 Accept: "application/json",
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ refreshToken }),
+              body: JSON.stringify({}),
             }
           );
 
@@ -270,11 +269,8 @@ export function AuthProvider({ children }) {
           const data = await res.json();
           if (!data?.accessToken || !data?.user) throw new Error("Refresh failed");
 
-          localStorage.setItem("token", data.accessToken);
-          if (data.refreshToken) {
-            localStorage.setItem("refreshToken", data.refreshToken);
-          }
-          localStorage.setItem("user", JSON.stringify(data.user));
+          setAccessToken(data.accessToken);
+          writeStoredUser(data.user);
 
           if (mounted) {
             setBaseUser({
@@ -286,17 +282,25 @@ export function AuthProvider({ children }) {
           return;
         }
 
+        if (!storedUser) {
+          if (!navigator.onLine) {
+            if (mounted) setBaseUser(null);
+            return;
+          }
+          const refreshed = await refreshSession();
+          if (!refreshed) throw new Error("Refresh failed");
+          return;
+        }
+
         if (mounted) {
           setBaseUser({
-            ...JSON.parse(storedUser),
+            ...storedUser,
             role: decodedRole,
             twoFactorVerified: decoded?.twoFactor !== false,
           });
         }
       } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
+        clearBrowserSession();
         localStorage.removeItem("2fa_pending");
         localStorage.removeItem("2fa_user");
         localStorage.removeItem(ROLE_OVERRIDE_KEY);
@@ -326,9 +330,8 @@ export function AuthProvider({ children }) {
     if (!baseUser) return undefined;
 
     const runKeepalive = async () => {
-      const token = localStorage.getItem("token");
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!token || !refreshToken) return;
+      const token = getAccessToken();
+      if (!token) return;
       if (document.hidden) return;
 
       const decoded = parseJwt(token);
@@ -360,8 +363,6 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const watchKeys = new Set([
-      "token",
-      "refreshToken",
       "user",
       ROLE_OVERRIDE_KEY,
       STRICT_IMPERSONATION_KEY,
@@ -371,9 +372,22 @@ export function AuthProvider({ children }) {
       if (event.storageArea !== localStorage) return;
       if (event.key && !watchKeys.has(event.key)) return;
 
-      hydrateFromStoredSession();
       setRoleOverrideState(localStorage.getItem(ROLE_OVERRIDE_KEY) || "");
       setStrictImpersonationState(localStorage.getItem(STRICT_IMPERSONATION_KEY) === "1");
+      const storedUser = readStoredUser();
+      if (!storedUser) {
+        setBaseUser(null);
+        return;
+      }
+      if (getAccessToken()) {
+        hydrateFromStoredSession();
+        return;
+      }
+      if (!navigator.onLine) {
+        setBaseUser(null);
+        return;
+      }
+      refreshSession().catch(() => setBaseUser(null));
     };
 
     window.addEventListener("storage", onStorage);
@@ -419,11 +433,8 @@ export function AuthProvider({ children }) {
         role: decodedRole,
       };
 
-      localStorage.setItem("token", accessToken);
-      if (passwordOrOptions?.refreshToken) {
-        localStorage.setItem("refreshToken", passwordOrOptions.refreshToken);
-      }
-      localStorage.setItem("user", JSON.stringify(safeUser));
+      setAccessToken(accessToken);
+      writeStoredUser(safeUser);
       clearRoleOverrideState();
       setRoleOverrideState("");
       setStrictImpersonationState(false);
@@ -475,6 +486,9 @@ export function AuthProvider({ children }) {
       localStorage.setItem("2fa_method", data.method || "OTP");
       localStorage.setItem("2fa_reason", data.reason || "");
       localStorage.setItem("2fa_identifier", String(identifierOrToken || "").trim());
+      if (data.user && typeof data.user === "object") {
+        writeStoredUser(data.user);
+      }
       return {
         requires2FA: true,
         userId: data.userId,
@@ -498,11 +512,8 @@ export function AuthProvider({ children }) {
       role: normalizedRole,
     };
 
-    localStorage.setItem("token", data.accessToken);
-    if (data.refreshToken) {
-      localStorage.setItem("refreshToken", data.refreshToken);
-    }
-    localStorage.setItem("user", JSON.stringify(safeUser));
+    setAccessToken(data.accessToken);
+    writeStoredUser(safeUser);
     clearRoleOverrideState();
     setRoleOverrideState("");
     setStrictImpersonationState(false);
@@ -521,15 +532,12 @@ export function AuthProvider({ children }) {
   /* --------------------------------------------------
      COMPLETE 2FA
   -------------------------------------------------- */
-  const complete2FA = (accessToken, refreshToken) => {
+  const complete2FA = (accessToken, refreshToken, resolvedUser = null) => {
     const decoded = parseJwt(accessToken);
     if (!decoded?.role) return;
     const decodedRole = normalizeRole(decoded.role);
 
-    localStorage.setItem("token", accessToken);
-    if (refreshToken) {
-      localStorage.setItem("refreshToken", refreshToken);
-    }
+    setAccessToken(accessToken);
     localStorage.removeItem("2fa_pending");
     localStorage.removeItem("2fa_user");
     localStorage.removeItem("2fa_method");
@@ -539,10 +547,13 @@ export function AuthProvider({ children }) {
     setRoleOverrideState("");
     setStrictImpersonationState(false);
 
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = resolvedUser || readStoredUser();
+    if (storedUser) {
+      writeStoredUser(storedUser);
+    }
 
     setBaseUser({
-      ...storedUser,
+      ...(storedUser || {}),
       role: decodedRole,
       twoFactorVerified: true,
     });
@@ -553,17 +564,14 @@ export function AuthProvider({ children }) {
   -------------------------------------------------- */
   const logout = async () => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
       await apiFetch("/api/auth/logout", {
         method: "POST",
-        body: refreshToken ? { refreshToken } : {},
+        body: {},
       });
     } catch {
       // ignore missing logout endpoint
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
+      clearBrowserSession();
       localStorage.removeItem("2fa_pending");
       localStorage.removeItem("2fa_user");
       localStorage.removeItem("2fa_method");
@@ -613,7 +621,7 @@ export function AuthProvider({ children }) {
     };
     setBaseUser(nextUser);
     try {
-      localStorage.setItem("user", JSON.stringify(nextUser));
+      writeStoredUser(nextUser);
     } catch {
       // ignore local storage sync errors
     }

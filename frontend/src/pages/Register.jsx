@@ -162,8 +162,16 @@ export default function Register() {
             }}
           />
         )}
-        <h1>Create your account</h1>
-        <p className="subtitle">Join AfyaLink HRMS</p>
+        <div className="auth-kicker">Patient account setup</div>
+        <h1>Create account</h1>
+        <p className="subtitle">
+          Create a patient account to book appointments, receive updates, and view records that are available to you.
+        </p>
+
+        <div className="auth-utility-list" aria-label="Registration details">
+          <div className="auth-utility-item">Provide only the contact details needed for account recovery and verification.</div>
+          <div className="auth-utility-item">National ID details are used for identity matching, consent, and insurance workflows where required.</div>
+        </div>
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
@@ -221,11 +229,11 @@ export default function Register() {
         />
 
         <div className="muted" style={{ marginBottom: 10 }}>
-          Unverified accounts may be deleted after the verification deadline.
+          Unverified accounts may be removed after the verification deadline.
         </div>
 
         <div className="muted auth-terms-copy">
-          By creating an account, you agree to the <Link to="/terms">Terms</Link> and acknowledge the <Link to="/privacy">Privacy Policy</Link>.
+          By creating an account, you agree to the <Link to="/terms">Terms of Service</Link> and acknowledge the <Link to="/privacy">Privacy Policy</Link>.
         </div>
 
         <button type="submit" disabled={submitting}>
@@ -239,11 +247,11 @@ export default function Register() {
 
         <div className="auth-footer">
           <span>Already have an account?</span>
-          <Link to="/login">Login</Link>
+          <Link to="/login">Sign in</Link>
         </div>
 
         <div className="auth-footer">
-          <span>Browse open hospital roles first?</span>
+          <span>Review hospital job listings first?</span>
           <Link to="/careers?src=REGISTER_PAGE">View careers</Link>
         </div>
 

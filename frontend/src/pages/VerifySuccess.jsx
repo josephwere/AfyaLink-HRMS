@@ -5,26 +5,26 @@ export default function VerifySuccess() {
   return (
     <AuthPageShell className="auth-status-shell">
       <div className="auth-card auth-status-card premium-card">
-        <div className="auth-status-icon">✓</div>
-        <h1>Email Verified</h1>
+        <div className="auth-kicker">Email verification</div>
+        <div className="auth-status-icon">OK</div>
+        <h1>Email confirmed</h1>
         <p className="subtitle">
-          Your email has been successfully verified.
-          You can now log in to your account.
+          Your email address is verified. You can sign in and finish the remaining account checks from Profile.
         </p>
         <div className="premium-note-grid">
           <div className="premium-note">
             <strong>Account status</strong>
-            <span>Identity verification completed. You can continue into the platform immediately.</span>
+            <span>Email-based account recovery is now available for this account.</span>
           </div>
           <div className="premium-note">
             <strong>Next step</strong>
-            <span>Sign in and finish any required setup such as 2FA, role view, or profile completion.</span>
+            <span>Sign in and review phone verification, password settings, and privacy controls.</span>
           </div>
         </div>
 
         <div className="auth-status-actions">
           <Link to="/login" className="btn-primary">
-            Go to login
+            Go to sign in
           </Link>
         </div>
       </div>

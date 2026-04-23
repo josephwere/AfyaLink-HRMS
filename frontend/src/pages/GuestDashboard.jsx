@@ -7,10 +7,10 @@ export default function GuestDashboard() {
     <DashboardHomeShell
       shellKey="portal_guest_home"
       kicker="Patient Portal"
-      title="Guest Access"
-      subtitle="Browse services and start a booking flow. Sign in when you want to manage appointments, records, or transfers."
+      title="Guest access"
+      subtitle="Browse services, start a booking request, and create an account when you need records, billing, or transfer history."
       actions={[
-        { label: "Book Appointment", path: "/register" },
+        { label: "Create account", path: "/register" },
         { label: "Sign In", path: "/login", variant: "secondary" },
       ]}
       stats={[
@@ -21,7 +21,7 @@ export default function GuestDashboard() {
     >
       <DashboardSection
         title="Guest Services"
-        subtitle="Everything here is safe to explore before you create an account."
+        subtitle="Everything in this section can be opened before you create an account."
       >
         <div className="dashboard-shelf-grid">
           <ActionCard
@@ -32,8 +32,8 @@ export default function GuestDashboard() {
           />
           <ActionCard
             title="Start appointment booking"
-            description="Begin a booking flow and create your account when ready."
-            footerLabel="Book an appointment"
+            description="Start a booking request and create an account when you need updates and reminders."
+            footerLabel="Start booking"
             path="/register"
           />
           <ActionCard
@@ -52,8 +52,8 @@ export default function GuestDashboard() {
       </DashboardSection>
 
       <DashboardSection
-        title="What Requires Sign-In"
-        subtitle="These workflows unlock once you authenticate."
+        title="What requires sign-in"
+        subtitle="These workflows are available after account verification."
       >
         <div className="alert-stack">
           <div className="alert-item">Transfer continuity and clinical handoff timelines.</div>

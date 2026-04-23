@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import AuditLog from "../models/AuditLog.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
+import { setRefreshTokenCookie } from "../utils/authCookies.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -49,6 +50,10 @@ export const googleLogin = async (req, res) => {
       await user.save();
     }
 
+    if (user.active === false) {
+      return res.status(403).json({ msg: "This account is deactivated. Contact support or your administrator." });
+    }
+
     // Generate JWT tokens
     const accessToken = signAccessToken({
       id: user._id,
@@ -73,6 +78,7 @@ export const googleLogin = async (req, res) => {
       resourceId: user._id,
     });
 
+    setRefreshTokenCookie(res, refreshToken);
     // Respond with token
     res.json({
       success: true,

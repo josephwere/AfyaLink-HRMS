@@ -145,20 +145,28 @@ export default function Login() {
             }}
           />
         )}
-        <h1>Welcome back</h1>
-        <p className="subtitle">Sign in to AfyaLink HRMS</p>
+        <div className="auth-kicker">Secure access</div>
+        <h1>Sign in</h1>
+        <p className="subtitle">
+          Use your work email, phone number, or national ID to open your AfyaLink workspace.
+        </p>
+
+        <div className="auth-utility-list" aria-label="Sign-in details">
+          <div className="auth-utility-item">Open schedules, requests, reports, and patient workflows for your role.</div>
+          <div className="auth-utility-item">Use offline sign-in only on devices you have already used successfully.</div>
+        </div>
 
         {error && <div className="auth-error">{error}</div>}
         {info && <div className="auth-info">{info}</div>}
         {googleError && googleError !== error && <div className="auth-error">{googleError}</div>}
         {isOffline && (
           <div className="auth-info">
-            You are offline. Login works only for accounts previously signed in on this device.
+            You are offline. Sign-in only works for accounts that were previously used on this device.
           </div>
         )}
         {slowAuth && (
           <div className="auth-info">
-            We’re warming secure sign-in and retrying quietly in the background. Please wait a few seconds.
+            Secure sign-in is still loading. Wait a few seconds, then try again.
           </div>
         )}
 
@@ -205,12 +213,12 @@ export default function Login() {
         </div>
 
         <div className="auth-footer">
-          <span>Don’t have an account?</span>
+          <span>Need an account?</span>
           <Link to="/register">Create account</Link>
         </div>
 
         <div className="auth-footer">
-          <span>Looking for hospital jobs?</span>
+          <span>Review hospital job listings?</span>
           <Link to="/careers?src=LOGIN_PAGE">View careers</Link>
         </div>
 

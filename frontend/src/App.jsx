@@ -1,4 +1,3 @@
-import "./theme-d.css";
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 

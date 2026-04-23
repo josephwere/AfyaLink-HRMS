@@ -147,10 +147,16 @@ export default function ForgotPassword() {
             }}
           />
         )}
-        <h1>Forgot password</h1>
+        <div className="auth-kicker">Password recovery</div>
+        <h1>Reset password</h1>
         <p className="subtitle">
-          Use your email for a reset link, or your phone number for a one-time reset code.
+          Use your email for a reset link or your phone number for a one-time reset code.
         </p>
+
+        <div className="auth-utility-list" aria-label="Password reset details">
+          <div className="auth-utility-item">Email reset links expire quickly and should be opened on a trusted device.</div>
+          <div className="auth-utility-item">Phone reset codes let you set a new password without opening your email inbox.</div>
+        </div>
 
         <div className="auth-segmented" role="tablist" aria-label="Password recovery method">
           <button
@@ -299,7 +305,7 @@ export default function ForgotPassword() {
             : isEmailMode
               ? submitted
                 ? "Send again"
-                : "Send reset link"
+                : "Send reset email"
               : phoneCodeSent
                 ? "Reset with code"
                 : "Send reset code"}
@@ -307,7 +313,7 @@ export default function ForgotPassword() {
 
         <div className="auth-footer">
           <span>Remembered your password?</span>
-          <Link to="/login">Back to login</Link>
+          <Link to="/login">Back to sign in</Link>
         </div>
 
         <LegalLinks className="auth-legal-links" />

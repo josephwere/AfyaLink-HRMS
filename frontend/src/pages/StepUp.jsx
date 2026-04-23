@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch, { ApiError } from "../utils/apiFetch";
+import { setAccessToken } from "../utils/browserSession";
+import AuthPageShell from "../components/AuthPageShell";
 
 export default function StepUp() {
   const navigate = useNavigate();
@@ -50,7 +52,7 @@ export default function StepUp() {
         body: { otp: otp.trim() },
       });
       if (data?.accessToken) {
-        localStorage.setItem("token", data.accessToken);
+        setAccessToken(data.accessToken);
       }
       setMessage("Session unlocked successfully.");
       setTimeout(() => navigate(-1), 600);
@@ -69,64 +71,67 @@ export default function StepUp() {
   const restriction = sessionRisk?.restriction || null;
 
   return (
-    <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>Session Security Check</h2>
-          <p className="muted">
-            Complete a step-up verification to continue sensitive actions.
-          </p>
-        </div>
-        <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={loadRisk}>
-            Refresh Risk
-          </button>
-          <button type="button" className="btn-primary" onClick={requestCode} disabled={requesting}>
-            {requesting ? "Sending..." : "Send Step-up Code"}
-          </button>
-        </div>
-      </div>
+    <AuthPageShell>
+      <div className="auth-card auth-card-wide">
+        <div className="auth-kicker">Additional verification</div>
+        <h1>Confirm this session</h1>
+        <p className="subtitle">
+          Sensitive actions are paused until you verify this session with a one-time code.
+        </p>
 
-      <section className="section">
-        <div className="grid info-grid">
-          <div className="card"><strong>Risk Level:</strong> {risk.level || "—"}</div>
-          <div className="card"><strong>Risk Score:</strong> {risk.score ?? "—"}</div>
-          <div className="card"><strong>Step-up Required:</strong> {sessionRisk?.requiresStepUp ? "Yes" : "No"}</div>
-          <div className="card"><strong>Step-up Verified At:</strong> {sessionRisk?.stepUpVerifiedAt || "Not yet"}</div>
-        </div>
-      </section>
-
-      {restriction && (
-        <section className="section">
-          <div className="card">
-            <strong>Restriction Active</strong>
-            <div className="muted">Reason: {restriction.reason || "RISK_RESTRICTION_ACTIVE"}</div>
-            <div className="muted">Until: {restriction.until || "Auto-expiry pending"}</div>
+        <div className="auth-detail-grid">
+          <div className="auth-detail-card">
+            <strong>Risk level</strong>
+            <span>{risk.level || "Unknown"}</span>
           </div>
-        </section>
-      )}
+          <div className="auth-detail-card">
+            <strong>Risk score</strong>
+            <span>{risk.score ?? "Unavailable"}</span>
+          </div>
+          <div className="auth-detail-card">
+            <strong>Verification required</strong>
+            <span>{sessionRisk?.requiresStepUp ? "Yes" : "No"}</span>
+          </div>
+          <div className="auth-detail-card">
+            <strong>Last verified</strong>
+            <span>{sessionRisk?.stepUpVerifiedAt || "Not verified in this session"}</span>
+          </div>
+        </div>
 
-      <section className="section">
-        <form className="card" onSubmit={verifyCode}>
-          <h3>Verify Step-up Code</h3>
+        {restriction ? (
+          <div className="auth-error" style={{ marginTop: 16 }}>
+            <strong>Restriction active.</strong> {restriction.reason || "Risk restriction is active"} until{" "}
+            {restriction.until || "the current review period ends"}.
+          </div>
+        ) : null}
+
+        {message && <div className="auth-info">{message}</div>}
+        {error && <div className="auth-error">{error}</div>}
+
+        <form className="form" onSubmit={verifyCode}>
+          <label htmlFor="step-up-code">One-time code</label>
           <input
+            id="step-up-code"
             type="text"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            placeholder="Enter 6-digit code"
+            placeholder="Enter the 6-digit code"
             maxLength={8}
             required
           />
-          <div className="welcome-actions mt-12">
-            <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? "Verifying..." : "Verify & Unlock"}
+          <div className="auth-inline-links">
+            <button type="button" className="btn-secondary" onClick={loadRisk}>
+              Refresh session risk
+            </button>
+            <button type="button" className="btn-secondary" onClick={requestCode} disabled={requesting}>
+              {requesting ? "Sending..." : "Send new code"}
             </button>
           </div>
-          {message && <p className="auth-info">{message}</p>}
-          {error && <p className="auth-error">{error}</p>}
+          <button className="btn-primary" type="submit" disabled={loading}>
+            {loading ? "Verifying..." : "Verify and continue"}
+          </button>
         </form>
-      </section>
-    </div>
+      </div>
+    </AuthPageShell>
   );
 }
-

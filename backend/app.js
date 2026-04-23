@@ -59,10 +59,33 @@ export async function startBackgroundJobs(logger = console) {
    🚀 APP
 ====================================================== */
 const app = express();
-app.set("trust proxy", 1);
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 1);
+app.set("trust proxy", Number.isFinite(trustProxyHops) && trustProxyHops >= 1 ? trustProxyHops : 1);
 
 function isDbReady() {
   return mongoose.connection?.readyState === 1;
+}
+
+function isSecureRequest(req) {
+  const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  return Boolean(req.secure || forwardedProto === "https");
+}
+
+function buildHstsHeader() {
+  const configuredMaxAge = Number(process.env.HSTS_MAX_AGE_SECONDS || 31536000);
+  const maxAge = Number.isFinite(configuredMaxAge) && configuredMaxAge > 0 ? configuredMaxAge : 31536000;
+  const includeSubDomains = process.env.HSTS_INCLUDE_SUBDOMAINS !== "0";
+  const preload = process.env.HSTS_PRELOAD === "1";
+  return [
+    `max-age=${maxAge}`,
+    includeSubDomains ? "includeSubDomains" : "",
+    preload ? "preload" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
 
 function lazyRouter(loadRouter, label = "lazy-router") {
@@ -156,6 +179,29 @@ app.use(
 ====================================================== */
 app.use("/api/auth", authLimiter);
 app.use("/api/ai/gateway", aiGatewayLimiter);
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production") return next();
+  if (!isSecureRequest(req)) return next();
+  res.setHeader("Strict-Transport-Security", buildHstsHeader());
+  return next();
+});
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production") return next();
+  if (!req.path.startsWith("/api")) return next();
+  if (req.path === "/api/health") return next();
+
+  const host = String(req.hostname || "").split(":")[0].trim().toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1") return next();
+
+  if (isSecureRequest(req)) return next();
+
+  return res.status(426).json({
+    message: "Secure HTTPS connection required.",
+    code: "HTTPS_REQUIRED",
+  });
+});
 
 /* ======================================================
    🧊 DB READINESS GATE (FAST FAIL)

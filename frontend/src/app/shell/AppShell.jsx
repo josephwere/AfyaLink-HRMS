@@ -13,6 +13,7 @@ import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
 import CommandPalette from "../../components/CommandPalette";
 import FirstLoginTour from "../../components/FirstLoginTour";
+import MobileTabBar from "../../components/MobileTabBar";
 import ContextRail from "./ContextRail";
 
 export default function AppShell() {
@@ -409,6 +410,15 @@ export default function AppShell() {
 
       {user && <CommandPalette />}
       {user && <FirstLoginTour />}
+      {user && (
+        <MobileTabBar
+          user={user}
+          onOpenMore={() => {
+            setSidebarOpen((value) => !value);
+            setContextOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }
