@@ -16,6 +16,19 @@
  */
 
 const BASE_URL = process.env.BASE_URL || "https://afya-link-hrms-4.vercel.app";
+const PROBE_LABEL = process.env.PROBE_LABEL || "default";
+const REQUIRED_ROLE_SUITES = new Set(
+  String(process.env.REQUIRED_ROLE_SUITES || "")
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean)
+);
+const ROLE_FILTER = new Set(
+  String(process.env.ROLE_FILTER || "")
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean)
+);
 
 const ROLE_SUITES = [
   {
@@ -261,7 +274,7 @@ async function unauthCase({ method, path, timeoutMs = 15000 }) {
 }
 
 async function run() {
-  console.log(`Live smoke suite against ${BASE_URL}\n`);
+  console.log(`Live smoke suite [${PROBE_LABEL}] against ${BASE_URL}\n`);
 
   await unauthCase({ method: "GET", path: "/healthz", timeoutMs: 20000 });
   await unauthCase({ method: "GET", path: "/readyz", timeoutMs: 25000 });
@@ -270,16 +283,22 @@ async function run() {
   console.log("");
 
   let failures = 0;
+  let executedRoleSuites = 0;
 
   for (const suite of ROLE_SUITES) {
+    if (ROLE_FILTER.size && !ROLE_FILTER.has(suite.label)) continue;
     const identifier = process.env[suite.identifierEnv] || "";
     const password = process.env[suite.passwordEnv] || "";
     if (!identifier || !password) {
+      if (REQUIRED_ROLE_SUITES.has(suite.label)) {
+        failures += 1;
+      }
       console.log(`[SKIP] ${suite.label}: missing ${suite.identifierEnv}/${suite.passwordEnv}`);
       console.log("");
       continue;
     }
 
+    executedRoleSuites += 1;
     const loginRes = await login({ label: suite.label, identifier, password });
     if (!loginRes.ok) {
       failures += 1;
@@ -298,6 +317,20 @@ async function run() {
       if (!ok) failures += 1;
     }
     console.log("");
+  }
+
+  if (REQUIRED_ROLE_SUITES.size) {
+    for (const label of REQUIRED_ROLE_SUITES) {
+      if (!ROLE_SUITES.some((suite) => suite.label === label)) {
+        failures += 1;
+        console.error(`Missing configured role suite: ${label}`);
+      }
+    }
+  }
+
+  if (ROLE_FILTER.size && executedRoleSuites === 0) {
+    failures += 1;
+    console.error("No role suites were executed. Check ROLE_FILTER and credential secrets.");
   }
 
   if (failures > 0) {

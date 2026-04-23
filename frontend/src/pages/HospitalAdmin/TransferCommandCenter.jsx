@@ -15,16 +15,11 @@ import {
 } from "../../services/transferApi";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
+import { formatDateOnly } from "../../utils/locale";
+import { resolveApiBase } from "../../utils/networkBase";
 import { normalizeRole } from "../../utils/normalizeRole";
 
-function getApiBase() {
-  const envBase = import.meta.env.VITE_API_URL;
-  if (envBase) return String(envBase).replace(/\/$/, "");
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:5000`;
-  }
-  return "http://localhost:5000";
-}
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function scoreTone(score) {
   if (score >= 100) return "good";
@@ -552,7 +547,7 @@ export default function TransferCommandCenter() {
                     : "No consent scopes"}
                 </div>
                 {detail?.consent?.expiresAt ? (
-                  <div className="muted">Expires {new Date(detail.consent.expiresAt).toLocaleDateString()}</div>
+                  <div className="muted">Expires {formatDateOnly(detail.consent.expiresAt)}</div>
                 ) : null}
               </div>
               <div className="alert-item">
@@ -577,7 +572,7 @@ export default function TransferCommandCenter() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${getApiBase()}/api/transfers/${selected._id}/fhir`, "_blank")}
+                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/fhir`, "_blank")}
                 >
                   Open FHIR Bundle
                 </button>
@@ -585,7 +580,7 @@ export default function TransferCommandCenter() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${getApiBase()}/api/transfers/${selected._id}/hl7`, "_blank")}
+                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/hl7`, "_blank")}
                 >
                   Open HL7 Export
                 </button>

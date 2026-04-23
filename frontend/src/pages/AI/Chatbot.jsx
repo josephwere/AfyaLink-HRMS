@@ -3,6 +3,7 @@ import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { chatAssistant, clearAssistantMemory, getAssistantContext } from "../../services/assistantApi";
 import { useAuth } from "../../utils/auth";
 import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
+import { getPreferredAssetSource, markAssetBroken } from "../../utils/assetFallbacks";
 
 export default function Chatbot() {
   const { settings } = useSystemSettings();
@@ -23,10 +24,10 @@ export default function Chatbot() {
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
   const aiIcon = settings?.ai?.icon || DEFAULT_AI_ICON;
-  const [iconSrc, setIconSrc] = useState(aiIcon || DEFAULT_AI_ICON);
+  const [iconSrc, setIconSrc] = useState(() => getPreferredAssetSource(aiIcon, DEFAULT_AI_ICON));
 
   useEffect(() => {
-    setIconSrc(aiIcon || DEFAULT_AI_ICON);
+    setIconSrc(getPreferredAssetSource(aiIcon, DEFAULT_AI_ICON));
   }, [aiIcon]);
 
   const supportsRecognition = useMemo(() => {
@@ -230,6 +231,7 @@ export default function Chatbot() {
               decoding="async"
               loading="lazy"
               onError={() => {
+                markAssetBroken(iconSrc);
                 if (iconSrc !== DEFAULT_AI_ICON) setIconSrc(DEFAULT_AI_ICON);
                 else setIconSrc("");
               }}

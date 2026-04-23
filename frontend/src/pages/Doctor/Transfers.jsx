@@ -1,15 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTransferConsent, getTransferHandoverPackage, listTransfers } from "../../services/transferApi";
+import { formatDateOnly } from "../../utils/locale";
+import { resolveApiBase } from "../../utils/networkBase";
 
-function getApiBase() {
-  const envBase = import.meta.env.VITE_API_URL;
-  if (envBase) return String(envBase).replace(/\/$/, "");
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:5000`;
-  }
-  return "http://localhost:5000";
-}
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 export default function Transfers() {
   const navigate = useNavigate();
@@ -132,7 +127,7 @@ export default function Transfers() {
                     </td>
                     <td>{row.status}</td>
                     <td>{row?.consent?.status || "PENDING"}</td>
-                    <td>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "—"}</td>
+                    <td>{row.createdAt ? formatDateOnly(row.createdAt) : "—"}</td>
                   </tr>
                 ))}
                 {!rows.length ? (
@@ -177,7 +172,7 @@ export default function Transfers() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${getApiBase()}/api/transfers/${selected._id}/fhir`, "_blank")}
+                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/fhir`, "_blank")}
                 >
                   Open FHIR Bundle
                 </button>
@@ -185,7 +180,7 @@ export default function Transfers() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${getApiBase()}/api/transfers/${selected._id}/hl7`, "_blank")}
+                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/hl7`, "_blank")}
                 >
                   Open HL7 Export
                 </button>

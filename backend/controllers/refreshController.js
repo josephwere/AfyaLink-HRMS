@@ -4,14 +4,17 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCookies.js";
-import { sanitizeIdentifier } from "../utils/securitySanitizers.js";
+import { sanitizeString } from "../utils/securitySanitizers.js";
+import { resolveSessionId, rotateRefreshSession } from "../utils/authSessions.js";
 
 /* ======================================================
    REFRESH ACCESS TOKEN
 ====================================================== */
 export const refreshToken = async (req, res) => {
   try {
-    const refreshToken = sanitizeIdentifier(req.body?.refreshToken || req.cookies?.refreshToken || "");
+    const refreshToken = sanitizeString(req.body?.refreshToken || req.cookies?.refreshToken || "", {
+      maxLength: 4096,
+    }).replace(/\s+/g, "");
 
     if (!refreshToken) {
       return res.status(401).json({ msg: "Refresh token missing" });
@@ -52,15 +55,21 @@ export const refreshToken = async (req, res) => {
     }
 
     /* 🔄 Rotate refresh token */
-    user.refreshTokens = user.refreshTokens.filter(
-      (t) => t !== refreshToken
-    );
-
+    const sessionStartedAt = new Date(startedAtMs).toISOString();
+    const sessionId = resolveSessionId(refreshToken, decoded?.sessionId || "");
     const newRefreshToken = signRefreshToken({
       id: user._id,
-      sessionStartedAt: new Date(startedAtMs).toISOString(),
+      sessionStartedAt,
+      sessionId,
     });
-    user.refreshTokens.push(newRefreshToken);
+    rotateRefreshSession(user, {
+      previousRefreshToken: refreshToken,
+      nextRefreshToken: newRefreshToken,
+      sessionId,
+      startedAt: sessionStartedAt,
+      req,
+      source: "REFRESH_ROTATION",
+    });
 
     const accessToken = signAccessToken({
       id: user._id,

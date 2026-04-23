@@ -6,6 +6,24 @@ import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 const { Schema, model } = mongoose;
 
+const sessionRecordSchema = new Schema(
+  {
+    sessionId: { type: String, required: true, trim: true },
+    tokenHash: { type: String, required: true, trim: true },
+    startedAt: { type: Date, default: Date.now },
+    lastSeenAt: { type: Date, default: Date.now },
+    lastRotatedAt: { type: Date, default: Date.now },
+    lastIp: { type: String, default: "" },
+    country: { type: String, default: "" },
+    userAgent: { type: String, default: "" },
+    source: { type: String, default: "SESSION" },
+    revokedAt: { type: Date, default: null },
+    revokeReason: { type: String, default: "" },
+    revocationSource: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 /* ======================================================
    USER SCHEMA
 ====================================================== */
@@ -360,6 +378,14 @@ const userSchema = new Schema(
       lastRiskScore: Number,
       lastRiskLevel: String,
       restrictedUntil: Date,
+      activeSessions: {
+        type: [sessionRecordSchema],
+        default: [],
+      },
+      revokedSessions: {
+        type: [sessionRecordSchema],
+        default: [],
+      },
     },
 
     uiPreferences: {
@@ -368,6 +394,8 @@ const userSchema = new Schema(
       locale: { type: String, default: "en" },
       appLanguage: { type: String, default: "en" },
       patientLanguage: { type: String, default: "en" },
+      timeZone: { type: String, default: "UTC" },
+      currency: { type: String, default: "KES" },
       navigation: { type: Schema.Types.Mixed, default: {} },
       dashboardShelves: { type: Schema.Types.Mixed, default: {} },
       commandPalette: { type: Schema.Types.Mixed, default: {} },

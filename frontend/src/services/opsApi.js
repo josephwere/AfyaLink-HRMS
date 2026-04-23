@@ -1,17 +1,12 @@
 import apiFetch from "../utils/apiFetch";
+import { getAccessToken } from "../utils/browserSession";
+import { resolveApiBase } from "../utils/networkBase";
 
-const FALLBACK_API_BASE =
-  typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:5000`
-    : "http://localhost:5000";
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  window.__ENV__?.API_URL ||
-  FALLBACK_API_BASE;
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function buildAuthHeaders() {
   const headers = { Accept: "text/csv" };
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const viewRole = localStorage.getItem("role_override");
   const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";

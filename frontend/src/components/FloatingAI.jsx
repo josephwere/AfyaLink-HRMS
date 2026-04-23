@@ -38,6 +38,7 @@ import {
   mergeAssistantStarterPack,
 } from "../utils/aiStarterMacros";
 import { DEFAULT_AI_ICON } from "../constants/aiBranding";
+import { getPreferredAssetSource, markAssetBroken } from "../utils/assetFallbacks";
 
 function parseCsv(value) {
   return String(value || "")
@@ -131,7 +132,9 @@ export default function FloatingAI() {
   const [history, setHistory] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatExpanded, setChatExpanded] = useState(true);
-  const [launcherIconSrc, setLauncherIconSrc] = useState(() => ai?.icon || DEFAULT_AI_ICON);
+  const [launcherIconSrc, setLauncherIconSrc] = useState(() =>
+    getPreferredAssetSource(ai?.icon, DEFAULT_AI_ICON)
+  );
   const [launcherIconBroken, setLauncherIconBroken] = useState(false);
   const [formFillPrompt, setFormFillPrompt] = useState("");
   const [formFillBusy, setFormFillBusy] = useState(false);
@@ -162,7 +165,7 @@ export default function FloatingAI() {
   const cameraInputRef = useRef(null);
 
   const aiName = ai?.name || "NeuroEdge";
-  const preferredLauncherIcon = ai?.icon || DEFAULT_AI_ICON;
+  const preferredLauncherIcon = getPreferredAssetSource(ai?.icon, DEFAULT_AI_ICON);
   const greeting = ai?.greeting || "Assistant";
   const assistantProfile = context?.assistantProfile || {};
   const hospitalScope = context?.hospitalScope || String(user?.hospitalId || user?.hospital || "GLOBAL");
@@ -208,6 +211,7 @@ export default function FloatingAI() {
   }, [preferredLauncherIcon]);
 
   const handleLauncherIconError = () => {
+    markAssetBroken(launcherIconSrc);
     // If a custom icon breaks, automatically fall back to the shipped NeuroEdge logo
     // instead of showing a monogram (the "N" users keep seeing).
     if (launcherIconSrc && launcherIconSrc !== DEFAULT_AI_ICON) {

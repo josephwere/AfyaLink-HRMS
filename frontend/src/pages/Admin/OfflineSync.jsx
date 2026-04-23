@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import localforage from 'localforage';
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { resolveApiUrl } from "../../utils/networkBase";
 
 localforage.config({ name: 'AfyaLinkOffline' });
 
@@ -47,7 +47,7 @@ export default function OfflineSync(){
         setMsg('Nothing to sync');
         return;
       }
-      const r = await fetch(`${API_BASE}/api/offline/upload`, {
+      const r = await fetch(resolveApiUrl("/api/offline/upload", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""), {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ items: rows }),

@@ -13,6 +13,9 @@ import {
 
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import apiFetch from "../../utils/apiFetch";
+import { getAccessToken } from "../../utils/browserSession";
+import { formatCurrency, formatDateTime } from "../../utils/locale";
+import { resolveApiBase } from "../../utils/networkBase";
 
 const PROVIDERS = [
   { value: "", label: "All providers" },
@@ -28,19 +31,8 @@ const STATUSES = [
   { value: "failed", label: "Failed" },
 ];
 
-function resolveApiBase() {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (typeof window !== "undefined" && window.__ENV__?.API_URL) return window.__ENV__.API_URL;
-  if (typeof window === "undefined") return "http://localhost:5000";
-  const host = window.location.hostname;
-  const isLocal = host === "localhost" || host === "127.0.0.1";
-  return isLocal ? `${window.location.protocol}//${host}:5000` : window.location.origin;
-}
-
 function formatCurrencyKES(value) {
-  const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) return "KES 0";
-  return `KES ${amount.toLocaleString()}`;
+  return formatCurrency(value, "KES");
 }
 
 export default function TransactionsDashboard() {
@@ -75,8 +67,8 @@ export default function TransactionsDashboard() {
     const query = qs.toString();
 
     if (exportCsv) {
-      const base = resolveApiBase();
-      const token = localStorage.getItem("token");
+      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
+      const token = getAccessToken();
       const headers = {};
       if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -287,7 +279,7 @@ export default function TransactionsDashboard() {
                     <td>{r.provider || "—"}</td>
                     <td>{formatCurrencyKES(r.amount)}</td>
                     <td>{r.status || "—"}</td>
-                    <td>{r.createdAt ? new Date(r.createdAt).toLocaleString() : "—"}</td>
+                    <td>{r.createdAt ? formatDateTime(r.createdAt) : "—"}</td>
                   </tr>
                 ))}
               </tbody>

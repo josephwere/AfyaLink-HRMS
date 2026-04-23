@@ -9,6 +9,7 @@ import { useUiPreferences } from "../../utils/uiPreferences";
 import { prefetchRoutesForRole } from "../../utils/routePrefetch";
 import { refreshOfflineMetricsSnapshot, startOfflineAutoSync } from "../../utils/offlineQueue";
 import { pushOfflineClientMetrics } from "../../services/offlineOpsApi";
+import { getBrowserRegionDefaults } from "../../utils/locale";
 
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
@@ -55,6 +56,31 @@ export default function AppShell() {
     if (!user) return;
     applyAccessibilityPrefs(loadAccessibilityPrefs(user));
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const defaults = getBrowserRegionDefaults();
+    const currentPrefs = user.uiPreferences || {};
+    const patch = {};
+
+    if (!currentPrefs.locale) patch.locale = defaults.locale;
+    if (!currentPrefs.appLanguage) patch.appLanguage = defaults.appLanguage;
+    if (!currentPrefs.patientLanguage) patch.patientLanguage = defaults.patientLanguage;
+    if (!currentPrefs.timeZone) patch.timeZone = defaults.timeZone;
+    if (!currentPrefs.currency) patch.currency = defaults.currency;
+
+    if (Object.keys(patch).length) {
+      setUiPreferences(patch, { immediate: true });
+    }
+  }, [
+    setUiPreferences,
+    user,
+    user?.uiPreferences?.appLanguage,
+    user?.uiPreferences?.currency,
+    user?.uiPreferences?.locale,
+    user?.uiPreferences?.patientLanguage,
+    user?.uiPreferences?.timeZone,
+  ]);
 
   useEffect(() => {
     const profileDismissed = uiPreferences?.navigation?.dismissedReminders;

@@ -1,6 +1,5 @@
 import React, { useRef, useState } from "react";
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { resolveApiUrl } from "../utils/networkBase";
 
 export default function AIChat() {
   const [input, setInput] = useState("");
@@ -15,11 +14,14 @@ export default function AIChat() {
     setMessages((prev) => [...prev, { role: "user", text: message }]);
     setInput("");
     try {
-      const res = await fetch(`${API_BASE}/api/ai/chat`, {
+      const res = await fetch(
+        resolveApiUrl("/api/ai/chat", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""),
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
-      });
+        }
+      );
       if (!res.ok || !res.body) return;
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");

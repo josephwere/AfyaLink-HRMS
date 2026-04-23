@@ -1,5 +1,8 @@
 import { canQueueOfflineMutation, queueOfflineMutation } from "../utils/offlineMutation";
-const base = import.meta.env.VITE_API_URL || "";
+import { getAccessToken, setAccessToken } from "../utils/browserSession";
+import { resolveApiBase } from "../utils/networkBase";
+
+const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function makeQueuedResponse(path, method, body) {
   queueOfflineMutation({ path, method, body, feature: "API_SERVICE" });
@@ -28,8 +31,7 @@ async function apiFetch(path, opts = {}) {
   };
 
   const merged = { ...defaults, ...opts };
-  const token = localStorage.getItem("token");
-  const refreshToken = localStorage.getItem("refreshToken");
+  const token = getAccessToken();
   const isAuthRoute =
     path.includes("/api/auth/login") ||
     path.includes("/api/auth/register") ||
@@ -65,27 +67,24 @@ async function apiFetch(path, opts = {}) {
   }
 
   // 🔁 Auto refresh on 401
-  if (r.status === 401 && refreshToken) {
+  if (r.status === 401) {
     const rt = await fetch(base + "/api/auth/refresh", {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({}),
     });
 
     if (rt.ok) {
       const data = await rt.json();
       if (data?.accessToken) {
-        localStorage.setItem("token", data.accessToken);
+        setAccessToken(data.accessToken);
         merged.headers = {
           ...merged.headers,
           Authorization: `Bearer ${data.accessToken}`,
         };
-      }
-      if (data?.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
       }
       try {
         r = await fetch(base + path, merged);

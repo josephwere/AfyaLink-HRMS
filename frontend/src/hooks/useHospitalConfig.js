@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utils/api";
+import { getAccessToken } from "../utils/browserSession";
 
 export const useHospitalConfig = () => {
   const [hospital, setHospital] = useState(null);
@@ -9,7 +10,7 @@ export const useHospitalConfig = () => {
     let mounted = true;
 
     const loadConfig = async () => {
-      const token = localStorage.getItem("token");
+      const token = getAccessToken();
       if (!token) {
         if (mounted) {
           setHospital(null);

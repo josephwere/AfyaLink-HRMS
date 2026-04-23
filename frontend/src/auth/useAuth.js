@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import apiFetch, { logout as apiLogout } from "../utils/apiFetch";
+import { clearBrowserSession, setAccessToken } from "../utils/browserSession";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -24,10 +25,7 @@ export function useAuth() {
   const login = async (emailOrToken, passwordOrOptions) => {
     if (passwordOrOptions?.directToken) {
       const { token, user } = passwordOrOptions;
-      localStorage.setItem("token", token);
-      if (passwordOrOptions.refreshToken) {
-        localStorage.setItem("refreshToken", passwordOrOptions.refreshToken);
-      }
+      setAccessToken(token);
       setUser(user);
       return { user };
     }
@@ -40,10 +38,7 @@ export function useAuth() {
 
       if (!data?.user) throw new Error("Invalid credentials");
 
-      localStorage.setItem("token", data.accessToken);
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
+      setAccessToken(data.accessToken);
       setUser(data.user);
 
       if (data.requires2FA) return { requires2FA: true, userId: data.user.id };
@@ -55,8 +50,7 @@ export function useAuth() {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    clearBrowserSession();
     setUser(null);
     apiLogout();
   };

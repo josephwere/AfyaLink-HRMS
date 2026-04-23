@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { getHospitalVerificationReviewQueue, reviewHospitalVerification } from "../../services/systemAdminApi";
+import { resolveApiBase } from "../../utils/networkBase";
 
 export default function HospitalVerificationReview() {
   const [queue, setQueue] = useState({ hospitals: [], branches: [] });
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [notes, setNotes] = useState({});
-  const base = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000`;
+  const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
   const load = async () => {
     setLoading(true);

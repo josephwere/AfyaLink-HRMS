@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import { formatDateTime } from "../../utils/locale";
+import { resolveApiBase } from "../../utils/networkBase";
 
 const emptyDevice = {
   name: "",
@@ -195,7 +197,7 @@ export default function MachineConnectivity() {
   };
 
   const machinePost = async (path, machineKey, body = {}) => {
-    const base = import.meta.env.VITE_API_URL || "";
+    const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
     const res = await fetch(`${base}${path}`, {
       method: "POST",
       credentials: "include",
@@ -446,7 +448,7 @@ export default function MachineConnectivity() {
                     <td>{d.machineType}</td>
                     <td>{d.protocol}</td>
                     <td>{d.status}</td>
-                    <td>{d.lastHeartbeatAt ? new Date(d.lastHeartbeatAt).toLocaleString() : "—"}</td>
+                    <td>{d.lastHeartbeatAt ? formatDateTime(d.lastHeartbeatAt) : "—"}</td>
                     <td>
                       <div className="row-actions">
                         <button type="button" className="btn-secondary" onClick={() => setSelectedDeviceId(d._id)}>
@@ -706,7 +708,7 @@ export default function MachineConnectivity() {
               <tbody>
                 {auditRows.map((row) => (
                   <tr key={row._id}>
-                    <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : "-"}</td>
+                    <td>{row.createdAt ? formatDateTime(row.createdAt) : "-"}</td>
                     <td>{row.action}</td>
                     <td>{row?.details?.code || row?.details?.machineId || "-"}</td>
                     <td>

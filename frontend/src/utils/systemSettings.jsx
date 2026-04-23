@@ -416,10 +416,11 @@ export function SystemSettingsProvider({ children }) {
   }, [refreshSettings]);
 
   useEffect(() => {
-    const socketUrl =
+    const socketUrl = resolveApiBase(
       import.meta.env.VITE_SOCKET_URL ||
       import.meta.env.VITE_API_URL ||
-      window.location.origin;
+      window.location.origin
+    );
 
     const token = getAccessToken();
     const socket = io(socketUrl, {

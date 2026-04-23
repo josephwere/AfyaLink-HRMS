@@ -14,6 +14,7 @@ import {
 import { buildFamilyTimelineForUser } from "../services/familyTimelineService.js";
 import { audit } from "../utils/audit.js";
 import { clearRefreshTokenCookie } from "../utils/authCookies.js";
+import { revokeAllRefreshSessions } from "../utils/authSessions.js";
 import {
   sanitizeCode,
   sanitizeEmail,
@@ -676,7 +677,7 @@ export const deleteMyAccount = async (req, res) => {
     user.address = undefined;
     user.emergencyContact = {};
     user.financial = {};
-    user.refreshTokens = [];
+    revokeAllRefreshSessions(user, { reason: "SELF_DELETE_ACCOUNT", source: "PROFILE" });
     user.password = undefined;
     user.passwordSetAt = null;
     user.resetPasswordToken = undefined;

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
 /* ======================================================
@@ -39,8 +40,9 @@ export const signRefreshToken = (user) => {
     user?.sessionStartedAt ||
     user?.sessionStart ||
     new Date().toISOString();
+  const sessionId = user?.sessionId || crypto.randomUUID();
   return jwt.sign(
-    { id: user._id || user.id, sessionStartedAt },
+    { id: user._id || user.id, sessionStartedAt, sessionId },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
   );

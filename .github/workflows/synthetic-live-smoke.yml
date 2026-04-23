@@ -1,0 +1,40 @@
+name: Synthetic Live Smoke
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  production-smoke:
+    name: Production Smoke Probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Run production live smoke suite
+        env:
+          BASE_URL: ${{ vars.SYNTHETIC_BASE_URL || 'https://afya-link-hrms-4.vercel.app' }}
+          PROBE_LABEL: github-default
+          ROLE_FILTER: SUPER_ADMIN,HOSPITAL_ADMIN
+          REQUIRED_ROLE_SUITES: SUPER_ADMIN
+          SUPER_ADMIN_IDENTIFIER: ${{ secrets.SYNTHETIC_SUPER_ADMIN_IDENTIFIER }}
+          SUPER_ADMIN_PASSWORD: ${{ secrets.SYNTHETIC_SUPER_ADMIN_PASSWORD }}
+          HOSPITAL_ADMIN_IDENTIFIER: ${{ secrets.SYNTHETIC_HOSPITAL_ADMIN_IDENTIFIER }}
+          HOSPITAL_ADMIN_PASSWORD: ${{ secrets.SYNTHETIC_HOSPITAL_ADMIN_PASSWORD }}
+        run: node scripts/live-smoke-suite.mjs

@@ -1,13 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
+import { formatDateTime } from "../../utils/locale";
+import { resolveApiBase } from "../../utils/networkBase";
 
 const PAGE_SIZE = 20;
 
 function prettyTime(v) {
   if (!v) return "-";
   try {
-    return new Date(v).toLocaleString();
+    return formatDateTime(v);
   } catch {
     return String(v);
   }
@@ -266,7 +268,7 @@ export default function MachineAlerts() {
 
   const downloadTimelineCsv = async (alertId) => {
     try {
-      const base = import.meta.env.VITE_API_URL || "";
+      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
       const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/timeline.csv`, {
         credentials: "include",
       });
@@ -290,7 +292,7 @@ export default function MachineAlerts() {
 
   const downloadTimelinePdf = async (alertId) => {
     try {
-      const base = import.meta.env.VITE_API_URL || "";
+      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
       const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/timeline.pdf`, {
         credentials: "include",
       });
@@ -329,7 +331,7 @@ export default function MachineAlerts() {
 
   const downloadEvidenceBundle = async (alertId) => {
     try {
-      const base = import.meta.env.VITE_API_URL || "";
+      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
       const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/evidence-bundle`, {
         credentials: "include",
       });

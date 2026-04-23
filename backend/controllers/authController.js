@@ -29,6 +29,12 @@ import {
   sanitizePhone,
   sanitizeString,
 } from "../utils/securitySanitizers.js";
+import {
+  createSessionId,
+  registerRefreshSession,
+  revokeAllRefreshSessions,
+  revokeRefreshSession,
+} from "../utils/authSessions.js";
 
 /* ======================================================
    HELPERS
@@ -426,7 +432,7 @@ export const resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     user.resetPasswordRequestedAt = undefined;
-    user.refreshTokens = [];
+    revokeAllRefreshSessions(user, { reason: "PASSWORD_RESET", source: "AUTH" });
     await user.save();
 
     await AuditLog.create({
@@ -479,7 +485,7 @@ export const resetPasswordWithPhoneOtp = async (req, res) => {
     await delOtp(`password-reset:${user._id}`);
     user.password = password;
     user.passwordSetAt = new Date();
-    user.refreshTokens = [];
+    revokeAllRefreshSessions(user, { reason: "PASSWORD_RESET", source: "AUTH" });
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     user.resetPasswordRequestedAt = undefined;
@@ -756,8 +762,17 @@ export const login = async (req, res) => {
       riskScore: risk.score,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
-    user.refreshTokens.push(refreshToken);
+    const sessionStartedAt = new Date().toISOString();
+    const sessionId = createSessionId();
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt, sessionId });
+    registerRefreshSession(user, {
+      refreshToken,
+      sessionId,
+      startedAt: sessionStartedAt,
+      req,
+      risk,
+      source: "PASSWORD_LOGIN",
+    });
     await upsertTrustedDevice(user, risk);
     user.sessionSecurity = {
       ...(user.sessionSecurity || {}),
@@ -829,16 +844,18 @@ export const logout = async (req, res) => {
       return res.status(401).json({ success: false, msg: "Not authenticated" });
     }
 
-    const refreshToken = sanitizeIdentifier(req.body?.refreshToken || req.cookies?.refreshToken || "");
+    const refreshToken = sanitizeString(req.body?.refreshToken || req.cookies?.refreshToken || "", {
+      maxLength: 4096,
+    }).replace(/\s+/g, "");
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, msg: "User not found" });
     }
 
     if (refreshToken) {
-      user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+      revokeRefreshSession(user, { refreshToken, reason: "LOGOUT", source: "USER" });
     } else {
-      user.refreshTokens = [];
+      revokeAllRefreshSessions(user, { reason: "LOGOUT_ALL", source: "USER" });
     }
     await user.save();
 
@@ -932,8 +949,16 @@ export const googleAuth = async (req, res) => {
       twoFactorVerified: true,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
-    user.refreshTokens.push(refreshToken);
+    const sessionStartedAt = new Date().toISOString();
+    const sessionId = createSessionId();
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt, sessionId });
+    registerRefreshSession(user, {
+      refreshToken,
+      sessionId,
+      startedAt: sessionStartedAt,
+      req,
+      source: "GOOGLE_LOGIN",
+    });
     await user.save();
     await appendComplianceLedger({
       actorId: user._id,
@@ -1022,8 +1047,17 @@ export const verify2FAOtp = async (req, res) => {
       riskScore: risk.score,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
-    user.refreshTokens.push(refreshToken);
+    const sessionStartedAt = new Date().toISOString();
+    const sessionId = createSessionId();
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt, sessionId });
+    registerRefreshSession(user, {
+      refreshToken,
+      sessionId,
+      startedAt: sessionStartedAt,
+      req,
+      risk,
+      source: "STEP_UP_LOGIN",
+    });
     await redis.set(`stepup:last:${String(user._id)}`, new Date().toISOString(), { ex: 3600 });
     await redis.del(`risk:restricted:${String(user._id)}`);
     await upsertTrustedDevice(user, risk);
@@ -1358,7 +1392,7 @@ export const changePassword = async (req, res) => {
 
     user.password = newPassword;
     user.passwordSetAt = new Date();
-    user.refreshTokens = [];
+    revokeAllRefreshSessions(user, { reason: "PASSWORD_CHANGE", source: "AUTH" });
     await user.save();
 
     res.json({ success: true });

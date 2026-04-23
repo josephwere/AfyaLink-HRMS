@@ -1,10 +1,11 @@
 import React from "react";
 import AIChatWS from "../../components/AIChatWS";
 import { useAuth } from "../../utils/auth";
+import { getAccessToken } from "../../utils/browserSession";
 
 export default function MedicalAssistant() {
   const { user } = useAuth();
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
 
   return (
     <div className="dashboard premium-shell">

@@ -1,3 +1,5 @@
+import { resolveApiBase } from "./networkBase";
+
 const OFFLINE_REG_KEY = "afyalink_offline_registrations_v1";
 
 function nowIso() {
@@ -41,7 +43,7 @@ export async function flushOfflineRegistrations() {
   const remaining = [];
   let synced = 0;
   let failed = 0;
-  const base = import.meta.env.VITE_API_URL;
+  const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
   for (const item of queue) {
     try {
@@ -68,4 +70,3 @@ export async function flushOfflineRegistrations() {
   writeQueue(remaining);
   return { synced, pending: remaining.length, failed };
 }
-

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { resolveApiUrl } from "../utils/networkBase";
 
 /**
  * Props:
@@ -23,11 +23,14 @@ export default function MpesaPayButton({ amount = 100, initialPhone = "", onSucc
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/payments/mpesa/stk`, {
+      const res = await fetch(
+        resolveApiUrl("/api/payments/mpesa/stk", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""),
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, amount }),
-      });
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || JSON.stringify(data));

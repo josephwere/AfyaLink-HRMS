@@ -7,6 +7,7 @@ import {
   updateConnectorRuntime,
 } from "../../services/systemAdminApi";
 import { exportRichTextDocument } from "../../utils/fileExport";
+import { resolveApiBase } from "../../utils/networkBase";
 
 function samplePayloadFor(connector) {
   const profile = String(connector?.profile || "").toUpperCase();
@@ -42,14 +43,7 @@ function samplePayloadFor(connector) {
   };
 }
 
-function getApiBase() {
-  const envBase = import.meta.env.VITE_API_URL;
-  if (envBase) return String(envBase).replace(/\/$/, "");
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:5000`;
-  }
-  return "http://localhost:5000";
-}
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function codeSnippet(baseUrl, connectorId, payload, mode, dryRun) {
   const body = JSON.stringify(payload, null, 2);
@@ -110,7 +104,7 @@ export default function ConnectorSdk() {
   const snippets = useMemo(() => {
     if (!selectedConnectorId || !selectedConnector) return null;
     const payload = samplePayloadFor(selectedConnector);
-    return codeSnippet(getApiBase(), selectedConnectorId, payload, mode, dryRun);
+    return codeSnippet(API_BASE, selectedConnectorId, payload, mode, dryRun);
   }, [selectedConnectorId, selectedConnector, mode, dryRun]);
 
   const copyText = async (text) => {

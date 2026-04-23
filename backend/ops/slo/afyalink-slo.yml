@@ -12,6 +12,18 @@ slo:
     sli: endpoint_latency
     endpoint: /api/auth/login
 
+  - name: readiness-latency-p95
+    objective: 95
+    target: 400ms
+    sli: endpoint_latency
+    endpoint: /readyz
+
+  - name: public-settings-latency-p95
+    objective: 95
+    target: 700ms
+    sli: endpoint_latency
+    endpoint: /api/system-settings/public
+
   - name: dashboard-latency-p95
     objective: 95
     target: 1200ms
@@ -30,3 +42,8 @@ slo:
   - name: connector-ingestion-success
     objective: 99.5
     sli: connector_success_ratio
+
+  - name: synthetic-smoke-pass-rate
+    objective: 99.5
+    sli: synthetic_pass_ratio
+    notes: Public endpoints plus one authenticated role dashboard from each configured synthetic probe.

@@ -1,5 +1,6 @@
 // frontend/src/utils/api.js
 import { apiFetch } from "./apiFetch";
+import { clearBrowserSession } from "./browserSession";
 
 const withApiPrefix = (path) => {
   if (path.startsWith("/api/")) return path;
@@ -24,9 +25,7 @@ const del = (path) => request("DELETE", path);
 export const login = (data) => request("POST", "/auth/login", data);
 export const register = (data) => request("POST", "/auth/register", data);
 export const logout = async () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
+  clearBrowserSession();
   return { ok: true };
 };
 export const getProfile = () => request("GET", "/auth/me");

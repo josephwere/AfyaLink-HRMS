@@ -33,6 +33,12 @@ export function resolveApiBase(configuredBase = "") {
   return `${url.origin}${pathname}`;
 }
 
+export function resolveApiUrl(path = "", configuredBase = "") {
+  const base = resolveApiBase(configuredBase).replace(/\/$/, "");
+  const normalizedPath = String(path || "").startsWith("/") ? String(path) : `/${String(path || "")}`;
+  return `${base}${normalizedPath}`;
+}
+
 export function assertSecureApiBase(base) {
   if (typeof window === "undefined") return;
   const url = new URL(base, window.location.origin);

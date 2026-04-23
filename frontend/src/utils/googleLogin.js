@@ -1,4 +1,5 @@
 import apiFetch from "./apiFetch.js";
+import { setAccessToken, writeStoredUser } from "./browserSession.js";
 import { redirectByRole } from "./redirectByRole.js";
 
 export const handleGoogleLogin = async (credential) => {
@@ -9,19 +10,15 @@ export const handleGoogleLogin = async (credential) => {
       body: { credential },
     });
 
-    const { user, accessToken, refreshToken } = res;
+    const { user, accessToken } = res;
 
     if (!user) {
       console.error("No user returned from backend");
       return;
     }
 
-    // Save user + token in localStorage
-    localStorage.setItem("token", accessToken);
-    if (refreshToken) {
-      localStorage.setItem("refreshToken", refreshToken);
-    }
-    localStorage.setItem("user", JSON.stringify(user));
+    setAccessToken(accessToken);
+    writeStoredUser(user);
 
     // Redirect to correct dashboard
     const landingPage = redirectByRole(user);

@@ -5,6 +5,7 @@ import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import AuditLog from "../models/AuditLog.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
 import { setRefreshTokenCookie } from "../utils/authCookies.js";
+import { createSessionId, registerRefreshSession } from "../utils/authSessions.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -65,8 +66,16 @@ export const googleLogin = async (req, res) => {
       twoFactorVerified: true,
     });
 
-    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt: new Date().toISOString() });
-    user.refreshTokens.push(refreshToken);
+    const sessionStartedAt = new Date().toISOString();
+    const sessionId = createSessionId();
+    const refreshToken = signRefreshToken({ id: user._id, sessionStartedAt, sessionId });
+    registerRefreshSession(user, {
+      refreshToken,
+      sessionId,
+      startedAt: sessionStartedAt,
+      req,
+      source: "GOOGLE_LOGIN",
+    });
     await user.save();
 
     // Audit log
