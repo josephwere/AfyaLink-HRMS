@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import { getAccessToken } from "./browserSession";
+import { resolveApiBase } from "./networkBase";
 
 const SystemSettingsContext = createContext(null);
 
@@ -200,6 +202,10 @@ export function SystemSettingsProvider({ children }) {
   const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
   const isHostedFrontend = typeof window !== "undefined" && !isLocalHost(runtimeHost);
+  const preferredApiBase = useMemo(
+    () => resolveApiBase(configuredBase || runtimeOrigin || ""),
+    [configuredBase, runtimeOrigin]
+  );
 
   const mergeSettings = (globalSettings, customization) => {
     const global = globalSettings || {};
@@ -236,12 +242,13 @@ export function SystemSettingsProvider({ children }) {
     const storedBase = readStoredPublicSettingsBase();
     const candidates = [];
     if (storedBase) candidates.push(storedBase);
+    if (preferredApiBase) candidates.push(preferredApiBase);
     if (isHostedFrontend && runtimeOrigin) candidates.push(runtimeOrigin);
-    if (configuredBase) candidates.push(configuredBase);
+    if (configuredBase && !isHostedFrontend) candidates.push(configuredBase);
     if (!isHostedFrontend && localBackend) candidates.push(localBackend);
     if (runtimeOrigin) candidates.push(runtimeOrigin);
     return [...new Set(candidates.filter(Boolean))];
-  }, [configuredBase, isHostedFrontend, runtimeHost, runtimeOrigin]);
+  }, [configuredBase, isHostedFrontend, preferredApiBase, runtimeHost, runtimeOrigin]);
 
   const fetchJsonWithTimeout = useCallback(async (url, options = {}, timeoutMs = 12000) => {
     const controller = new AbortController();
@@ -284,7 +291,7 @@ export function SystemSettingsProvider({ children }) {
   }, [fetchJsonWithTimeout, getPublicSettingsBases, writePublicCache]);
 
   const fetchPrivateSettings = useCallback(async (token) => {
-    const response = await fetch(joinUrl(configuredBase || runtimeOrigin, "/api/system-settings"), {
+    const response = await fetch(joinUrl(preferredApiBase || runtimeOrigin, "/api/system-settings"), {
       cache: "no-store",
       headers: {
         Accept: "application/json",
@@ -296,7 +303,7 @@ export function SystemSettingsProvider({ children }) {
       throw new Error("private settings unavailable");
     }
     return response.json();
-  }, [configuredBase, runtimeOrigin]);
+  }, [preferredApiBase, runtimeOrigin]);
 
   const fetchHospitalCustomization = useCallback(async (token, role) => {
     if (!token || role !== "HOSPITAL_ADMIN") {
@@ -304,7 +311,7 @@ export function SystemSettingsProvider({ children }) {
       return null;
     }
     try {
-      const response = await fetch(joinUrl(configuredBase || runtimeOrigin, "/api/hospital-admin/config"), {
+      const response = await fetch(joinUrl(preferredApiBase || runtimeOrigin, "/api/hospital-admin/config"), {
         cache: "no-store",
         headers: {
           Accept: "application/json",
@@ -324,12 +331,12 @@ export function SystemSettingsProvider({ children }) {
       setHospitalCustomization(null);
       return null;
     }
-  }, [configuredBase, runtimeOrigin]);
+  }, [preferredApiBase, runtimeOrigin]);
 
   const refreshSettings = useCallback(async () => {
     if (refreshInFlightRef.current) return refreshInFlightRef.current;
     refreshInFlightRef.current = (async () => {
-      const token = localStorage.getItem("token");
+      const token = getAccessToken();
       const role = getStoredRole();
       let syncSucceeded = false;
 
@@ -414,7 +421,7 @@ export function SystemSettingsProvider({ children }) {
       import.meta.env.VITE_API_URL ||
       window.location.origin;
 
-    const token = localStorage.getItem("token");
+    const token = getAccessToken();
     const socket = io(socketUrl, {
       transports: ["websocket"],
       autoConnect: true,
