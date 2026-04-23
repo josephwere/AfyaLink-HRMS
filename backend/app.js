@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import cors from "cors";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
@@ -61,6 +62,7 @@ export async function startBackgroundJobs(logger = console) {
 const app = express();
 const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 1);
 app.set("trust proxy", Number.isFinite(trustProxyHops) && trustProxyHops >= 1 ? trustProxyHops : 1);
+app.disable("x-powered-by");
 
 function isDbReady() {
   return mongoose.connection?.readyState === 1;
@@ -137,6 +139,8 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
     allowedHeaders: [
       "Content-Type",
       "Accept",
@@ -157,6 +161,12 @@ app.use(
    🧱 CORE MIDDLEWARE
 ====================================================== */
 app.use(express.json({ limit: "15mb" }));
+app.use(
+  compression({
+    threshold: 1024,
+    level: 6,
+  })
+);
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);

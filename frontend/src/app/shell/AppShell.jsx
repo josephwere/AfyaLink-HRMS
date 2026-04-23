@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { startTransition, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../utils/auth";
@@ -26,6 +26,160 @@ function readDismissedReminderCache() {
   } catch {
     return [];
   }
+}
+
+function scheduleBackgroundTask(task) {
+  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    return {
+      type: "idle",
+      id: window.requestIdleCallback(task, { timeout: 700 }),
+    };
+  }
+
+  return {
+    type: "timeout",
+    id: window.setTimeout(task, 80),
+  };
+}
+
+function cancelBackgroundTask(handle) {
+  if (!handle) return;
+  if (handle.type === "idle" && typeof window !== "undefined" && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(handle.id);
+    return;
+  }
+  window.clearTimeout(handle.id);
+}
+
+function pushReminder(list, reminder) {
+  if (!reminder?.id || list.some((item) => item.id === reminder.id)) return;
+  list.push(reminder);
+}
+
+function mergeReminderSets(nextList = [], previousList = []) {
+  const merged = [];
+  const sticky = (previousList || []).filter((item) => item?.id === "session-stepup");
+  sticky.forEach((item) => pushReminder(merged, item));
+  (nextList || []).forEach((item) => pushReminder(merged, item));
+  return merged;
+}
+
+function buildProfileReminders(profile, navigate) {
+  const list = [];
+
+  if (!profile?.emailVerified) {
+    pushReminder(list, {
+      id: "email",
+      text:
+        profile?.verificationWarning?.message ||
+        "Your email is not verified. Click to verify in Profile.",
+      action: () => navigate("/app/platform/account/profile"),
+    });
+  }
+
+  if (!profile?.phoneVerified) {
+    pushReminder(list, {
+      id: "phone",
+      text: "Verify your phone number to secure your account.",
+      action: () => navigate("/app/platform/account/profile"),
+    });
+  }
+
+  if (!profile?.nationalIdNumber || !profile?.nationalIdCountry) {
+    pushReminder(list, {
+      id: "id",
+      text: "Add your National ID details to complete your profile.",
+      action: () => navigate("/app/platform/account/profile"),
+    });
+  }
+
+  return list;
+}
+
+function appendDashboardReminders(list, dash, role, navigate) {
+  if (!dash) return list;
+
+  if (dash.pendingRequests?.total > 0) {
+    pushReminder(list, {
+      id: "pending-requests",
+      text: `You have ${dash.pendingRequests.total} pending requests.`,
+      action: () =>
+        navigate(
+          role === "HOSPITAL_ADMIN"
+            ? "/app/people/approvals/index"
+            : "/app/people/requests/index"
+        ),
+    });
+  }
+
+  if (role === "HOSPITAL_ADMIN" && dash.pendingRequests > 0) {
+    pushReminder(list, {
+      id: "pending-approvals",
+      text: `You have ${dash.pendingRequests} approvals waiting.`,
+      action: () => navigate("/app/people/approvals/index"),
+    });
+  }
+
+  if (role === "HR_MANAGER" && dash.pendingRequests?.total > 0) {
+    pushReminder(list, {
+      id: "hr-requests",
+      text: `Workforce requests pending: ${dash.pendingRequests.total}.`,
+      action: () => navigate("/app/people/home/index"),
+    });
+  }
+
+  if (role === "PAYROLL_OFFICER" && dash.pendingApprovals > 0) {
+    pushReminder(list, {
+      id: "payroll-approvals",
+      text: `Payroll approvals pending: ${dash.pendingApprovals}.`,
+      action: () => navigate("/app/people/home/index"),
+    });
+  }
+
+  if (
+    (role === "PAYROLL_OFFICER" || role === "HOSPITAL_ADMIN" || role === "SUPER_ADMIN") &&
+    dash.overduePayroll > 0
+  ) {
+    pushReminder(list, {
+      id: "overdue-payroll",
+      text: `Overdue payroll items: ${dash.overduePayroll}.`,
+      action: () => navigate("/app/revenue/payments/index"),
+    });
+  }
+
+  if (dash.notificationsUnread > 0) {
+    pushReminder(list, {
+      id: "unread-notifs",
+      text: `You have ${dash.notificationsUnread} unread notifications.`,
+      action: () => navigate("/app/platform/inbox/notifications"),
+    });
+  }
+
+  if (role === "LAB_TECH" && dash.pendingOrders > 0) {
+    pushReminder(list, {
+      id: "lab-orders",
+      text: `${dash.pendingOrders} lab orders are pending.`,
+      action: () => navigate("/app/operations/lab/test-queue"),
+    });
+  }
+
+  if (role === "NURSE" && dash.pendingLabOrders > 0) {
+    pushReminder(list, {
+      id: "lab-pending",
+      text: `${dash.pendingLabOrders} lab orders are pending.`,
+      action: () => navigate("/app/operations/lab/test-queue"),
+    });
+  }
+
+  if (role === "DOCTOR" && dash.upcomingAppointments > 0) {
+    pushReminder(list, {
+      id: "doctor-appts",
+      text: `${dash.upcomingAppointments} upcoming appointments.`,
+      action: () => navigate("/app/operations/scheduling/appointments"),
+    });
+  }
+
+  return list;
 }
 
 export default function AppShell() {
@@ -209,7 +363,9 @@ export default function AppShell() {
   useEffect(() => {
     let mounted = true;
     if (!user) return;
-    apiFetch("/api/auth/session-risk")
+    setReminders((prev) => mergeReminderSets(buildProfileReminders(user, navigate), prev));
+
+    apiFetch("/api/auth/session-risk", { _skipUiProgress: true, cacheTtlMs: 10000 })
       .then((sr) => {
         if (!mounted || !sr) return;
         if (sr.restriction || sr.requiresStepUp) {
@@ -240,133 +396,46 @@ export default function AppShell() {
       })
       .catch(() => {});
 
-    const dashEndpoint = roleDashboardEndpoint(user?.role);
-    const dashPromise = dashEndpoint ? apiFetch(dashEndpoint) : Promise.resolve(null);
-    Promise.all([apiFetch("/api/profile"), apiFetch("/api/2fa/status"), dashPromise])
-      .then(([me, twofa, dash]) => {
-        if (!mounted) return;
-        const list = [];
+    const backgroundTask = scheduleBackgroundTask(async () => {
+      const dashEndpoint = roleDashboardEndpoint(user?.role);
+      const [profileResult, twofaResult, dashboardResult] = await Promise.allSettled([
+        apiFetch("/api/profile", { _skipUiProgress: true, cacheTtlMs: 15000 }),
+        apiFetch("/api/2fa/status", { _skipUiProgress: true, cacheTtlMs: 15000 }),
+        dashEndpoint
+          ? apiFetch(dashEndpoint, { _skipUiProgress: true, cacheTtlMs: 15000 })
+          : Promise.resolve(null),
+      ]);
 
-        if (!me?.emailVerified) {
-          list.push({
-            id: "email",
-            text:
-              me?.verificationWarning?.message ||
-              "Your email is not verified. Click to verify in Profile.",
-            action: () => navigate("/app/platform/account/profile"),
-          });
-        }
-        if (!me?.phoneVerified) {
-          list.push({
-            id: "phone",
-            text: "Verify your phone number to secure your account.",
-            action: () => navigate("/app/platform/account/profile"),
-          });
-        }
-        if (!me?.nationalIdNumber || !me?.nationalIdCountry) {
-          list.push({
-            id: "id",
-            text: "Add your National ID details to complete your profile.",
-            action: () => navigate("/app/platform/account/profile"),
-          });
-        }
-        if (!twofa?.enabled) {
-          list.push({
-            id: "2fa",
-            text: "Enable two-factor authentication for stronger security.",
-            action: () => navigate("/app/platform/account/profile"),
-          });
-        }
+      if (!mounted) return;
 
-        if (dash) {
-          const role = user?.role;
+      const profile =
+        profileResult.status === "fulfilled" && profileResult.value ? profileResult.value : user;
+      const twofa = twofaResult.status === "fulfilled" ? twofaResult.value : null;
+      const dash = dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
 
-          if (dash.pendingRequests?.total > 0) {
-            list.push({
-              id: "pending-requests",
-              text: `You have ${dash.pendingRequests.total} pending requests.`,
-              action: () =>
-                navigate(
-                  role === "HOSPITAL_ADMIN"
-                    ? "/app/people/approvals/index"
-                    : "/app/people/requests/index"
-                ),
-            });
-          }
+      const nextList = appendDashboardReminders(
+        buildProfileReminders(profile, navigate),
+        dash,
+        user?.role,
+        navigate
+      );
 
-          if (role === "HOSPITAL_ADMIN" && dash.pendingRequests > 0) {
-            list.push({
-              id: "pending-approvals",
-              text: `You have ${dash.pendingRequests} approvals waiting.`,
-              action: () => navigate("/app/people/approvals/index"),
-            });
-          }
+      if (twofa && !twofa.enabled) {
+        pushReminder(nextList, {
+          id: "2fa",
+          text: "Enable two-factor authentication for stronger security.",
+          action: () => navigate("/app/platform/account/profile"),
+        });
+      }
 
-          if (role === "HR_MANAGER" && dash.pendingRequests?.total > 0) {
-            list.push({
-              id: "hr-requests",
-              text: `Workforce requests pending: ${dash.pendingRequests.total}.`,
-              action: () => navigate("/app/people/home/index"),
-            });
-          }
+      startTransition(() => {
+        setReminders((prev) => mergeReminderSets(nextList, prev));
+      });
+    });
 
-          if (role === "PAYROLL_OFFICER" && dash.pendingApprovals > 0) {
-            list.push({
-              id: "payroll-approvals",
-              text: `Payroll approvals pending: ${dash.pendingApprovals}.`,
-              action: () => navigate("/app/people/home/index"),
-            });
-          }
-
-          if (
-            (role === "PAYROLL_OFFICER" || role === "HOSPITAL_ADMIN" || role === "SUPER_ADMIN") &&
-            dash.overduePayroll > 0
-          ) {
-            list.push({
-              id: "overdue-payroll",
-              text: `Overdue payroll items: ${dash.overduePayroll}.`,
-              action: () => navigate("/app/revenue/payments/index"),
-            });
-          }
-
-          if (dash.notificationsUnread > 0) {
-            list.push({
-              id: "unread-notifs",
-              text: `You have ${dash.notificationsUnread} unread notifications.`,
-              action: () => navigate("/app/platform/inbox/notifications"),
-            });
-          }
-
-          if (role === "LAB_TECH" && dash.pendingOrders > 0) {
-            list.push({
-              id: "lab-orders",
-              text: `${dash.pendingOrders} lab orders are pending.`,
-              action: () => navigate("/app/operations/lab/test-queue"),
-            });
-          }
-
-          if (role === "NURSE" && dash.pendingLabOrders > 0) {
-            list.push({
-              id: "lab-pending",
-              text: `${dash.pendingLabOrders} lab orders are pending.`,
-              action: () => navigate("/app/operations/lab/test-queue"),
-            });
-          }
-
-          if (role === "DOCTOR" && dash.upcomingAppointments > 0) {
-            list.push({
-              id: "doctor-appts",
-              text: `${dash.upcomingAppointments} upcoming appointments.`,
-              action: () => navigate("/app/operations/scheduling/appointments"),
-            });
-          }
-        }
-
-        setReminders(list);
-      })
-      .catch(() => {});
     return () => {
       mounted = false;
+      cancelBackgroundTask(backgroundTask);
     };
   }, [navigate, user?.id, user?.role]);
 

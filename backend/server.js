@@ -15,6 +15,10 @@ const PORT = process.env.PORT || 5000;
 let httpServer;
 let ioServer;
 let shuttingDown = false;
+const KEEP_ALIVE_TIMEOUT_MS = Math.max(Number(process.env.HTTP_KEEP_ALIVE_TIMEOUT_MS || 65000) || 65000, 1000);
+const HEADERS_TIMEOUT_MS = Math.max(Number(process.env.HTTP_HEADERS_TIMEOUT_MS || 66000) || 66000, KEEP_ALIVE_TIMEOUT_MS + 1000);
+const REQUEST_TIMEOUT_MS = Math.max(Number(process.env.HTTP_REQUEST_TIMEOUT_MS || 30000) || 30000, 1000);
+const MAX_REQUESTS_PER_SOCKET = Math.max(Number(process.env.HTTP_MAX_REQUESTS_PER_SOCKET || 1000) || 1000, 100);
 
 /* ======================================================
    🌐 ALLOWED ORIGINS
@@ -189,6 +193,10 @@ const start = async () => {
     }
 
     const server = http.createServer(app);
+    server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
+    server.headersTimeout = HEADERS_TIMEOUT_MS;
+    server.requestTimeout = REQUEST_TIMEOUT_MS;
+    server.maxRequestsPerSocket = MAX_REQUESTS_PER_SOCKET;
 
     const io = new IOServer(server, {
       cors: {
