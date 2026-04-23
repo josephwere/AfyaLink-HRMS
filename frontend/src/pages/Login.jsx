@@ -117,9 +117,9 @@ export default function Login() {
       setError(
         normalizeAuthUiError(err, {
           timeoutMessage:
-            "We’re warming secure sign-in and retrying in the background. Please wait a few seconds and try again.",
+            "We’re warming AfyaLink sign-in and retrying in the background. Please wait a few seconds and try again.",
           networkMessage:
-            "Secure sign-in is temporarily unavailable. Please check your connection and try again.",
+            "AfyaLink sign-in is temporarily unavailable. Please check your connection and try again.",
           fallback: "Invalid credentials",
         })
       );
@@ -145,7 +145,7 @@ export default function Login() {
             }}
           />
         )}
-        <div className="auth-kicker">Secure access</div>
+        <div className="auth-kicker"> Wellcome Onboard</div>
         <h1>Sign in</h1>
         <p className="subtitle">
           Use your work email, phone number, or national ID to open your AfyaLink workspace.
