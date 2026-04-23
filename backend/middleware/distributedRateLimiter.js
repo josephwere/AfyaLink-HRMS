@@ -1,5 +1,10 @@
 import { redis } from "../utils/redis.js";
 
+const REDIS_TIMEOUT_MS = (() => {
+  const raw = Number(process.env.RATE_LIMIT_BACKEND_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 350;
+})();
+
 function keyForReq(prefix, req) {
   const ip =
     String(req.headers["x-forwarded-for"] || "")
@@ -17,14 +22,31 @@ function parseNumber(value, fallback) {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+async function withRedisTimeout(operation) {
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(operation),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("RATE_LIMIT_BACKEND_TIMEOUT"));
+        }, REDIS_TIMEOUT_MS);
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function readTtlMs(key) {
   try {
     if (typeof redis.pttl === "function") {
-      const ttl = await redis.pttl(key);
+      const ttl = await withRedisTimeout(() => redis.pttl(key));
       if (Number.isFinite(Number(ttl))) return Math.max(Number(ttl), 0);
     }
     if (typeof redis.ttl === "function") {
-      const ttl = await redis.ttl(key);
+      const ttl = await withRedisTimeout(() => redis.ttl(key));
       if (Number.isFinite(Number(ttl))) return Math.max(Number(ttl) * 1000, 0);
     }
   } catch {
@@ -54,20 +76,22 @@ export function createDistributedRateLimiter({
       let count;
 
       if (typeof redis.incr === "function") {
-        count = Number(await redis.incr(key));
+        count = Number(await withRedisTimeout(() => redis.incr(key)));
       } else {
-        const current = Number(await redis.get(key) || 0);
+        const current = Number((await withRedisTimeout(() => redis.get(key))) || 0);
         count = current + 1;
-        await redis.set(key, String(count));
+        await withRedisTimeout(() => redis.set(key, String(count)));
       }
 
       if (count === 1) {
         if (typeof redis.pexpire === "function") {
-          await redis.pexpire(key, safeWindowMs);
+          await withRedisTimeout(() => redis.pexpire(key, safeWindowMs));
         } else if (typeof redis.expire === "function") {
-          await redis.expire(key, Math.ceil(safeWindowMs / 1000));
+          await withRedisTimeout(() => redis.expire(key, Math.ceil(safeWindowMs / 1000)));
         } else {
-          await redis.set(key, String(count), { ex: Math.ceil(safeWindowMs / 1000) });
+          await withRedisTimeout(() =>
+            redis.set(key, String(count), { ex: Math.ceil(safeWindowMs / 1000) })
+          );
         }
       }
 
