@@ -9388,9 +9388,14 @@ button.card.stat {
   --field-bg: #101114;
 }
 
-html,
+html {
+  background-color: var(--app-bg);
+}
+
 body {
-  background: var(--app-bg);
+  background:
+    var(--home-bg, url("/background.png")) center/cover fixed no-repeat,
+    var(--app-bg);
 }
 
 button,
@@ -9444,12 +9449,21 @@ button,
 
 .auth-bg,
 .auth-bg.auth-bg-ready {
-  background: var(--app-bg);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.56)),
+    var(--login-bg, var(--home-bg, url("/background.png"))) center/cover no-repeat;
   min-height: 100dvh;
   height: auto;
   align-items: flex-start;
   justify-content: center;
   padding: 32px 16px calc(40px + env(safe-area-inset-bottom));
+}
+
+[data-theme="dark"] .auth-bg,
+[data-theme="dark"] .auth-bg.auth-bg-ready {
+  background:
+    linear-gradient(rgba(9, 9, 11, 0.76), rgba(9, 9, 11, 0.76)),
+    var(--login-bg, var(--home-bg, url("/background.png"))) center/cover no-repeat;
 }
 
 .auth-card,
@@ -9626,11 +9640,20 @@ form.auth-card {
 .route-skeleton,
 .route-skeleton-main,
 .route-skeleton-sidebar {
-  background: var(--app-bg) !important;
+  background: transparent !important;
 }
 
 .main {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.56)),
+    var(--home-bg, url("/background.png")) center/cover no-repeat !important;
   padding: 24px clamp(16px, 2.6vw, 28px) calc(40px + env(safe-area-inset-bottom));
+}
+
+[data-theme="dark"] .main {
+  background:
+    linear-gradient(rgba(9, 9, 11, 0.76), rgba(9, 9, 11, 0.76)),
+    var(--home-bg, url("/background.png")) center/cover no-repeat !important;
 }
 
 .main > * {

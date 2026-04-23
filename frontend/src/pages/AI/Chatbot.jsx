@@ -7,6 +7,7 @@ import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
 export default function Chatbot() {
   const { settings } = useSystemSettings();
   const { user } = useAuth();
+  const userId = user?.id || user?._id || "";
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -34,10 +35,12 @@ export default function Chatbot() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
+    let alive = true;
     setContextLoading(true);
     getAssistantContext()
       .then((res) => {
+        if (!alive) return;
         const memory = Array.isArray(res?.context?.chatHistory) ? res.context.chatHistory : [];
         setMessages(
           memory
@@ -51,8 +54,14 @@ export default function Chatbot() {
         );
       })
       .catch(() => {})
-      .finally(() => setContextLoading(false));
-  }, [user]);
+      .finally(() => {
+        if (alive) setContextLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!scrollerRef.current) return;
@@ -244,8 +253,7 @@ export default function Chatbot() {
       </div>
 
       <div className="ai-chat-body" ref={scrollerRef}>
-        {contextLoading && <p className="muted">Loading chat history...</p>}
-        {!contextLoading && !messages.length && (
+        {!messages.length && (
           <div className="ai-chat-welcome">
             <h3>{aiName} Assistant</h3>
             <div className="ai-chat-metrics">
