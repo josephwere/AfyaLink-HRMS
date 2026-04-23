@@ -1,15 +1,39 @@
 import React from "react";
+import AppShellSkeleton from "./AppShellSkeleton";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
+const RECOVERY_DELAY_MS = 2200;
 
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, retryNonce: 0 };
+    this.recoveryTimer = null;
+    this.recoverSoon = this.recoverSoon.bind(this);
   }
 
   static getDerivedStateFromError(error) {
     return { hasError: true };
+  }
+
+  componentDidMount() {
+    window.addEventListener("online", this.recoverSoon);
+    window.addEventListener("focus", this.recoverSoon);
+  }
+
+  componentDidUpdate(_prevProps, prevState) {
+    if (!prevState.hasError && this.state.hasError) {
+      this.armRecoveryTimer();
+    }
+    if (prevState.hasError && !this.state.hasError) {
+      this.clearRecoveryTimer();
+    }
+  }
+
+  componentWillUnmount() {
+    this.clearRecoveryTimer();
+    window.removeEventListener("online", this.recoverSoon);
+    window.removeEventListener("focus", this.recoverSoon);
   }
 
   componentDidCatch(error, errorInfo) {
@@ -18,22 +42,36 @@ export default class AppErrorBoundary extends React.Component {
     console.error("App runtime error:", error, errorInfo);
   }
 
+  armRecoveryTimer() {
+    this.clearRecoveryTimer();
+    this.recoveryTimer = window.setTimeout(this.recoverSoon, RECOVERY_DELAY_MS);
+  }
+
+  clearRecoveryTimer() {
+    if (this.recoveryTimer) {
+      window.clearTimeout(this.recoveryTimer);
+      this.recoveryTimer = null;
+    }
+  }
+
+  recoverSoon() {
+    this.setState((current) =>
+      current.hasError
+        ? { hasError: false, retryNonce: current.retryNonce + 1 }
+        : null
+    );
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary-shell">
-          <div className="card premium-card error-boundary-card">
-            <h2>Something went wrong</h2>
-            <p className="muted">
-              We hit a problem loading this screen. Reload to recover.
-            </p>
-            <button type="button" className="btn-primary" onClick={() => window.location.reload()}>
-              Reload
-            </button>
-          </div>
-        </div>
+        <AppShellSkeleton
+          title="Loading workspace"
+          detail="Restoring this screen and syncing the latest interface."
+          status="Reconnecting"
+        />
       );
     }
-    return this.props.children;
+    return <React.Fragment key={this.state.retryNonce}>{this.props.children}</React.Fragment>;
   }
 }

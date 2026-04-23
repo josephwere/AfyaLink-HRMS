@@ -10,6 +10,7 @@ import FloatingAI from "./components/FloatingAI";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import AppShellSkeleton from "./components/AppShellSkeleton";
 import GlobalProgressBar from "./components/GlobalProgressBar";
 import RouteProgressEvents from "./components/RouteProgressEvents";
 
@@ -221,34 +222,11 @@ const HospitalRegistry = lazy(() => import("./app/features/governance/HospitalRe
 
 function RouteLoadingFallback() {
   return (
-    <div className="route-skeleton" aria-label="Loading">
-      <div className="route-skeleton-sidebar" aria-hidden="true">
-        <div className="skeleton skeleton-avatar" />
-        <div className="route-skeleton-nav">
-          <div className="skeleton skeleton-line" style={{ width: "72%" }} />
-          <div className="skeleton skeleton-line" style={{ width: "88%" }} />
-          <div className="skeleton skeleton-line" style={{ width: "66%" }} />
-          <div className="skeleton skeleton-line" style={{ width: "82%" }} />
-          <div className="skeleton skeleton-line" style={{ width: "58%" }} />
-          <div className="skeleton skeleton-line" style={{ width: "76%" }} />
-        </div>
-      </div>
-
-      <div className="route-skeleton-main" aria-hidden="true">
-        <div className="route-skeleton-topbar">
-          <div className="skeleton skeleton-line" style={{ width: "34%", height: 14 }} />
-          <div className="skeleton skeleton-pill" style={{ width: 180 }} />
-        </div>
-
-        <div className="route-skeleton-grid">
-          <div className="skeleton skeleton-card" />
-          <div className="skeleton skeleton-card" />
-          <div className="skeleton skeleton-card" />
-          <div className="skeleton skeleton-card" />
-          <div className="skeleton skeleton-card skeleton-card-wide" />
-        </div>
-      </div>
-    </div>
+    <AppShellSkeleton
+      title="Loading workspace"
+      detail="Preparing the latest layout, data, and actions for this screen."
+      status="Loading"
+    />
   );
 }
 
