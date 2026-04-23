@@ -19,6 +19,7 @@ import {
   loadAccessibilityPrefs,
   saveAccessibilityPrefs,
 } from "../utils/accessibilityPrefs";
+import { useUiPreferences } from "../utils/uiPreferences";
 import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
@@ -115,6 +116,7 @@ export default function Profile() {
   } = useAuth();
   const { language, options: languageOptions } = useAppLanguage();
   const navigate = useNavigate();
+  const { setUiPreferences, flushUiPreferences } = useUiPreferences();
   const [viewRole, setViewRole] = useState("");
   const selectedLanguageLabel =
     languageOptions.find((item) => item.code === language)?.label || String(language || "en").toUpperCase();
@@ -624,6 +626,27 @@ export default function Profile() {
     setA11yPrefs(next);
     saveAccessibilityPrefs(user, next);
     applyAccessibilityPrefs(next);
+    setUiPrefSaving(true);
+    setUiPrefMsg("");
+    const queued = setUiPreferences(
+      {
+        accessibility: next,
+      },
+      { persist: false }
+    );
+    Promise.resolve(flushUiPreferences(queued))
+      .then((ok) => {
+        if (!ok) {
+          throw new Error("Failed to save display preferences.");
+        }
+        setUiPrefMsg("Display preferences saved.");
+      })
+      .catch((err) => {
+        setUiPrefMsg(err?.message || "Failed to save display preferences.");
+      })
+      .finally(() => {
+        setUiPrefSaving(false);
+      });
   };
 
   const updateShowSecretsPref = async (nextValue) => {
@@ -632,10 +655,16 @@ export default function Profile() {
     setUiPrefSaving(true);
     setUiPrefMsg("");
     try {
-      await apiFetch("/api/profile", {
-        method: "PUT",
-        body: { uiPreferences: { showSecretsOnHover: nextValue } },
-      });
+      const queued = setUiPreferences(
+        {
+          showSecretsOnHover: nextValue,
+        },
+        { persist: false }
+      );
+      const ok = await flushUiPreferences(queued);
+      if (!ok) {
+        throw new Error("Failed to save preference.");
+      }
       setUiPrefMsg("Preference saved.");
     } catch (err) {
       setShowSecretsOnHover(prev);
@@ -643,6 +672,34 @@ export default function Profile() {
     } finally {
       setUiPrefSaving(false);
     }
+  };
+
+  const resetA11yPrefs = () => {
+    const defaults = getDefaultAccessibilityPrefs();
+    setA11yPrefs(defaults);
+    saveAccessibilityPrefs(user, defaults);
+    applyAccessibilityPrefs(defaults);
+    setUiPrefSaving(true);
+    setUiPrefMsg("");
+    const queued = setUiPreferences(
+      {
+        accessibility: defaults,
+      },
+      { persist: false }
+    );
+    Promise.resolve(flushUiPreferences(queued))
+      .then((ok) => {
+        if (!ok) {
+          throw new Error("Failed to reset display preferences.");
+        }
+        setUiPrefMsg("Display preferences reset.");
+      })
+      .catch((err) => {
+        setUiPrefMsg(err?.message || "Failed to reset display preferences.");
+      })
+      .finally(() => {
+        setUiPrefSaving(false);
+      });
   };
 
   const saveFamilyPreferences = async () => {
@@ -770,13 +827,6 @@ export default function Profile() {
     } finally {
       setFamilyBusy(false);
     }
-  };
-
-  const resetA11yPrefs = () => {
-    const defaults = getDefaultAccessibilityPrefs();
-    setA11yPrefs(defaults);
-    saveAccessibilityPrefs(user, defaults);
-    applyAccessibilityPrefs(defaults);
   };
 
   /* -------------------------

@@ -561,6 +561,10 @@ app.use(
   lazyRouter(() => import("./routes/labRoutes.js"), "labRoutes")
 );
 app.use(
+  "/api/lab-ops",
+  lazyRouter(() => import("./routes/labOpsRoutes.js"), "labOpsRoutes")
+);
+app.use(
   "/api/pharmacy",
   lazyRouter(() => import("./routes/pharmacyRoutes.js"), "pharmacyRoutes")
 );

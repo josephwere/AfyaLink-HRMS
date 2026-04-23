@@ -56,15 +56,18 @@ router.get("/tickets", async (req, res) => {
       ];
     }
 
-    const tickets = await SupportTicket.find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(limit)
-      .populate("requester", "name email role")
-      .populate("assignee", "name email role")
-      .populate("linkedIncident", "incidentKey severity status summary")
-      .lean();
+    const [tickets, total] = await Promise.all([
+      SupportTicket.find(filter)
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .populate("requester", "name email role")
+        .populate("assignee", "name email role")
+        .populate("linkedIncident", "incidentKey severity status summary")
+        .lean(),
+      SupportTicket.countDocuments(filter),
+    ]);
 
-    return res.json({ count: tickets.length, tickets });
+    return res.json({ count: tickets.length, total, tickets });
   } catch (err) {
     return res.status(500).json({ message: err.message || "Failed to list support tickets" });
   }

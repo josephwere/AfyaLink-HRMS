@@ -5,6 +5,7 @@ import { useAuth } from "../../utils/auth";
 import apiFetch from "../../utils/apiFetch";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { applyAccessibilityPrefs, loadAccessibilityPrefs } from "../../utils/accessibilityPrefs";
+import { useUiPreferences } from "../../utils/uiPreferences";
 import { prefetchRoutesForRole } from "../../utils/routePrefetch";
 import { refreshOfflineMetricsSnapshot, startOfflineAutoSync } from "../../utils/offlineQueue";
 import { pushOfflineClientMetrics } from "../../services/offlineOpsApi";
@@ -16,9 +17,20 @@ import FirstLoginTour from "../../components/FirstLoginTour";
 import MobileTabBar from "../../components/MobileTabBar";
 import ContextRail from "./ContextRail";
 
+function readDismissedReminderCache() {
+  try {
+    const raw = localStorage.getItem("dismissed_reminders");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function AppShell() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
+  const { uiPreferences, setUiPreferences } = useUiPreferences();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
@@ -36,17 +48,30 @@ export default function AppShell() {
   };
 
   const [dismissed, setDismissed] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("dismissed_reminders") || "[]");
-    } catch {
-      return [];
-    }
+    return readDismissedReminderCache();
   });
 
   useEffect(() => {
     if (!user) return;
     applyAccessibilityPrefs(loadAccessibilityPrefs(user));
   }, [user]);
+
+  useEffect(() => {
+    const profileDismissed = uiPreferences?.navigation?.dismissedReminders;
+    if (Array.isArray(profileDismissed)) {
+      setDismissed(profileDismissed);
+      try {
+        localStorage.setItem("dismissed_reminders", JSON.stringify(profileDismissed));
+      } catch {
+        // ignore local cache failures
+      }
+      return;
+    }
+
+    if (user) {
+      setDismissed(readDismissedReminderCache());
+    }
+  }, [uiPreferences?.navigation?.dismissedReminders, user]);
 
   useEffect(() => {
     if (!user?.role) return;
@@ -323,6 +348,16 @@ export default function AppShell() {
     const next = Array.from(new Set([...(dismissed || []), id]));
     setDismissed(next);
     localStorage.setItem("dismissed_reminders", JSON.stringify(next));
+    if (user) {
+      setUiPreferences(
+        {
+          navigation: {
+            dismissedReminders: next,
+          },
+        },
+        { immediate: true }
+      );
+    }
   };
 
   return (

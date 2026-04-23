@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
+import { useUiPreferences } from "../utils/uiPreferences";
 
 const COMMON_STEPS = [
   {
@@ -177,10 +178,13 @@ const ROLE_STEPS = {
 export default function FirstLoginTour() {
   const { user } = useAuth();
   const { translateText } = useAppLanguage();
+  const { uiPreferences, setUiPreferences } = useUiPreferences();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const effectiveRole = (user?.actualRole || user?.role || "").toUpperCase();
+  const tourKey = effectiveRole || "DEFAULT";
+  const seenTours = uiPreferences?.onboarding?.toursSeen || {};
 
   const steps = useMemo(() => {
     const roleSteps = ROLE_STEPS[effectiveRole] || [];
@@ -189,17 +193,27 @@ export default function FirstLoginTour() {
 
   useEffect(() => {
     if (!user?.id) return;
-    const key = `tour_seen_${user.id}_${effectiveRole || "DEFAULT"}`;
+    const key = `tour_seen_${user.id}_${tourKey}`;
     const seen = localStorage.getItem(key) === "true";
-    if (!seen) {
+    if (!seen && seenTours?.[tourKey] !== true) {
       setIndex(0);
       setOpen(true);
     }
-  }, [user?.id, effectiveRole]);
+  }, [seenTours, tourKey, user?.id]);
 
   const close = () => {
     if (user?.id) {
-      localStorage.setItem(`tour_seen_${user.id}_${effectiveRole || "DEFAULT"}`, "true");
+      localStorage.setItem(`tour_seen_${user.id}_${tourKey}`, "true");
+      setUiPreferences(
+        {
+          onboarding: {
+            toursSeen: {
+              [tourKey]: true,
+            },
+          },
+        },
+        { immediate: true }
+      );
     }
     setOpen(false);
   };

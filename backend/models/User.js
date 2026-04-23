@@ -363,6 +363,7 @@ const userSchema = new Schema(
     },
 
     uiPreferences: {
+      theme: { type: String, enum: ["light", "dark"], default: "light" },
       showSecretsOnHover: { type: Boolean, default: false },
       locale: { type: String, default: "en" },
       appLanguage: { type: String, default: "en" },

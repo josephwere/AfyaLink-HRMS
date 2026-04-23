@@ -2,11 +2,19 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActionCard, StatCard } from "../../components/Cards";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import apiFetch from "../../utils/apiFetch";
+import { listSupportTickets } from "../../services/opsApi";
 import { listTransfers } from "../../services/transferApi";
 
 export default function Dashboard() {
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
+  const [metrics, setMetrics] = useState({
+    hospitals: 0,
+    staff: 0,
+    supportTickets: 0,
+  });
+  const [metricsError, setMetricsError] = useState("");
 
   useEffect(() => {
     listTransfers({ limit: 6, scope: "global" })
@@ -21,12 +29,46 @@ export default function Dashboard() {
       });
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([
+      apiFetch("/api/hospitals?limit=1"),
+      apiFetch("/api/users?limit=1&includeInactive=1"),
+      listSupportTickets({ limit: 1 }),
+    ])
+      .then(([hospitals, users, support]) => {
+        if (!active) return;
+        setMetrics({
+          hospitals: Number(hospitals?.total || 0),
+          staff: Number(users?.total || 0),
+          supportTickets: Number(support?.total ?? support?.count ?? 0),
+        });
+        setMetricsError("");
+      })
+      .catch((err) => {
+        if (!active) return;
+        setMetrics({
+          hospitals: 0,
+          staff: 0,
+          supportTickets: 0,
+        });
+        setMetricsError(err?.message || "Unable to load live operations counts.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const pendingTransfers = transfers.filter((t) => t.status === "Pending").length;
+
   return (
     <DashboardHomeShell
       className="page-admin-dashboard"
       kicker="Admin workspace"
       title="Admin Tools"
-      subtitle="Control governance, audit visibility, AI traceability, and human assistant operations from one premium command surface."
+      subtitle="Monitor governance, hospitals, staff capacity, support queues, and transfer continuity from live platform data."
       actions={[
         { label: "Open Audit Logs", path: "/admin/audit-logs" },
         { label: "Open AI Autofill Audit", path: "/admin/ai-autofill-audit", variant: "secondary" },
@@ -34,18 +76,23 @@ export default function Dashboard() {
         { label: "Super Assistants", path: "/admin/super-assistants", variant: "secondary" },
       ]}
       stats={[
-        { label: "Transfer feed", value: transfers.length, note: "Live continuity stream" },
-        { label: "Pending handoffs", value: transfers.filter((t) => t.status === "Pending").length, note: "Needs admin follow-up" },
-        { label: "Audit posture", value: "Tracked", note: "Governance signals visible" },
+        { label: "Hospitals", value: metrics.hospitals, note: "Database total" },
+        { label: "Staff accounts", value: metrics.staff, note: "Database total" },
+        { label: "Pending handoffs", value: pendingTransfers, note: "Needs admin follow-up" },
+        { label: "Support queue", value: metrics.supportTickets, note: "Live ticket total" },
       ]}
       contextCards={[
         {
           title: "Operations focus",
-          subtitle: "What deserves the next admin action.",
+          subtitle: "What deserves the next admin action from live database signals.",
           items: [
-            { label: "Pending transfers", value: transfers.filter((t) => t.status === "Pending").length, tone: "warn" },
-            { label: "Latest feed size", value: transfers.length },
-            { label: "Continuity status", value: transferError ? "Attention needed" : "Healthy", tone: transferError ? "risk" : "good" },
+            { label: "Pending transfers", value: pendingTransfers, tone: "warn" },
+            { label: "Hospitals", value: metrics.hospitals },
+            {
+              label: "Continuity status",
+              value: transferError || metricsError ? "Attention needed" : "Healthy",
+              tone: transferError || metricsError ? "risk" : "good",
+            },
           ],
           actions: [
             { label: "Open Transfer Continuity", path: "/hospital-admin/transfer-command-center", variant: "secondary" },
@@ -54,11 +101,15 @@ export default function Dashboard() {
         },
         {
           title: "Governance runway",
-          subtitle: "High-value tools for today's admin desk.",
+          subtitle: "Real counts for today's admin desk.",
           items: [
-            { label: "Assistant operations", value: "Ready" },
-            { label: "Access governance", value: "Live" },
-            { label: "AI review", value: "Enabled" },
+            { label: "Staff accounts", value: metrics.staff },
+            { label: "Support tickets", value: metrics.supportTickets },
+            {
+              label: "Audit review",
+              value: metricsError ? "Retry needed" : "Live",
+              tone: metricsError ? "warn" : "good",
+            },
           ],
           actions: [
             { label: "Manage Super Assistants", path: "/admin/super-assistants", variant: "secondary" },
@@ -67,6 +118,16 @@ export default function Dashboard() {
         },
       ]}
     >
+      {metricsError ? <div className="premium-inline-note">{metricsError}</div> : null}
+
+      <DashboardSection title="Live platform totals" subtitle="Database counts for the main admin scope.">
+        <div className="grid page-admin-dashboard__stats">
+          <StatCard title="Hospitals" value={metrics.hospitals} subtitle="Live database total" />
+          <StatCard title="Staff Accounts" value={metrics.staff} subtitle="Users in active scope" />
+          <StatCard title="Support Tickets" value={metrics.supportTickets} subtitle="Current ticket workload" />
+        </div>
+      </DashboardSection>
+
       <DashboardSection title="Command surface" subtitle="Core admin tools arranged as clear operational cards.">
         <div className="grid page-admin-dashboard__stats">
           <ActionCard title="Audit Logs" description="Review security events, access traces, and critical governance activity." eyebrow="Security" path="/admin/audit-logs" badge="Live" />
@@ -91,9 +152,7 @@ export default function Dashboard() {
               <h3>Transfer Continuity</h3>
               <p className="muted">Recent transfers and handoff status.</p>
             </div>
-            <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
+            <div className="action-pill">Pending: {pendingTransfers}</div>
           </div>
           {transferError ? <div className="muted">{transferError}</div> : null}
           <div className="table-wrap">
@@ -108,7 +167,9 @@ export default function Dashboard() {
               <tbody>
                 {transfers.map((t) => (
                   <tr key={t._id}>
-                    <td>{t?.patient?.firstName || ""} {t?.patient?.lastName || ""}</td>
+                    <td>
+                      {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
+                    </td>
                     <td>
                       {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
                       {t?.toHospital?.name || t?.toHospital?.code || "—"}
@@ -118,7 +179,9 @@ export default function Dashboard() {
                 ))}
                 {transfers.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="muted">No transfers yet.</td>
+                    <td colSpan="3" className="muted">
+                      No transfers yet.
+                    </td>
                   </tr>
                 ) : null}
               </tbody>

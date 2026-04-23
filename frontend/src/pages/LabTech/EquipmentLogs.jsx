@@ -1,53 +1,90 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-
-const STORAGE_KEY = "labtech_equipment_logs";
-
-const loadLogs = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
 
 export default function EquipmentLogs() {
-  const [logs, setLogs] = useState(loadLogs);
+  const [logs, setLogs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ device: "", status: "UP", note: "" });
 
+  const loadLogs = async () => {
+    try {
+      const data = await listLabOpsRecords({ kind: "EQUIPMENT_LOG", limit: 80 });
+      setLogs(Array.isArray(data?.items) ? data.items : []);
+      setTotal(Number(data?.total || 0));
+      setMessage("");
+    } catch (err) {
+      setLogs([]);
+      setTotal(0);
+      setMessage(err?.message || "Unable to load equipment logs.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
   const sorted = useMemo(
-    () => [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    () =>
+      [...logs].sort(
+        (a, b) =>
+          new Date(b.observedAt || b.createdAt).getTime() -
+          new Date(a.observedAt || a.createdAt).getTime()
+      ),
     [logs]
   );
 
-  const persist = (next) => {
-    setLogs(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
-    if (!form.device.trim()) return;
-    const next = [
-      {
-        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        ...form,
-        createdAt: new Date().toISOString(),
-      },
-      ...logs,
-    ];
-    persist(next);
-    setForm({ device: "", status: "UP", note: "" });
-    setShowForm(false);
+    if (!form.device.trim()) {
+      setMessage("Enter the device or analyzer name.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await createLabOpsRecord({
+        kind: "EQUIPMENT_LOG",
+        title: form.device.trim(),
+        status: form.status,
+        note: form.note,
+      });
+      setForm({ device: "", status: "UP", note: "" });
+      setShowForm(false);
+      await loadLogs();
+      setMessage("Equipment log saved.");
+    } catch (err) {
+      setMessage(err?.message || "Unable to save the equipment log.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <ModuleWorkspace
       title="Equipment Logs"
       subtitle="Track machine uptime, calibration and maintenance events."
+      kpis={[
+        { title: "Logged events", value: total, subtitle: "Database total" },
+        {
+          title: "Machines down",
+          value: sorted.filter((row) => row.status === "DOWN").length,
+          subtitle: "Needs follow-up",
+        },
+        {
+          title: "Maintenance due",
+          value: sorted.filter(
+            (row) => row.status === "CALIBRATION_DUE" || row.status === "MAINTENANCE"
+          ).length,
+          subtitle: "Open attention items",
+        },
+      ]}
       actions={[
         { label: "New Log", variant: "primary", onClick: () => setShowForm(true) },
         { label: "Maintenance Calendar", path: "/reports" },
@@ -59,6 +96,7 @@ export default function EquipmentLogs() {
       ]}
     >
       <section className="section">
+        {message ? <div className="premium-inline-note">{message}</div> : null}
         {showForm && (
           <form className="card form" onSubmit={save}>
             <input
@@ -82,8 +120,17 @@ export default function EquipmentLogs() {
               onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
             />
             <div>
-              <button type="submit" className="btn-primary">Save Log</button>
-              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={busy}>
+                {busy ? "Saving..." : "Save Log"}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowForm(false)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         )}
@@ -99,19 +146,24 @@ export default function EquipmentLogs() {
                 </tr>
               </thead>
               <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="4">Loading equipment logs...</td>
+                  </tr>
+                ) : null}
                 {sorted.map((log) => (
-                  <tr key={log.id}>
-                    <td>{log.device}</td>
+                  <tr key={log._id}>
+                    <td>{log.title}</td>
                     <td>{log.status}</td>
                     <td>{log.note || "-"}</td>
-                    <td>{new Date(log.createdAt).toLocaleString()}</td>
+                    <td>{new Date(log.observedAt || log.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}
-                {sorted.length === 0 && (
+                {!loading && sorted.length === 0 ? (
                   <tr>
                     <td colSpan="4">No equipment logs yet.</td>
                   </tr>
-                )}
+                ) : null}
               </tbody>
             </table>
           </div>

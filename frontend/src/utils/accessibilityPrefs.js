@@ -23,32 +23,36 @@ const INPUT_SIZE_TO_SCALE = {
   large: 1.12,
 };
 
+function normalizePrefs(prefs) {
+  return {
+    textSize: prefs?.textSize || DEFAULT_PREFS.textSize,
+    textSpacing: prefs?.textSpacing || DEFAULT_PREFS.textSpacing,
+    inputSize: prefs?.inputSize || DEFAULT_PREFS.inputSize,
+  };
+}
+
 function getUserKey(user) {
   const id = user?._id || user?.id || user?.email || user?.phone || "guest";
   return `afyalink_a11y_prefs:${String(id)}`;
 }
 
 export function loadAccessibilityPrefs(user) {
+  const profilePrefs = user?.uiPreferences?.accessibility;
+  if (profilePrefs && typeof profilePrefs === "object") {
+    return normalizePrefs(profilePrefs);
+  }
   try {
     const raw = localStorage.getItem(getUserKey(user));
     if (!raw) return { ...DEFAULT_PREFS };
     const parsed = JSON.parse(raw);
-    return {
-      textSize: parsed?.textSize || DEFAULT_PREFS.textSize,
-      textSpacing: parsed?.textSpacing || DEFAULT_PREFS.textSpacing,
-      inputSize: parsed?.inputSize || DEFAULT_PREFS.inputSize,
-    };
+    return normalizePrefs(parsed);
   } catch {
     return { ...DEFAULT_PREFS };
   }
 }
 
 export function saveAccessibilityPrefs(user, prefs) {
-  const next = {
-    textSize: prefs?.textSize || DEFAULT_PREFS.textSize,
-    textSpacing: prefs?.textSpacing || DEFAULT_PREFS.textSpacing,
-    inputSize: prefs?.inputSize || DEFAULT_PREFS.inputSize,
-  };
+  const next = normalizePrefs(prefs);
   localStorage.setItem(getUserKey(user), JSON.stringify(next));
   return next;
 }

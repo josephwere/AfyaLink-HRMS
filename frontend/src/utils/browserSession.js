@@ -1,10 +1,24 @@
 const ACCESS_TOKEN_SESSION_KEY = "afyalink_access_token";
 const USER_STORAGE_KEY = "user";
+export const BROWSER_SESSION_USER_EVENT = "afyalink:stored-user-changed";
 
 let accessTokenCache = "";
 
 function canUseBrowserStorage() {
   return typeof window !== "undefined";
+}
+
+function emitStoredUserChange(user) {
+  if (!canUseBrowserStorage()) return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent(BROWSER_SESSION_USER_EVENT, {
+        detail: user && typeof user === "object" ? user : null,
+      })
+    );
+  } catch {
+    // ignore event dispatch issues
+  }
 }
 
 function readSessionToken() {
@@ -76,9 +90,11 @@ export function writeStoredUser(user) {
   try {
     if (!user || typeof user !== "object") {
       window.localStorage.removeItem(USER_STORAGE_KEY);
+      emitStoredUserChange(null);
       return null;
     }
     window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    emitStoredUserChange(user);
     return user;
   } catch {
     return null;
@@ -89,6 +105,7 @@ export function clearStoredUser() {
   if (!canUseBrowserStorage()) return;
   try {
     window.localStorage.removeItem(USER_STORAGE_KEY);
+    emitStoredUserChange(null);
   } catch {
     // ignore
   }

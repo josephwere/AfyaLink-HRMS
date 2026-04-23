@@ -1,45 +1,92 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-
-const STORAGE_KEY = "labtech_safety_checks";
-
-const loadChecks = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
 
 export default function SafetyChecklist() {
-  const [checks, setChecks] = useState(loadChecks);
+  const [checks, setChecks] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ area: "", ppe: true, hazard: false, note: "" });
 
+  const loadChecks = async () => {
+    try {
+      const data = await listLabOpsRecords({ kind: "SAFETY_CHECK", limit: 80 });
+      setChecks(Array.isArray(data?.items) ? data.items : []);
+      setTotal(Number(data?.total || 0));
+      setMessage("");
+    } catch (err) {
+      setChecks([]);
+      setTotal(0);
+      setMessage(err?.message || "Unable to load safety checks.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChecks();
+  }, []);
+
   const sorted = useMemo(
-    () => [...checks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    () =>
+      [...checks].sort(
+        (a, b) =>
+          new Date(b.observedAt || b.createdAt).getTime() -
+          new Date(a.observedAt || a.createdAt).getTime()
+      ),
     [checks]
   );
 
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
-    if (!form.area.trim()) return;
-    const next = [
-      { id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, ...form, createdAt: new Date().toISOString() },
-      ...checks,
-    ];
-    setChecks(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setForm({ area: "", ppe: true, hazard: false, note: "" });
-    setShowForm(false);
+    if (!form.area.trim()) {
+      setMessage("Enter the area or room name.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await createLabOpsRecord({
+        kind: "SAFETY_CHECK",
+        title: form.area.trim(),
+        status: form.hazard ? "FOLLOW_UP" : form.ppe ? "COMPLIANT" : "PPE_GAP",
+        note: form.note,
+        details: {
+          ppe: form.ppe,
+          hazard: form.hazard,
+        },
+      });
+      setForm({ area: "", ppe: true, hazard: false, note: "" });
+      setShowForm(false);
+      await loadChecks();
+      setMessage("Safety checklist saved.");
+    } catch (err) {
+      setMessage(err?.message || "Unable to save the safety checklist.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <ModuleWorkspace
       title="Safety Checklist"
       subtitle="Lab biosafety compliance checks and hazard readiness."
+      kpis={[
+        { title: "Safety rounds", value: total, subtitle: "Database total" },
+        {
+          title: "Hazards found",
+          value: sorted.filter((row) => row.details?.hazard).length,
+          subtitle: "Needs action",
+        },
+        {
+          title: "PPE gaps",
+          value: sorted.filter((row) => row.details?.ppe === false).length,
+          subtitle: "Compliance follow-up",
+        },
+      ]}
       actions={[
         { label: "Start Checklist", variant: "primary", onClick: () => setShowForm(true) },
         { label: "Report Hazard", path: "/notifications" },
@@ -51,6 +98,7 @@ export default function SafetyChecklist() {
       ]}
     >
       <section className="section">
+        {message ? <div className="premium-inline-note">{message}</div> : null}
         {showForm && (
           <form className="card form" onSubmit={save}>
             <input
@@ -81,8 +129,17 @@ export default function SafetyChecklist() {
               onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
             />
             <div>
-              <button type="submit" className="btn-primary">Save Checklist</button>
-              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={busy}>
+                {busy ? "Saving..." : "Save Checklist"}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowForm(false)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         )}
@@ -99,20 +156,25 @@ export default function SafetyChecklist() {
                 </tr>
               </thead>
               <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5">Loading safety checks...</td>
+                  </tr>
+                ) : null}
                 {sorted.map((check) => (
-                  <tr key={check.id}>
-                    <td>{check.area}</td>
-                    <td>{check.ppe ? "Yes" : "No"}</td>
-                    <td>{check.hazard ? "Yes" : "No"}</td>
+                  <tr key={check._id}>
+                    <td>{check.title}</td>
+                    <td>{check.details?.ppe === false ? "No" : "Yes"}</td>
+                    <td>{check.details?.hazard ? "Yes" : "No"}</td>
                     <td>{check.note || "-"}</td>
-                    <td>{new Date(check.createdAt).toLocaleString()}</td>
+                    <td>{new Date(check.observedAt || check.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}
-                {sorted.length === 0 && (
+                {!loading && sorted.length === 0 ? (
                   <tr>
                     <td colSpan="5">No safety checklist records yet.</td>
                   </tr>
-                )}
+                ) : null}
               </tbody>
             </table>
           </div>
