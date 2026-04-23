@@ -1,7 +1,11 @@
 import axios from "axios";
+import { resolveApiBase } from "../utils/networkBase";
+
+const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
+const baseURL = base.endsWith("/api") ? base : `${base}/api`;
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL,
   withCredentials: true
 });
 
