@@ -456,6 +456,8 @@ export function SystemSettingsProvider({ children }) {
   useEffect(() => {
     const branding = settings?.branding || {};
     const root = document.documentElement;
+    const resolvedLoginBackground = branding.loginBackground || branding.homeBackground || "";
+    const resolvedHomeBackground = branding.homeBackground || branding.loginBackground || "";
 
     if (branding.favicon) setFavicon(branding.favicon);
     if (branding.logo) root.style.setProperty("--brand-logo", `url(${branding.logo})`);
@@ -464,10 +466,10 @@ export function SystemSettingsProvider({ children }) {
     if (branding.appIcon) root.style.setProperty("--brand-icon", `url(${branding.appIcon})`);
     else root.style.removeProperty("--brand-icon");
 
-    if (branding.loginBackground) root.style.setProperty("--login-bg", `url(${branding.loginBackground})`);
+    if (resolvedLoginBackground) root.style.setProperty("--login-bg", `url(${resolvedLoginBackground})`);
     else root.style.removeProperty("--login-bg");
 
-    if (branding.homeBackground) root.style.setProperty("--home-bg", `url(${branding.homeBackground})`);
+    if (resolvedHomeBackground) root.style.setProperty("--home-bg", `url(${resolvedHomeBackground})`);
     else root.style.removeProperty("--home-bg");
 
     const connection = navigator?.connection || navigator?.mozConnection || navigator?.webkitConnection;
@@ -477,9 +479,9 @@ export function SystemSettingsProvider({ children }) {
 
     preloadImage(branding.logo, { eager: true });
     preloadImage(branding.appIcon, { eager: true });
-    preloadImage(branding.loginBackground, { eager: true });
+    preloadImage(resolvedLoginBackground, { eager: true });
     if (canWarmHeavyAssets) {
-      preloadImage(branding.homeBackground, { eager: false });
+      preloadImage(resolvedHomeBackground, { eager: false });
     }
 
     if (settings?.hospitalCustomization?.theme?.primaryColor) {

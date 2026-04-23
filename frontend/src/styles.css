@@ -28,7 +28,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  background: var(--home-bg, none) center/cover no-repeat, var(--app-bg, #fafafa);
+  background: var(--home-bg, url("/background.png")) center/cover fixed no-repeat, var(--app-bg, #fafafa);
   color: var(--app-text, #111827);
   overflow-x: hidden;
   overflow-y: auto;
@@ -78,8 +78,8 @@ body.auth-route {
   --app-radius-sm: 8px;
   --app-shadow: none;
   --app-shadow-hover: none;
-  --home-bg: none;
-  --login-bg: none;
+  --home-bg: url("/background.png");
+  --login-bg: url("/background.png");
   --user-zoom: 1;
   --user-line-height: 1.5;
   --user-input-scale: 1;
@@ -9231,6 +9231,8 @@ button.card.stat {
   --app-shadow-hover: 0 1px 2px rgba(15, 23, 42, 0.05), 0 24px 52px rgba(15, 23, 42, 0.09);
   --field-border: #d4d4d8;
   --field-bg: #ffffff;
+  --home-bg: url("/background.png");
+  --login-bg: url("/background.png");
   --user-line-height: 1.6;
 }
 
