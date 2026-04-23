@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import {
   bulkUpdateSuperAssistants,
@@ -7,6 +7,7 @@ import {
   sendSuperAssistantResetLink,
   updateSuperAssistant,
 } from "../../services/superAdminApi";
+import { listSupportTickets } from "../../services/opsApi";
 import { useAuth } from "../../utils/auth";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
@@ -17,6 +18,49 @@ const BULK_ACTIONS = [
   { value: "DISABLE", label: "Disable selected" },
   { value: "SET_STATUS", label: "Set operating status" },
   { value: "SEND_RESET_LINK", label: "Send invite/reset link" },
+];
+const SUPPORT_CHANNELS = [
+  {
+    key: "chatbot",
+    title: "NeuroEdge Chat",
+    status: "Online",
+    tone: "good",
+    description: "Handles first-response questions and captures user context before a human takeover is needed.",
+    route: "/app/innovation/ai/chatbot",
+    action: "Open chat workspace",
+  },
+  {
+    key: "medical",
+    title: "Medical Assistant",
+    status: "Assistive only",
+    tone: "warn",
+    description: "Supports symptom review and draft guidance. Human review remains required before action.",
+    route: "/app/innovation/ai/medical",
+    action: "Review clinical queue",
+  },
+  {
+    key: "unified",
+    title: "Unified Support Workspace",
+    status: "Human + AI",
+    tone: "subtle",
+    description: "Coordinates tickets, calls, alerts, and handoffs when conversations need a live operator.",
+    route: "/app/platform/ai/unified-assistant",
+    action: "Open operations view",
+  },
+];
+const SUPPORT_PLAYBOOK = [
+  {
+    title: "AI takes the first pass",
+    detail: "Let NeuroEdge capture intent, summarize the issue, and collect enough context to avoid repetitive human follow-up.",
+  },
+  {
+    title: "Human assistants own escalations",
+    detail: "Route high-priority, billing, or identity-sensitive issues to enabled super assistants with clear ticket notes.",
+  },
+  {
+    title: "Close the loop in tickets",
+    detail: "Keep ticket status, linked incident IDs, and reset or invite actions current so every conversation has an audit trail.",
+  },
 ];
 
 const coerceList = (value) => {
@@ -50,6 +94,25 @@ const formatBucket = (value) => {
   return labels[bucket] || "Unknown";
 };
 
+const formatSupportValue = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/(^|_)([a-z])/g, (_, prefix, letter) => `${prefix ? " " : ""}${letter.toUpperCase()}`)
+    .trim();
+
+const formatRelativeTime = (value) => {
+  if (!value) return "Updated just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Updated just now";
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+  if (diffMinutes < 60) return `Updated ${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `Updated ${diffHours}h ago`;
+  const diffDays = Math.round(diffHours / 24);
+  return `Updated ${diffDays}d ago`;
+};
+
 function StatusPill({ active, status }) {
   const normalized = String(status || "ACTIVE").toUpperCase();
   const tone = !active || normalized === "SUSPENDED" ? "warn" : "ok";
@@ -66,8 +129,29 @@ function ActivityBadge({ bucket }) {
   return <span className={`assistant-badge ${tone}`}>{formatBucket(normalized)}</span>;
 }
 
+function SupportBadge({ label, tone = "subtle" }) {
+  return <span className={`assistant-badge ${tone}`}>{label}</span>;
+}
+
+function supportStatusTone(value) {
+  const normalized = String(value || "").toUpperCase();
+  if (normalized === "RESOLVED") return "good";
+  if (normalized === "ESCALATED") return "risk";
+  if (normalized === "ASSIGNED") return "warn";
+  return "subtle";
+}
+
+function supportPriorityTone(value) {
+  const normalized = String(value || "").toUpperCase();
+  if (normalized === "CRITICAL") return "risk";
+  if (normalized === "HIGH") return "warn";
+  if (normalized === "LOW") return "good";
+  return "subtle";
+}
+
 export default function SuperAssistants() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
   const canManage = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
 
@@ -84,8 +168,19 @@ export default function SuperAssistants() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportLoading, setSupportLoading] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [selectedRows, setSelectedRows] = useState({});
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [supportSummary, setSupportSummary] = useState({
+    open: 0,
+    assigned: 0,
+    escalated: 0,
+    critical: 0,
+    resolved: 0,
+    unassigned: 0,
+  });
   const [bulkAction, setBulkAction] = useState("ENABLE");
   const [bulkStatus, setBulkStatus] = useState("ACTIVE");
   const [filters, setFilters] = useState({
@@ -177,10 +272,46 @@ export default function SuperAssistants() {
     [filters]
   );
 
+  const loadSupportQueue = React.useCallback(async () => {
+    setSupportLoading(true);
+    setSupportMessage("");
+    try {
+      const data = await listSupportTickets({ limit: 24 });
+      const tickets = Array.isArray(data?.tickets) ? data.tickets : [];
+      setSupportTickets(tickets);
+      setSupportSummary({
+        open: tickets.filter((ticket) => ticket?.status === "OPEN").length,
+        assigned: tickets.filter((ticket) => ticket?.status === "ASSIGNED").length,
+        escalated: tickets.filter((ticket) => ticket?.status === "ESCALATED").length,
+        critical: tickets.filter((ticket) => ticket?.priority === "CRITICAL" && ticket?.status !== "RESOLVED").length,
+        resolved: tickets.filter((ticket) => ticket?.status === "RESOLVED").length,
+        unassigned: tickets.filter((ticket) => !ticket?.assignee && ticket?.status !== "RESOLVED").length,
+      });
+    } catch (err) {
+      setSupportTickets([]);
+      setSupportSummary({
+        open: 0,
+        assigned: 0,
+        escalated: 0,
+        critical: 0,
+        resolved: 0,
+        unassigned: 0,
+      });
+      setSupportMessage(err?.message || "Unable to load the support queue right now.");
+    } finally {
+      setSupportLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!canManage) return;
     load(filters);
   }, [canManage, filters, load]);
+
+  useEffect(() => {
+    if (!canManage) return;
+    loadSupportQueue();
+  }, [canManage, loadSupportQueue]);
 
   const selected = useMemo(
     () => items.find((row) => String(row._id) === String(selectedId)) || null,
@@ -305,6 +436,16 @@ export default function SuperAssistants() {
     tableSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const openSupportTickets = (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value == null || value === "") return;
+      query.set(key, String(value));
+    });
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    navigate(`/app/platform/support/tickets${suffix}`);
+  };
+
   const applySummaryView = (kind) => {
     if (kind === "total") {
       const reset = { q: "", active: "", authProvider: "", status: "", limit: 100 };
@@ -355,17 +496,28 @@ export default function SuperAssistants() {
     <div className="dashboard">
       <div className="welcome-panel">
         <div>
-          <h2>Super Assistants</h2>
+          <h2>Customer Support Command</h2>
           <p className="muted">
-            Manage human super assistants, bulk actions, invite/reset flows, and activity signals for the unified support layer.
+            Run customer support across human assistants, AI channels, ticket queues, and handoff controls from one operations view.
           </p>
         </div>
         <div className="welcome-actions">
+          <Link to="/app/platform/ai/unified-assistant" className="btn-secondary">
+            Unified Workspace
+          </Link>
           <Link to="/admin/create-admin" className="btn-primary">
             Register Super Assistant
           </Link>
-          <button type="button" className="btn-secondary" onClick={() => load(filters, selectedId)} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              load(filters, selectedId);
+              loadSupportQueue();
+            }}
+            disabled={loading || supportLoading}
+          >
+            {loading || supportLoading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
@@ -374,13 +526,136 @@ export default function SuperAssistants() {
 
       <section className="section">
         <div className="grid info-grid">
-          <StatCard title="Total Assistants" value={summary.total} subtitle="Current filtered result set" onClick={() => applySummaryView("total")} />
-          <StatCard title="Active Access" value={summary.active} subtitle="Accounts currently enabled" onClick={() => applySummaryView("active")} />
-          <StatCard title="Disabled" value={summary.disabled} subtitle="Temporarily blocked accounts" onClick={() => applySummaryView("disabled")} />
+          <StatCard title="Human Agents" value={summary.total} subtitle="Current filtered result set" onClick={() => applySummaryView("total")} />
+          <StatCard title="Active Access" value={summary.active} subtitle="Human assistants ready for escalations" onClick={() => applySummaryView("active")} />
+          <StatCard title="Open Tickets" value={supportSummary.open} subtitle="Unresolved support workload in the last 24 tickets" onClick={() => openSupportTickets({ status: "OPEN" })} />
+          <StatCard title="Escalated Queue" value={supportSummary.escalated} subtitle="Needs a human owner now" onClick={() => openSupportTickets({ status: "ESCALATED" })} />
+          <StatCard title="Critical Priority" value={supportSummary.critical} subtitle="Immediate-response items still open" onClick={() => openSupportTickets({ priority: "CRITICAL" })} />
+          <StatCard title="Unassigned Tickets" value={supportSummary.unassigned} subtitle="No owner yet in the recent queue" onClick={() => openSupportTickets({ status: "OPEN" })} />
           <StatCard title="Active Today" value={summary.activeToday} subtitle="Touched the workspace today" onClick={() => applySummaryView("activeToday")} />
-          <StatCard title="Active 7 Days" value={summary.active7d} subtitle="Recent operating activity" onClick={() => applySummaryView("active7d")} />
-          <StatCard title="Never Logged In" value={summary.neverLoggedIn} subtitle="Best candidates for invite links" onClick={() => applySummaryView("never")} />
-          <StatCard title="Pending Reset Links" value={summary.pendingResets} subtitle="Password/reset requests already issued" onClick={() => applySummaryView("pendingResets")} />
+          <StatCard title="Needs Invite" value={summary.neverLoggedIn} subtitle="Best candidates for invite links" onClick={() => applySummaryView("never")} />
+          <StatCard title="Pending Reset Links" value={summary.pendingResets} subtitle="Password or invite links already issued" onClick={() => applySummaryView("pendingResets")} />
+          <StatCard title="Disabled" value={summary.disabled} subtitle="Temporarily blocked accounts" onClick={() => applySummaryView("disabled")} />
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="support-command-grid">
+          <div className="card premium-card">
+            <div className="card-header-actions">
+              <div>
+                <h3>Recent Support Queue</h3>
+                <p className="muted">Monitor fresh ticket activity and jump into the full queue when a case needs action.</p>
+              </div>
+              <button type="button" className="action-pill" onClick={() => openSupportTickets()}>
+                Open full queue
+              </button>
+            </div>
+
+            <div className="support-mini-metrics">
+              <div className="support-mini-metric">
+                <span>Assigned</span>
+                <strong>{supportSummary.assigned}</strong>
+              </div>
+              <div className="support-mini-metric">
+                <span>Resolved</span>
+                <strong>{supportSummary.resolved}</strong>
+              </div>
+            </div>
+
+            {supportMessage ? <p className="muted" style={{ marginTop: 12 }}>{supportMessage}</p> : null}
+
+            <div className="support-ticket-list">
+              {supportLoading ? (
+                <div className="support-ticket-empty">Loading recent support tickets...</div>
+              ) : null}
+              {!supportLoading && !supportTickets.length ? (
+                <div className="support-ticket-empty">No recent support tickets are in scope.</div>
+              ) : null}
+              {!supportLoading &&
+                supportTickets.slice(0, 6).map((ticket) => (
+                  <button
+                    key={ticket._id}
+                    type="button"
+                    className="support-ticket-row"
+                    onClick={() =>
+                      openSupportTickets({
+                        ticketId: ticket._id,
+                        q: ticket.ticketKey || ticket.title || "",
+                      })
+                    }
+                  >
+                    <div className="support-ticket-head">
+                      <div>
+                        <strong>{ticket.ticketKey || "Support ticket"}</strong>
+                        <div className="muted">{ticket.title || "Untitled issue"}</div>
+                      </div>
+                      <div className="support-ticket-meta">
+                        <SupportBadge label={formatSupportValue(ticket.status)} tone={supportStatusTone(ticket.status)} />
+                        <SupportBadge label={formatSupportValue(ticket.priority)} tone={supportPriorityTone(ticket.priority)} />
+                      </div>
+                    </div>
+                    <div className="support-ticket-detail">
+                      <span>{ticket.assignee?.name ? `Owner: ${ticket.assignee.name}` : "Owner: Unassigned"}</span>
+                      <span>{ticket.linkedIncident?.incidentKey ? `Incident: ${ticket.linkedIncident.incidentKey}` : "No incident linked"}</span>
+                      <span>{formatRelativeTime(ticket.updatedAt || ticket.createdAt)}</span>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          <div className="card premium-card">
+            <div className="card-header-actions">
+              <div>
+                <h3>AI Coverage</h3>
+                <p className="muted">Keep the automated channels visible so the team knows where AI is helping and where humans must take over.</p>
+              </div>
+            </div>
+            <div className="support-channel-grid">
+              {SUPPORT_CHANNELS.map((channel) => (
+                <div key={channel.key} className="support-channel-card">
+                  <div className="support-ticket-head">
+                    <div>
+                      <h4>{channel.title}</h4>
+                      <p className="muted">{channel.description}</p>
+                    </div>
+                    <SupportBadge label={channel.status} tone={channel.tone} />
+                  </div>
+                  <div className="support-channel-actions">
+                    <Link to={channel.route} className="btn-secondary">
+                      {channel.action}
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card premium-card">
+            <div className="card-header-actions">
+              <div>
+                <h3>Handoff Rules</h3>
+                <p className="muted">Use the same routing pattern every time so customers get predictable support.</p>
+              </div>
+            </div>
+            <div className="support-playbook">
+              {SUPPORT_PLAYBOOK.map((step) => (
+                <div key={step.title} className="support-playbook-step">
+                  <strong>{step.title}</strong>
+                  <span>{step.detail}</span>
+                </div>
+              ))}
+            </div>
+            <div className="support-channel-actions" style={{ marginTop: 16 }}>
+              <Link to="/app/platform/support/tickets" className="btn-secondary">
+                Review ticket queue
+              </Link>
+              <Link to="/app/platform/ai/unified-assistant" className="btn-secondary">
+                Open handoff console
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

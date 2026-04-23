@@ -17,6 +17,7 @@ export default function Chatbot() {
   const recognitionRef = useRef(null);
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
+  const messageIdRef = useRef(0);
 
   const aiName = settings?.ai?.name || "NeuroEdge";
   const aiUrl = settings?.ai?.url || "";
@@ -75,13 +76,34 @@ export default function Chatbot() {
   }, []);
   const hydrationLiters = useMemo(() => Math.round(defaultWeight * 0.033 * 10) / 10, []);
 
-  const appendMessage = (role, text) => {
-    const clean = String(text || "").trim();
+  const nextMessageId = (role = "message") => {
+    messageIdRef.current += 1;
+    return `${role}-${Date.now()}-${messageIdRef.current}`;
+  };
+
+  const createMessage = (role, text, extras = {}) => ({
+    id: extras.id || nextMessageId(role),
+    role,
+    text: String(text || "").trim(),
+    createdAt: extras.createdAt || new Date().toISOString(),
+    pending: Boolean(extras.pending),
+  });
+
+  const replaceMessage = (id, nextText, extras = {}) => {
+    const clean = String(nextText || "").trim();
     if (!clean) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: `${role}-${Date.now()}`, role, text: clean, createdAt: new Date().toISOString() },
-    ]);
+    setMessages((prev) =>
+      prev.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              text: clean,
+              pending: false,
+              createdAt: extras.createdAt || new Date().toISOString(),
+            }
+          : entry
+      )
+    );
   };
 
   const buildOfflineReply = (prompt) => {
@@ -96,7 +118,15 @@ export default function Chatbot() {
   const submit = async () => {
     const prompt = String(message || "").trim();
     if (!prompt) return;
-    appendMessage("user", prompt);
+    const pendingId = nextMessageId("assistant");
+    setMessages((prev) => [
+      ...prev,
+      createMessage("user", prompt),
+      createMessage("assistant", `${aiName} is preparing a reply.`, {
+        id: pendingId,
+        pending: true,
+      }),
+    ]);
     setMessage("");
     setLoading(true);
     setError("");
@@ -108,11 +138,11 @@ export default function Chatbot() {
         pageContext: "",
       });
       const answer = out?.answer || out?.text || "No response generated.";
-      appendMessage("assistant", answer);
+      replaceMessage(pendingId, answer);
     } catch (e) {
       const fallback = buildOfflineReply(prompt);
-      appendMessage("assistant", fallback);
-      setStatus(e?.message || "Assistant offline. Showing fallback response.");
+      replaceMessage(pendingId, fallback);
+      setStatus(e?.message || "Assistant offline. Showing an offline fallback response.");
     } finally {
       setLoading(false);
     }
@@ -236,16 +266,11 @@ export default function Chatbot() {
           </div>
         )}
         {messages.map((entry) => (
-          <div key={entry.id} className={`ai-chat-bubble ${entry.role}`}>
+          <div key={entry.id} className={`ai-chat-bubble ${entry.role}${entry.pending ? " pending" : ""}`}>
             <div className="ai-chat-role">{entry.role === "user" ? "You" : aiName}</div>
             <div className="ai-chat-text">{entry.text}</div>
           </div>
         ))}
-        {loading && (
-          <div className="ai-chat-typing">
-            {aiName} is typing...
-          </div>
-        )}
       </div>
 
       <div className="ai-chat-footer">
