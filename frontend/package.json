@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
+    "@vercel/analytics": "^2.0.1",
     "automerge": "1.0.1-preview.7",
     "localforage": "^1.10.0",
     "react": "^18.2.0",

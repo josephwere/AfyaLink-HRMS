@@ -1,6 +1,7 @@
 // frontend/src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <AppLanguageProvider>
                 <AppErrorBoundary>
                   <App />
+                  <Analytics />
                 </AppErrorBoundary>
               </AppLanguageProvider>
             </AuthProvider>
