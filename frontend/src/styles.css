@@ -78,6 +78,10 @@ body.auth-route {
   --app-radius-sm: 8px;
   --app-shadow: none;
   --app-shadow-hover: none;
+  --page-surface-radius: 22px;
+  --page-surface-radius-compact: 18px;
+  --page-surface-padding: clamp(20px, 2vw, 28px);
+  --page-surface-padding-compact: clamp(16px, 1.6vw, 22px);
   --home-bg: url("/background.png");
   --login-bg: url("/background.png");
   --user-zoom: 1;
@@ -3776,8 +3780,8 @@ button.premium-shell-stat {
 }
 
 .dashboard-home-pinned-summary {
-  padding: 14px;
-  border-radius: var(--app-radius);
+  padding: var(--page-surface-padding-compact);
+  border-radius: var(--page-surface-radius);
   border: 1px solid var(--app-border);
   background: var(--app-surface);
   box-shadow: var(--app-shadow);
@@ -3821,8 +3825,8 @@ button.premium-shell-stat {
 }
 
 .dashboard-daily-brief-item {
-  padding: 14px 16px;
-  border-radius: var(--app-radius);
+  padding: var(--page-surface-padding-compact);
+  border-radius: var(--page-surface-radius);
   border: 1px solid var(--app-border);
   background: var(--app-surface);
   box-shadow: var(--app-shadow);
@@ -3912,6 +3916,10 @@ button.premium-shell-stat {
 .dashboard-context-card {
   display: grid;
   gap: 16px;
+  padding: var(--page-surface-padding);
+  border-radius: var(--page-surface-radius);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
 }
 
 .dashboard-context-head {
@@ -3988,6 +3996,10 @@ button.premium-shell-stat {
 
 .dashboard-home-section {
   gap: 16px;
+  padding: var(--page-surface-padding);
+  border-radius: var(--page-surface-radius);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
 }
 
 .dashboard-home-section-head {
@@ -4717,6 +4729,9 @@ button.premium-shell-stat {
 .profile-card {
   border: 1px solid var(--app-border);
   box-shadow: var(--app-shadow);
+  border-radius: var(--page-surface-radius);
+  padding: var(--page-surface-padding);
+  background: var(--app-surface);
 }
 
 .profile-card h3 {
@@ -5079,8 +5094,8 @@ button.premium-shell-stat {
 .card {
   background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  padding: 16px;
+  border-radius: var(--page-surface-radius);
+  padding: var(--page-surface-padding-compact);
   box-shadow: var(--app-shadow);
   max-width: 100%;
   min-width: 0;
@@ -5090,8 +5105,8 @@ button.premium-shell-stat {
 .premium-card {
   position: relative;
   overflow: hidden;
-  padding: 16px;
-  border-radius: var(--app-radius);
+  padding: var(--page-surface-padding-compact);
+  border-radius: var(--page-surface-radius);
   border: 1px solid color-mix(in oklab, var(--app-accent-2) 28%, var(--app-border));
   background: var(--app-surface);
   box-shadow: var(--app-shadow);
@@ -5373,8 +5388,9 @@ button.premium-shell-stat {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px;
+  padding: var(--page-surface-padding-compact);
   border: 1px solid var(--app-border);
+  border-radius: var(--page-surface-radius-compact);
 }
 
 .card.stat.stat-clickable {
@@ -5409,15 +5425,15 @@ button.card.stat {
 }
 
 .card.stat.stat-compact {
-  min-height: 132px;
+  min-height: 156px;
 }
 
 .card.stat.stat-medium {
-  min-height: 164px;
+  min-height: 188px;
 }
 
 .card.stat.stat-rich {
-  min-height: 208px;
+  min-height: 236px;
 }
 
 .action-card {
@@ -5428,6 +5444,8 @@ button.card.stat {
   text-align: left;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
+  border-radius: var(--page-surface-radius);
+  padding: var(--page-surface-padding);
   transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   cursor: pointer;
 }
@@ -5518,15 +5536,15 @@ button.card.stat {
 }
 
 .action-card-compact {
-  min-height: 168px;
+  min-height: 196px;
 }
 
 .action-card-medium {
-  min-height: 216px;
+  min-height: 244px;
 }
 
 .action-card-rich {
-  min-height: 272px;
+  min-height: 308px;
 }
 
 @media (max-width: 1024px) {
@@ -10249,6 +10267,59 @@ form.auth-card {
   background: var(--app-surface-2);
   border-color: var(--app-border);
   color: var(--app-text);
+}
+
+/* =========================
+   PAGE SURFACES
+========================= */
+.premium-shell-head,
+.dashboard-home-hero,
+.dashboard-daily-brief,
+.dashboard-home-pinned-summary,
+.dashboard-home-section,
+.dashboard-context-card,
+.dashboard-daily-brief-item,
+.profile-card,
+.profile-settings-nav,
+.profile-settings-summary-card,
+.profile-settings-hero,
+.support-ticket-row,
+.support-channel-card,
+.support-playbook-step,
+.sidebar-search-shell,
+.sidebar-workspace-shell,
+.sidebar-quick-panel,
+.sidebar-cluster {
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: var(--page-surface-radius) !important;
+  box-shadow: none !important;
+}
+
+.premium-shell-head,
+.dashboard-home-hero,
+.dashboard-daily-brief,
+.dashboard-home-pinned-summary,
+.dashboard-home-section,
+.dashboard-context-card,
+.profile-card,
+.profile-settings-nav,
+.profile-settings-summary-card,
+.profile-settings-hero,
+.support-ticket-row,
+.support-channel-card,
+.support-playbook-step,
+.sidebar-search-shell,
+.sidebar-workspace-shell,
+.sidebar-quick-panel,
+.sidebar-cluster {
+  padding: var(--page-surface-padding) !important;
+}
+
+.premium-shell-stat,
+.support-mini-metric,
+.dashboard-card-tool {
+  border-radius: var(--page-surface-radius-compact) !important;
 }
 
 .app-icon {

@@ -11,6 +11,7 @@ import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AppShellSkeleton from "./components/AppShellSkeleton";
+import AuthGateFallback from "./components/AuthGateFallback";
 import GlobalProgressBar from "./components/GlobalProgressBar";
 import RouteProgressEvents from "./components/RouteProgressEvents";
 
@@ -232,7 +233,7 @@ function RouteLoadingFallback() {
 
 function RootEntry() {
   const { user, loading } = useAuth();
-  if (loading) return <div />;
+  if (loading) return <AuthGateFallback title="Loading workspace" detail="Preparing your workspace and routing the right page." />;
   return <Navigate to={user ? redirectByRole(user) : "/login"} replace />;
 }
 
@@ -260,7 +261,7 @@ const SHARED_NOTIFICATION_ROLES = [
 
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div />;
+  if (loading) return children;
   if (user) return <Navigate to={redirectByRole(user)} replace />;
   return children;
 }

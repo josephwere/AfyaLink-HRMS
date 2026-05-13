@@ -15,6 +15,30 @@ import "./styles.css";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+async function clearLegacyServiceWorkers() {
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+  } catch {
+    // Ignore cleanup issues and keep boot non-blocking.
+  }
+
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("afyalink-"))
+          .map((key) => caches.delete(key))
+      );
+    }
+  } catch {
+    // Ignore cache cleanup issues and keep boot non-blocking.
+  }
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={googleClientId}>
@@ -37,17 +61,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 );
 
 if ("serviceWorker" in navigator) {
-  if (import.meta.env.PROD) {
-    window.addEventListener("load", () => {
-      const buildId = import.meta.env.VITE_BUILD_ID || "v2";
-      navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(buildId)}`).catch(() => {
-        // Keep app functional even if service worker registration fails.
-      });
-    });
-  } else {
-    // Avoid stale-cache white screens during Vite HMR.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((reg) => reg.unregister());
-    });
-  }
+  window.addEventListener("load", () => {
+    clearLegacyServiceWorkers().catch(() => {});
+  });
 }

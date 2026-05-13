@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../utils/auth";
+import AuthGateFallback from "./AuthGateFallback";
 
 /**
  * Protected route wrapper
@@ -10,8 +11,14 @@ import { useAuth } from "../utils/auth";
 export default function Protected({ children, roles }) {
   const { user, loading } = useAuth();
 
-  // ⏳ Wait until auth is restored
-  if (loading) return null;
+  if (loading && !user) {
+    return (
+      <AuthGateFallback
+        title="Opening page"
+        detail="Restoring access so this page can load correctly."
+      />
+    );
+  }
 
   // 🔐 Not logged in
   if (!user) {
