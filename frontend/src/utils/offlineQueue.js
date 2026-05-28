@@ -117,8 +117,8 @@ export function getOfflineMetricsSnapshot() {
   return readMetrics();
 }
 
-export function refreshOfflineMetricsSnapshot() {
-  return refreshMetricsFromQueue();
+export function refreshOfflineMetricsSnapshot(options = {}) {
+  return refreshMetricsFromQueue({}, options);
 }
 
 export function enqueueOfflineAction(action) {

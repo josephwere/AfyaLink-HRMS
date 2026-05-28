@@ -7,6 +7,32 @@ import { requireRole } from "../middleware/roleMiddleware.js";
 
 
 const router = express.Router();
+const METRICS_DEDUPE_WINDOW_MS = 30 * 1000;
+const recentMetricWrites = new Map();
+
+function buildMetricSignature(deviceId, userId, snapshot, modules) {
+  return JSON.stringify({
+    deviceId: String(deviceId || ""),
+    userId: String(userId || ""),
+    queueLength: Number(snapshot?.queueLength || 0),
+    queuedTotal: Number(snapshot?.lifetime?.enqueued || 0),
+    syncedTotal: Number(snapshot?.lifetime?.synced || 0),
+    failedTotal: Number(snapshot?.lifetime?.failed || 0),
+    lastEnqueueAt: snapshot?.lastEnqueueAt || null,
+    lastSyncAt: snapshot?.lastSyncAt || null,
+    lastFailureAt: snapshot?.lastFailureAt || null,
+    online: snapshot?.online !== false,
+    modules,
+  });
+}
+
+function pruneRecentMetricWrites(now = Date.now()) {
+  for (const [key, value] of recentMetricWrites.entries()) {
+    if (now - Number(value?.updatedAt || 0) > METRICS_DEDUPE_WINDOW_MS) {
+      recentMetricWrites.delete(key);
+    }
+  }
+}
 
 router.post("/metrics", protect, async (req, res) => {
   try {
@@ -21,6 +47,26 @@ router.post("/metrics", protect, async (req, res) => {
       pending: Number(pending || 0),
       retryFailures: Number(snapshot?.lifetime?.failed || 0),
     }));
+    const dedupeKey = `${String(req.user?._id || "anon")}::${deviceId}`;
+    const signature = buildMetricSignature(deviceId, req.user?._id, snapshot, modules);
+    const now = Date.now();
+    const previous = recentMetricWrites.get(dedupeKey);
+
+    if (
+      previous &&
+      previous.signature === signature &&
+      now - Number(previous.updatedAt || 0) < METRICS_DEDUPE_WINDOW_MS
+    ) {
+      return res.json({ ok: true, skipped: true });
+    }
+
+    recentMetricWrites.set(dedupeKey, {
+      signature,
+      updatedAt: now,
+    });
+    if (recentMetricWrites.size > 5000) {
+      pruneRecentMetricWrites(now);
+    }
 
     await OfflineClientMetric.findOneAndUpdate(
       { user: req.user?._id, deviceId },

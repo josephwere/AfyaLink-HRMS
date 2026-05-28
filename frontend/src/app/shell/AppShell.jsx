@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useState } from "react";
+import React, { startTransition, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../utils/auth";
@@ -182,6 +182,24 @@ function appendDashboardReminders(list, dash, role, navigate) {
   return list;
 }
 
+const OFFLINE_METRICS_HEARTBEAT_MS = 5 * 60 * 1000;
+const OFFLINE_METRICS_BASE_BACKOFF_MS = 15 * 1000;
+const OFFLINE_METRICS_MAX_BACKOFF_MS = 5 * 60 * 1000;
+
+function buildOfflineMetricsSignature({ deviceId, userId, snapshot }) {
+  return JSON.stringify({
+    deviceId: String(deviceId || ""),
+    userId: String(userId || ""),
+    queueLength: Number(snapshot?.queueLength || 0),
+    pendingByModule: snapshot?.pendingByModule || {},
+    lifetime: snapshot?.lifetime || {},
+    lastEnqueueAt: snapshot?.lastEnqueueAt || null,
+    lastSyncAt: snapshot?.lastSyncAt || null,
+    lastFailureAt: snapshot?.lastFailureAt || null,
+    online: snapshot?.online !== false,
+  });
+}
+
 export default function AppShell() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
@@ -191,6 +209,14 @@ export default function AppShell() {
   const [contextOpen, setContextOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
+  const offlineMetricsStateRef = useRef({
+    inFlight: false,
+    lastSignature: "",
+    lastSentAt: 0,
+    failureCount: 0,
+    pendingSnapshot: null,
+    retryTimerId: null,
+  });
 
   const getOfflineDeviceId = () => {
     const key = "afyalink_offline_device_id";
@@ -297,18 +323,85 @@ export default function AppShell() {
   };
 
   useEffect(() => {
+    if (!user?.id) return undefined;
+
+    let disposed = false;
+    const syncState = offlineMetricsStateRef.current;
+    syncState.inFlight = false;
+    syncState.lastSignature = "";
+    syncState.lastSentAt = 0;
+    syncState.failureCount = 0;
+    syncState.pendingSnapshot = null;
+
+    const clearRetryTimer = () => {
+      if (!syncState.retryTimerId) return;
+      window.clearTimeout(syncState.retryTimerId);
+      syncState.retryTimerId = null;
+    };
+
+    const scheduleRetry = (delayMs, postMetrics) => {
+      if (disposed || syncState.retryTimerId) return;
+      syncState.retryTimerId = window.setTimeout(() => {
+        syncState.retryTimerId = null;
+        if (disposed || !syncState.pendingSnapshot) return;
+        const snapshot = syncState.pendingSnapshot;
+        syncState.pendingSnapshot = null;
+        void postMetrics(snapshot);
+      }, delayMs);
+    };
+
     const postMetrics = async (snapshot) => {
-      if (!user) return;
+      if (disposed) return;
+
+      const nextSnapshot = {
+        ...(snapshot || refreshOfflineMetricsSnapshot({ emit: false })),
+        online: navigator.onLine,
+      };
+      const deviceId = getOfflineDeviceId();
+      const signature = buildOfflineMetricsSignature({
+        deviceId,
+        userId: user.id,
+        snapshot: nextSnapshot,
+      });
+      const now = Date.now();
+      const heartbeatDue = now - syncState.lastSentAt >= OFFLINE_METRICS_HEARTBEAT_MS;
+
+      if (!heartbeatDue && signature === syncState.lastSignature) {
+        return;
+      }
+
+      if (syncState.inFlight) {
+        syncState.pendingSnapshot = nextSnapshot;
+        return;
+      }
+
+      syncState.inFlight = true;
       try {
         await pushOfflineClientMetrics({
-          deviceId: getOfflineDeviceId(),
-          snapshot: {
-            ...(snapshot || refreshOfflineMetricsSnapshot()),
-            online: navigator.onLine,
-          },
+          deviceId,
+          snapshot: nextSnapshot,
         });
+        syncState.lastSignature = signature;
+        syncState.lastSentAt = Date.now();
+        syncState.failureCount = 0;
+        syncState.pendingSnapshot = null;
+        clearRetryTimer();
       } catch {
-        // swallow telemetry failures
+        syncState.failureCount += 1;
+        syncState.pendingSnapshot = nextSnapshot;
+        const backoffMs = Math.min(
+          OFFLINE_METRICS_MAX_BACKOFF_MS,
+          OFFLINE_METRICS_BASE_BACKOFF_MS * 2 ** (syncState.failureCount - 1)
+        );
+        scheduleRetry(backoffMs, postMetrics);
+      } finally {
+        syncState.inFlight = false;
+        if (disposed || syncState.retryTimerId || !syncState.pendingSnapshot) return;
+        if (syncState.pendingSnapshot !== nextSnapshot) {
+          const pending = syncState.pendingSnapshot;
+          syncState.pendingSnapshot = null;
+          void postMetrics(pending);
+        }
       }
     };
 
@@ -319,20 +412,24 @@ export default function AppShell() {
           body: item.body,
           _skipOfflineQueue: true,
         });
-      },
-      {
-        onMetrics: (snapshot) => postMetrics(snapshot),
       }
     );
-    const onMetricsUpdate = (ev) => postMetrics(ev?.detail || null);
+    const onMetricsUpdate = (ev) => {
+      void postMetrics(ev?.detail || null);
+    };
     window.addEventListener("afyalink:offline-metrics-updated", onMetricsUpdate);
-    const timer = setInterval(() => postMetrics(), 60000);
+    void postMetrics(refreshOfflineMetricsSnapshot({ emit: false }));
+    const timer = setInterval(() => {
+      void postMetrics();
+    }, OFFLINE_METRICS_HEARTBEAT_MS);
     return () => {
+      disposed = true;
       stop?.();
       window.removeEventListener("afyalink:offline-metrics-updated", onMetricsUpdate);
       clearInterval(timer);
+      clearRetryTimer();
     };
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
