@@ -7,6 +7,27 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCoo
 import { sanitizeString } from "../utils/securitySanitizers.js";
 import { resolveSessionId, rotateRefreshSession } from "../utils/authSessions.js";
 
+const REFRESH_DB_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_DB_QUERY_TIMEOUT_MS || 5000) || 5000,
+  1000
+);
+
+function withTimeout(promise, ms, timeoutMessage) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => {
+      if (timer) clearTimeout(timer);
+    }),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const error = new Error(timeoutMessage);
+        error.code = "AUTH_BACKEND_TIMEOUT";
+        reject(error);
+      }, ms);
+    }),
+  ]);
+}
+
 /* ======================================================
    REFRESH ACCESS TOKEN
 ====================================================== */
@@ -38,7 +59,20 @@ export const refreshToken = async (req, res) => {
       return res.status(401).json({ msg: "Session expired. Please login again." });
     }
 
-    const user = await User.findById(decoded.id);
+    let user;
+    try {
+      user = await withTimeout(
+        User.findById(decoded.id),
+        REFRESH_DB_TIMEOUT_MS,
+        `Refresh user lookup timed out for ${decoded.id}`
+      );
+    } catch (error) {
+      console.error("Refresh user lookup error:", error.message);
+      return res.status(503).json({
+        msg: "Authentication is temporarily unavailable. Please try again.",
+        code: "AUTH_BACKEND_UNAVAILABLE",
+      });
+    }
     if (!user) {
       clearRefreshTokenCookie(res);
       return res.status(401).json({ msg: "User not found" });
@@ -80,7 +114,19 @@ export const refreshToken = async (req, res) => {
       twoFactorVerified: true,
     });
 
-    await user.save();
+    try {
+      await withTimeout(
+        user.save(),
+        REFRESH_DB_TIMEOUT_MS,
+        `Refresh session save timed out for ${decoded.id}`
+      );
+    } catch (error) {
+      console.error("Refresh session save error:", error.message);
+      return res.status(503).json({
+        msg: "Authentication is temporarily unavailable. Please try again.",
+        code: "AUTH_BACKEND_UNAVAILABLE",
+      });
+    }
 
     setRefreshTokenCookie(res, newRefreshToken);
     res.json({
@@ -98,6 +144,13 @@ export const refreshToken = async (req, res) => {
     });
   } catch (err) {
     console.error("Refresh error:", err);
-    res.status(500).json({ msg: "Failed to refresh token" });
+    const status = err?.code === "AUTH_BACKEND_TIMEOUT" ? 503 : 500;
+    res.status(status).json({
+      msg:
+        status === 503
+          ? "Authentication is temporarily unavailable. Please try again."
+          : "Failed to refresh token",
+      code: status === 503 ? "AUTH_BACKEND_UNAVAILABLE" : "",
+    });
   }
 };

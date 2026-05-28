@@ -10,6 +10,75 @@ import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 dotenv.config();
 
+const AUTH_LOOKUP_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_LOOKUP_TIMEOUT_MS || 5000) || 5000,
+  1000
+);
+const AUTH_REDIS_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_REDIS_TIMEOUT_MS || 900) || 900,
+  250
+);
+
+function withTimeout(promise, ms, timeoutMessage) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => {
+      if (timer) clearTimeout(timer);
+    }),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const error = new Error(timeoutMessage);
+        error.code = "AUTH_BACKEND_TIMEOUT";
+        reject(error);
+      }, ms);
+    }),
+  ]);
+}
+
+function isJwtError(error) {
+  return (
+    error?.name === "TokenExpiredError" ||
+    error?.name === "JsonWebTokenError" ||
+    error?.name === "NotBeforeError"
+  );
+}
+
+function authBackendUnavailable(res) {
+  return res.status(503).json({
+    message: "Authentication is temporarily unavailable. Please try again.",
+    code: "AUTH_BACKEND_UNAVAILABLE",
+  });
+}
+
+function verifyAccessToken(token) {
+  const secrets = [
+    process.env.JWT_ACCESS_SECRET,
+    process.env.JWT_SECRET,
+  ].filter(Boolean);
+
+  let lastError = null;
+  for (const secret of [...new Set(secrets)]) {
+    try {
+      return jwt.verify(token, secret);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new jwt.JsonWebTokenError("Invalid token");
+}
+
+async function safeRedisGet(key) {
+  try {
+    return await withTimeout(
+      redis.get(key),
+      AUTH_REDIS_TIMEOUT_MS,
+      `Redis auth lookup timed out for ${key}`
+    );
+  } catch {
+    return null;
+  }
+}
+
 /* ======================================================
    ROLE HIERARCHY (HIGH → LOW)
 ====================================================== */
@@ -56,12 +125,20 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: "Not authorized" });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
-    );
+    const decoded = verifyAccessToken(token);
 
-    const user = await User.findById(decoded.id).select("-password");
+    let user;
+    try {
+      user = await withTimeout(
+        User.findById(decoded.id).select("-password"),
+        AUTH_LOOKUP_TIMEOUT_MS,
+        `Auth user lookup timed out for ${decoded.id}`
+      );
+    } catch (error) {
+      if (isJwtError(error)) throw error;
+      console.error("Auth user lookup error:", error.message);
+      return authBackendUnavailable(res);
+    }
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
@@ -115,7 +192,7 @@ const authenticate = async (req, res, next) => {
       url.startsWith("/api/auth/step-up/verify") ||
       url.startsWith("/api/auth/logout");
     if (!restrictionExempt) {
-      const restricted = await redis.get(`risk:restricted:${String(user._id)}`);
+      const restricted = await safeRedisGet(`risk:restricted:${String(user._id)}`);
       if (restricted) {
         let payload = null;
         try {
@@ -136,6 +213,14 @@ const authenticate = async (req, res, next) => {
     req.tokenPayload = decoded;
     next();
   } catch (error) {
+    if (!isJwtError(error) && error?.code === "AUTH_BACKEND_TIMEOUT") {
+      console.error("Auth backend timeout:", error.message);
+      return authBackendUnavailable(res);
+    }
+    if (!isJwtError(error) && error?.code === "AUTH_BACKEND_UNAVAILABLE") {
+      console.error("Auth backend unavailable:", error.message);
+      return authBackendUnavailable(res);
+    }
     console.error("Auth error:", error.message);
     return res.status(401).json({ message: "Not authorized" });
   }
@@ -155,12 +240,13 @@ const authenticateOptional = async (req, _res, next) => {
       return next();
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
-    );
+    const decoded = verifyAccessToken(token);
 
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await withTimeout(
+      User.findById(decoded.id).select("-password"),
+      AUTH_LOOKUP_TIMEOUT_MS,
+      `Optional auth user lookup timed out for ${decoded.id}`
+    );
     if (!user) return next();
     if (user.active === false) return next();
 
