@@ -1,33 +1,35 @@
-import fetch from 'node-fetch';
-
-const NEUROEDGE_URL = process.env.NEUROEDGE_URL;
-const NEUROEDGE_KEY = process.env.NEUROEDGE_KEY;
-
-async function callNeuroEdge(endpoint, payload) {
-  if (!NEUROEDGE_URL || !NEUROEDGE_KEY) return { placeholder: true, message: 'NeuroEdge not configured' };
-  const res = await fetch(`${NEUROEDGE_URL}/${endpoint}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${NEUROEDGE_KEY}` }, body: JSON.stringify(payload)
-  });
-  return res.json();
-}
+import {
+  diagnoseSymptoms as diagnoseSymptomsAdapter,
+  treatmentGuidelines as treatmentGuidelinesAdapter,
+  transcribeAudioBase64 as transcribeAudioBase64Adapter,
+} from "../services/aiAdapter.js";
 
 export async function diagnoseSymptoms(symptoms) {
-  return await callNeuroEdge('diagnose', { symptoms });
+  return diagnoseSymptomsAdapter(symptoms);
 }
 
 export async function treatmentGuidelines(condition) {
-  return await callNeuroEdge('treatment', { condition });
+  return treatmentGuidelinesAdapter(condition);
 }
 
 export async function dischargeSummary(data) {
-  return await callNeuroEdge('discharge', data);
+  return diagnoseSymptomsAdapter([
+    `Create a concise discharge summary from: ${JSON.stringify(data || {})}`,
+  ]);
 }
 
 export async function transcribeAudio(bufferBase64) {
-  return await callNeuroEdge('transcribe', { audio: bufferBase64 });
+  return transcribeAudioBase64Adapter(bufferBase64);
 }
 
 export async function triage(symptoms) {
-  return await callNeuroEdge('triage', { symptoms });
+  return diagnoseSymptomsAdapter(symptoms);
 }
-export default { diagnoseSymptoms, treatmentGuidelines, dischargeSummary, transcribeAudio, triage };
+
+export default {
+  diagnoseSymptoms,
+  treatmentGuidelines,
+  dischargeSummary,
+  transcribeAudio,
+  triage,
+};

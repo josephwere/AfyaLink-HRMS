@@ -1,16 +1,14 @@
 import http from "http";
-import dotenv from "dotenv";
 import cron from "node-cron";
 import { Server as IOServer } from "socket.io";
 import mongoose from "mongoose";
+import "./config/loadEnv.js";
 
 import connectDB from "./config/db.js";
 import { validateRuntimeEnv } from "./config/validateEnv.js";
 import app, { startBackgroundJobs } from "./app.js";
 import { getAllowedOrigins, isAllowedOrigin } from "./utils/corsOrigins.js";
 import { initSocket } from "./utils/socket.js";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 let httpServer;

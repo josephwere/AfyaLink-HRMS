@@ -4,9 +4,8 @@ import cors from "cors";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import dotenv from "dotenv";
-import dotenvExpand from "dotenv-expand";
 import mongoose from "mongoose";
+import "./config/loadEnv.js";
 
 import errorHandler from "./middleware/errorHandler.js";
 import { trace } from "./middleware/traceMiddleware.js";
@@ -23,9 +22,6 @@ import { isAllowedOrigin } from "./utils/corsOrigins.js";
 /* ======================================================
    🌱 ENV
 ====================================================== */
-const env = dotenv.config();
-dotenvExpand.expand(env);
-
 import "./utils/logger.js";
 
 /* ======================================================

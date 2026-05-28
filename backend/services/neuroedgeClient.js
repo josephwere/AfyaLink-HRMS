@@ -1,42 +1,32 @@
-import fetch from 'node-fetch';
+import {
+  diagnoseSymptoms,
+  treatmentGuidelines,
+  transcribeAudioBase64,
+} from "./aiAdapter.js";
 
-const BASE = process.env.NEUROEDGE_API_BASE || 'https://api.neuroedge.example/v1';
-const API_KEY = process.env.NEUROEDGE_API_KEY || '';
+export { diagnoseSymptoms, treatmentGuidelines };
 
-async function callNeuroEdge(path, body = {}, method = 'POST') {
-  if (!API_KEY) {
-    return { placeholder: true, path, body };
-  }
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`
-    },
-    body: method === 'GET' ? undefined : JSON.stringify(body),
-    timeout: 120000
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`NeuroEdge error ${res.status}: ${t}`);
-  }
-  return res.json();
-}
-
-export async function diagnoseSymptoms(symptoms) {
-  return callNeuroEdge('/diagnose', { symptoms });
-}
-export async function treatmentGuidelines(condition) {
-  return callNeuroEdge('/treatment', { condition });
-}
 export async function dischargeSummary(data) {
-  return callNeuroEdge('/discharge', { data });
-}
-export async function transcribeAudioBase64(b64, options = {}) {
-  return callNeuroEdge('/transcribe', { audio_b64: b64, ...options });
-}
-export async function triage(symptoms) {
-  return callNeuroEdge('/triage', { symptoms });
+  const text = `Prepare a concise discharge summary for the following case: ${JSON.stringify(
+    data || {}
+  )}`;
+  return diagnoseSymptoms([text]);
 }
 
-export default { diagnoseSymptoms, treatmentGuidelines, dischargeSummary, transcribeAudioBase64, triage };
+export async function transcribeAudioBase64Compat(b64, _options = {}) {
+  return transcribeAudioBase64(b64);
+}
+
+export { transcribeAudioBase64Compat as transcribeAudioBase64 };
+
+export async function triage(symptoms) {
+  return diagnoseSymptoms(symptoms);
+}
+
+export default {
+  diagnoseSymptoms,
+  treatmentGuidelines,
+  dischargeSummary,
+  transcribeAudioBase64: transcribeAudioBase64Compat,
+  triage,
+};

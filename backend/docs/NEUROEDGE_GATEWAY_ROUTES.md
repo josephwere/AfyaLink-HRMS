@@ -15,6 +15,12 @@ Base path: `/api/ai/gateway`
 - `GET /jobs/:jobId`
 - `GET /health`
 
+## Current NeuroEdge Pilot Mapping
+- AfyaLink currently maps assistant and text-first extraction requests to upstream `POST /v1/chat/completions`.
+- AfyaLink health checks use upstream `GET /health`, with a small chat-completions probe fallback when a compatibility check is needed.
+- Upstream `POST /v1/chat/stream` and `POST /v1/feedback` are available for later integration.
+- Upstream `PILOT /v1/documents/*` and `PILOT /v1/creator/*` are later-ready and not yet used by AfyaLink.
+
 ## Security
 - Route stack is mounted through `/api/ai` and enforced by:
   - `protect`
@@ -43,6 +49,7 @@ Base path: `/api/ai/gateway`
 - `NEUROEDGE_API_BASE`
 - `NEUROEDGE_API_BASE_FAILOVER` (optional)
 - `NEUROEDGE_API_KEY` or `NEUROEDGE_BEARER_TOKEN`
+- `NEUROEDGE_CHAT_MODEL` (optional, only if NeuroEdge requires explicit model selection)
 - `NEUROEDGE_TIMEOUT_MS`
 - `NEUROEDGE_RETRIES`
 - `NEUROEDGE_RETRY_BACKOFF_MS`

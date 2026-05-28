@@ -109,6 +109,29 @@ Use this for hospitals moving from an existing HIS/EMR/LIS/PACS into AfyaLink wi
 - Verify `/api/ai/gateway/health` returns `ok: true` for admin users.
 - Confirm ABAC policies exist for `domain=AI`, `resource=neuroedge_gateway`.
 
+### 9.1.1 Render Deployment Env Checklist
+Set these in the Render dashboard for the backend service, then redeploy:
+
+```env
+NEUROEDGE_API_BASE=https://api.neuroedge.dev
+NEUROEDGE_API_KEY=replace_in_render_dashboard
+NEUROEDGE_CHAT_MODEL=
+NEUROEDGE_TIMEOUT_MS=30000
+NEUROEDGE_RETRIES=2
+NEUROEDGE_RETRY_BACKOFF_MS=300
+NEUROEDGE_CIRCUIT_THRESHOLD=5
+NEUROEDGE_CIRCUIT_COOLDOWN_MS=15000
+```
+
+Notes:
+- Keep the real API key only in Render secret storage. Do not commit it to the repo.
+- The current AfyaLink pilot integration actively uses upstream `POST /v1/chat/completions` and `GET /health`.
+- Upstream `POST /v1/chat/stream`, `POST /v1/feedback`, `PILOT /v1/documents/*`, and `PILOT /v1/creator/*` can be enabled in later passes without changing the base URL.
+- After setting env vars, verify:
+  - backend `GET /api/ai/gateway/health`
+  - one authenticated assistant/chat request
+  - audit log creation for the AI call
+
 ### 9.2 Safe Rollout Order
 1. Enable for `SUPER_ADMIN`, `SYSTEM_ADMIN`, `DEVELOPER` only.
 2. Validate extraction, transform, risk, and simulation paths.

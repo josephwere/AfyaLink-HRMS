@@ -1,3 +1,4 @@
+import "../config/loadEnv.js";
 import fetch from "node-fetch";
 
 const DEFAULT_TIMEOUT_MS = Number(process.env.NEUROEDGE_TIMEOUT_MS || 30000);
@@ -42,6 +43,41 @@ function parseTextAsJsonSafe(text) {
   } catch {
     return null;
   }
+}
+
+function extractCompletionText(payload) {
+  const direct =
+    payload?.text ||
+    payload?.answer ||
+    payload?.message ||
+    payload?.output_text ||
+    payload?.content;
+  if (typeof direct === "string" && direct.trim()) {
+    return direct.trim();
+  }
+
+  const messageContent = payload?.choices?.[0]?.message?.content;
+  if (typeof messageContent === "string" && messageContent.trim()) {
+    return messageContent.trim();
+  }
+  if (Array.isArray(messageContent)) {
+    const combined = messageContent
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object") return part.text || part.content || "";
+        return "";
+      })
+      .join("\n")
+      .trim();
+    if (combined) return combined;
+  }
+
+  const choiceText = payload?.choices?.[0]?.text;
+  if (typeof choiceText === "string" && choiceText.trim()) {
+    return choiceText.trim();
+  }
+
+  return "";
 }
 
 export class NeuroEdgeGatewayError extends Error {
@@ -216,6 +252,8 @@ async function callNeuroEdge(path, { method = "POST", body, correlationId, idemp
 }
 
 export const neuroedgeGatewayClient = {
+  chatCompletions: (payload, ctx = {}) =>
+    callNeuroEdge("/v1/chat/completions", { method: "POST", body: payload, ...ctx }),
   extract: (payload, ctx = {}) => callNeuroEdge("/v1/extract", { method: "POST", body: payload, ...ctx }),
   ingestDocument: (payload, ctx = {}) =>
     callNeuroEdge("/v1/ingest/document", { method: "POST", body: payload, ...ctx }),
@@ -236,5 +274,38 @@ export const neuroedgeGatewayClient = {
     callNeuroEdge("/v1/simulation/digital-twin", { method: "POST", body: payload, ...ctx }),
   getJob: (jobId, ctx = {}) =>
     callNeuroEdge(`/v1/jobs/${encodeURIComponent(String(jobId))}`, { method: "GET", ...ctx }),
-  health: (ctx = {}) => callNeuroEdge("/healthz", { method: "GET", ...ctx }),
+  health: async (ctx = {}) => {
+    try {
+      return await callNeuroEdge("/health", { method: "GET", ...ctx });
+    } catch (error) {
+      const status = Number(error?.status || 0);
+      const code = String(error?.code || "");
+      if (
+        status &&
+        ![404, 405].includes(status) &&
+        !["NEUROEDGE_HTTP_ERROR", "NEUROEDGE_FAILOVER_EXHAUSTED"].includes(code)
+      ) {
+        throw error;
+      }
+
+      const probe = await callNeuroEdge("/v1/chat/completions", {
+        method: "POST",
+        body: {
+          ...(String(process.env.NEUROEDGE_CHAT_MODEL || "").trim()
+            ? { model: String(process.env.NEUROEDGE_CHAT_MODEL || "").trim() }
+            : {}),
+          messages: [{ role: "user", content: "Reply with READY" }],
+        },
+        ...ctx,
+      });
+
+      return {
+        ok: true,
+        status: "OK",
+        mode: "chat-completions-compat",
+        probe: extractCompletionText(probe) || null,
+        meta: probe?.meta || {},
+      };
+    }
+  },
 };
