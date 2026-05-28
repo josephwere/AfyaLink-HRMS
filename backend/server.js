@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 import { validateRuntimeEnv } from "./config/validateEnv.js";
 import app, { startBackgroundJobs } from "./app.js";
+import { getAllowedOrigins, isAllowedOrigin } from "./utils/corsOrigins.js";
 import { initSocket } from "./utils/socket.js";
 
 dotenv.config();
@@ -23,28 +24,7 @@ const MAX_REQUESTS_PER_SOCKET = Math.max(Number(process.env.HTTP_MAX_REQUESTS_PE
 /* ======================================================
    🌐 ALLOWED ORIGINS
 ====================================================== */
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.FRONTEND_PUBLIC_URL,
-  "https://afya-link-hrms-4.vercel.app",
-  "https://afya-link-hrms-frontend-4.vercel.app",
-  "https://afya-link-hrms-frontend-4.onrender.com",
-  "http://localhost:3000",
-  "http://localhost:5173", // ✅ Vite FIX
-].filter(Boolean);
-
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
-  try {
-    const parsed = new URL(origin);
-    if (["localhost", "127.0.0.1"].includes(parsed.hostname)) return true;
-  } catch {
-    // ignore invalid origin string and continue with explicit checks
-  }
-  if (origin.endsWith(".vercel.app")) return true;
-  return false;
-};
+const allowedOrigins = getAllowedOrigins();
 
 async function safeBootstrapStep(label, fn) {
   try {
@@ -151,6 +131,14 @@ function scheduleCronJobs() {
       }
     } catch (err) {
       console.error("[SUBSCRIPTION_SWEEP] failed", err);
+    }
+  }, { timezone: tz });
+  cron.schedule("30 1 * * *", async () => {
+    try {
+      const { runDataRetentionCleanup } = await import("./workers/dataRetentionCleanup.js");
+      await runDataRetentionCleanup();
+    } catch (err) {
+      console.error("[DATA_RETENTION] failed", err);
     }
   }, { timezone: tz });
   cron.schedule("15 */3 * * *", async () => {

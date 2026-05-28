@@ -1,18 +1,15 @@
 // frontend/src/utils/apiFetch.js
 
 import { canQueueOfflineMutation, queueOfflineMutation } from "./offlineMutation";
+import { readStoredUser } from "./browserSession";
 import {
-  clearBrowserSession,
-  getAccessToken,
-  readStoredUser,
-  writeStoredUser,
-  setAccessToken,
-} from "./browserSession";
-import { assertSecureApiBase, resolveApiBase } from "./networkBase";
+  ApiClientError,
+  clearApiSession,
+  fetchApi as fetchApiJson,
+} from "../lib/api/client";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
-const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 const inFlightGetRequests = new Map();
 const responseCache = new Map();
 
@@ -145,7 +142,6 @@ async function apiFetch(path, options = {}, _retry = false) {
   } = options || {};
   const shouldProgress = !_skipUiProgress && !_skipOfflineQueue;
   if (shouldProgress) emitUiProgress("start", { source: "api" });
-  const token = getAccessToken();
   const method = String(requestOptions.method || "GET").toUpperCase();
   const shouldUseGetDedupe = !_retry && ["GET", "HEAD"].includes(method);
   const requestCacheKey = shouldUseGetDedupe ? buildRequestCacheKey(path, method) : "";
@@ -164,55 +160,22 @@ async function apiFetch(path, options = {}, _retry = false) {
 
   const runRequest = async () => {
     try {
-      assertSecureApiBase(API_BASE);
-
-      const headers = {
-        Accept: "application/json",
-        ...(requestOptions.headers || {}),
-      };
-
-      /* ----------------------------------
-         AUTH ROUTES (NO TOKEN / NO REFRESH)
-      ----------------------------------- */
-      const isAuthRoute =
-        path.includes("/auth/login") ||
-        path.includes("/auth/register") ||
-        path.includes("/auth/google");
-
-      if (token && !isAuthRoute) {
-        headers.Authorization = `Bearer ${token}`;
-        const viewRole = localStorage.getItem("role_override");
-        const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";
-        if (viewRole) {
-          headers["X-Afya-View-Role"] = viewRole;
-          if (strictImpersonation) {
-            headers["X-Afya-Strict-Impersonation"] = "1";
-          }
-        }
-      }
-
-      if (
-        requestOptions.body &&
-        typeof requestOptions.body === "object" &&
-        !(requestOptions.body instanceof FormData) &&
-        !(requestOptions.body instanceof Blob)
-      ) {
-        requestOptions.body = JSON.stringify(requestOptions.body);
-        headers["Content-Type"] = "application/json";
-      }
-
-      const timeoutMs = Number(requestOptions.timeoutMs || (isAuthRoute ? 20000 : 15000));
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-      let response;
       try {
-        response = await fetch(`${API_BASE}${path}`, {
+        const data = await fetchApiJson(path, {
           ...requestOptions,
-          credentials: "include",
-          headers,
-          signal: controller.signal,
+          timeoutMs: Number(
+            requestOptions.timeoutMs ||
+              (path.includes("/auth/login") || path.includes("/auth/register") || path.includes("/auth/google")
+                ? 16000
+                : 12000)
+          ),
         });
+        if (requestCacheKey && safeCacheTtlMs > 0 && ["GET", "HEAD"].includes(method)) {
+          writeResponseCache(requestCacheKey, data, safeCacheTtlMs);
+        } else if (!["GET", "HEAD"].includes(method)) {
+          clearResponseCaches();
+        }
+        return data;
       } catch (err) {
         if (!_skipOfflineQueue && canQueueOfflineMutation(path, requestOptions.method, requestOptions.body)) {
           queueOfflineMutation({
@@ -228,60 +191,36 @@ async function apiFetch(path, options = {}, _retry = false) {
             message: "You're offline. We'll send this automatically when you're back online.",
           };
         }
-        if (err?.name === "AbortError") {
-          throw new Error("This request is taking longer than usual. Please try again.");
+        if (err instanceof ApiClientError) {
+          const data = err.data || {};
+          const safeMessage = toSafeUiMessage(err.message, {
+            status: err.status,
+            code: err.code,
+          });
+          const wrapped = new ApiError(safeMessage, err.status, data);
+          if (
+            wrapped.code === "STEP_UP_REQUIRED" ||
+            wrapped.code === "SESSION_RESTRICTED"
+          ) {
+            window.dispatchEvent(
+              new CustomEvent("afyalink:session-security", {
+                detail: {
+                  code: wrapped.code,
+                  message: wrapped.message,
+                  restriction: data?.restriction || null,
+                },
+              })
+            );
+          }
+          throw wrapped;
         }
-        throw new Error("Network error. Please check your connection.");
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      /* ----------------------------------
-         401 → TRY REFRESH (ONCE, NON-AUTH)
-      ----------------------------------- */
-      if (response.status === 401 && !_retry && !isAuthRoute) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          return apiFetch(path, options, true);
-        }
-
-        // hard logout if refresh fails
-        logout();
-        throw new Error("Session expired. Please sign in again.");
-      }
-
-      const data = await safeJson(response);
-
-      if (!response.ok) {
-        const err = new ApiError(
-          toSafeUiMessage(data.msg || data.message || "Request failed", { status: response.status, code: data?.code }),
-          response.status,
-          data
+        const fallbackError = new ApiError(
+          toSafeUiMessage(err?.message || "Request failed", { status: err?.status || 0, code: err?.code || "" }),
+          err?.status || 0,
+          err?.data || {}
         );
-        if (
-          err.code === "STEP_UP_REQUIRED" ||
-          err.code === "SESSION_RESTRICTED"
-        ) {
-          window.dispatchEvent(
-            new CustomEvent("afyalink:session-security", {
-              detail: {
-                code: err.code,
-                message: err.message,
-                restriction: data?.restriction || null,
-              },
-            })
-          );
-        }
-        throw err;
+        throw fallbackError;
       }
-
-      if (requestCacheKey && safeCacheTtlMs > 0 && ["GET", "HEAD"].includes(method)) {
-        writeResponseCache(requestCacheKey, data, safeCacheTtlMs);
-      } else if (!["GET", "HEAD"].includes(method)) {
-        clearResponseCaches();
-      }
-
-      return data;
     } finally {
       if (shouldProgress) emitUiProgress("done", { source: "api" });
     }
@@ -299,41 +238,11 @@ async function apiFetch(path, options = {}, _retry = false) {
 }
 
 /* ======================================================
-   REFRESH ACCESS TOKEN
-====================================================== */
-async function refreshAccessToken() {
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-
-    if (!res.ok) return false;
-
-    const data = await safeJson(res);
-
-    if (!data?.accessToken) return false;
-
-    setAccessToken(data.accessToken);
-    if (data?.user) writeStoredUser(data.user);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/* ======================================================
    LOGOUT
 ====================================================== */
 export function logout() {
   clearResponseCaches();
-  clearBrowserSession();
-  window.location.href = "/login";
+  clearApiSession("SIGNED_OUT");
 }
 
 export default apiFetch;

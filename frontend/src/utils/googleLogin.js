@@ -22,10 +22,11 @@ export const handleGoogleLogin = async (credential) => {
 
     // Redirect to correct dashboard
     const landingPage = redirectByRole(user);
-    window.location.href = landingPage;
+    return { user, landingPage };
 
   } catch (err) {
     console.error("Google login failed:", err.message);
     alert("Login failed. Please try again.");
+    return null;
   }
 };

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { resolveApiUrl } from "../utils/networkBase";
+import { fetchApiResponse } from "../lib/api/client";
 
 export default function AIChat() {
   const [input, setInput] = useState("");
@@ -14,15 +14,12 @@ export default function AIChat() {
     setMessages((prev) => [...prev, { role: "user", text: message }]);
     setInput("");
     try {
-      const res = await fetch(
-        resolveApiUrl("/api/ai/chat", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""),
-        {
+      const res = await fetchApiResponse("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-        }
-      );
-      if (!res.ok || !res.body) return;
+        body: { message },
+      });
+      if (!res.body) return;
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let assistantText = "";

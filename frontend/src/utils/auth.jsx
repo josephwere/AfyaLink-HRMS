@@ -17,7 +17,8 @@ import {
 import { normalizeRole } from "./normalizeRole";
 import { flushOfflineRegistrations } from "./offlineRegistration";
 import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
-import { assertSecureApiBase, resolveApiBase } from "./networkBase";
+import { assertSecureApiBase, getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
+import { AUTH_EXPIRED_EVENT } from "../lib/api/client";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -45,7 +46,26 @@ const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
 const STRICT_IMPERSONATION_KEY = "strict_impersonation";
 const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
-const AUTH_API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
+const AUTH_API_BASE = resolveApiBase(getRuntimeConfiguredApiBase());
+
+async function postJsonWithTimeout(url, body = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 function clearRoleOverrideState() {
   localStorage.removeItem(ROLE_OVERRIDE_KEY);
@@ -158,18 +178,7 @@ export function AuthProvider({ children }) {
     refreshInFlightRef.current = true;
     try {
       assertSecureApiBase(AUTH_API_BASE);
-      const res = await fetch(
-        `${AUTH_API_BASE}/api/auth/refresh`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({}),
-        }
-      );
+      const res = await postJsonWithTimeout(`${AUTH_API_BASE}/api/auth/refresh`, {}, 12000);
       if (!res.ok) return false;
       const data = await res.json();
       if (!data?.accessToken || !data?.user) return false;
@@ -252,18 +261,7 @@ export function AuthProvider({ children }) {
           }
 
           assertSecureApiBase(AUTH_API_BASE);
-          const res = await fetch(
-            `${AUTH_API_BASE}/api/auth/refresh`,
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({}),
-            }
-          );
+          const res = await postJsonWithTimeout(`${AUTH_API_BASE}/api/auth/refresh`, {}, 12000);
 
           if (!res.ok) throw new Error("Refresh failed");
           const data = await res.json();
@@ -316,6 +314,25 @@ export function AuthProvider({ children }) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleAuthExpired = () => {
+      clearBrowserSession();
+      localStorage.removeItem("2fa_pending");
+      localStorage.removeItem("2fa_user");
+      localStorage.removeItem("2fa_method");
+      localStorage.removeItem("2fa_reason");
+      localStorage.removeItem("2fa_identifier");
+      clearRoleOverrideState();
+      setBaseUser(null);
+      setLoading(false);
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
   }, []);
 
   useEffect(() => {
@@ -666,7 +683,7 @@ export function AuthProvider({ children }) {
         is2FAVerified: Boolean(user?.twoFactorVerified),
       }}
     >
-      {loading ? <div /> : children}
+      {children}
     </AuthContext.Provider>
   );
 }

@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { downloadApiFile } from "../../lib/api/client";
 import { getHospitalVerificationReviewQueue, reviewHospitalVerification } from "../../services/systemAdminApi";
-import { resolveApiBase } from "../../utils/networkBase";
 
 export default function HospitalVerificationReview() {
   const [queue, setQueue] = useState({ hospitals: [], branches: [] });
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [notes, setNotes] = useState({});
-  const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
   const load = async () => {
     setLoading(true);
@@ -70,15 +69,19 @@ export default function HospitalVerificationReview() {
                 <div className="action-list">
                   {["registrationCertificate", "taxRegistration", "proofOfAddress", "representativeId"].map((docKey) => (
                     row?.verificationDocuments?.[docKey]?.storagePath ? (
-                      <a
+                      <button
                         key={docKey}
                         className="btn-secondary"
-                        href={`${base}/api/system-admin/hospital-verification/${row._id}/documents/${docKey}`}
-                        target="_blank"
-                        rel="noreferrer"
+                        type="button"
+                        onClick={() =>
+                          downloadApiFile(
+                            `/api/system-admin/hospital-verification/${row._id}/documents/${docKey}`,
+                            { openInNewTab: true }
+                          )
+                        }
                       >
                         Open {docKey}
-                      </a>
+                      </button>
                     ) : null
                   ))}
                 </div>

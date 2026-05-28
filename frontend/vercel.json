@@ -61,6 +61,10 @@
       "destination": "https://afya-link-hrms-frontend-4.onrender.com/healthz"
     },
     {
+      "source": "/health",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/health"
+    },
+    {
       "source": "/readyz",
       "destination": "https://afya-link-hrms-frontend-4.onrender.com/readyz"
     },

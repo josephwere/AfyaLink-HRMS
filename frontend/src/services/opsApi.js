@@ -1,45 +1,11 @@
 import apiFetch from "../utils/apiFetch";
-import { getAccessToken } from "../utils/browserSession";
-import { resolveApiBase } from "../utils/networkBase";
-
-const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-
-function buildAuthHeaders() {
-  const headers = { Accept: "text/csv" };
-  const token = getAccessToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const viewRole = localStorage.getItem("role_override");
-  const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";
-  if (viewRole) {
-    headers["X-Afya-View-Role"] = viewRole;
-    if (strictImpersonation) headers["X-Afya-Strict-Impersonation"] = "1";
-  }
-  return headers;
-}
+import { downloadApiFile } from "../lib/api/client";
 
 async function downloadCsv(path, filenamePrefix) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "GET",
-    credentials: "include",
-    headers: buildAuthHeaders(),
+  await downloadApiFile(path, {
+    filename: `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`,
+    headers: { Accept: "text/csv" },
   });
-  if (!res.ok) {
-    let detail = "";
-    try {
-      const data = await res.json();
-      detail = data?.message || data?.error || "";
-    } catch {}
-    throw new Error(detail || `Failed export (${res.status})`);
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 export async function listSreIncidents(params = {}) {

@@ -1,4 +1,4 @@
-import { resolveApiBase } from "./networkBase";
+import { fetchApiResponse } from "../lib/api/client";
 
 const OFFLINE_REG_KEY = "afyalink_offline_registrations_v1";
 
@@ -43,25 +43,18 @@ export async function flushOfflineRegistrations() {
   const remaining = [];
   let synced = 0;
   let failed = 0;
-  const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
   for (const item of queue) {
     try {
-      const res = await fetch(`${base}/api/auth/register`, {
+      await fetchApiResponse("/api/auth/register", {
         method: "POST",
-        credentials: "include",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(item.payload),
+        body: item.payload,
       });
-      if (!res.ok) {
-        failed += 1;
-        remaining.push(item);
-      } else {
-        synced += 1;
-      }
+      synced += 1;
     } catch {
       failed += 1;
       remaining.push(item);

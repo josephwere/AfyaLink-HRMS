@@ -2,12 +2,13 @@ import React from "react";
 import AppShellSkeleton from "./AppShellSkeleton";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
-const RECOVERY_DELAY_MS = 2200;
+const RECOVERY_DELAY_MS = 1600;
+const MAX_AUTO_RECOVERIES = 1;
 
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, retryNonce: 0 };
+    this.state = { hasError: false, retryNonce: 0, autoRecoveries: 0 };
     this.recoveryTimer = null;
     this.recoverSoon = this.recoverSoon.bind(this);
   }
@@ -23,7 +24,9 @@ export default class AppErrorBoundary extends React.Component {
 
   componentDidUpdate(_prevProps, prevState) {
     if (!prevState.hasError && this.state.hasError) {
-      this.armRecoveryTimer();
+      if (this.state.autoRecoveries < MAX_AUTO_RECOVERIES) {
+        this.armRecoveryTimer();
+      }
     }
     if (prevState.hasError && !this.state.hasError) {
       this.clearRecoveryTimer();
@@ -57,7 +60,11 @@ export default class AppErrorBoundary extends React.Component {
   recoverSoon() {
     this.setState((current) =>
       current.hasError
-        ? { hasError: false, retryNonce: current.retryNonce + 1 }
+        ? {
+            hasError: false,
+            retryNonce: current.retryNonce + 1,
+            autoRecoveries: current.autoRecoveries + 1,
+          }
         : null
     );
   }

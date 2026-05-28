@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import localforage from 'localforage';
-import { resolveApiUrl } from "../../utils/networkBase";
+import { fetchApi } from "../../lib/api/client";
 
 localforage.config({ name: 'AfyaLinkOffline' });
 
@@ -47,19 +47,14 @@ export default function OfflineSync(){
         setMsg('Nothing to sync');
         return;
       }
-      const r = await fetch(resolveApiUrl("/api/offline/upload", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""), {
+      await fetchApi("/api/offline/upload", {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ items: rows }),
-        credentials:'include'
+        body: { items: rows },
       });
-      if(r.ok){
-        for(const k of keys) await localforage.removeItem(k);
-        setMsg('Synced successfully');
-        load();
-      } else {
-        setMsg(`Sync failed (${r.status})`);
-      }
+      for(const k of keys) await localforage.removeItem(k);
+      setMsg('Synced successfully');
+      load();
     } catch (e) {
       setMsg(e?.message || "Sync failed");
     }

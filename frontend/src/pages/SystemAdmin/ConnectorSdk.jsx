@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import DownloadMenu from "../../components/DownloadMenu";
+import { getApiBase } from "../../lib/api/client";
 import {
   getConnectorRuntime,
   getConnectorSdkManifest,
@@ -7,7 +8,6 @@ import {
   updateConnectorRuntime,
 } from "../../services/systemAdminApi";
 import { exportRichTextDocument } from "../../utils/fileExport";
-import { resolveApiBase } from "../../utils/networkBase";
 
 function samplePayloadFor(connector) {
   const profile = String(connector?.profile || "").toUpperCase();
@@ -43,7 +43,7 @@ function samplePayloadFor(connector) {
   };
 }
 
-const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
+const API_BASE = getApiBase();
 
 function codeSnippet(baseUrl, connectorId, payload, mode, dryRun) {
   const body = JSON.stringify(payload, null, 2);

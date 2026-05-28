@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { getAccessToken } from "./browserSession";
-import { resolveApiBase } from "./networkBase";
+import { getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
 
 const SystemSettingsContext = createContext(null);
 
@@ -11,6 +11,8 @@ const SETTINGS_SYNC_KEY = "afyalink_system_settings_version";
 const SETTINGS_CHANNEL = "afyalink-system-settings";
 const PUBLIC_SETTINGS_BASE_KEY = "afyalink_public_settings_base";
 const PRIVILEGED_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
+const SETTINGS_REFRESH_THROTTLE_MS = 30_000;
+const SETTINGS_BACKGROUND_REFRESH_MS = 180_000;
 
 function isLocalHost(hostname) {
   return hostname === "localhost" || hostname === "127.0.0.1";
@@ -193,12 +195,13 @@ function broadcastSettingsUpdate() {
 
 export function SystemSettingsProvider({ children }) {
   const refreshInFlightRef = useRef(null);
+  const lastRefreshCompletedRef = useRef(0);
   const [baseSettings, setBaseSettings] = useState(() => readCachedPublicSettings());
   const [hospitalCustomization, setHospitalCustomization] = useState(null);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [pushConnected, setPushConnected] = useState(false);
   const [syncSource, setSyncSource] = useState("bootstrap");
-  const configuredBase = import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "";
+  const configuredBase = getRuntimeConfiguredApiBase();
   const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
   const isHostedFrontend = typeof window !== "undefined" && !isLocalHost(runtimeHost);
@@ -291,19 +294,23 @@ export function SystemSettingsProvider({ children }) {
   }, [fetchJsonWithTimeout, getPublicSettingsBases, writePublicCache]);
 
   const fetchPrivateSettings = useCallback(async (token) => {
-    const response = await fetch(joinUrl(preferredApiBase || runtimeOrigin, "/api/system-settings"), {
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Cache-Control": "no-cache",
+    const response = await fetchJsonWithTimeout(
+      joinUrl(preferredApiBase || runtimeOrigin, "/api/system-settings"),
+      {
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Cache-Control": "no-cache",
+        },
       },
-    });
+      12000
+    );
     if (!response.ok) {
       throw new Error("private settings unavailable");
     }
     return response.json();
-  }, [preferredApiBase, runtimeOrigin]);
+  }, [fetchJsonWithTimeout, preferredApiBase, runtimeOrigin]);
 
   const fetchHospitalCustomization = useCallback(async (token, role) => {
     if (!token || role !== "HOSPITAL_ADMIN") {
@@ -311,14 +318,18 @@ export function SystemSettingsProvider({ children }) {
       return null;
     }
     try {
-      const response = await fetch(joinUrl(preferredApiBase || runtimeOrigin, "/api/hospital-admin/config"), {
-        cache: "no-store",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
+      const response = await fetchJsonWithTimeout(
+        joinUrl(preferredApiBase || runtimeOrigin, "/api/hospital-admin/config"),
+        {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+          },
         },
-      });
+        12000
+      );
       if (!response.ok) {
         setHospitalCustomization(null);
         return null;
@@ -331,9 +342,17 @@ export function SystemSettingsProvider({ children }) {
       setHospitalCustomization(null);
       return null;
     }
-  }, [preferredApiBase, runtimeOrigin]);
+  }, [fetchJsonWithTimeout, preferredApiBase, runtimeOrigin]);
 
-  const refreshSettings = useCallback(async () => {
+  const refreshSettings = useCallback(async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (
+      !force &&
+      lastRefreshCompletedRef.current &&
+      now - lastRefreshCompletedRef.current < SETTINGS_REFRESH_THROTTLE_MS
+    ) {
+      return;
+    }
     if (refreshInFlightRef.current) return refreshInFlightRef.current;
     refreshInFlightRef.current = (async () => {
       const token = getAccessToken();
@@ -363,6 +382,7 @@ export function SystemSettingsProvider({ children }) {
 
       await fetchHospitalCustomization(token, role);
       if (syncSucceeded) {
+        lastRefreshCompletedRef.current = Date.now();
         setLastSyncedAt(new Date().toISOString());
       }
     })();
@@ -374,7 +394,7 @@ export function SystemSettingsProvider({ children }) {
   }, [fetchHospitalCustomization, fetchPrivateSettings, fetchPublicSettings]);
 
   useEffect(() => {
-    refreshSettings();
+    refreshSettings({ force: true });
 
     const onFocus = () => {
       refreshSettings().catch(() => {});
@@ -404,7 +424,7 @@ export function SystemSettingsProvider({ children }) {
 
     const intervalId = window.setInterval(() => {
       refreshSettings().catch(() => {});
-    }, 20000);
+    }, SETTINGS_BACKGROUND_REFRESH_MS);
 
     return () => {
       window.removeEventListener("focus", onFocus);
@@ -416,13 +436,15 @@ export function SystemSettingsProvider({ children }) {
   }, [refreshSettings]);
 
   useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return undefined;
+
     const socketUrl = resolveApiBase(
       import.meta.env.VITE_SOCKET_URL ||
-      import.meta.env.VITE_API_URL ||
+      configuredBase ||
       window.location.origin
     );
 
-    const token = getAccessToken();
     const socket = io(socketUrl, {
       transports: ["websocket"],
       autoConnect: true,
@@ -454,7 +476,7 @@ export function SystemSettingsProvider({ children }) {
       socket.disconnect();
       setPushConnected(false);
     };
-  }, [refreshSettings]);
+  }, [configuredBase, refreshSettings]);
 
   const settings = useMemo(
     () => mergeSettings(baseSettings, hospitalCustomization),

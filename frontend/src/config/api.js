@@ -1,6 +1,5 @@
-import { resolveApiBase } from "../utils/networkBase";
+import { buildApiUrl } from "../lib/api/client";
 
-const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-const API_BASE = base.endsWith("/api") ? base : `${base}/api`;
+const API_BASE = buildApiUrl("/api");
 
 export default API_BASE;

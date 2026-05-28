@@ -63,7 +63,7 @@ export default function LaunchReadiness() {
     try {
       const [backendHealth, aiGatewayHealth, systemSettings, offlineOps, trainingTracker] =
         await Promise.all([
-          apiFetch("/healthz").catch(() => null),
+          apiFetch("/health").catch(() => null),
           apiFetch("/api/ai/gateway/health").catch(() => null),
           apiFetch("/api/system-settings").catch(() => null),
           apiFetch("/api/offline/status").catch(() => null),

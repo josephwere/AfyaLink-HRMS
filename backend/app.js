@@ -14,6 +14,7 @@ import { denyAudit } from "./middleware/denyAudit.js";
 import { metricsMiddleware } from "./middleware/metricsMiddleware.js";
 import { renderPrometheusMetrics } from "./utils/metrics.js";
 import { authLimiter, aiGatewayLimiter } from "./middleware/trafficGuards.js";
+import { isAllowedOrigin } from "./utils/corsOrigins.js";
 
 /* ======================================================
    🌱 ENV
@@ -118,24 +119,8 @@ function lazyRouter(loadRouter, label = "lazy-router") {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const allowlist = new Set([
-        process.env.FRONTEND_URL,
-        "http://localhost:5173",
-        "http://localhost:3000",
-      ]);
-      if (allowlist.has(origin)) return callback(null, true);
-      // Dev-safe: allow localhost/127.0.0.1 on any port (e.g. Vite 5173/5174/5175)
-      try {
-        const parsed = new URL(origin);
-        if (["localhost", "127.0.0.1"].includes(parsed.hostname)) {
-          return callback(null, true);
-        }
-      } catch {
-        // ignore invalid origin string and continue to explicit deny
-      }
-      if (origin.endsWith(".vercel.app")) return callback(null, true);
-      return callback(new Error(`CORS blocked: ${origin}`));
+      if (isAllowedOrigin(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked: ${origin || "unknown"}`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -224,6 +209,15 @@ app.get("/api/health", (_req, res) => {
     dbReady: isDbReady(),
     uptimeSec: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "afyalink-backend",
+    time: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
   });
 });
 

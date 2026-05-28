@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchApi } from "../../lib/api/client";
 import apiFetch from "../../utils/apiFetch";
 import { formatDateTime } from "../../utils/locale";
-import { resolveApiBase } from "../../utils/networkBase";
 
 const emptyDevice = {
   name: "",
@@ -197,22 +197,15 @@ export default function MachineConnectivity() {
   };
 
   const machinePost = async (path, machineKey, body = {}) => {
-    const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-    const res = await fetch(`${base}${path}`, {
+    return fetchApi(path, {
       method: "POST",
-      credentials: "include",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
         "x-machine-key": machineKey,
       },
-      body: JSON.stringify(body),
+      body,
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data?.message || data?.error || "Machine request failed");
-    }
-    return data;
   };
 
   const testHeartbeat = async () => {

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StatCard } from "../../components/Cards";
+import { downloadApiFile } from "../../lib/api/client";
 import apiFetch from "../../utils/apiFetch";
 import { formatDateTime } from "../../utils/locale";
-import { resolveApiBase } from "../../utils/networkBase";
 
 const PAGE_SIZE = 20;
 
@@ -268,23 +268,10 @@ export default function MachineAlerts() {
 
   const downloadTimelineCsv = async (alertId) => {
     try {
-      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-      const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/timeline.csv`, {
-        credentials: "include",
+      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/timeline.csv`, {
+        filename: `machine-alert-${alertId}-timeline.csv`,
+        headers: { Accept: "text/csv" },
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Failed to export timeline (${res.status})`);
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `machine-alert-${alertId}-timeline.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
     } catch (e) {
       setMsg(e?.message || "Failed to export timeline CSV");
     }
@@ -292,23 +279,10 @@ export default function MachineAlerts() {
 
   const downloadTimelinePdf = async (alertId) => {
     try {
-      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-      const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/timeline.pdf`, {
-        credentials: "include",
+      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/timeline.pdf`, {
+        filename: `machine-alert-${alertId}-timeline.pdf`,
+        headers: { Accept: "application/pdf" },
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Failed to export PDF (${res.status})`);
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `machine-alert-${alertId}-timeline.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
     } catch (e) {
       setMsg(e?.message || "Failed to export timeline PDF");
     }
@@ -331,23 +305,10 @@ export default function MachineAlerts() {
 
   const downloadEvidenceBundle = async (alertId) => {
     try {
-      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-      const res = await fetch(`${base}/api/machine-connectivity/alerts/${alertId}/evidence-bundle`, {
-        credentials: "include",
+      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/evidence-bundle`, {
+        filename: `machine-alert-${alertId}-evidence-bundle.json`,
+        headers: { Accept: "application/json" },
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Failed to download evidence bundle (${res.status})`);
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `machine-alert-${alertId}-evidence-bundle.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
     } catch (e) {
       setMsg(e?.message || "Failed to download evidence bundle");
     }

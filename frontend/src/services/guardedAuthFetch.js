@@ -1,9 +1,9 @@
 import apiFetch from "../utils/apiFetch";
 
 const AUTH_WARMUP_TIMEOUT_MS = 4000;
-const AUTH_WARMUP_MAX_WAIT_MS = 45000;
+const AUTH_WARMUP_MAX_WAIT_MS = 9000;
 const AUTH_WARM_OK_TTL_MS = 2 * 60 * 1000;
-const AUTH_TIMEOUT_SEQUENCE = [20000, 35000, 50000];
+const AUTH_TIMEOUT_SEQUENCE = [10000, 15000];
 const warmPromises = new Map();
 const warmState = new Map();
 
@@ -124,7 +124,7 @@ export async function guardedAuthFetch(
     retryDelayMs = 700,
   } = {}
 ) {
-  const warmed = await warmAuthRuntime(warmupKey, { path: warmupPath });
+  let warmed = false;
   let lastError = null;
 
   for (let index = 0; index < timeoutSequence.length; index += 1) {
@@ -138,6 +138,11 @@ export async function guardedAuthFetch(
       lastError = err;
       if (!isRetriableAuthError(err) || index === timeoutSequence.length - 1) {
         throw toAuthFriendlyError(err, warmed, index + 1);
+      }
+      if (!warmed) {
+        warmAuthRuntime(warmupKey, { path: warmupPath }).then((ok) => {
+          warmed = Boolean(ok);
+        });
       }
       await sleep(retryDelayMs * (index + 1));
     }

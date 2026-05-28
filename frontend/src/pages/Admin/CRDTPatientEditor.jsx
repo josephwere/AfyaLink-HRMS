@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import crdt from '../../lib/afya-crdt-sdk';
-import { resolveApiBase } from "../../utils/networkBase";
+import { getApiBase } from "../../lib/api/client";
 
 export default function CRDTPatientEditor(){
   const [docObj, setDocObj] = useState(null);
@@ -38,7 +38,7 @@ export default function CRDTPatientEditor(){
 
   async function sync(){
     try {
-      const serverBase = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
+      const serverBase = getApiBase();
       await crdt.syncToServer(docObj, serverBase);
       const serverDoc = await crdt.pullFromServer('patients_demo', serverBase);
       if(serverDoc) setMsg('Pulled server doc with patients: ' + (serverDoc.patients? Object.keys(serverDoc.patients).length : 0));

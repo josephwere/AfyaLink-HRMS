@@ -15,9 +15,27 @@ function shouldPreferSameOriginProxy(configuredUrl, origin) {
   }
 }
 
+export function getRuntimeConfiguredApiBase() {
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    return (
+      import.meta.env.VITE_API_BASE_URL ||
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.NEXT_PUBLIC_API_BASE_URL ||
+      ""
+    );
+  }
+
+  if (typeof window !== "undefined") {
+    return window.__ENV__?.API_BASE_URL || window.__ENV__?.API_URL || "";
+  }
+
+  return "";
+}
+
 export function resolveApiBase(configuredBase = "") {
+  const preferredBase = configuredBase || getRuntimeConfiguredApiBase();
   if (typeof window === "undefined") {
-    return configuredBase || "http://localhost:5000";
+    return preferredBase || "http://localhost:5000";
   }
 
   const host = window.location.hostname;
@@ -25,9 +43,9 @@ export function resolveApiBase(configuredBase = "") {
   const isLocal = isLocalHostname(host);
   const fallback = isLocal ? `${window.location.protocol}//${host}:5000` : origin;
   const rawBase =
-    !isLocal && shouldPreferSameOriginProxy(configuredBase, origin)
+    !isLocal && shouldPreferSameOriginProxy(preferredBase, origin)
       ? origin
-      : configuredBase || fallback;
+      : preferredBase || fallback;
   const url = new URL(rawBase, origin);
   const pathname = url.pathname.replace(/\/$/, "");
   return `${url.origin}${pathname}`;

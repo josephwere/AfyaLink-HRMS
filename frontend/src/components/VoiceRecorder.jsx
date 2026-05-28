@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { resolveApiUrl } from "../utils/networkBase";
+import { fetchApi } from "../lib/api/client";
 
 export default function VoiceRecorder() {
   const [recording, setRecording] = useState(false);
@@ -17,17 +17,12 @@ export default function VoiceRecorder() {
       const blob = new Blob(chunksRef.current, { type: "audio/webm" });
       const fd = new FormData();
       fd.append("audio", blob, "voice.webm");
-      const res = await fetch(
-        resolveApiUrl("/api/ai/transcribe", import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || ""),
-        {
+      try {
+        const data = await fetchApi("/api/ai/transcribe", {
         method: "POST",
         body: fd,
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
         setTranscript(data.text || JSON.stringify(data));
-      } else {
+      } catch {
         setTranscript("Transcription failed");
       }
     };

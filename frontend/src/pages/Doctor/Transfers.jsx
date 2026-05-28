@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { downloadApiFile } from "../../lib/api/client";
 import { getTransferConsent, getTransferHandoverPackage, listTransfers } from "../../services/transferApi";
 import { formatDateOnly } from "../../utils/locale";
-import { resolveApiBase } from "../../utils/networkBase";
-
-const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 export default function Transfers() {
   const navigate = useNavigate();
@@ -172,7 +170,11 @@ export default function Transfers() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/fhir`, "_blank")}
+                  onClick={() =>
+                    downloadApiFile(`/api/transfers/${selected._id}/fhir`, {
+                      openInNewTab: true,
+                    })
+                  }
                 >
                   Open FHIR Bundle
                 </button>
@@ -180,7 +182,11 @@ export default function Transfers() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/hl7`, "_blank")}
+                  onClick={() =>
+                    downloadApiFile(`/api/transfers/${selected._id}/hl7`, {
+                      openInNewTab: true,
+                    })
+                  }
                 >
                   Open HL7 Export
                 </button>

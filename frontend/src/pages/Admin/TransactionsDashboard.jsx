@@ -12,10 +12,9 @@ import {
 } from "recharts";
 
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import { downloadApiFile } from "../../lib/api/client";
 import apiFetch from "../../utils/apiFetch";
-import { getAccessToken } from "../../utils/browserSession";
 import { formatCurrency, formatDateTime } from "../../utils/locale";
-import { resolveApiBase } from "../../utils/networkBase";
 
 const PROVIDERS = [
   { value: "", label: "All providers" },
@@ -67,32 +66,10 @@ export default function TransactionsDashboard() {
     const query = qs.toString();
 
     if (exportCsv) {
-      const base = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
-      const token = getAccessToken();
-      const headers = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const viewRole = localStorage.getItem("role_override");
-      const strictImpersonation = localStorage.getItem("strict_impersonation") === "1";
-      if (viewRole) {
-        headers["X-Afya-View-Role"] = viewRole;
-        if (strictImpersonation) headers["X-Afya-Strict-Impersonation"] = "1";
-      }
-
-      const res = await fetch(`${base}/api/transactions?${query}`, {
-        credentials: "include",
-        headers,
+      await downloadApiFile(`/api/transactions?${query}`, {
+        filename: "transactions.csv",
+        headers: { Accept: "text/csv" },
       });
-      if (!res.ok) throw new Error("Export failed.");
-      const blob = await res.blob();
-      const urlb = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = urlb;
-      a.download = "transactions.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(urlb);
       return;
     }
 

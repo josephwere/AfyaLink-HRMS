@@ -1,9 +1,9 @@
 import apiFetch from "../utils/apiFetch";
 
 const DEFAULT_WARMUP_TIMEOUT_MS = 4500;
-const DEFAULT_WARMUP_MAX_WAIT_MS = 45000;
+const DEFAULT_WARMUP_MAX_WAIT_MS = 9000;
 const DEFAULT_WARM_OK_TTL_MS = 2 * 60 * 1000;
-const DEFAULT_TIMEOUT_SEQUENCE = [26000, 38000];
+const DEFAULT_TIMEOUT_SEQUENCE = [9000, 14000];
 const RETRYABLE_ERROR_HINTS = [
   "timed out",
   "network error",
@@ -93,7 +93,7 @@ export async function guardedConsoleFetch(
   } = {}
 ) {
   const runtimeKey = warmupPath === "/readyz" ? "backend-ready" : warmupKey;
-  const warmed = await warmConsoleRuntime(runtimeKey, { path: warmupPath });
+  let warmed = false;
   let lastError = null;
 
   for (let attemptIndex = 0; attemptIndex < timeoutSequence.length; attemptIndex += 1) {
@@ -116,6 +116,11 @@ export async function guardedConsoleFetch(
         attemptIndex === timeoutSequence.length - 1
       ) {
         break;
+      }
+      if (!warmed) {
+        warmConsoleRuntime(runtimeKey, { path: warmupPath }).then((ok) => {
+          warmed = Boolean(ok);
+        });
       }
       await delay(900 * (attemptIndex + 1));
     }

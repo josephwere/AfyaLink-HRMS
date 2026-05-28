@@ -58,6 +58,10 @@ export function validateRuntimeEnv({ mode = process.env.NODE_ENV } = {}) {
     warnings.push("FRONTEND_URL uses http:// in production mode.");
   }
 
+  if (!process.env.CORS_ORIGIN) {
+    warnings.push("CORS_ORIGIN is not configured. Explicit production origin allowlisting is recommended.");
+  }
+
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
     warnings.push("Redis not configured. Realtime/queue coordination may be degraded.");
   }

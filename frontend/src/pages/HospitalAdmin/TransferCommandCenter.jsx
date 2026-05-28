@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
+import { downloadApiFile } from "../../lib/api/client";
 import {
   approveTransfer,
   completeTransfer,
@@ -16,10 +17,7 @@ import {
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { formatDateOnly } from "../../utils/locale";
-import { resolveApiBase } from "../../utils/networkBase";
 import { normalizeRole } from "../../utils/normalizeRole";
-
-const API_BASE = resolveApiBase(import.meta.env.VITE_API_URL || window.__ENV__?.API_URL || "");
 
 function scoreTone(score) {
   if (score >= 100) return "good";
@@ -572,7 +570,11 @@ export default function TransferCommandCenter() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/fhir`, "_blank")}
+                  onClick={() =>
+                    downloadApiFile(`/api/transfers/${selected._id}/fhir`, {
+                      openInNewTab: true,
+                    })
+                  }
                 >
                   Open FHIR Bundle
                 </button>
@@ -580,7 +582,11 @@ export default function TransferCommandCenter() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => window.open(`${API_BASE}/api/transfers/${selected._id}/hl7`, "_blank")}
+                  onClick={() =>
+                    downloadApiFile(`/api/transfers/${selected._id}/hl7`, {
+                      openInNewTab: true,
+                    })
+                  }
                 >
                   Open HL7 Export
                 </button>

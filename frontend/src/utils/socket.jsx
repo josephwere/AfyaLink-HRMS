@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { getAccessToken } from "./browserSession";
-import { assertSecureApiBase, resolveApiBase } from "./networkBase";
+import {
+  assertSecureApiBase,
+  getRuntimeConfiguredApiBase,
+  resolveApiBase,
+} from "./networkBase";
 
 const SocketContext = createContext(undefined);
 
@@ -13,7 +17,7 @@ export default function SocketProvider({ children }) {
     if (!token) return;
 
     const SOCKET_URL =
-      resolveApiBase(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || "");
+      resolveApiBase(import.meta.env.VITE_SOCKET_URL || getRuntimeConfiguredApiBase() || "");
     assertSecureApiBase(SOCKET_URL);
 
     const s = io(SOCKET_URL, {
