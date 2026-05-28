@@ -522,9 +522,6 @@ export default function FloatingAI() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open]);
 
-  if (loading) return null;
-  if (typeof document === "undefined") return null;
-
   const setFieldValue = (field, value) => {
     if (!value) return;
     if (field === "symptoms") setSymptoms((prev) => `${prev}${prev ? ", " : ""}${value}`.trim());
@@ -788,6 +785,8 @@ export default function FloatingAI() {
     },
     [hospitalScope]
   );
+
+  if (loading || typeof document === "undefined") return null;
 
   const saveProfile = async () => {
     setSaveBusy(true);

@@ -69,6 +69,32 @@ function isDbReady() {
   return mongoose.connection?.readyState === 1;
 }
 
+const READINESS_DB_PING_TIMEOUT_MS = Math.max(
+  Number(process.env.READINESS_DB_PING_TIMEOUT_MS || 1500) || 1500,
+  250
+);
+
+async function pingDbReadiness(timeoutMs = READINESS_DB_PING_TIMEOUT_MS) {
+  if (!isDbReady()) return false;
+
+  const admin = mongoose.connection?.db?.admin?.();
+  if (!admin || typeof admin.ping !== "function") return true;
+
+  let timer;
+  try {
+    await Promise.race([
+      admin.ping(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("DATABASE_PING_TIMEOUT")), timeoutMs);
+        timer.unref?.();
+      }),
+    ]);
+    return true;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function isSecureRequest(req) {
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
     .split(",")[0]
@@ -769,6 +795,15 @@ app.get("/readyz", async (_req, res) => {
       return res.status(503).json({
         ok: false,
         reason: "DATABASE_NOT_READY",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const dbReachable = await pingDbReadiness();
+    if (!dbReachable) {
+      return res.status(503).json({
+        ok: false,
+        reason: "DATABASE_PING_FAILED",
         timestamp: new Date().toISOString(),
       });
     }

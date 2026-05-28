@@ -56,6 +56,33 @@ const withTimeout = async (promise, ms = 1200, fallback = null) => {
   }
 };
 
+const AUTH_TIMEOUT_SENTINEL = Symbol("AUTH_TIMEOUT");
+const AUTH_RUNTIME_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_RUNTIME_TIMEOUT_MS || 6000) || 6000,
+  1000
+);
+const AUTH_DB_QUERY_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_DB_QUERY_TIMEOUT_MS || 5000) || 5000,
+  1000
+);
+
+const withAuthStepTimeout = async (step, operation, timeoutMs = AUTH_RUNTIME_TIMEOUT_MS) => {
+  const result = await withTimeout(
+    Promise.resolve().then(() => (typeof operation === "function" ? operation() : operation)),
+    timeoutMs,
+    AUTH_TIMEOUT_SENTINEL
+  );
+
+  if (result === AUTH_TIMEOUT_SENTINEL) {
+    const error = new Error(`${step} timed out`);
+    error.code = "AUTH_RUNTIME_TIMEOUT";
+    error.step = step;
+    throw error;
+  }
+
+  return result;
+};
+
 const fireAndForget = (promise) => {
   Promise.resolve(promise).catch(() => {});
 };
@@ -637,7 +664,15 @@ export const login = async (req, res) => {
             { nationalIdNumber: loginId.toUpperCase() },
           ],
         };
-    const user = await User.findOne(query).select("+password +twoFactorSecret +twoFactorRecoveryCodes");
+    const user = await withAuthStepTimeout(
+      "USER_LOOKUP",
+      () =>
+        User.findOne(query)
+          .select("+password +twoFactorSecret +twoFactorRecoveryCodes")
+          .maxTimeMS(AUTH_DB_QUERY_TIMEOUT_MS)
+          .exec(),
+      AUTH_DB_QUERY_TIMEOUT_MS + 500
+    );
 
     if (!user) {
       return res.status(401).json({
@@ -660,7 +695,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await withAuthStepTimeout("PASSWORD_COMPARE", () => user.matchPassword(password), 4000);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -668,7 +703,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const policy = await getRiskPolicy();
+    const policy = await withAuthStepTimeout("RISK_POLICY_LOOKUP", () => getRiskPolicy(), 3000);
     const risk = assessLoginRisk(req, user, policy);
     fireAndForget(persistRiskAssessment(user, risk));
     if (risk.level === "HIGH" || risk.level === "CRITICAL") {
@@ -694,10 +729,10 @@ export const login = async (req, res) => {
           ...(user.sessionSecurity || {}),
           restrictedUntil,
         };
-        await user.save();
+        await withAuthStepTimeout("RESTRICTED_SESSION_SAVE", () => user.save());
       }
 
-      await AuditLog.create({
+      fireAndForget(AuditLog.create({
         actorId: user._id,
         actorRole: user.role,
         action: "LOGIN_RISK_STEPUP_REQUIRED",
@@ -706,8 +741,8 @@ export const login = async (req, res) => {
         hospital: user.hospital || null,
         metadata: { score: risk.score, reasons: risk.reasons, ip: risk.ip },
         success: true,
-      });
-      await appendComplianceLedger({
+      }));
+      fireAndForget(appendComplianceLedger({
         actorId: user._id,
         actorRole: user.role,
         action: "LOGIN_RISK_STEPUP_REQUIRED",
@@ -715,7 +750,7 @@ export const login = async (req, res) => {
         resourceId: user._id,
         hospital: user.hospital || null,
         metadata: { score: risk.score, reasons: risk.reasons },
-      });
+      }));
 
       return res.json({
         success: true,
@@ -773,7 +808,7 @@ export const login = async (req, res) => {
       risk,
       source: "PASSWORD_LOGIN",
     });
-    await upsertTrustedDevice(user, risk);
+    await withAuthStepTimeout("TRUSTED_DEVICE_UPDATE", () => upsertTrustedDevice(user, risk), 1000);
     user.sessionSecurity = {
       ...(user.sessionSecurity || {}),
       lastLoginAt: new Date(),
@@ -784,7 +819,7 @@ export const login = async (req, res) => {
       restrictedUntil: null,
     };
     fireAndForget(withTimeout(redis.del(`risk:restricted:${String(user._id)}`), 1000, null));
-    await user.save();
+    await withAuthStepTimeout("USER_SESSION_SAVE", () => user.save());
 
     fireAndForget(
       AuditLog.create({
@@ -827,6 +862,14 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
+    if (err?.code === "AUTH_RUNTIME_TIMEOUT") {
+      console.error("LOGIN TIMEOUT:", err.step, err.message);
+      return res.status(503).json({
+        success: false,
+        msg: "Sign-in is temporarily unavailable. Please retry in a moment.",
+        code: "AUTH_RUNTIME_TIMEOUT",
+      });
+    }
     console.error("LOGIN ERROR:", err);
     res.status(500).json({
       success: false,

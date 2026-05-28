@@ -281,6 +281,35 @@ function LegacyRedirect({ to }) {
   return <Navigate to={target} replace />;
 }
 
+const FLOATING_AI_HIDDEN_PATHS = [
+  "/",
+  "/login",
+  "/register",
+  "/verify-email",
+  "/verify-success",
+  "/forgot-password",
+  "/reset-password",
+  "/careers",
+  "/terms",
+  "/privacy",
+  "/2fa",
+  "/step-up",
+  "/unauthorized",
+  "/403",
+];
+
+function FloatingAIGate() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading || !user) return null;
+  if (FLOATING_AI_HIDDEN_PATHS.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) {
+    return null;
+  }
+
+  return <FloatingAI />;
+}
+
 /* =====================================================
    APP
 ===================================================== */
@@ -573,7 +602,7 @@ export default function App() {
         <Route path="*" element={<div>404 — Page not found</div>} />
         </Routes>
         </Suspense>
-        <FloatingAI />
+        <FloatingAIGate />
       </AppErrorBoundary>
     </SocketProvider>
   );

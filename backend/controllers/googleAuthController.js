@@ -8,6 +8,32 @@ import { setRefreshTokenCookie } from "../utils/authCookies.js";
 import { createSessionId, registerRefreshSession } from "../utils/authSessions.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GOOGLE_AUTH_TIMEOUT_SENTINEL = Symbol("GOOGLE_AUTH_TIMEOUT");
+const GOOGLE_AUTH_TIMEOUT_MS = Math.max(
+  Number(process.env.GOOGLE_AUTH_TIMEOUT_MS || 6000) || 6000,
+  1000
+);
+
+const withGoogleAuthTimeout = async (step, operation, timeoutMs = GOOGLE_AUTH_TIMEOUT_MS) => {
+  let timer;
+  const result = await Promise.race([
+    Promise.resolve().then(() => (typeof operation === "function" ? operation() : operation)),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(GOOGLE_AUTH_TIMEOUT_SENTINEL), timeoutMs);
+      timer.unref?.();
+    }),
+  ]);
+
+  if (timer) clearTimeout(timer);
+
+  if (result === GOOGLE_AUTH_TIMEOUT_SENTINEL) {
+    const error = new Error(`${step} timed out`);
+    error.code = "GOOGLE_AUTH_TIMEOUT";
+    throw error;
+  }
+
+  return result;
+};
 
 export const googleLogin = async (req, res) => {
   try {
@@ -15,30 +41,36 @@ export const googleLogin = async (req, res) => {
     if (!credential) return res.status(400).json({ msg: "Missing Google credential" });
 
     // Verify Google token
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    const ticket = await withGoogleAuthTimeout("VERIFY_GOOGLE_TOKEN", () =>
+      client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      })
+    );
 
     const { sub: googleId, email, name, email_verified, picture } = ticket.getPayload();
 
     if (!email_verified) return res.status(403).json({ msg: "Google email not verified" });
 
     // Find existing user by googleId or email
-    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    let user = await withGoogleAuthTimeout("GOOGLE_USER_LOOKUP", () =>
+      User.findOne({ $or: [{ googleId }, { email }] }).maxTimeMS(5000).exec()
+    );
 
     if (!user) {
       // Create PATIENT only for completely new users
-      user = await User.create({
-        name,
-        email,
-        googleId,
-        authProvider: "google",
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
-        role: "PATIENT", // default for new users
-        avatar: picture,
-      });
+      user = await withGoogleAuthTimeout("GOOGLE_USER_CREATE", () =>
+        User.create({
+          name,
+          email,
+          googleId,
+          authProvider: "google",
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          role: "PATIENT", // default for new users
+          avatar: picture,
+        })
+      );
       queueBrevoContactSync(user, { source: "GOOGLE_LOGIN_CONTROLLER_REGISTER" });
     } else if (!user.googleId) {
       // Link existing account to Google
@@ -48,7 +80,7 @@ export const googleLogin = async (req, res) => {
         user.emailVerified = true;
         user.emailVerifiedAt = new Date();
       }
-      await user.save();
+      await withGoogleAuthTimeout("GOOGLE_USER_LINK_SAVE", () => user.save());
     }
 
     if (user.active === false) {
@@ -76,16 +108,18 @@ export const googleLogin = async (req, res) => {
       req,
       source: "GOOGLE_LOGIN",
     });
-    await user.save();
+    await withGoogleAuthTimeout("GOOGLE_SESSION_SAVE", () => user.save());
 
     // Audit log
-    await AuditLog.create({
+    await withGoogleAuthTimeout("GOOGLE_AUDIT_LOG", () =>
+      AuditLog.create({
       actorId: user._id,
       actorRole: user.role,
       action: "GOOGLE_LOGIN",
       resource: "User",
       resourceId: user._id,
-    });
+      })
+    );
 
     setRefreshTokenCookie(res, refreshToken);
     // Respond with token
@@ -106,6 +140,10 @@ export const googleLogin = async (req, res) => {
       },
     });
   } catch (err) {
+    if (err?.code === "GOOGLE_AUTH_TIMEOUT") {
+      console.error("Google login timeout:", err.message);
+      return res.status(503).json({ msg: "Google sign-in is temporarily unavailable. Please retry." });
+    }
     console.error("Google login error:", err);
     res.status(401).json({ msg: "Invalid Google token" });
   }
