@@ -462,41 +462,14 @@ export default function AppShell() {
     if (!user) return;
     setReminders((prev) => mergeReminderSets(buildProfileReminders(user, navigate), prev));
 
-    apiFetch("/api/auth/session-risk", { _skipUiProgress: true, cacheTtlMs: 10000 })
-      .then((sr) => {
-        if (!mounted || !sr) return;
-        if (sr.restriction || sr.requiresStepUp) {
-          setSecurityNotice({
-            code: sr.restriction ? "SESSION_RESTRICTED" : "STEP_UP_REQUIRED",
-            message:
-              sr.restriction?.reason === "CRITICAL_LOGIN_RISK"
-                ? "Your session is temporarily restricted due to critical login risk. Verify step-up to unlock."
-                : "Step-up verification is required for sensitive actions.",
-          });
-          setReminders((prev) => {
-            const without = (prev || []).filter((r) => r.id !== "session-stepup");
-            return [
-              {
-                id: "session-stepup",
-                text:
-                  sr.restriction?.reason === "CRITICAL_LOGIN_RISK"
-                    ? "Session restricted. Click to complete step-up verification."
-                    : "Sensitive actions require step-up verification. Click to verify.",
-                action: () => navigate("/step-up"),
-              },
-              ...without,
-            ];
-          });
-        } else {
-          setSecurityNotice(null);
-        }
-      })
-      .catch(() => {});
-
     const backgroundTask = scheduleBackgroundTask(async () => {
+      const sessionUserResult = await apiFetch("/api/auth/me", {
+        _skipUiProgress: true,
+        cacheTtlMs: 15000,
+      }).catch(() => null);
       const dashEndpoint = roleDashboardEndpoint(user?.role);
-      const [profileResult, twofaResult, dashboardResult] = await Promise.allSettled([
-        apiFetch("/api/profile", { _skipUiProgress: true, cacheTtlMs: 15000 }),
+      const [sessionRiskResult, twofaResult, dashboardResult] = await Promise.allSettled([
+        apiFetch("/api/auth/session-risk", { _skipUiProgress: true, cacheTtlMs: 10000 }),
         apiFetch("/api/2fa/status", { _skipUiProgress: true, cacheTtlMs: 15000 }),
         dashEndpoint
           ? apiFetch(dashEndpoint, { _skipUiProgress: true, cacheTtlMs: 15000 })
@@ -505,8 +478,9 @@ export default function AppShell() {
 
       if (!mounted) return;
 
-      const profile =
-        profileResult.status === "fulfilled" && profileResult.value ? profileResult.value : user;
+      const profile = sessionUserResult || user;
+      const sessionRisk =
+        sessionRiskResult.status === "fulfilled" ? sessionRiskResult.value : null;
       const twofa = twofaResult.status === "fulfilled" ? twofaResult.value : null;
       const dash = dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
 
@@ -523,6 +497,26 @@ export default function AppShell() {
           text: "Enable two-factor authentication for stronger security.",
           action: () => navigate("/app/platform/account/profile"),
         });
+      }
+
+      if (sessionRisk?.restriction || sessionRisk?.requiresStepUp) {
+        setSecurityNotice({
+          code: sessionRisk.restriction ? "SESSION_RESTRICTED" : "STEP_UP_REQUIRED",
+          message:
+            sessionRisk.restriction?.reason === "CRITICAL_LOGIN_RISK"
+              ? "Your session is temporarily restricted due to critical login risk. Verify step-up to unlock."
+              : "Step-up verification is required for sensitive actions.",
+        });
+        nextList.unshift({
+          id: "session-stepup",
+          text:
+            sessionRisk.restriction?.reason === "CRITICAL_LOGIN_RISK"
+              ? "Session restricted. Click to complete step-up verification."
+              : "Sensitive actions require step-up verification. Click to verify.",
+          action: () => navigate("/step-up"),
+        });
+      } else {
+        setSecurityNotice(null);
       }
 
       startTransition(() => {

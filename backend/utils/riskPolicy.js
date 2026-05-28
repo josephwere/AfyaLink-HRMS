@@ -21,8 +21,12 @@ const TTL_MS = 60 * 1000;
 
 export async function getRiskPolicy() {
   if (Date.now() - cache.at < TTL_MS) return cache.value;
-  const doc = await RiskPolicy.findOne({ key: "GLOBAL" }).lean();
-  cache = { value: doc || DEFAULT_POLICY, at: Date.now() };
+  try {
+    const doc = await RiskPolicy.findOne({ key: "GLOBAL" }).lean();
+    cache = { value: doc || DEFAULT_POLICY, at: Date.now() };
+  } catch {
+    cache = { value: cache.value || DEFAULT_POLICY, at: Date.now() };
+  }
   return cache.value;
 }
 
@@ -65,4 +69,3 @@ export async function upsertRiskPolicy(payload, updatedBy = null) {
   cache = { value: policy, at: Date.now() };
   return policy;
 }
-

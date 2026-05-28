@@ -65,6 +65,10 @@ const AUTH_DB_QUERY_TIMEOUT_MS = Math.max(
   Number(process.env.AUTH_DB_QUERY_TIMEOUT_MS || 5000) || 5000,
   1000
 );
+const AUTH_REDIS_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_REDIS_TIMEOUT_MS || 900) || 900,
+  250
+);
 
 const withAuthStepTimeout = async (step, operation, timeoutMs = AUTH_RUNTIME_TIMEOUT_MS) => {
   const result = await withTimeout(
@@ -85,6 +89,15 @@ const withAuthStepTimeout = async (step, operation, timeoutMs = AUTH_RUNTIME_TIM
 
 const fireAndForget = (promise) => {
   Promise.resolve(promise).catch(() => {});
+};
+
+const safeRedisGet = async (key, fallback = null) => {
+  try {
+    const result = await withTimeout(redis.get(key), AUTH_REDIS_TIMEOUT_MS, AUTH_TIMEOUT_SENTINEL);
+    return result === AUTH_TIMEOUT_SENTINEL ? fallback : result;
+  } catch {
+    return fallback;
+  }
 };
 
 const setStepUpOtp = async (userId, otp) => {
@@ -1365,13 +1378,19 @@ export const verifyStepUpOtp = async (req, res) => {
 
 export const getSessionRisk = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user =
+      req.user ||
+      (await withAuthStepTimeout(
+        "session risk user lookup",
+        () => User.findById(req.user.id),
+        AUTH_DB_QUERY_TIMEOUT_MS
+      ));
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    const policy = await getRiskPolicy();
+    const policy = await withTimeout(getRiskPolicy(), AUTH_DB_QUERY_TIMEOUT_MS, null);
     const risk = assessLoginRisk(req, user, policy);
-    const stepUpRaw = await redis.get(`stepup:last:${String(user._id)}`);
-    const restrictionRaw = await redis.get(`risk:restricted:${String(user._id)}`);
+    const stepUpRaw = await safeRedisGet(`stepup:last:${String(user._id)}`);
+    const restrictionRaw = await safeRedisGet(`risk:restricted:${String(user._id)}`);
     const stepUpVerifiedAt = stepUpRaw || req.tokenPayload?.stepUpVerifiedAt || null;
     let restriction = null;
     if (restrictionRaw) {
