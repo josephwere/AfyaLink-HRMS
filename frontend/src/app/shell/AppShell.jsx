@@ -203,12 +203,13 @@ function buildOfflineMetricsSignature({ deviceId, userId, snapshot }) {
 export default function AppShell() {
   const { user } = useAuth();
   const { settings } = useSystemSettings();
-  const { uiPreferences, setUiPreferences } = useUiPreferences();
+  const { uiPreferences, setUiPreferences, flushUiPreferences } = useUiPreferences();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
+  const bootstrapPrefsPendingRef = useRef(false);
   const offlineMetricsStateRef = useRef({
     inFlight: false,
     lastSignature: "",
@@ -250,7 +251,8 @@ export default function AppShell() {
     if (!currentPrefs.currency) patch.currency = defaults.currency;
 
     if (Object.keys(patch).length) {
-      setUiPreferences(patch, { immediate: true });
+      bootstrapPrefsPendingRef.current = true;
+      setUiPreferences(patch, { persist: false });
     }
   }, [
     setUiPreferences,
@@ -467,6 +469,15 @@ export default function AppShell() {
         _skipUiProgress: true,
         cacheTtlMs: 15000,
       }).catch(() => null);
+      if (sessionUserResult && bootstrapPrefsPendingRef.current && !user?.offlineSession) {
+        const flushed = await flushUiPreferences(undefined, {
+          keepalive: true,
+          timeoutMs: 4000,
+        }).catch(() => false);
+        if (flushed) {
+          bootstrapPrefsPendingRef.current = false;
+        }
+      }
       const dashEndpoint = roleDashboardEndpoint(user?.role);
       const [sessionRiskResult, twofaResult, dashboardResult] = await Promise.allSettled([
         apiFetch("/api/auth/session-risk", { _skipUiProgress: true, cacheTtlMs: 10000 }),
@@ -528,7 +539,7 @@ export default function AppShell() {
       mounted = false;
       cancelBackgroundTask(backgroundTask);
     };
-  }, [navigate, user?.id, user?.role]);
+  }, [flushUiPreferences, navigate, user?.id, user?.offlineSession, user?.role]);
 
   const dismissReminder = (id) => {
     const next = Array.from(new Set([...(dismissed || []), id]));
