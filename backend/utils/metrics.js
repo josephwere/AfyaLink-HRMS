@@ -4,6 +4,9 @@ const metricsState = {
   httpRequestsTotal: new Map(),
   httpRequestDurationMs: new Map(),
   httpRequestDurationBuckets: new Map(),
+  customCounters: new Map(),
+  customGauges: new Map(),
+  customMetricMeta: new Map(),
 };
 
 const LATENCY_BUCKETS_MS = [50, 100, 200, 400, 800, 1200, 2000, 5000];
@@ -68,6 +71,74 @@ function parseLatencyKey(key) {
   return { method, route };
 }
 
+function normalizeLabels(labels = {}) {
+  return Object.entries(labels || {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .sort(([a], [b]) => String(a).localeCompare(String(b)));
+}
+
+function serializeLabels(labels = {}) {
+  return JSON.stringify(normalizeLabels(labels));
+}
+
+function deserializeLabels(serialized = "[]") {
+  try {
+    return JSON.parse(serialized);
+  } catch {
+    return [];
+  }
+}
+
+function customMetricKey(name, labels = {}) {
+  return `${name}|${serializeLabels(labels)}`;
+}
+
+function parseCustomMetricKey(key) {
+  const separatorIndex = String(key).indexOf("|");
+  if (separatorIndex === -1) {
+    return { name: String(key), serializedLabels: "[]" };
+  }
+  return {
+    name: String(key).slice(0, separatorIndex),
+    serializedLabels: String(key).slice(separatorIndex + 1) || "[]",
+  };
+}
+
+function ensureCustomMetricMeta(name, type, help) {
+  const safeName = String(name || "").trim();
+  if (!safeName) return;
+  if (!metricsState.customMetricMeta.has(safeName)) {
+    metricsState.customMetricMeta.set(safeName, {
+      type,
+      help: String(help || safeName).trim(),
+    });
+  }
+}
+
+export function incrementMetricCounter(name, labels = {}, value = 1, help = "") {
+  const safeName = String(name || "").trim();
+  const safeValue = Number(value);
+  if (!safeName || !Number.isFinite(safeValue)) return;
+  ensureCustomMetricMeta(safeName, "counter", help);
+  const key = customMetricKey(safeName, labels);
+  metricsState.customCounters.set(key, (metricsState.customCounters.get(key) || 0) + safeValue);
+}
+
+export function setMetricGauge(name, value, labels = {}, help = "") {
+  const safeName = String(name || "").trim();
+  const safeValue = Number(value);
+  if (!safeName || !Number.isFinite(safeValue)) return;
+  ensureCustomMetricMeta(safeName, "gauge", help);
+  metricsState.customGauges.set(customMetricKey(safeName, labels), safeValue);
+}
+
+function formatLabelEntries(entries = []) {
+  if (!entries.length) return "";
+  return entries
+    .map(([key, value]) => `${key}="${escapeLabelValue(value)}"`)
+    .join(",");
+}
+
 export function renderPrometheusMetrics() {
   const lines = [];
   const uptimeSec = Math.floor((Date.now() - startedAt) / 1000);
@@ -112,6 +183,38 @@ export function renderPrometheusMetrics() {
         `afyalink_http_request_duration_ms_bucket{${labels},le="${escapeLabelValue(bound)}"} ${count}`
       );
     }
+  }
+
+  const emittedMetricHeaders = new Set();
+
+  for (const [key, value] of metricsState.customCounters.entries()) {
+    const { name, serializedLabels } = parseCustomMetricKey(key);
+    const meta = metricsState.customMetricMeta.get(name) || {
+      type: "counter",
+      help: name,
+    };
+    if (!emittedMetricHeaders.has(name)) {
+      lines.push(`# HELP ${name} ${meta.help}`);
+      lines.push(`# TYPE ${name} ${meta.type}`);
+      emittedMetricHeaders.add(name);
+    }
+    const labelText = formatLabelEntries(deserializeLabels(serializedLabels));
+    lines.push(labelText ? `${name}{${labelText}} ${value}` : `${name} ${value}`);
+  }
+
+  for (const [key, value] of metricsState.customGauges.entries()) {
+    const { name, serializedLabels } = parseCustomMetricKey(key);
+    const meta = metricsState.customMetricMeta.get(name) || {
+      type: "gauge",
+      help: name,
+    };
+    if (!emittedMetricHeaders.has(name)) {
+      lines.push(`# HELP ${name} ${meta.help}`);
+      lines.push(`# TYPE ${name} ${meta.type}`);
+      emittedMetricHeaders.add(name);
+    }
+    const labelText = formatLabelEntries(deserializeLabels(serializedLabels));
+    lines.push(labelText ? `${name}{${labelText}} ${value}` : `${name} ${value}`);
   }
 
   lines.push("");

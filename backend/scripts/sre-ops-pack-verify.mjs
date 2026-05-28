@@ -33,6 +33,8 @@ const requiredAlerts = [
   "AfyaLinkAvailabilityBurnSlow",
   "AfyaLinkApiP95LatencyHigh",
   "AfyaLinkLoginP95LatencyHigh",
+  "AfyaLinkReadinessFailing",
+  "AfyaLinkAuthBackendUnavailable",
 ];
 
 const missingAlerts = requiredAlerts.filter((name) => !alertText.includes(`alert: ${name}`));

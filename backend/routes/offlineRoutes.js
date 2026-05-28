@@ -2,6 +2,7 @@ import express from 'express';
 import { integrationQueue } from '../services/integrationQueue.js';
 import Audit from '../models/Audit.js';
 import OfflineClientMetric from "../models/OfflineClientMetric.js";
+import { incrementMetricCounter } from "../utils/metrics.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 
@@ -38,6 +39,12 @@ router.post("/metrics", protect, async (req, res) => {
   try {
     const { deviceId, snapshot } = req.body || {};
     if (!deviceId || typeof deviceId !== "string") {
+      incrementMetricCounter(
+        "afyalink_offline_metrics_ingest_total",
+        { outcome: "invalid" },
+        1,
+        "Offline client metrics ingest outcomes."
+      );
       return res.status(400).json({ ok: false, message: "deviceId is required" });
     }
 
@@ -57,6 +64,12 @@ router.post("/metrics", protect, async (req, res) => {
       previous.signature === signature &&
       now - Number(previous.updatedAt || 0) < METRICS_DEDUPE_WINDOW_MS
     ) {
+      incrementMetricCounter(
+        "afyalink_offline_metrics_ingest_total",
+        { outcome: "skipped" },
+        1,
+        "Offline client metrics ingest outcomes."
+      );
       return res.json({ ok: true, skipped: true });
     }
 
@@ -89,8 +102,20 @@ router.post("/metrics", protect, async (req, res) => {
       { upsert: true, setDefaultsOnInsert: true, new: true }
     );
 
+    incrementMetricCounter(
+      "afyalink_offline_metrics_ingest_total",
+      { outcome: "saved" },
+      1,
+      "Offline client metrics ingest outcomes."
+    );
     res.json({ ok: true });
   } catch (err) {
+    incrementMetricCounter(
+      "afyalink_offline_metrics_ingest_total",
+      { outcome: "failed" },
+      1,
+      "Offline client metrics ingest outcomes."
+    );
     res.status(500).json({ ok: false, message: err.message || "Failed to save metrics" });
   }
 });

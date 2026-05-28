@@ -34,12 +34,21 @@ Official references:
 ## 4. Synthetic monitoring and alerting
 
 - The scheduled GitHub workflow `.github/workflows/synthetic-live-smoke.yml` runs `backend/scripts/live-smoke-suite.mjs` every 15 minutes.
+- The smoke suite now checks:
+  - frontend SPA route delivery for `/login` and `/app/platform/home/index`
+  - frontend same-origin health/API paths
+  - direct backend Render health paths when `SYNTHETIC_BACKEND_BASE_URL` is configured
+  - authenticated role dashboards for each configured smoke account
+- Each run can write a machine-readable artifact at `backend/artifacts/ops/synthetic-live-smoke-summary.json` for incident review and trend comparison.
 - Set these secrets before enabling it:
   - `SYNTHETIC_SUPER_ADMIN_IDENTIFIER`
   - `SYNTHETIC_SUPER_ADMIN_PASSWORD`
   - optional `SYNTHETIC_HOSPITAL_ADMIN_IDENTIFIER`
   - optional `SYNTHETIC_HOSPITAL_ADMIN_PASSWORD`
-- Set `SYNTHETIC_BASE_URL` as a repository variable if production uses a different hostname.
+- Set these repository variables:
+  - `SYNTHETIC_FRONTEND_BASE_URL`
+  - `SYNTHETIC_BACKEND_BASE_URL`
+  - `SYNTHETIC_BASE_URL` only if you need a backwards-compatible single base URL override
 - `REQUIRED_ROLE_SUITES=SUPER_ADMIN` ensures the workflow fails if the dashboard smoke account is missing.
 
 For true multi-region coverage, run the same smoke suite from at least three probe locations such as:
@@ -59,6 +68,9 @@ Wire alerts to the SLOs in `backend/ops/slo/afyalink-slo.yml`, especially:
 - `/api/system-settings/public`
 - `/api/auth/login`
 - one authenticated dashboard route
+- `afyalink_db_connection_ready`
+- `afyalink_auth_backend_unavailable_total`
+- `afyalink_offline_metrics_ingest_total`
 
 ## 5. Localization rollout
 

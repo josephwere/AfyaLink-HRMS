@@ -2,6 +2,7 @@
 
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { incrementMetricCounter } from "../utils/metrics.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCookies.js";
 import { sanitizeString } from "../utils/securitySanitizers.js";
@@ -68,6 +69,12 @@ export const refreshToken = async (req, res) => {
       );
     } catch (error) {
       console.error("Refresh user lookup error:", error.message);
+      incrementMetricCounter(
+        "afyalink_auth_backend_unavailable_total",
+        { source: "refresh_lookup" },
+        1,
+        "Authentication requests blocked by backend dependency failures."
+      );
       return res.status(503).json({
         msg: "Authentication is temporarily unavailable. Please try again.",
         code: "AUTH_BACKEND_UNAVAILABLE",
@@ -122,6 +129,12 @@ export const refreshToken = async (req, res) => {
       );
     } catch (error) {
       console.error("Refresh session save error:", error.message);
+      incrementMetricCounter(
+        "afyalink_auth_backend_unavailable_total",
+        { source: "refresh_save" },
+        1,
+        "Authentication requests blocked by backend dependency failures."
+      );
       return res.status(503).json({
         msg: "Authentication is temporarily unavailable. Please try again.",
         code: "AUTH_BACKEND_UNAVAILABLE",
@@ -145,6 +158,14 @@ export const refreshToken = async (req, res) => {
   } catch (err) {
     console.error("Refresh error:", err);
     const status = err?.code === "AUTH_BACKEND_TIMEOUT" ? 503 : 500;
+    if (status === 503) {
+      incrementMetricCounter(
+        "afyalink_auth_backend_unavailable_total",
+        { source: "refresh_timeout" },
+        1,
+        "Authentication requests blocked by backend dependency failures."
+      );
+    }
     res.status(status).json({
       msg:
         status === 503

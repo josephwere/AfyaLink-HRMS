@@ -12,7 +12,11 @@ import errorHandler from "./middleware/errorHandler.js";
 import { trace } from "./middleware/traceMiddleware.js";
 import { denyAudit } from "./middleware/denyAudit.js";
 import { metricsMiddleware } from "./middleware/metricsMiddleware.js";
-import { renderPrometheusMetrics } from "./utils/metrics.js";
+import {
+  incrementMetricCounter,
+  renderPrometheusMetrics,
+  setMetricGauge,
+} from "./utils/metrics.js";
 import { authLimiter, aiGatewayLimiter } from "./middleware/trafficGuards.js";
 import { isAllowedOrigin } from "./utils/corsOrigins.js";
 
@@ -83,6 +87,29 @@ let dbReachabilityState = {
   inFlight: null,
 };
 
+setMetricGauge(
+  "afyalink_db_reachable",
+  0,
+  {},
+  "Whether the database passed the last readiness ping."
+);
+setMetricGauge(
+  "afyalink_readiness_status",
+  0,
+  {},
+  "Whether the last readiness probe completed successfully."
+);
+
+function recordReadinessFailure(reason) {
+  incrementMetricCounter(
+    "afyalink_readiness_failures_total",
+    { reason: String(reason || "UNKNOWN") },
+    1,
+    "Readiness probe failures by reason."
+  );
+  setMetricGauge("afyalink_readiness_status", 0);
+}
+
 async function pingDbReadiness(timeoutMs = READINESS_DB_PING_TIMEOUT_MS) {
   if (!isDbReady()) return false;
 
@@ -111,6 +138,7 @@ async function getDbReachability({ force = false } = {}) {
       reachable: false,
       inFlight: null,
     };
+    setMetricGauge("afyalink_db_reachable", 0);
     return false;
   }
 
@@ -129,6 +157,7 @@ async function getDbReachability({ force = false } = {}) {
         reachable: Boolean(reachable),
         inFlight: null,
       };
+      setMetricGauge("afyalink_db_reachable", dbReachabilityState.reachable ? 1 : 0);
       return dbReachabilityState.reachable;
     })
     .catch(() => {
@@ -137,6 +166,7 @@ async function getDbReachability({ force = false } = {}) {
         reachable: false,
         inFlight: null,
       };
+      setMetricGauge("afyalink_db_reachable", 0);
       return false;
     });
 
@@ -844,6 +874,7 @@ app.get("/healthz", (_req, res) => {
 app.get("/readyz", async (_req, res) => {
   try {
     if (!isDbReady()) {
+      recordReadinessFailure("DATABASE_NOT_READY");
       return res.status(503).json({
         ok: false,
         reason: "DATABASE_NOT_READY",
@@ -853,6 +884,7 @@ app.get("/readyz", async (_req, res) => {
 
     const dbReachable = await getDbReachability({ force: true });
     if (!dbReachable) {
+      recordReadinessFailure("DATABASE_PING_FAILED");
       return res.status(503).json({
         ok: false,
         reason: "DATABASE_PING_FAILED",
@@ -860,6 +892,7 @@ app.get("/readyz", async (_req, res) => {
       });
     }
 
+    setMetricGauge("afyalink_readiness_status", 1);
     return res.json({
       ok: true,
       service: "afyalink-backend",
@@ -867,6 +900,7 @@ app.get("/readyz", async (_req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    recordReadinessFailure("READINESS_CHECK_FAILED");
     return res.status(503).json({
       ok: false,
       reason: "READINESS_CHECK_FAILED",

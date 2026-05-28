@@ -3,6 +3,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
+import { incrementMetricCounter } from "../utils/metrics.js";
 import { isPrivilegedOverrideAllowed, isReadOnlyOverrideAllowed } from "./readOnlyOverride.js";
 import { resolveEffectiveRole } from "./effectiveRole.js";
 import { redis } from "../utils/redis.js";
@@ -43,7 +44,13 @@ function isJwtError(error) {
   );
 }
 
-function authBackendUnavailable(res) {
+function authBackendUnavailable(res, source = "unknown") {
+  incrementMetricCounter(
+    "afyalink_auth_backend_unavailable_total",
+    { source: String(source || "unknown") },
+    1,
+    "Authentication requests blocked by backend dependency failures."
+  );
   return res.status(503).json({
     message: "Authentication is temporarily unavailable. Please try again.",
     code: "AUTH_BACKEND_UNAVAILABLE",
@@ -137,7 +144,7 @@ const authenticate = async (req, res, next) => {
     } catch (error) {
       if (isJwtError(error)) throw error;
       console.error("Auth user lookup error:", error.message);
-      return authBackendUnavailable(res);
+      return authBackendUnavailable(res, "authenticate_lookup");
     }
     if (!user) {
       return res.status(401).json({ message: "User not found" });
@@ -215,11 +222,11 @@ const authenticate = async (req, res, next) => {
   } catch (error) {
     if (!isJwtError(error) && error?.code === "AUTH_BACKEND_TIMEOUT") {
       console.error("Auth backend timeout:", error.message);
-      return authBackendUnavailable(res);
+      return authBackendUnavailable(res, "authenticate_timeout");
     }
     if (!isJwtError(error) && error?.code === "AUTH_BACKEND_UNAVAILABLE") {
       console.error("Auth backend unavailable:", error.message);
-      return authBackendUnavailable(res);
+      return authBackendUnavailable(res, "authenticate_dependency");
     }
     console.error("Auth error:", error.message);
     return res.status(401).json({ message: "Not authorized" });

@@ -1,8 +1,18 @@
 import jwt from "jsonwebtoken";
 import CallSession from "../models/CallSession.js";
 import Patient from "../models/Patient.js";
+import { incrementMetricCounter, setMetricGauge } from "./metrics.js";
 
 let io;
+let activeSocketConnections = 0;
+
+setMetricGauge(
+  "afyalink_socket_connections_active",
+  0,
+  {},
+  "Number of active Socket.IO client connections."
+);
+
 export const initSocket = (serverIo) => {
   io = serverIo;
   io.use((socket, next) => {
@@ -23,6 +33,14 @@ export const initSocket = (serverIo) => {
   });
   io.on('connection', (socket) => {
     console.log('Socket connected', socket.id);
+    activeSocketConnections += 1;
+    setMetricGauge("afyalink_socket_connections_active", activeSocketConnections);
+    incrementMetricCounter(
+      "afyalink_socket_connections_total",
+      { event: "connected" },
+      1,
+      "Socket.IO connection lifecycle events."
+    );
     socket.on('joinRoom', ({room}) => {
       socket.join(room);
     });
@@ -113,8 +131,13 @@ export const initSocket = (serverIo) => {
       };
       io.to(roomKey).emit("consultation:chat", payload);
     });
-    socket.on('disconnect', () => {
-      // handle disconnect
+    socket.on('disconnect', (reason) => {
+      activeSocketConnections = Math.max(0, activeSocketConnections - 1);
+      setMetricGauge("afyalink_socket_connections_active", activeSocketConnections);
+      incrementMetricCounter("afyalink_socket_connections_total", {
+        event: "disconnected",
+        reason: String(reason || "unknown"),
+      });
     });
   });
 };

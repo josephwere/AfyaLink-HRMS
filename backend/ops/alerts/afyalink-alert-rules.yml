@@ -19,6 +19,42 @@ groups:
         annotations:
           summary: "p95 latency above 1.5s"
 
+      - alert: AfyaLinkReadinessFailing
+        expr: sum(increase(afyalink_readiness_failures_total[10m])) >= 3
+        for: 5m
+        labels:
+          severity: critical
+          service: afyalink-backend
+        annotations:
+          summary: "Readiness probe is failing repeatedly"
+
+      - alert: AfyaLinkDbDisconnected
+        expr: max_over_time(afyalink_db_connection_ready[5m]) < 1
+        for: 5m
+        labels:
+          severity: critical
+          service: afyalink-backend
+        annotations:
+          summary: "MongoDB connection has been unavailable for at least 5 minutes"
+
+      - alert: AfyaLinkAuthBackendUnavailable
+        expr: sum(increase(afyalink_auth_backend_unavailable_total[10m])) >= 3
+        for: 5m
+        labels:
+          severity: warning
+          service: afyalink-backend
+        annotations:
+          summary: "Authentication is failing due to backend dependency instability"
+
+      - alert: AfyaLinkOfflineMetricsFailuresHigh
+        expr: sum(increase(afyalink_offline_metrics_ingest_total{outcome="failed"}[10m])) >= 5
+        for: 10m
+        labels:
+          severity: warning
+          service: afyalink-backend
+        annotations:
+          summary: "Offline metrics ingestion is failing repeatedly"
+
       - alert: AfyaLinkQueueBacklogHigh
         expr: sum(queue_backlog_total) > 500
         for: 10m

@@ -18,11 +18,22 @@ slo:
     sli: endpoint_latency
     endpoint: /readyz
 
+  - name: spa-route-availability
+    objective: 99.9
+    sli: synthetic_pass_ratio
+    notes: Direct-open route checks for /login and /app/platform/home/index from the live synthetic smoke suite.
+
   - name: public-settings-latency-p95
     objective: 95
     target: 700ms
     sli: endpoint_latency
     endpoint: /api/system-settings/public
+
+  - name: offline-metrics-latency-p95
+    objective: 95
+    target: 900ms
+    sli: endpoint_latency
+    endpoint: /api/offline/metrics
 
   - name: dashboard-latency-p95
     objective: 95
@@ -46,4 +57,4 @@ slo:
   - name: synthetic-smoke-pass-rate
     objective: 99.5
     sli: synthetic_pass_ratio
-    notes: Public endpoints plus one authenticated role dashboard from each configured synthetic probe.
+    notes: Frontend SPA routes, backend health checks, and authenticated role dashboards from each configured synthetic probe.

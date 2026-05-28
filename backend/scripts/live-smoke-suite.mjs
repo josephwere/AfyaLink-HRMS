@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import fs from "fs";
+import path from "path";
+
 /**
  * Live smoke suite for the deployed app/backend.
  *
@@ -16,7 +19,11 @@
  */
 
 const BASE_URL = process.env.BASE_URL || "https://afya-link-hrms-4.vercel.app";
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || BASE_URL;
+const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL || "";
 const PROBE_LABEL = process.env.PROBE_LABEL || "default";
+const PROBE_REGION = process.env.PROBE_REGION || "global-default";
+const SUMMARY_PATH = process.env.SMOKE_SUMMARY_PATH || "";
 const REQUIRED_ROLE_SUITES = new Set(
   String(process.env.REQUIRED_ROLE_SUITES || "")
     .split(",")
@@ -82,6 +89,93 @@ const ROLE_SUITES = [
   },
 ];
 
+const FRONTEND_PUBLIC_CASES = [
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/login",
+    timeoutMs: 20000,
+    latencyBudgetMs: 6000,
+    accept: "text/html",
+    expectedContentType: "text/html",
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/app/platform/home/index",
+    timeoutMs: 20000,
+    latencyBudgetMs: 6000,
+    accept: "text/html",
+    expectedContentType: "text/html",
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/health",
+    timeoutMs: 15000,
+    latencyBudgetMs: 4000,
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/healthz",
+    timeoutMs: 20000,
+    latencyBudgetMs: 4000,
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/readyz",
+    timeoutMs: 25000,
+    latencyBudgetMs: 5000,
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/api/health",
+    timeoutMs: 25000,
+    latencyBudgetMs: 5000,
+  },
+  {
+    label: "FRONTEND",
+    method: "GET",
+    path: "/api/system-settings/public",
+    timeoutMs: 25000,
+    latencyBudgetMs: 6000,
+  },
+];
+
+const BACKEND_PUBLIC_CASES = [
+  {
+    label: "BACKEND",
+    method: "GET",
+    path: "/health",
+    timeoutMs: 15000,
+    latencyBudgetMs: 3000,
+  },
+  {
+    label: "BACKEND",
+    method: "GET",
+    path: "/healthz",
+    timeoutMs: 20000,
+    latencyBudgetMs: 3000,
+  },
+  {
+    label: "BACKEND",
+    method: "GET",
+    path: "/readyz",
+    timeoutMs: 25000,
+    latencyBudgetMs: 4000,
+  },
+  {
+    label: "BACKEND",
+    method: "GET",
+    path: "/api/health",
+    timeoutMs: 25000,
+    latencyBudgetMs: 4000,
+  },
+];
+
 function joinUrl(base, path) {
   return `${String(base || "").replace(/\/+$/, "")}${String(path || "").startsWith("/") ? "" : "/"}${path}`;
 }
@@ -129,8 +223,19 @@ function printLine({ label, method, path, status, ms, ok, note = "" }) {
   console.log(`[${mark}] ${label.padEnd(22)} ${method.padEnd(4)} ${path.padEnd(40)} ${safeStatus.padEnd(4)} ${formatMs(ms)}${note ? ` ${note}` : ""}`);
 }
 
+function recordResult(results, result) {
+  results.push(result);
+  printLine(result);
+  return result;
+}
+
+function appendNote(existingNote = "", nextNote = "") {
+  if (!nextNote) return existingNote;
+  return existingNote ? `${existingNote} ${nextNote}` : nextNote;
+}
+
 async function login({ label, identifier, password }) {
-  const url = joinUrl(BASE_URL, "/api/auth/login");
+  const url = joinUrl(FRONTEND_BASE_URL, "/api/auth/login");
   const { res, ms, aborted, error } = await timedFetch(
     url,
     {
@@ -142,39 +247,67 @@ async function login({ label, identifier, password }) {
   );
 
   if (!res) {
-    printLine({
-      label,
-      method: "POST",
-      path: "/api/auth/login",
-      status: null,
-      ms,
+    return {
       ok: false,
-      note: aborted ? "(timeout)" : `(error: ${error?.message || "unknown"})`,
-    });
-    return { ok: false, token: "" };
+      canContinue: false,
+      token: "",
+      result: {
+        label,
+        method: "POST",
+        path: "/api/auth/login",
+        status: null,
+        ms,
+        ok: false,
+        note: aborted ? "(timeout)" : `(error: ${error?.message || "unknown"})`,
+      },
+    };
   }
 
   const data = await readJsonSafe(res);
   const ok = res.ok && Boolean(data?.accessToken || data?.requires2FA);
-  printLine({
-    label,
-    method: "POST",
-    path: "/api/auth/login",
-    status: res.status,
-    ms,
-    ok: ok && !data?.requires2FA,
-    note: data?.requires2FA ? "(2fa-required)" : "",
-  });
-
-  if (!res.ok || data?.requires2FA) {
-    return { ok: false, token: "" };
+  const latencyBudgetMs = 10000;
+  let note = data?.requires2FA ? "(2fa-required)" : "";
+  let finalOk = ok && !data?.requires2FA;
+  if (ms > latencyBudgetMs) {
+    finalOk = false;
+    note = appendNote(note, `(over-budget>${latencyBudgetMs}ms)`);
   }
 
-  return { ok: true, token: String(data.accessToken || "") };
+  if (!res.ok || data?.requires2FA) {
+    return {
+      ok: false,
+      canContinue: false,
+      token: "",
+      result: {
+        label,
+        method: "POST",
+        path: "/api/auth/login",
+        status: res.status,
+        ms,
+        ok: finalOk,
+        note,
+      },
+    };
+  }
+
+  return {
+    ok: finalOk,
+    canContinue: true,
+    token: String(data.accessToken || ""),
+    result: {
+      label,
+      method: "POST",
+      path: "/api/auth/login",
+      status: res.status,
+      ms,
+      ok: finalOk,
+      note,
+    },
+  };
 }
 
-async function authedCase({ label, token, method, path, timeoutMs }) {
-  const url = joinUrl(BASE_URL, path);
+async function authedCase({ label, token, method, path, timeoutMs, latencyBudgetMs = 0 }) {
+  const url = joinUrl(FRONTEND_BASE_URL, path);
   const { res, ms, aborted, error } = await timedFetch(
     url,
     {
@@ -187,7 +320,7 @@ async function authedCase({ label, token, method, path, timeoutMs }) {
   );
 
   if (!res) {
-    printLine({
+    return {
       label,
       method,
       path,
@@ -195,41 +328,68 @@ async function authedCase({ label, token, method, path, timeoutMs }) {
       ms,
       ok: false,
       note: aborted ? "(timeout)" : `(error: ${error?.message || "unknown"})`,
-    });
-    return false;
+    };
   }
 
-  const ok = res.status >= 200 && res.status < 400;
-  printLine({
+  let ok = res.status >= 200 && res.status < 400;
+  let note = "";
+  if (latencyBudgetMs > 0 && ms > latencyBudgetMs) {
+    ok = false;
+    note = `(over-budget>${latencyBudgetMs}ms)`;
+  }
+  return {
     label,
     method,
     path,
     status: res.status,
     ms,
     ok,
-  });
-  return ok;
+    note,
+  };
 }
 
-async function unauthCase({ method, path, timeoutMs = 15000 }) {
-  const url = joinUrl(BASE_URL, path);
-  const { res, ms, aborted, error } = await timedFetch(url, { method }, timeoutMs);
+async function publicCase({
+  baseUrl,
+  label,
+  method,
+  path,
+  timeoutMs = 15000,
+  latencyBudgetMs = 0,
+  accept = "application/json",
+  expectedContentType = "",
+}) {
+  const url = joinUrl(baseUrl, path);
+  const { res, ms, aborted, error } = await timedFetch(
+    url,
+    {
+      method,
+      headers: { Accept: accept },
+    },
+    timeoutMs
+  );
   if (!res) {
-    printLine({
-      label: "PUBLIC",
+    return {
+      label,
       method,
       path,
       status: null,
       ms,
       ok: false,
       note: aborted ? "(timeout)" : `(error: ${error?.message || "unknown"})`,
-    });
-    return false;
+    };
   }
 
   let ok = res.status >= 200 && res.status < 400;
   let note = "";
   let fullMs = ms;
+
+  if (expectedContentType) {
+    const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+    if (!contentType.includes(String(expectedContentType).toLowerCase())) {
+      ok = false;
+      note = appendNote(note, `(content-type=${contentType || "missing"})`);
+    }
+  }
 
   if (ok && path === "/api/system-settings/public") {
     const bodyStart = Date.now();
@@ -269,20 +429,51 @@ async function unauthCase({ method, path, timeoutMs = 15000 }) {
     }
   }
 
-  printLine({ label: "PUBLIC", method, path, status: res.status, ms: fullMs, ok, note });
-  return ok;
+  if (latencyBudgetMs > 0 && fullMs > latencyBudgetMs) {
+    ok = false;
+    note = appendNote(note, `(over-budget>${latencyBudgetMs}ms)`);
+  }
+
+  return { label, method, path, status: res.status, ms: fullMs, ok, note };
+}
+
+function writeSummary(results, failures, executedRoleSuites) {
+  if (!SUMMARY_PATH) return;
+  const payload = {
+    ok: failures === 0,
+    probeLabel: PROBE_LABEL,
+    probeRegion: PROBE_REGION,
+    frontendBaseUrl: FRONTEND_BASE_URL,
+    backendBaseUrl: BACKEND_BASE_URL || null,
+    checkedAt: new Date().toISOString(),
+    failures,
+    executedRoleSuites,
+    results,
+  };
+  const targetDir = path.dirname(SUMMARY_PATH);
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
 async function run() {
-  console.log(`Live smoke suite [${PROBE_LABEL}] against ${BASE_URL}\n`);
+  console.log(`Live smoke suite [${PROBE_LABEL}] frontend=${FRONTEND_BASE_URL}${BACKEND_BASE_URL ? ` backend=${BACKEND_BASE_URL}` : ""}\n`);
 
-  await unauthCase({ method: "GET", path: "/healthz", timeoutMs: 20000 });
-  await unauthCase({ method: "GET", path: "/readyz", timeoutMs: 25000 });
-  await unauthCase({ method: "GET", path: "/api/health", timeoutMs: 25000 });
-  await unauthCase({ method: "GET", path: "/api/system-settings/public", timeoutMs: 25000 });
+  const results = [];
+
+  for (const c of FRONTEND_PUBLIC_CASES) {
+    const result = await publicCase({ ...c, baseUrl: FRONTEND_BASE_URL });
+    recordResult(results, result);
+  }
+
+  if (BACKEND_BASE_URL && BACKEND_BASE_URL !== FRONTEND_BASE_URL) {
+    for (const c of BACKEND_PUBLIC_CASES) {
+      const result = await publicCase({ ...c, baseUrl: BACKEND_BASE_URL });
+      recordResult(results, result);
+    }
+  }
   console.log("");
 
-  let failures = 0;
+  let failures = results.filter((item) => !item.ok).length;
   let executedRoleSuites = 0;
 
   for (const suite of ROLE_SUITES) {
@@ -300,21 +491,26 @@ async function run() {
 
     executedRoleSuites += 1;
     const loginRes = await login({ label: suite.label, identifier, password });
-    if (!loginRes.ok) {
+    recordResult(results, loginRes.result);
+    if (!loginRes.result.ok) {
       failures += 1;
+    }
+    if (!loginRes.canContinue) {
       console.log("");
       continue;
     }
 
     for (const c of suite.endpoints) {
-      const ok = await authedCase({
+      const result = await authedCase({
         label: suite.label,
         token: loginRes.token,
         method: c.method,
         path: c.path,
         timeoutMs: c.timeoutMs || 20000,
+        latencyBudgetMs: c.latencyBudgetMs || 0,
       });
-      if (!ok) failures += 1;
+      recordResult(results, result);
+      if (!result.ok) failures += 1;
     }
     console.log("");
   }
@@ -332,6 +528,8 @@ async function run() {
     failures += 1;
     console.error("No role suites were executed. Check ROLE_FILTER and credential secrets.");
   }
+
+  writeSummary(results, failures, executedRoleSuites);
 
   if (failures > 0) {
     console.error(`FAIL live-smoke-suite: ${failures} failing checks`);

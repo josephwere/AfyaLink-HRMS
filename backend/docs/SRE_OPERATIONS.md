@@ -16,9 +16,12 @@
 ## Monitoring Required
 - Request rate, error rate, latency per endpoint.
 - DB query latency and slow query count.
+- DB connection readiness and readiness-probe failure count.
 - Queue depth + retry count + DLQ count.
 - Websocket connection health.
 - Connector heartbeat and ingestion failures.
+- Auth backend dependency failures during login/refresh/bootstrap.
+- Offline metrics ingestion failures and abnormal dedupe/skip spikes.
 
 ## Incident Management
 ### Severity
