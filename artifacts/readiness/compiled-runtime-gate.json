@@ -1,0 +1,92 @@
+{
+  "generatedAt": "2026-04-22T17:37:38.929Z",
+  "pass": false,
+  "failures": [
+    "Protection docs present",
+    "README protection model aligned",
+    "Runbook distribution rule aligned",
+    "Global readiness doc aligned",
+    "Orchestrator build script present",
+    "Kernel Go module present",
+    "ML requirements present",
+    "Kernel compiled build path present",
+    "NeuroPack tooling present",
+    "NeuroPack example path present"
+  ],
+  "checks": [
+    {
+      "name": "Protection docs present",
+      "pass": false,
+      "details": {
+        "required": [
+          "README.md",
+          "docs/architecture/hybrid-protection-deployment-v1.md",
+          "docs/architecture/compiled-runtime-deployment-checklist-v1.md"
+        ]
+      }
+    },
+    {
+      "name": "README protection model aligned",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Runbook distribution rule aligned",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Global readiness doc aligned",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Frontend production bundle script present",
+      "pass": true,
+      "details": {}
+    },
+    {
+      "name": "Orchestrator build script present",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Kernel Go module present",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "ML requirements present",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Kernel compiled build path present",
+      "pass": false,
+      "details": {
+        "expected": [
+          "kernel/go.mod",
+          "kernel/cmd",
+          "kernel/api/main.go or kernel/cmd/neuroedge"
+        ]
+      }
+    },
+    {
+      "name": "NeuroPack tooling present",
+      "pass": false,
+      "details": {}
+    },
+    {
+      "name": "Build commands configured",
+      "pass": true,
+      "details": {
+        "note": "Set COMPILED_RUNTIME_GATE_RUN_BUILDS=true to execute frontend/orchestrator/kernel/ml verification."
+      }
+    },
+    {
+      "name": "NeuroPack example path present",
+      "pass": false,
+      "details": {}
+    }
+  ]
+}

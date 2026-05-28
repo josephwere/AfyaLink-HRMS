@@ -65,6 +65,9 @@ const authenticate = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+    if (user.active === false) {
+      return res.status(401).json({ message: "Account inactive" });
+    }
 
     const actualRole = user.role;
     let effectiveRole = resolveEffectiveRole(req, actualRole);
@@ -159,6 +162,7 @@ const authenticateOptional = async (req, _res, next) => {
 
     const user = await User.findById(decoded.id).select("-password");
     if (!user) return next();
+    if (user.active === false) return next();
 
     const actualRole = user.role;
     let effectiveRole = resolveEffectiveRole(req, actualRole);
