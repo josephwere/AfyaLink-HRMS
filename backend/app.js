@@ -73,6 +73,15 @@ const READINESS_DB_PING_TIMEOUT_MS = Math.max(
   Number(process.env.READINESS_DB_PING_TIMEOUT_MS || 1500) || 1500,
   250
 );
+const DB_REACHABILITY_CACHE_MS = Math.max(
+  Number(process.env.DB_REACHABILITY_CACHE_MS || 5000) || 5000,
+  250
+);
+let dbReachabilityState = {
+  checkedAt: 0,
+  reachable: false,
+  inFlight: null,
+};
 
 async function pingDbReadiness(timeoutMs = READINESS_DB_PING_TIMEOUT_MS) {
   if (!isDbReady()) return false;
@@ -93,6 +102,50 @@ async function pingDbReadiness(timeoutMs = READINESS_DB_PING_TIMEOUT_MS) {
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+async function getDbReachability({ force = false } = {}) {
+  if (!isDbReady()) {
+    dbReachabilityState = {
+      checkedAt: Date.now(),
+      reachable: false,
+      inFlight: null,
+    };
+    return false;
+  }
+
+  const now = Date.now();
+  if (!force && dbReachabilityState.inFlight) {
+    return dbReachabilityState.inFlight;
+  }
+  if (!force && now - dbReachabilityState.checkedAt < DB_REACHABILITY_CACHE_MS) {
+    return dbReachabilityState.reachable;
+  }
+
+  const probe = pingDbReadiness()
+    .then((reachable) => {
+      dbReachabilityState = {
+        checkedAt: Date.now(),
+        reachable: Boolean(reachable),
+        inFlight: null,
+      };
+      return dbReachabilityState.reachable;
+    })
+    .catch(() => {
+      dbReachabilityState = {
+        checkedAt: Date.now(),
+        reachable: false,
+        inFlight: null,
+      };
+      return false;
+    });
+
+  dbReachabilityState = {
+    ...dbReachabilityState,
+    inFlight: probe,
+  };
+
+  return probe;
 }
 
 function isSecureRequest(req) {
@@ -247,10 +300,10 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (!req.path.startsWith("/api")) return next();
   if (req.path === "/api/health") return next();
-  if (isDbReady()) return next();
+  if (await getDbReachability()) return next();
 
   return res.status(503).json({
     ok: false,
@@ -790,8 +843,7 @@ app.get("/healthz", (_req, res) => {
 
 app.get("/readyz", async (_req, res) => {
   try {
-    const dbReady = mongoose.connection?.readyState === 1;
-    if (!dbReady) {
+    if (!isDbReady()) {
       return res.status(503).json({
         ok: false,
         reason: "DATABASE_NOT_READY",
@@ -799,7 +851,7 @@ app.get("/readyz", async (_req, res) => {
       });
     }
 
-    const dbReachable = await pingDbReadiness();
+    const dbReachable = await getDbReachability({ force: true });
     if (!dbReachable) {
       return res.status(503).json({
         ok: false,
