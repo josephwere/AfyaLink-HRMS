@@ -113,7 +113,7 @@ Use this for hospitals moving from an existing HIS/EMR/LIS/PACS into AfyaLink wi
 Set these in the Render dashboard for the backend service, then redeploy:
 
 ```env
-NEUROEDGE_API_BASE=https://api.neuroedge.dev
+NEUROEDGE_API_BASE=https://neuroedge-400s.onrender.com
 NEUROEDGE_API_KEY=replace_in_render_dashboard
 NEUROEDGE_CHAT_MODEL=
 NEUROEDGE_TIMEOUT_MS=30000

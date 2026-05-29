@@ -4,7 +4,7 @@ Use `backend/.env.example` as the baseline and set these values in production se
 
 ```env
 # NeuroEdge core
-NEUROEDGE_API_BASE=https://api.neuroedge.dev
+NEUROEDGE_API_BASE=https://neuroedge-400s.onrender.com
 NEUROEDGE_API_BASE_FAILOVER=
 NEUROEDGE_API_KEY=replace_with_secure_token
 # Optional: if using bearer token instead of api key

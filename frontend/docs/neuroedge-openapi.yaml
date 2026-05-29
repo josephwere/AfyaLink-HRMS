@@ -6,7 +6,7 @@ info:
     Canonical AI API for AfyaLink integration. This API is designed for async-safe,
     auditable, policy-guarded healthcare operations.
 servers:
-  - url: https://api.neuroedge.dev
+  - url: https://neuroedge-400s.onrender.com
 security:
   - bearerAuth: []
 tags:
