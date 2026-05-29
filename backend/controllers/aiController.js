@@ -3,7 +3,7 @@ import Patient from "../models/Patient.js";
 import Prescription from "../models/Prescription.js";
 import User from "../models/User.js";
 import { predictNextAvailableSlot, simpleRiskScore } from '../utils/aiUtils.js';
-import { extractDocumentBase64, assistantChat } from "../services/aiAdapter.js";
+import { extractDocumentBase64, assistantChat, assistantChatStream, assistantFeedback } from "../services/aiAdapter.js";
 import { logAudit } from "../services/auditService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
@@ -149,6 +149,10 @@ function trimText(value, max = 2400) {
   return String(value || "")
     .trim()
     .slice(0, max);
+}
+
+function normalizeAssistantRating(value) {
+  return String(value || "").toLowerCase() === "down" ? "down" : "up";
 }
 
 function normalizeStringList(value, { maxItems = 24, maxLength = 120 } = {}) {
@@ -513,6 +517,142 @@ export const getAssistantChat = async (req, res, next) => {
       success: true,
       answer,
       provider: out?.provider || "unknown",
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const streamAssistantChatResponse = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+    const profile = getScopedAssistantProfile(req.user, hospitalKey);
+    const message = String(req.body?.message || "").trim();
+    const userMessage = String(req.body?.userMessage || message).trim();
+    const pageContext = String(req.body?.pageContext || "").trim();
+    if (!message) {
+      return res.status(400).json({ message: "message is required" });
+    }
+
+    res.status(200);
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (typeof res.flushHeaders === "function") {
+      res.flushHeaders();
+    }
+
+    let finalAnswer = "";
+    const writeFrame = (frame) => {
+      res.write(`${JSON.stringify(frame)}\n`);
+      if (typeof res.flush === "function") {
+        res.flush();
+      }
+    };
+
+    const out = await assistantChatStream({
+      message,
+      role,
+      pageContext,
+      healthProfile: profile,
+      onChunk: (delta) => {
+        const text = String(delta || "");
+        if (!text) return;
+        finalAnswer += text;
+        writeFrame({ type: "chunk", delta: text });
+      },
+    });
+
+    const answer = String(finalAnswer || out?.text || out?.answer || "No response generated").trim();
+    try {
+      const toAppend = [
+        normalizeChatMessage("user", userMessage),
+        normalizeChatMessage("assistant", answer),
+      ];
+      await appendAssistantMemory(req.user, hospitalKey, toAppend);
+    } catch (err) {
+      console.warn("Assistant memory save failed:", err?.message || err);
+    }
+
+    writeFrame({
+      type: "done",
+      answer,
+      provider: out?.provider || "unknown",
+    });
+    return res.end();
+  } catch (err) {
+    if (res.headersSent) {
+      res.write(
+        `${JSON.stringify({
+          type: "error",
+          message: err?.message || "Assistant stream failed",
+        })}\n`
+      );
+      return res.end();
+    }
+    return next(err);
+  }
+};
+
+export const submitAssistantChatFeedback = async (req, res, next) => {
+  try {
+    const rating = normalizeAssistantRating(req.body?.rating);
+    const message = trimText(req.body?.message, 4000);
+    const answer = trimText(req.body?.answer, 12000);
+    const reason = trimText(req.body?.reason, 1000);
+    const pageContext = trimText(req.body?.pageContext, 2400);
+    const hospitalKey = normalizeHospitalKey(req.user?.hospitalId || req.headers["x-hospital"]);
+
+    if (!message || !answer) {
+      return res.status(400).json({ message: "message and answer are required" });
+    }
+
+    const result = await assistantFeedback({
+      message,
+      answer,
+      rating,
+      reason,
+      metadata: {
+        pageContext,
+        hospitalKey,
+        userId: req.user?.id || req.user?._id || null,
+        role: req.user?.role || null,
+      },
+    });
+
+    await logAudit({
+      actorId: req.user?._id || req.user?.id,
+      actorRole: req.user?.role,
+      action: "AI_ASSISTANT_FEEDBACK_RECORDED",
+      resource: "ai_assistant_feedback",
+      hospital: req.user?.hospital || req.user?.hospitalId || null,
+      after: {
+        hospitalKey,
+        rating,
+        provider: result?.provider || "unknown",
+        accepted: result?.accepted !== false,
+        degraded: result?.degraded === true,
+        reason,
+        pageContext,
+        messagePreview: message.slice(0, 240),
+      },
+      ip: req.ip,
+      userAgent: req.get?.("user-agent"),
+      success: true,
+      error: null,
+      metadata: {
+        response: result?.response || null,
+      },
+    });
+
+    return res.json({
+      success: true,
+      rating,
+      provider: result?.provider || "unknown",
+      accepted: result?.accepted !== false,
+      degraded: result?.degraded === true,
     });
   } catch (err) {
     return next(err);

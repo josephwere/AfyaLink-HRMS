@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
-import { chatAssistant, clearAssistantMemory, getAssistantContext } from "../../services/assistantApi";
+import {
+  clearAssistantMemory,
+  getAssistantContext,
+  streamAssistantChat,
+  submitAssistantFeedback,
+} from "../../services/assistantApi";
 import { useAuth } from "../../utils/auth";
 import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
 import { getPreferredAssetSource, markAssetBroken } from "../../utils/assetFallbacks";
@@ -16,6 +21,7 @@ export default function Chatbot() {
   const [status, setStatus] = useState("");
   const [listening, setListening] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
+  const [feedbackByMessage, setFeedbackByMessage] = useState({});
   const recognitionRef = useRef(null);
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
@@ -97,19 +103,38 @@ export default function Chatbot() {
     text: String(text || "").trim(),
     createdAt: extras.createdAt || new Date().toISOString(),
     pending: Boolean(extras.pending),
+    provider: extras.provider || "",
+    sourcePrompt: extras.sourcePrompt || "",
   });
 
   const replaceMessage = (id, nextText, extras = {}) => {
     const clean = String(nextText || "").trim();
+    setMessages((prev) =>
+      prev.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              text: clean || entry.text,
+              pending: extras.pending ?? false,
+              createdAt: extras.createdAt || new Date().toISOString(),
+              provider: extras.provider || entry.provider || "",
+              sourcePrompt: extras.sourcePrompt || entry.sourcePrompt || "",
+            }
+          : entry
+      )
+    );
+  };
+
+  const appendMessageText = (id, delta) => {
+    const clean = String(delta || "");
     if (!clean) return;
     setMessages((prev) =>
       prev.map((entry) =>
         entry.id === id
           ? {
               ...entry,
-              text: clean,
-              pending: false,
-              createdAt: extras.createdAt || new Date().toISOString(),
+              text: `${entry.text || ""}${clean}`,
+              pending: true,
             }
           : entry
       )
@@ -125,16 +150,33 @@ export default function Chatbot() {
     ].join("\n");
   };
 
+  const getSourcePromptForEntry = (entryId) => {
+    const index = messages.findIndex((entry) => entry.id === entryId);
+    if (index < 0) return "";
+    for (let cursor = index; cursor >= 0; cursor -= 1) {
+      const candidate = messages[cursor];
+      if (candidate?.role === "assistant" && candidate?.id === entryId && candidate?.sourcePrompt) {
+        return candidate.sourcePrompt;
+      }
+      if (candidate?.role === "user" && candidate?.text) {
+        return candidate.text;
+      }
+    }
+    return "";
+  };
+
   const submit = async () => {
     const prompt = String(message || "").trim();
     if (!prompt) return;
     const pendingId = nextMessageId("assistant");
+    const routeContext = typeof window !== "undefined" ? window.location.pathname : "";
     setMessages((prev) => [
       ...prev,
       createMessage("user", prompt),
-      createMessage("assistant", `${aiName} is preparing a reply.`, {
+      createMessage("assistant", "", {
         id: pendingId,
         pending: true,
+        sourcePrompt: prompt,
       }),
     ]);
     setMessage("");
@@ -142,19 +184,89 @@ export default function Chatbot() {
     setError("");
     setStatus("");
     try {
-      const out = await chatAssistant({
+      const out = await streamAssistantChat(
+        {
         message: prompt,
         userMessage: prompt,
-        pageContext: "",
-      });
-      const answer = out?.answer || out?.text || "No response generated.";
-      replaceMessage(pendingId, answer);
+          pageContext: routeContext,
+        },
+        {
+          onChunk: (delta) => {
+            appendMessageText(pendingId, delta);
+          },
+          onDone: ({ answer, provider }) => {
+            replaceMessage(pendingId, answer || "No response generated.", {
+              provider,
+              pending: false,
+              sourcePrompt: prompt,
+            });
+          },
+        }
+      );
+
+      if (!String(out?.answer || "").trim()) {
+        replaceMessage(pendingId, "No response generated.", {
+          provider: out?.provider || "unknown",
+          pending: false,
+          sourcePrompt: prompt,
+        });
+      }
     } catch (e) {
       const fallback = buildOfflineReply(prompt);
       replaceMessage(pendingId, fallback);
       setStatus(e?.message || "Assistant offline. Showing an offline fallback response.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFeedback = async (entry, rating) => {
+    const targetRating = rating === "down" ? "down" : "up";
+    if (!entry?.id || !entry?.text) return;
+    const sourcePrompt = entry.sourcePrompt || getSourcePromptForEntry(entry.id);
+    if (!sourcePrompt) {
+      setStatus("Open a new reply before sending feedback on older history.");
+      return;
+    }
+    const current = feedbackByMessage[entry.id];
+    if (current?.loading || current?.savedRating === targetRating) return;
+
+    setFeedbackByMessage((prev) => ({
+      ...prev,
+      [entry.id]: {
+        savedRating: prev[entry.id]?.savedRating || "",
+        loading: true,
+        error: "",
+      },
+    }));
+
+    try {
+      await submitAssistantFeedback({
+        rating: targetRating,
+        message: sourcePrompt,
+        answer: entry.text,
+        pageContext: typeof window !== "undefined" ? window.location.pathname : "",
+        reason: "",
+      });
+      setFeedbackByMessage((prev) => ({
+        ...prev,
+        [entry.id]: {
+          savedRating: targetRating,
+          loading: false,
+          error: "",
+        },
+      }));
+      setStatus(targetRating === "up" ? "Thanks. Feedback saved." : "Feedback saved. We’ll use it to improve replies.");
+    } catch (err) {
+      setFeedbackByMessage((prev) => ({
+        ...prev,
+        [entry.id]: {
+          savedRating: prev[entry.id]?.savedRating || "",
+          loading: false,
+          error: err?.message || "Failed to save feedback.",
+        },
+      }));
+      setStatus(err?.message || "Failed to save feedback.");
     }
   };
 
@@ -278,7 +390,38 @@ export default function Chatbot() {
         {messages.map((entry) => (
           <div key={entry.id} className={`ai-chat-bubble ${entry.role}${entry.pending ? " pending" : ""}`}>
             <div className="ai-chat-role">{entry.role === "user" ? "You" : aiName}</div>
-            <div className="ai-chat-text">{entry.text}</div>
+            <div className="ai-chat-text">
+              {entry.pending && !entry.text ? `${aiName} is preparing a response...` : entry.text}
+            </div>
+            {entry.role === "assistant" && entry.text && !entry.pending ? (
+              <div className="ai-chat-feedback">
+                <button
+                  type="button"
+                  className={`ai-chat-feedback-btn${
+                    feedbackByMessage[entry.id]?.savedRating === "up" ? " is-active" : ""
+                  }`}
+                  onClick={() => handleFeedback(entry, "up")}
+                  disabled={feedbackByMessage[entry.id]?.loading}
+                >
+                  Helpful
+                </button>
+                <button
+                  type="button"
+                  className={`ai-chat-feedback-btn${
+                    feedbackByMessage[entry.id]?.savedRating === "down" ? " is-active" : ""
+                  }`}
+                  onClick={() => handleFeedback(entry, "down")}
+                  disabled={feedbackByMessage[entry.id]?.loading}
+                >
+                  Needs work
+                </button>
+                {feedbackByMessage[entry.id]?.loading ? (
+                  <span className="ai-chat-feedback-note">Saving…</span>
+                ) : feedbackByMessage[entry.id]?.error ? (
+                  <span className="ai-chat-feedback-note is-error">{feedbackByMessage[entry.id]?.error}</span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

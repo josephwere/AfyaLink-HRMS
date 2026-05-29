@@ -6,10 +6,13 @@ info:
     Canonical AI API for AfyaLink integration. This API is designed for async-safe,
     auditable, policy-guarded healthcare operations.
 servers:
-  - url: https://neuroedge.internal
+  - url: https://api.neuroedge.dev
 security:
   - bearerAuth: []
 tags:
+  - name: Chat
+  - name: Feedback
+  - name: Health
   - name: Ingestion
   - name: Retrieval
   - name: Interop
@@ -18,6 +21,70 @@ tags:
   - name: Guardrails
   - name: Jobs
 paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Upstream health check
+      responses:
+        '200':
+          description: Service is reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/chat/completions:
+    post:
+      tags: [Chat]
+      summary: OpenAI-compatible chat completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+  /v1/chat/stream:
+    post:
+      tags: [Chat]
+      summary: Streaming chat response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Streaming chat response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /v1/feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit human feedback for a prior AI response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '200':
+          description: Feedback accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
   /v1/extract:
     post:
       tags: [Ingestion]
@@ -212,6 +279,54 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant, tool]
+        content:
+          oneOf:
+            - type: string
+            - type: array
+    ChatCompletionRequest:
+      type: object
+      required: [messages]
+      properties:
+        model:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id: { type: string }
+        object: { type: string }
+        created: { type: integer }
+        choices:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    FeedbackRequest:
+      type: object
+      required: [rating, message, answer]
+      properties:
+        category: { type: string }
+        rating:
+          type: string
+          enum: [up, down]
+        score:
+          type: number
+        message: { type: string }
+        answer: { type: string }
+        reason: { type: string }
+        metadata:
+          type: object
+          additionalProperties: true
     JobAccepted:
       type: object
       required: [jobId, status]

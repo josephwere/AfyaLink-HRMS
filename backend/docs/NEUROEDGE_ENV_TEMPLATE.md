@@ -23,9 +23,8 @@ NEUROEDGE_CIRCUIT_COOLDOWN_MS=15000
 ```
 
 ## Rollout Safety
-- For the current pilot integration, AfyaLink uses NeuroEdge `POST /v1/chat/completions` for assistant and text-first extraction workflows.
+- For the current pilot integration, AfyaLink uses NeuroEdge `POST /v1/chat/completions`, `POST /v1/chat/stream`, `POST /v1/feedback`, and `GET /health`.
 - NeuroEdge upstream health for this pilot is `GET /health`.
-- `POST /v1/chat/stream` and `POST /v1/feedback` are available in the pilot contract but are not yet wired into AfyaLink runtime paths.
 - `PILOT /v1/documents/*` and `PILOT /v1/creator/*` remain later-ready upstream APIs and are not yet integrated in AfyaLink.
 - Keep `NEUROEDGE_API_BASE` unset in lower environments until gateway smoke tests pass.
 - Enable access only for platform roles first (`SUPER_ADMIN`, `SYSTEM_ADMIN`, `DEVELOPER`), then widen.

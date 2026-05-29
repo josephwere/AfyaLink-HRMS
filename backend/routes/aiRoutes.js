@@ -10,6 +10,8 @@ import {
   updateAssistantProfile,
   getAssistantAdvice,
   getAssistantChat,
+  streamAssistantChatResponse,
+  submitAssistantChatFeedback,
   summarizeAssistantPage,
   clearAssistantMemory,
   logAssistantAutofillAudit,
@@ -42,6 +44,8 @@ router.get("/assistant/context", getAssistantContext);
 router.put("/assistant/profile", updateAssistantProfile);
 router.post("/assistant/advice", getAssistantAdvice);
 router.post("/assistant/chat", getAssistantChat);
+router.post("/assistant/chat/stream", streamAssistantChatResponse);
+router.post("/assistant/feedback", submitAssistantChatFeedback);
 router.post("/assistant/summarize", summarizeAssistantPage);
 router.post("/assistant/clear-memory", clearAssistantMemory);
 router.post("/assistant/autofill-audit", logAssistantAutofillAudit);

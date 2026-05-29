@@ -15,7 +15,7 @@ export default function MedicalAssistant() {
           <div>
             <h1 className="premium-shell-title">Medical Assistant</h1>
             <p className="premium-shell-subtitle">
-              Real-time clinical assistant chat for {user?.name || "current user"} with live socket updates and premium conversation framing.
+              Real-time clinical assistant chat for {user?.name || "current user"} with authenticated streaming responses and safe feedback capture.
             </p>
           </div>
           <div className="premium-shell-meta">

@@ -80,6 +80,164 @@ function extractCompletionText(payload) {
   return "";
 }
 
+function extractStreamDelta(payload) {
+  const deltaContent = payload?.choices?.[0]?.delta?.content;
+  if (typeof deltaContent === "string" && deltaContent.trim()) {
+    return deltaContent;
+  }
+  if (Array.isArray(deltaContent)) {
+    const combined = deltaContent
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object") return part.text || part.content || "";
+        return "";
+      })
+      .join("");
+    if (combined.trim()) return combined;
+  }
+  return extractCompletionText(payload);
+}
+
+function buildStreamMeta(baseMeta = {}, additions = {}) {
+  return {
+    ...baseMeta,
+    ...additions,
+  };
+}
+
+function emitStreamChunk(onChunk, chunk, meta = {}) {
+  const text = typeof chunk === "string" ? chunk : "";
+  if (!text) return;
+  onChunk?.(text, meta);
+}
+
+function finalizeStreamFrame(frameText, onChunk, baseMeta = {}) {
+  const trimmed = String(frameText || "").trim();
+  if (!trimmed || trimmed === "[DONE]") return { text: "", done: trimmed === "[DONE]" };
+
+  const payload = parseTextAsJsonSafe(trimmed);
+  const text = payload ? extractStreamDelta(payload) : trimmed;
+  emitStreamChunk(onChunk, text, buildStreamMeta(baseMeta, { payload }));
+  return { text, payload, done: false };
+}
+
+async function consumeReadableStream(response, { onChunk } = {}) {
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  const isEventStream = contentType.includes("text/event-stream");
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    const text = await response.text();
+    const payload = parseTextAsJsonSafe(text);
+    const finalText = payload ? extractCompletionText(payload) : String(text || "").trim();
+    emitStreamChunk(onChunk, finalText, buildStreamMeta({}, { payload }));
+    return {
+      text: finalText,
+      payload,
+      chunkCount: finalText ? 1 : 0,
+    };
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let combined = "";
+  let chunkCount = 0;
+
+  const flushLineBuffer = (flushRemainder = false) => {
+    const lines = buffer.split(/\r?\n/);
+    if (!flushRemainder) {
+      buffer = lines.pop() ?? "";
+    } else {
+      buffer = "";
+    }
+    for (const line of lines) {
+      const frame = finalizeStreamFrame(line, onChunk, { contentType, format: "ndjson" });
+      if (frame.text) {
+        combined += frame.text;
+        chunkCount += 1;
+      }
+    }
+  };
+
+  const flushEventBuffer = (flushRemainder = false) => {
+    buffer = buffer.replace(/\r\n/g, "\n");
+    let index = buffer.indexOf("\n\n");
+    while (index >= 0) {
+      const frameText = buffer.slice(0, index);
+      buffer = buffer.slice(index + 2);
+      const payloadText = frameText
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n");
+      const frame = finalizeStreamFrame(payloadText, onChunk, {
+        contentType,
+        format: "sse",
+      });
+      if (frame.text) {
+        combined += frame.text;
+        chunkCount += 1;
+      }
+      if (frame.done) {
+        buffer = "";
+        break;
+      }
+      index = buffer.indexOf("\n\n");
+    }
+
+    if (flushRemainder && buffer.trim()) {
+      const payloadText = buffer
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n");
+      const frame = finalizeStreamFrame(payloadText, onChunk, {
+        contentType,
+        format: "sse-tail",
+      });
+      if (frame.text) {
+        combined += frame.text;
+        chunkCount += 1;
+      }
+      buffer = "";
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    if (isEventStream) {
+      flushEventBuffer(false);
+    } else {
+      flushLineBuffer(false);
+    }
+  }
+
+  buffer += decoder.decode();
+  if (isEventStream) {
+    flushEventBuffer(true);
+  } else {
+    flushLineBuffer(true);
+    if (buffer.trim()) {
+      const tail = finalizeStreamFrame(buffer, onChunk, {
+        contentType,
+        format: "tail",
+      });
+      if (tail.text) {
+        combined += tail.text;
+        chunkCount += 1;
+      }
+      buffer = "";
+    }
+  }
+
+  return {
+    text: combined,
+    payload: combined ? { text: combined } : null,
+    chunkCount,
+  };
+}
+
 export class NeuroEdgeGatewayError extends Error {
   constructor(message, { status = 502, code = "NEUROEDGE_ERROR", details = null } = {}) {
     super(message);
@@ -199,6 +357,97 @@ async function callOneBase(baseUrl, path, { method = "POST", body, correlationId
   throw lastError || new NeuroEdgeGatewayError("NeuroEdge request failed");
 }
 
+async function callOneBaseStream(
+  baseUrl,
+  path,
+  { method = "POST", body, correlationId, idempotencyKey, onChunk } = {}
+) {
+  const url = `${baseUrl}${path}`;
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream, application/x-ndjson, application/json, text/plain",
+    ...getAuthHeaders(),
+  };
+  if (correlationId) headers["X-Correlation-Id"] = correlationId;
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
+  let attempt = 0;
+  let lastError = null;
+  while (attempt <= DEFAULT_RETRIES) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    let hasStreamedContent = false;
+    try {
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        clearTimeout(timeout);
+        const text = await res.text();
+        const json = parseTextAsJsonSafe(text);
+        const err = new NeuroEdgeGatewayError(
+          json?.message || json?.error || `NeuroEdge request failed with status ${res.status}`,
+          {
+            status: res.status,
+            code: json?.code || "NEUROEDGE_HTTP_ERROR",
+            details: { body: json || text, retryCount: attempt, upstreamStatus: res.status },
+          }
+        );
+        if (attempt < DEFAULT_RETRIES && isRetriableStatus(res.status)) {
+          await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+          attempt += 1;
+          lastError = err;
+          continue;
+        }
+        throw err;
+      }
+
+      const streamResult = await consumeReadableStream(res, {
+        onChunk: (chunk, meta) => {
+          hasStreamedContent = hasStreamedContent || Boolean(String(chunk || "").length);
+          emitStreamChunk(onChunk, chunk, meta);
+        },
+      });
+      clearTimeout(timeout);
+
+      return {
+        payload: streamResult.payload || { text: streamResult.text || "" },
+        text: streamResult.text || "",
+        httpStatus: res.status,
+        retryCount: attempt,
+        chunkCount: streamResult.chunkCount || 0,
+      };
+    } catch (err) {
+      clearTimeout(timeout);
+      const isAbort = err?.name === "AbortError";
+      const wrapped =
+        err instanceof NeuroEdgeGatewayError
+          ? err
+          : new NeuroEdgeGatewayError(
+              isAbort ? "NeuroEdge streaming request timed out" : err?.message || "NeuroEdge streaming request failed",
+              {
+                status: isAbort ? 504 : 502,
+                code: isAbort ? "NEUROEDGE_STREAM_TIMEOUT" : "NEUROEDGE_STREAM_ERROR",
+                details: { retryCount: attempt },
+              }
+            );
+      if (!hasStreamedContent && attempt < DEFAULT_RETRIES) {
+        await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+        attempt += 1;
+        lastError = wrapped;
+        continue;
+      }
+      throw lastError || wrapped;
+    }
+  }
+
+  throw lastError || new NeuroEdgeGatewayError("NeuroEdge streaming request failed");
+}
+
 async function callNeuroEdge(path, { method = "POST", body, correlationId, idempotencyKey } = {}) {
   const baseUrls = getBaseUrls();
   if (!baseUrls.length) {
@@ -251,9 +500,76 @@ async function callNeuroEdge(path, { method = "POST", body, correlationId, idemp
   });
 }
 
+async function callNeuroEdgeStream(
+  path,
+  { method = "POST", body, correlationId, idempotencyKey, onChunk } = {}
+) {
+  const baseUrls = getBaseUrls();
+  if (!baseUrls.length) {
+    throw new NeuroEdgeGatewayError("NeuroEdge base URL not configured", {
+      status: 500,
+      code: "NEUROEDGE_BASE_URL_MISSING",
+    });
+  }
+
+  const errors = [];
+  for (let i = 0; i < baseUrls.length; i += 1) {
+    const base = baseUrls[i];
+    if (isCircuitOpen(base)) {
+      errors.push(`${base}:CIRCUIT_OPEN`);
+      continue;
+    }
+    try {
+      const out = await callOneBaseStream(base, path, {
+        method,
+        body,
+        correlationId,
+        idempotencyKey,
+        onChunk,
+      });
+      markSuccess(base);
+      return {
+        ...out.payload,
+        text: out.text,
+        meta: {
+          ...(out.payload?.meta || {}),
+          retryCount: out.retryCount,
+          failoverUsed: i > 0,
+          activeBaseUrl: base,
+          httpStatus: out.httpStatus,
+          chunkCount: out.chunkCount,
+        },
+      };
+    } catch (err) {
+      markFailure(base);
+      errors.push(`${base}:${err?.code || err?.message || "ERROR"}`);
+      if (i >= baseUrls.length - 1) {
+        if (err instanceof NeuroEdgeGatewayError) {
+          err.details = { ...(err.details || {}), failoverErrors: errors };
+          throw err;
+        }
+        throw new NeuroEdgeGatewayError(err?.message || "NeuroEdge streaming request failed", {
+          status: 502,
+          code: "NEUROEDGE_FAILOVER_EXHAUSTED",
+          details: { failoverErrors: errors },
+        });
+      }
+    }
+  }
+
+  throw new NeuroEdgeGatewayError("NeuroEdge streaming request failed", {
+    status: 502,
+    code: "NEUROEDGE_FAILOVER_EXHAUSTED",
+    details: { failoverErrors: errors },
+  });
+}
+
 export const neuroedgeGatewayClient = {
   chatCompletions: (payload, ctx = {}) =>
     callNeuroEdge("/v1/chat/completions", { method: "POST", body: payload, ...ctx }),
+  chatStream: (payload, ctx = {}) =>
+    callNeuroEdgeStream("/v1/chat/stream", { method: "POST", body: payload, ...ctx }),
+  feedback: (payload, ctx = {}) => callNeuroEdge("/v1/feedback", { method: "POST", body: payload, ...ctx }),
   extract: (payload, ctx = {}) => callNeuroEdge("/v1/extract", { method: "POST", body: payload, ...ctx }),
   ingestDocument: (payload, ctx = {}) =>
     callNeuroEdge("/v1/ingest/document", { method: "POST", body: payload, ...ctx }),

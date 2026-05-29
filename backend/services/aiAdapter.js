@@ -73,12 +73,105 @@ function buildChatPayload(messages) {
   return payload;
 }
 
+function buildAssistantMessages({ message, role, pageContext, healthProfile }) {
+  const safeRole = String(role || "USER");
+  const safeMessage = String(message || "").trim();
+  const safePage = String(pageContext || "").slice(0, 8000);
+  const safeHealth = typeof healthProfile === "object" && healthProfile ? healthProfile : {};
+
+  return [
+    {
+      role: "system",
+      content: [
+        "You are NeuroEdge Personal Assistant inside AfyaLink.",
+        "Be concise, practical, and safe.",
+        "If medical risk appears high, advise seeking clinician or emergency help.",
+        "Never claim diagnosis certainty.",
+      ].join("\n"),
+    },
+    {
+      role: "user",
+      content: [
+        `User role: ${safeRole}`,
+        `Health profile: ${JSON.stringify(safeHealth)}`,
+        `Page context: ${safePage || "N/A"}`,
+        `User message: ${safeMessage}`,
+      ].join("\n"),
+    },
+  ];
+}
+
+function splitTextIntoChunks(text, maxChunkLength = 180) {
+  const clean = String(text || "").trim();
+  if (!clean) return [];
+  const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const chunks = [];
+  let current = "";
+
+  const flush = () => {
+    const next = current.trim();
+    if (next) chunks.push(next);
+    current = "";
+  };
+
+  for (const sentence of sentences) {
+    if ((`${current} ${sentence}`).trim().length <= maxChunkLength) {
+      current = `${current} ${sentence}`.trim();
+      continue;
+    }
+    flush();
+    if (sentence.length <= maxChunkLength) {
+      current = sentence;
+      continue;
+    }
+    for (let cursor = 0; cursor < sentence.length; cursor += maxChunkLength) {
+      chunks.push(sentence.slice(cursor, cursor + maxChunkLength));
+    }
+  }
+  flush();
+  return chunks.length ? chunks : [clean];
+}
+
+async function emitSyntheticChunks(text, onChunk) {
+  const callback = typeof onChunk === "function" ? onChunk : null;
+  if (!callback) return;
+  for (const chunk of splitTextIntoChunks(text)) {
+    callback(chunk, { synthetic: true });
+    await Promise.resolve();
+  }
+}
+
+function buildAssistantFeedbackPayload({ message, answer, rating, reason, metadata = {} }) {
+  const normalizedRating = String(rating || "").toLowerCase() === "down" ? "down" : "up";
+  return {
+    category: "assistant_chat",
+    rating: normalizedRating,
+    score: normalizedRating === "up" ? 1 : -1,
+    message: String(message || "").trim().slice(0, 4000),
+    answer: String(answer || "").trim().slice(0, 12000),
+    reason: String(reason || "").trim().slice(0, 1000),
+    metadata:
+      metadata && typeof metadata === "object"
+        ? JSON.parse(JSON.stringify(metadata))
+        : {},
+  };
+}
+
 async function runNeuroEdgeChat(messages) {
   const response = await neuroedgeGatewayClient.chatCompletions(buildChatPayload(messages));
   return {
     provider: "neuroedge",
     raw: response,
     text: extractCompletionText(response),
+  };
+}
+
+async function runNeuroEdgeChatStream(messages, { onChunk } = {}) {
+  const response = await neuroedgeGatewayClient.chatStream(buildChatPayload(messages), { onChunk });
+  return {
+    provider: "neuroedge",
+    raw: response,
+    text: String(response?.text || extractCompletionText(response) || "").trim(),
   };
 }
 
@@ -277,32 +370,10 @@ export async function extractDocumentBase64({ contentBase64, mimeType, filename 
 }
 
 export async function assistantChat({ message, role, pageContext, healthProfile }) {
-  const safeRole = String(role || "USER");
-  const safeMessage = String(message || "").trim();
-  const safePage = String(pageContext || "").slice(0, 8000);
-  const safeHealth = typeof healthProfile === "object" && healthProfile ? healthProfile : {};
+  const messages = buildAssistantMessages({ message, role, pageContext, healthProfile });
 
   if (hasNeuroEdge()) {
-    const out = await runNeuroEdgeChat([
-      {
-        role: "system",
-        content: [
-          "You are NeuroEdge Personal Assistant inside AfyaLink.",
-          "Be concise, practical, and safe.",
-          "If medical risk appears high, advise seeking clinician or emergency help.",
-          "Never claim diagnosis certainty.",
-        ].join("\n"),
-      },
-      {
-        role: "user",
-        content: [
-          `User role: ${safeRole}`,
-          `Health profile: ${JSON.stringify(safeHealth)}`,
-          `Page context: ${safePage || "N/A"}`,
-          `User message: ${safeMessage}`,
-        ].join("\n"),
-      },
-    ]);
+    const out = await runNeuroEdgeChat(messages);
     return { provider: out.provider, text: out.text || "No response generated." };
   }
 
@@ -314,10 +385,10 @@ export async function assistantChat({ message, role, pageContext, healthProfile 
       "- If medical risk appears high, advise seeking clinician/emergency help.",
       "- Never claim diagnosis certainty.",
       "",
-      `User role: ${safeRole}`,
-      `Health profile: ${JSON.stringify(safeHealth)}`,
-      `Page context: ${safePage || "N/A"}`,
-      `User message: ${safeMessage}`,
+      `User role: ${String(role || "USER")}`,
+      `Health profile: ${JSON.stringify(healthProfile || {})}`,
+      `Page context: ${String(pageContext || "").slice(0, 8000) || "N/A"}`,
+      `User message: ${String(message || "").trim()}`,
       "",
       "Respond with plain text and optional short bullets.",
     ].join("\n");
@@ -333,10 +404,60 @@ export async function assistantChat({ message, role, pageContext, healthProfile 
   };
 }
 
+export async function assistantChatStream({ message, role, pageContext, healthProfile, onChunk }) {
+  const messages = buildAssistantMessages({ message, role, pageContext, healthProfile });
+
+  if (hasNeuroEdge()) {
+    const out = await runNeuroEdgeChatStream(messages, { onChunk });
+    return { provider: out.provider, text: out.text || "No response generated." };
+  }
+
+  const fallback = await assistantChat({ message, role, pageContext, healthProfile });
+  await emitSyntheticChunks(fallback?.text || "", onChunk);
+  return fallback;
+}
+
+export async function assistantFeedback({ message, answer, rating, reason, metadata = {} }) {
+  const payload = buildAssistantFeedbackPayload({ message, answer, rating, reason, metadata });
+
+  if (hasNeuroEdge()) {
+    try {
+      const response = await neuroedgeGatewayClient.feedback(payload);
+      return {
+        provider: "neuroedge",
+        accepted: response?.accepted !== false,
+        response,
+      };
+    } catch (error) {
+      const status = Number(error?.status || 0);
+      if ([404, 405, 422].includes(status)) {
+        return {
+          provider: "neuroedge",
+          accepted: false,
+          degraded: true,
+          reason: error?.code || "NEUROEDGE_FEEDBACK_UNAVAILABLE",
+          response: error?.details || null,
+        };
+      }
+      throw error;
+    }
+  }
+
+  return {
+    provider: OPENAI_KEY ? "openai-fallback" : "fallback",
+    accepted: false,
+    degraded: true,
+    reason: "FEEDBACK_CAPTURED_LOCALLY_ONLY",
+    response: payload,
+  };
+}
+
 export default {
   diagnoseSymptoms,
   treatmentGuidelines,
   transcribeAudioBase64,
   extractDocumentBase64,
   assistantChat,
+  assistantChatStream,
+  assistantFeedback,
 };

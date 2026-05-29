@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useSocket } from "../utils/socket";
-import { useAuth } from "../utils/auth";
+import { streamAssistantChat, submitAssistantFeedback } from "../services/assistantApi";
 
 export default function AIChatWS() {
-  const socket = useSocket();
-  const { user } = useAuth();
-
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [feedbackByMessage, setFeedbackByMessage] = useState({});
+  const [status, setStatus] = useState("");
   const streamIdRef = useRef("");
   const logRef = useRef(null);
   const messageSeedRef = useRef(0);
@@ -17,37 +15,6 @@ export default function AIChatWS() {
     return `${from}-${Date.now()}-${messageSeedRef.current}`;
   };
 
-  const pushMessage = (from, text, extras = {}) => {
-    const clean = typeof text === "string" ? text : "";
-    if (!clean.trim() && !extras.streaming) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: extras.id || nextMessageId(from),
-        from,
-        text: clean,
-        streaming: Boolean(extras.streaming),
-      },
-    ]);
-  };
-
-  const extractAiText = (payload) => {
-    if (typeof payload === "string") return payload;
-    if (!payload || typeof payload !== "object") return "";
-    return payload.answer || payload.text || payload.message || payload.summary || payload.diagnosis || "";
-  };
-
-  const finalizeAiText = (payload) => {
-    const summary = extractAiText(payload);
-    if (summary) return summary;
-    if (payload == null) return "";
-    try {
-      return JSON.stringify(payload, null, 2);
-    } catch {
-      return String(payload);
-    }
-  };
-
   useEffect(() => {
     if (!logRef.current) return;
     logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -55,100 +22,128 @@ export default function AIChatWS() {
 
   const awaitingReply = Boolean(messages[messages.length - 1]?.streaming);
 
-  useEffect(() => {
-    if (!socket || !user) return;
-
-    // Join AI room (optional but recommended)
-    socket.emit("ai:join");
-
-    const handleStatus = (msg) => {
-      pushMessage("sys", msg);
-    };
-
-    const handleChunk = (chunk) => {
-      const text = extractAiText(chunk);
-      if (!String(text || "").trim()) return;
-
-      setMessages((prev) => {
-        const activeId = streamIdRef.current;
-        if (activeId) {
-          let updated = false;
-          const next = prev.map((entry) => {
-            if (entry.id !== activeId) return entry;
-            updated = true;
-            return {
+  const finalizePendingMessage = (id, text, provider = "unknown") => {
+    const finalText = String(text || "").trim() || "No response generated.";
+    setMessages((prev) =>
+      prev.map((entry) =>
+        entry.id === id
+          ? {
               ...entry,
-              text: `${entry.text || ""}${text}`,
-              streaming: true,
-            };
-          });
-          if (updated) return next;
-        }
-
-        const id = nextMessageId("ai");
-        streamIdRef.current = id;
-        return [...prev, { id, from: "ai", text, streaming: true }];
-      });
-    };
-
-    const handleDone = (data) => {
-      const finalText = finalizeAiText(data);
-      setMessages((prev) => {
-        const activeId = streamIdRef.current;
-        if (activeId) {
-          let updated = false;
-          const next = prev.map((entry) => {
-            if (entry.id !== activeId) return entry;
-            updated = true;
-            return {
-              ...entry,
-              text: entry.text || finalText || "Response received.",
+              text: finalText,
+              provider,
               streaming: false,
-            };
-          });
-          streamIdRef.current = "";
-          if (updated) return next;
-        }
+            }
+          : entry
+      )
+    );
+    streamIdRef.current = "";
+  };
 
-        if (!finalText.trim()) return prev;
-        return [...prev, { id: nextMessageId("ai"), from: "ai", text: finalText, streaming: false }];
-      });
-    };
+  const appendPendingChunk = (id, delta) => {
+    const chunk = String(delta || "");
+    if (!chunk) return;
+    setMessages((prev) =>
+      prev.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              text: `${entry.text || ""}${chunk}`,
+              streaming: true,
+            }
+          : entry
+      )
+    );
+  };
 
-    const handleDisconnect = () => {
-      streamIdRef.current = "";
-      pushMessage("sys", "Disconnected");
-    };
+  const send = async () => {
+    const prompt = String(input || "").trim();
+    if (!prompt || awaitingReply) return;
 
-    socket.on("ai:status", handleStatus);
-    socket.on("ai:chunk", handleChunk);
-    socket.on("ai:done", handleDone);
-    socket.on("disconnect", handleDisconnect);
-
-    return () => {
-      socket.off("ai:status", handleStatus);
-      socket.off("ai:chunk", handleChunk);
-      socket.off("ai:done", handleDone);
-      socket.off("disconnect", handleDisconnect);
-    };
-  }, [socket, user]);
-
-  const send = () => {
-    if (!input.trim() || !socket || awaitingReply) return;
     const pendingId = nextMessageId("ai");
-
-    socket.emit("ai:message", {
-      type: "diagnose",
-      symptoms: input,
-    });
-
     streamIdRef.current = pendingId;
+    setStatus("");
     setMessages((prev) => [
       ...prev,
-      { id: nextMessageId("user"), from: "user", text: input, streaming: false },
-      { id: pendingId, from: "ai", text: "", streaming: true },
+      { id: nextMessageId("user"), from: "user", text: prompt, streaming: false },
+      {
+        id: pendingId,
+        from: "ai",
+        text: "",
+        streaming: true,
+        sourcePrompt: prompt,
+        provider: "",
+      },
     ]);
     setInput("");
+
+    try {
+      const out = await streamAssistantChat(
+        {
+          message: prompt,
+          userMessage: prompt,
+          pageContext: typeof window !== "undefined" ? window.location.pathname : "medical-assistant",
+        },
+        {
+          onChunk: (delta) => appendPendingChunk(pendingId, delta),
+          onDone: ({ answer, provider }) => finalizePendingMessage(pendingId, answer, provider),
+        }
+      );
+
+      if (!String(out?.answer || "").trim()) {
+        finalizePendingMessage(pendingId, "No response generated.", out?.provider || "unknown");
+      }
+    } catch (err) {
+      finalizePendingMessage(
+        pendingId,
+        err?.message || "Assistant stream is unavailable right now. Please try again shortly.",
+        "fallback"
+      );
+      setStatus(err?.message || "Assistant stream is unavailable right now.");
+    }
+  };
+
+  const handleFeedback = async (entry, rating) => {
+    if (!entry?.id || !entry?.text) return;
+    const targetRating = rating === "down" ? "down" : "up";
+    const current = feedbackByMessage[entry.id];
+    if (current?.loading || current?.savedRating === targetRating) return;
+
+    setFeedbackByMessage((prev) => ({
+      ...prev,
+      [entry.id]: {
+        savedRating: prev[entry.id]?.savedRating || "",
+        loading: true,
+        error: "",
+      },
+    }));
+
+    try {
+      await submitAssistantFeedback({
+        rating: targetRating,
+        message: entry.sourcePrompt || "",
+        answer: entry.text,
+        pageContext: typeof window !== "undefined" ? window.location.pathname : "medical-assistant",
+      });
+      setFeedbackByMessage((prev) => ({
+        ...prev,
+        [entry.id]: {
+          savedRating: targetRating,
+          loading: false,
+          error: "",
+        },
+      }));
+      setStatus(targetRating === "up" ? "Thanks. Feedback saved." : "Feedback saved. We’ll use it to improve responses.");
+    } catch (err) {
+      setFeedbackByMessage((prev) => ({
+        ...prev,
+        [entry.id]: {
+          savedRating: prev[entry.id]?.savedRating || "",
+          loading: false,
+          error: err?.message || "Failed to save feedback.",
+        },
+      }));
+      setStatus(err?.message || "Failed to save feedback.");
+    }
   };
 
   return (
@@ -163,6 +158,30 @@ export default function AIChatWS() {
           >
             <strong>{m.from === "user" ? "You" : m.from === "ai" ? "NeuroEdge" : "System"}</strong>
             <span>{m.streaming && !m.text ? "NeuroEdge is preparing a response..." : m.text}</span>
+            {m.from === "ai" && m.text && !m.streaming ? (
+              <div className="mini-chat-feedback">
+                <button
+                  type="button"
+                  className={`mini-chat-feedback-btn${
+                    feedbackByMessage[m.id]?.savedRating === "up" ? " is-active" : ""
+                  }`}
+                  onClick={() => handleFeedback(m, "up")}
+                  disabled={feedbackByMessage[m.id]?.loading}
+                >
+                  Helpful
+                </button>
+                <button
+                  type="button"
+                  className={`mini-chat-feedback-btn${
+                    feedbackByMessage[m.id]?.savedRating === "down" ? " is-active" : ""
+                  }`}
+                  onClick={() => handleFeedback(m, "down")}
+                  disabled={feedbackByMessage[m.id]?.loading}
+                >
+                  Needs work
+                </button>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -184,6 +203,7 @@ export default function AIChatWS() {
             {awaitingReply ? "Waiting..." : "Ask AI"}
           </button>
         </div>
+        {status ? <p className="muted">{status}</p> : null}
       </div>
     </div>
   );

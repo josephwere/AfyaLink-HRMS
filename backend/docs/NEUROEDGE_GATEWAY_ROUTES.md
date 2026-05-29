@@ -16,9 +16,9 @@ Base path: `/api/ai/gateway`
 - `GET /health`
 
 ## Current NeuroEdge Pilot Mapping
-- AfyaLink currently maps assistant and text-first extraction requests to upstream `POST /v1/chat/completions`.
+- AfyaLink currently maps assistant requests to upstream `POST /v1/chat/completions` and `POST /v1/chat/stream`.
+- AfyaLink assistant feedback now maps to upstream `POST /v1/feedback`.
 - AfyaLink health checks use upstream `GET /health`, with a small chat-completions probe fallback when a compatibility check is needed.
-- Upstream `POST /v1/chat/stream` and `POST /v1/feedback` are available for later integration.
 - Upstream `PILOT /v1/documents/*` and `PILOT /v1/creator/*` are later-ready and not yet used by AfyaLink.
 
 ## Security

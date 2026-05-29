@@ -2751,6 +2751,39 @@ body.auth-route {
   white-space: pre-wrap;
 }
 
+.ai-chat-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ai-chat-feedback-btn {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ai-chat-feedback-btn.is-active {
+  background: color-mix(in oklab, var(--app-accent) 18%, #ffffff);
+  border-color: color-mix(in oklab, var(--app-accent) 40%, var(--app-border));
+}
+
+.ai-chat-feedback-note {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.ai-chat-feedback-note.is-error {
+  color: #b91c1c;
+}
+
 .ai-chat-input-bar {
   display: flex;
   align-items: center;
@@ -2940,6 +2973,17 @@ body.auth-route {
   background: #0f766e;
   border-color: #0d9488;
   color: #ecfeff;
+}
+
+[data-theme="dark"] .ai-chat-feedback-btn {
+  background: #111827;
+  border-color: #334155;
+  color: #e5eefb;
+}
+
+[data-theme="dark"] .ai-chat-feedback-btn.is-active {
+  background: #134e4a;
+  border-color: #0f766e;
 }
 
 [data-theme="dark"] .ai-chat-hint-badge {
@@ -6447,6 +6491,40 @@ button.card.stat {
 .mini-chat-bubble span {
   line-height: 1.55;
   white-space: pre-wrap;
+}
+
+.mini-chat-feedback {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.mini-chat-feedback-btn {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mini-chat-feedback-btn.is-active {
+  background: color-mix(in oklab, var(--app-accent) 18%, #ffffff);
+  border-color: color-mix(in oklab, var(--app-accent) 40%, var(--app-border));
+}
+
+[data-theme="dark"] .mini-chat-feedback-btn {
+  background: #111827;
+  border-color: #334155;
+  color: #e5eefb;
+}
+
+[data-theme="dark"] .mini-chat-feedback-btn.is-active {
+  background: #134e4a;
+  border-color: #0f766e;
 }
 
 .mini-chat-input {

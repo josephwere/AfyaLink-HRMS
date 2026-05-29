@@ -125,11 +125,13 @@ NEUROEDGE_CIRCUIT_COOLDOWN_MS=15000
 
 Notes:
 - Keep the real API key only in Render secret storage. Do not commit it to the repo.
-- The current AfyaLink pilot integration actively uses upstream `POST /v1/chat/completions` and `GET /health`.
-- Upstream `POST /v1/chat/stream`, `POST /v1/feedback`, `PILOT /v1/documents/*`, and `PILOT /v1/creator/*` can be enabled in later passes without changing the base URL.
+- The current AfyaLink pilot integration actively uses upstream `POST /v1/chat/completions`, `POST /v1/chat/stream`, `POST /v1/feedback`, and `GET /health`.
+- Upstream `PILOT /v1/documents/*` and `PILOT /v1/creator/*` can be enabled in later passes without changing the base URL.
 - After setting env vars, verify:
   - backend `GET /api/ai/gateway/health`
   - one authenticated assistant/chat request
+  - one authenticated assistant streaming request
+  - one assistant feedback submission
   - audit log creation for the AI call
 
 ### 9.2 Safe Rollout Order
