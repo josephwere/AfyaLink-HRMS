@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { getAccessToken } from "./browserSession";
-import { getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
+import { getRuntimeConfiguredApiBase, resolveApiBase, resolveDirectApiBase } from "./networkBase";
 
 const SystemSettingsContext = createContext(null);
 
@@ -439,15 +439,14 @@ export function SystemSettingsProvider({ children }) {
     const token = getAccessToken();
     if (!token) return undefined;
 
-    const socketUrl = resolveApiBase(
-      import.meta.env.VITE_SOCKET_URL ||
-      configuredBase ||
-      window.location.origin
-    );
+    const socketUrl = resolveDirectApiBase(import.meta.env.VITE_SOCKET_URL || configuredBase || "");
+    if (!socketUrl) return undefined;
 
     const socket = io(socketUrl, {
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
       autoConnect: true,
+      reconnectionAttempts: 3,
+      timeout: 10000,
       auth: token ? { token } : {},
     });
 

@@ -4,7 +4,7 @@ import { getAccessToken } from "./browserSession";
 import {
   assertSecureApiBase,
   getRuntimeConfiguredApiBase,
-  resolveApiBase,
+  resolveDirectApiBase,
 } from "./networkBase";
 
 const SocketContext = createContext(undefined);
@@ -17,11 +17,14 @@ export default function SocketProvider({ children }) {
     if (!token) return;
 
     const SOCKET_URL =
-      resolveApiBase(import.meta.env.VITE_SOCKET_URL || getRuntimeConfiguredApiBase() || "");
+      resolveDirectApiBase(import.meta.env.VITE_SOCKET_URL || getRuntimeConfiguredApiBase() || "");
+    if (!SOCKET_URL) return;
     assertSecureApiBase(SOCKET_URL);
 
     const s = io(SOCKET_URL, {
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
+      reconnectionAttempts: 3,
+      timeout: 10000,
       auth: {
         token, // 🔐 JWT sent to backend
       },

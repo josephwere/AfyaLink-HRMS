@@ -102,11 +102,25 @@ export async function streamAssistantChat(payload, { onChunk, onDone, onError } 
   return { answer, provider };
 }
 
-export const submitAssistantFeedback = (payload) =>
-  apiFetch("/api/ai/assistant/feedback", {
+export async function submitAssistantFeedback(payload) {
+  const result = await apiFetch("/api/ai/assistant/feedback", {
     method: "POST",
     body: payload || {},
   });
+
+  if (result?.success === true && result?.accepted === true) {
+    return result;
+  }
+
+  const message =
+    String(result?.message || "").trim() ||
+    (result?.accepted === false
+      ? "Feedback could not be saved right now. Please try again shortly."
+      : "Failed to save feedback.");
+  const error = new Error(message);
+  error.data = result || null;
+  throw error;
+}
 
 export const summarizeAssistantPage = (payload) =>
   apiFetch("/api/ai/assistant/summarize", {

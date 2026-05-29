@@ -132,7 +132,11 @@ export default function AIChatWS() {
           error: "",
         },
       }));
-      setStatus(targetRating === "up" ? "Thanks. Feedback saved." : "Feedback saved. We’ll use it to improve responses.");
+      setStatus(
+        targetRating === "up"
+          ? "Feedback received."
+          : "Feedback received. We will review this reply."
+      );
     } catch (err) {
       setFeedbackByMessage((prev) => ({
         ...prev,

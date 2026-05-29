@@ -51,6 +51,26 @@ export function resolveApiBase(configuredBase = "") {
   return `${url.origin}${pathname}`;
 }
 
+export function resolveDirectApiBase(configuredBase = "") {
+  const preferredBase = configuredBase || getRuntimeConfiguredApiBase();
+  if (typeof window === "undefined") {
+    return preferredBase || "http://localhost:5000";
+  }
+
+  if (preferredBase) {
+    const url = new URL(preferredBase, window.location.origin);
+    const pathname = url.pathname.replace(/\/$/, "");
+    return `${url.origin}${pathname}`;
+  }
+
+  const host = window.location.hostname;
+  if (isLocalHostname(host)) {
+    return `${window.location.protocol}//${host}:5000`;
+  }
+
+  return "";
+}
+
 export function resolveApiUrl(path = "", configuredBase = "") {
   const base = resolveApiBase(configuredBase).replace(/\/$/, "");
   const normalizedPath = String(path || "").startsWith("/") ? String(path) : `/${String(path || "")}`;

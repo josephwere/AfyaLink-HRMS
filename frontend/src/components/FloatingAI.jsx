@@ -188,6 +188,15 @@ export default function FloatingAI() {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "AI";
+  const hideFloatingLauncher = useMemo(() => {
+    const pathname = String(location.pathname || "").toLowerCase();
+    return (
+      pathname.startsWith("/app/innovation/ai/chatbot") ||
+      pathname.startsWith("/app/innovation/ai/medical-assistant") ||
+      pathname.startsWith("/ai/chatbot") ||
+      pathname.startsWith("/ai/medical-assistant")
+    );
+  }, [location.pathname]);
   // Open only when user clicks the floating button.
 
   const recommendedStarterPackIds = useMemo(() => {
@@ -209,6 +218,12 @@ export default function FloatingAI() {
     setLauncherIconSrc(preferredLauncherIcon);
     setLauncherIconBroken(false);
   }, [preferredLauncherIcon]);
+
+  useEffect(() => {
+    if (hideFloatingLauncher && open) {
+      setOpen(false);
+    }
+  }, [hideFloatingLauncher, open]);
 
   const handleLauncherIconError = () => {
     markAssetBroken(launcherIconSrc);
@@ -786,7 +801,7 @@ export default function FloatingAI() {
     [hospitalScope]
   );
 
-  if (loading || typeof document === "undefined") return null;
+  if (loading || typeof document === "undefined" || hideFloatingLauncher) return null;
 
   const saveProfile = async () => {
     setSaveBusy(true);
