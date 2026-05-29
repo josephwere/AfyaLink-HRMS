@@ -130,6 +130,23 @@ function clearResponseCaches() {
   inFlightGetRequests.clear();
 }
 
+function shouldQueueMutationAsOffline(err) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return true;
+  }
+
+  const status = Number(err?.status || 0);
+  if (status === 0) {
+    return true;
+  }
+
+  if (err instanceof ApiClientError) {
+    return err.status === 0;
+  }
+
+  return false;
+}
+
 /* ======================================================
    CENTRALIZED API FETCH (FINAL)
 ====================================================== */
@@ -177,7 +194,11 @@ async function apiFetch(path, options = {}, _retry = false) {
         }
         return data;
       } catch (err) {
-        if (!_skipOfflineQueue && canQueueOfflineMutation(path, requestOptions.method, requestOptions.body)) {
+        if (
+          !_skipOfflineQueue &&
+          shouldQueueMutationAsOffline(err) &&
+          canQueueOfflineMutation(path, requestOptions.method, requestOptions.body)
+        ) {
           queueOfflineMutation({
             path,
             method: requestOptions.method || "POST",

@@ -1,5 +1,6 @@
 import { canQueueOfflineMutation, queueOfflineMutation } from "../utils/offlineMutation";
 import {
+  ApiClientError,
   buildApiUrl,
   fetchApi,
   fetchApiResponse,
@@ -20,6 +21,23 @@ function makeQueuedResponse(path, method, body) {
   };
 }
 
+function shouldQueueMutationAsOffline(err) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return true;
+  }
+
+  const status = Number(err?.status || 0);
+  if (status === 0) {
+    return true;
+  }
+
+  if (err instanceof ApiClientError) {
+    return err.status === 0;
+  }
+
+  return false;
+}
+
 /* ======================================================
    LOW-LEVEL FETCH (USED INTERNALLY)
 ====================================================== */
@@ -28,7 +46,10 @@ async function apiFetch(path, opts = {}) {
   try {
     r = await fetchApiResponse(path, opts);
   } catch (err) {
-    if (canQueueOfflineMutation(path, opts?.method, opts?.body)) {
+    if (
+      shouldQueueMutationAsOffline(err) &&
+      canQueueOfflineMutation(path, opts?.method, opts?.body)
+    ) {
       return makeQueuedResponse(path, opts?.method, opts?.body);
     }
     throw err;
