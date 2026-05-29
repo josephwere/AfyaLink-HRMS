@@ -580,6 +580,12 @@ export const streamAssistantChatResponse = async (req, res, next) => {
       type: "done",
       answer,
       provider: out?.provider || "unknown",
+      degraded: out?.degraded === true,
+      code: out?.code || "",
+      retryAfterSeconds:
+        Number(out?.retryAfterMs || 0) > 0
+          ? Math.max(1, Math.ceil(Number(out.retryAfterMs) / 1000))
+          : 0,
     });
     return res.end();
   } catch (err) {
@@ -621,6 +627,52 @@ export const submitAssistantChatFeedback = async (req, res, next) => {
         role: req.user?.role || null,
       },
     });
+
+    if (result?.accepted === false) {
+      const retryAfterSeconds = Math.max(0, Number(result?.retryAfterSeconds || 0));
+      if (retryAfterSeconds > 0) {
+        res.setHeader("Retry-After", String(retryAfterSeconds));
+      }
+
+      await logAudit({
+        actorId: req.user?._id || req.user?.id,
+        actorRole: req.user?.role,
+        action: "AI_ASSISTANT_FEEDBACK_DEFERRED",
+        resource: "ai_assistant_feedback",
+        hospital: req.user?.hospital || req.user?.hospitalId || null,
+        after: {
+          hospitalKey,
+          rating,
+          provider: result?.provider || "unknown",
+          accepted: false,
+          degraded: result?.degraded === true,
+          retryable: result?.retryable === true,
+          retryAfterSeconds,
+          reason: result?.reason || "",
+          pageContext,
+          messagePreview: message.slice(0, 240),
+        },
+        ip: req.ip,
+        userAgent: req.get?.("user-agent"),
+        success: false,
+        error: result?.reason || "AI_ASSISTANT_FEEDBACK_UNAVAILABLE",
+        metadata: {
+          response: result?.response || null,
+        },
+      });
+
+      return res.status(result?.retryable ? 429 : 503).json({
+        success: false,
+        provider: result?.provider || "unknown",
+        code: result?.reason || "AI_ASSISTANT_FEEDBACK_UNAVAILABLE",
+        message:
+          result?.message ||
+          "Feedback could not be saved right now. Please try again shortly.",
+        degraded: result?.degraded === true,
+        retryable: result?.retryable === true,
+        retryAfterSeconds,
+      });
+    }
 
     await logAudit({
       actorId: req.user?._id || req.user?.id,

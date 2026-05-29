@@ -1,5 +1,5 @@
 import "../config/loadEnv.js";
-import { neuroedgeGatewayClient } from "./neuroedgeGatewayClient.js";
+import { neuroedgeGatewayClient, NeuroEdgeGatewayError } from "./neuroedgeGatewayClient.js";
 
 const NEUROEDGE_KEY = process.env.NEUROEDGE_API_KEY || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
@@ -158,21 +158,49 @@ function buildAssistantFeedbackPayload({ message, answer, rating, reason, metada
 }
 
 async function runNeuroEdgeChat(messages) {
-  const response = await neuroedgeGatewayClient.chatCompletions(buildChatPayload(messages));
-  return {
-    provider: "neuroedge",
-    raw: response,
-    text: extractCompletionText(response),
-  };
+  try {
+    const response = await neuroedgeGatewayClient.chatCompletions(buildChatPayload(messages));
+    return {
+      provider: "neuroedge",
+      raw: response,
+      text: extractCompletionText(response),
+    };
+  } catch (error) {
+    if (isRetryableNeuroEdgeError(error)) {
+      return {
+        provider: "neuroedge-rate-limited",
+        degraded: true,
+        code: error.code || "NEUROEDGE_RATE_LIMITED",
+        retryAfterMs: getRetryAfterMs(error),
+        text: buildAssistantRateLimitText(error),
+      };
+    }
+    throw error;
+  }
 }
 
 async function runNeuroEdgeChatStream(messages, { onChunk } = {}) {
-  const response = await neuroedgeGatewayClient.chatStream(buildChatPayload(messages), { onChunk });
-  return {
-    provider: "neuroedge",
-    raw: response,
-    text: String(response?.text || extractCompletionText(response) || "").trim(),
-  };
+  try {
+    const response = await neuroedgeGatewayClient.chatStream(buildChatPayload(messages), { onChunk });
+    return {
+      provider: "neuroedge",
+      raw: response,
+      text: String(response?.text || extractCompletionText(response) || "").trim(),
+    };
+  } catch (error) {
+    if (isRetryableNeuroEdgeError(error)) {
+      const text = buildAssistantRateLimitText(error);
+      await emitSyntheticChunks(text, onChunk);
+      return {
+        provider: "neuroedge-rate-limited",
+        degraded: true,
+        code: error.code || "NEUROEDGE_RATE_LIMITED",
+        retryAfterMs: getRetryAfterMs(error),
+        text,
+      };
+    }
+    throw error;
+  }
 }
 
 async function callOpenAI(prompt, opts = {}) {
@@ -219,6 +247,45 @@ function extractJsonBlock(text) {
 
 function buildUnsupportedCapabilityMessage(capability) {
   return `NeuroEdge pilot chat is connected, but ${capability} is not enabled on this API contract yet.`;
+}
+
+function isRetryableNeuroEdgeError(error) {
+  if (!(error instanceof NeuroEdgeGatewayError)) return false;
+  return (
+    Number(error?.status || 0) === 429 ||
+    error?.code === "NEUROEDGE_RATE_LIMITED" ||
+    error?.code === "NEUROEDGE_CIRCUIT_OPEN"
+  );
+}
+
+function getRetryAfterMs(error) {
+  return Math.max(0, Number(error?.details?.retryAfterMs || 0));
+}
+
+function getRetryAfterSeconds(error) {
+  const retryAfterMs = getRetryAfterMs(error);
+  return retryAfterMs > 0 ? Math.max(1, Math.ceil(retryAfterMs / 1000)) : 0;
+}
+
+function buildAssistantRateLimitText(error) {
+  const retryAfterSeconds = getRetryAfterSeconds(error);
+  const retryText =
+    retryAfterSeconds > 0
+      ? `Please try again in about ${retryAfterSeconds} seconds.`
+      : "Please try again shortly.";
+  return [
+    "Assistant service is busy right now.",
+    retryText,
+    "If you have urgent symptoms, contact a clinician immediately.",
+  ].join(" ");
+}
+
+function buildFeedbackRateLimitMessage(error) {
+  const retryAfterSeconds = getRetryAfterSeconds(error);
+  if (retryAfterSeconds > 0) {
+    return `Feedback could not be saved right now because NeuroEdge is busy. Please try again in about ${retryAfterSeconds} seconds.`;
+  }
+  return "Feedback could not be saved right now because NeuroEdge is busy. Please try again shortly.";
 }
 
 export async function diagnoseSymptoms(symptoms) {
@@ -374,7 +441,13 @@ export async function assistantChat({ message, role, pageContext, healthProfile 
 
   if (hasNeuroEdge()) {
     const out = await runNeuroEdgeChat(messages);
-    return { provider: out.provider, text: out.text || "No response generated." };
+    return {
+      provider: out.provider,
+      text: out.text || "No response generated.",
+      degraded: out.degraded === true,
+      code: out.code || "",
+      retryAfterMs: Number(out.retryAfterMs || 0),
+    };
   }
 
   if (OPENAI_KEY) {
@@ -409,7 +482,13 @@ export async function assistantChatStream({ message, role, pageContext, healthPr
 
   if (hasNeuroEdge()) {
     const out = await runNeuroEdgeChatStream(messages, { onChunk });
-    return { provider: out.provider, text: out.text || "No response generated." };
+    return {
+      provider: out.provider,
+      text: out.text || "No response generated.",
+      degraded: out.degraded === true,
+      code: out.code || "",
+      retryAfterMs: Number(out.retryAfterMs || 0),
+    };
   }
 
   const fallback = await assistantChat({ message, role, pageContext, healthProfile });
@@ -430,6 +509,19 @@ export async function assistantFeedback({ message, answer, rating, reason, metad
       };
     } catch (error) {
       const status = Number(error?.status || 0);
+      if (isRetryableNeuroEdgeError(error)) {
+        return {
+          provider: "neuroedge",
+          accepted: false,
+          degraded: true,
+          retryable: true,
+          reason: error?.code || "NEUROEDGE_RATE_LIMITED",
+          message: buildFeedbackRateLimitMessage(error),
+          retryAfterMs: getRetryAfterMs(error),
+          retryAfterSeconds: getRetryAfterSeconds(error),
+          response: error?.details || null,
+        };
+      }
       if ([404, 405, 422].includes(status)) {
         return {
           provider: "neuroedge",

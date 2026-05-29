@@ -12,6 +12,38 @@ const DEFAULT_CIRCUIT_COOLDOWN_MS = Math.max(
 
 const circuitState = new Map();
 
+function parseRetryAfterMs(value) {
+  if (value == null || value === "") return 0;
+  const raw = String(value).trim();
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+  const timestamp = Date.parse(raw);
+  if (!Number.isNaN(timestamp)) {
+    return Math.max(0, timestamp - Date.now());
+  }
+  return 0;
+}
+
+function toRetryAfterSeconds(retryAfterMs) {
+  const safeMs = Math.max(0, Number(retryAfterMs || 0));
+  return safeMs > 0 ? Math.max(1, Math.ceil(safeMs / 1000)) : 0;
+}
+
+function buildRateLimitMessage(retryAfterMs = 0) {
+  const seconds = toRetryAfterSeconds(retryAfterMs);
+  if (seconds > 0) {
+    return `NeuroEdge is busy right now. Please try again in about ${seconds} seconds.`;
+  }
+  return "NeuroEdge is busy right now. Please try again shortly.";
+}
+
+function computeRetryDelayMs(attempt, retryAfterMs = 0) {
+  const exponentialBackoffMs = DEFAULT_RETRY_BACKOFF_MS * 2 ** Math.max(0, Number(attempt || 0));
+  return Math.max(exponentialBackoffMs, Math.max(0, Number(retryAfterMs || 0)));
+}
+
 function getBaseUrls() {
   const primary = String(process.env.NEUROEDGE_API_BASE || "").trim();
   const failover = String(process.env.NEUROEDGE_API_BASE_FAILOVER || "")
@@ -254,7 +286,13 @@ function isRetriableStatus(status) {
 
 function getCircuit(url) {
   if (!circuitState.has(url)) {
-    circuitState.set(url, { consecutiveFailures: 0, openedAt: null });
+    circuitState.set(url, {
+      consecutiveFailures: 0,
+      openedAt: null,
+      cooldownMs: DEFAULT_CIRCUIT_COOLDOWN_MS,
+      reason: "",
+      retryAfterMs: 0,
+    });
   }
   return circuitState.get(url);
 }
@@ -262,25 +300,69 @@ function getCircuit(url) {
 function isCircuitOpen(url) {
   const c = getCircuit(url);
   if (!c.openedAt) return false;
-  if (Date.now() - c.openedAt >= DEFAULT_CIRCUIT_COOLDOWN_MS) {
+  if (Date.now() - c.openedAt >= Number(c.cooldownMs || DEFAULT_CIRCUIT_COOLDOWN_MS)) {
     c.openedAt = null;
     c.consecutiveFailures = 0;
+    c.cooldownMs = DEFAULT_CIRCUIT_COOLDOWN_MS;
+    c.reason = "";
+    c.retryAfterMs = 0;
     return false;
   }
   return true;
+}
+
+function getCircuitRetryAfterMs(url) {
+  const c = getCircuit(url);
+  if (!c.openedAt) return 0;
+  return Math.max(0, Number(c.cooldownMs || DEFAULT_CIRCUIT_COOLDOWN_MS) - (Date.now() - c.openedAt));
+}
+
+function buildCircuitOpenError(url) {
+  const c = getCircuit(url);
+  const retryAfterMs = getCircuitRetryAfterMs(url);
+  const reason = c.reason || "NEUROEDGE_CIRCUIT_OPEN";
+  const message =
+    reason === "NEUROEDGE_RATE_LIMITED"
+      ? buildRateLimitMessage(retryAfterMs || c.retryAfterMs)
+      : "NeuroEdge is temporarily unavailable. Please try again shortly.";
+  return new NeuroEdgeGatewayError(message, {
+    status: reason === "NEUROEDGE_RATE_LIMITED" ? 429 : 503,
+    code: reason === "NEUROEDGE_RATE_LIMITED" ? "NEUROEDGE_RATE_LIMITED" : "NEUROEDGE_CIRCUIT_OPEN",
+    details: {
+      circuitOpen: true,
+      retryAfterMs: retryAfterMs || c.retryAfterMs || 0,
+      retryAfterSeconds: toRetryAfterSeconds(retryAfterMs || c.retryAfterMs || 0),
+      circuitReason: reason,
+      retryable: true,
+    },
+  });
 }
 
 function markSuccess(url) {
   const c = getCircuit(url);
   c.consecutiveFailures = 0;
   c.openedAt = null;
+  c.cooldownMs = DEFAULT_CIRCUIT_COOLDOWN_MS;
+  c.reason = "";
+  c.retryAfterMs = 0;
 }
 
-function markFailure(url) {
+function markFailure(url, error = null) {
   const c = getCircuit(url);
   c.consecutiveFailures += 1;
+  const retryAfterMs = Math.max(0, Number(error?.details?.retryAfterMs || 0));
+  if (Number(error?.status || 0) === 429 || error?.code === "NEUROEDGE_RATE_LIMITED") {
+    c.openedAt = Date.now();
+    c.cooldownMs = Math.max(DEFAULT_CIRCUIT_COOLDOWN_MS, retryAfterMs);
+    c.reason = "NEUROEDGE_RATE_LIMITED";
+    c.retryAfterMs = retryAfterMs;
+    return;
+  }
   if (c.consecutiveFailures >= DEFAULT_CIRCUIT_THRESHOLD) {
     c.openedAt = Date.now();
+    c.cooldownMs = Math.max(DEFAULT_CIRCUIT_COOLDOWN_MS, retryAfterMs);
+    c.reason = error?.code || "NEUROEDGE_CIRCUIT_OPEN";
+    c.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -309,17 +391,33 @@ async function callOneBase(baseUrl, path, { method = "POST", body, correlationId
       const text = await res.text();
       const json = parseTextAsJsonSafe(text);
       if (!res.ok) {
+        const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
         const message =
-          json?.message ||
-          json?.error ||
-          `NeuroEdge request failed with status ${res.status}`;
+          res.status === 429
+            ? buildRateLimitMessage(retryAfterMs)
+            : json?.message ||
+              json?.error ||
+              `NeuroEdge request failed with status ${res.status}`;
         const err = new NeuroEdgeGatewayError(message, {
           status: res.status,
-          code: json?.code || "NEUROEDGE_HTTP_ERROR",
-          details: { body: json || text, retryCount: attempt, upstreamStatus: res.status },
+          code: res.status === 429 ? "NEUROEDGE_RATE_LIMITED" : json?.code || "NEUROEDGE_HTTP_ERROR",
+          details: {
+            body: json || text,
+            retryCount: attempt,
+            upstreamStatus: res.status,
+            retryAfterMs,
+            retryAfterSeconds: toRetryAfterSeconds(retryAfterMs),
+            retryable: isRetriableStatus(res.status),
+          },
         });
         if (attempt < DEFAULT_RETRIES && isRetriableStatus(res.status)) {
-          await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+          const delayMs = computeRetryDelayMs(attempt, retryAfterMs);
+          err.details = {
+            ...(err.details || {}),
+            backoffMs: delayMs,
+            nextRetryAttempt: attempt + 1,
+          };
+          await sleep(delayMs);
           attempt += 1;
           lastError = err;
           continue;
@@ -346,7 +444,14 @@ async function callOneBase(baseUrl, path, { method = "POST", body, correlationId
               }
             );
       if (attempt < DEFAULT_RETRIES) {
-        await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+        const delayMs = computeRetryDelayMs(attempt, wrapped?.details?.retryAfterMs || 0);
+        wrapped.details = {
+          ...(wrapped.details || {}),
+          backoffMs: delayMs,
+          retryable: true,
+          nextRetryAttempt: attempt + 1,
+        };
+        await sleep(delayMs);
         attempt += 1;
         lastError = wrapped;
         continue;
@@ -389,16 +494,32 @@ async function callOneBaseStream(
         clearTimeout(timeout);
         const text = await res.text();
         const json = parseTextAsJsonSafe(text);
+        const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
         const err = new NeuroEdgeGatewayError(
-          json?.message || json?.error || `NeuroEdge request failed with status ${res.status}`,
+          res.status === 429
+            ? buildRateLimitMessage(retryAfterMs)
+            : json?.message || json?.error || `NeuroEdge request failed with status ${res.status}`,
           {
             status: res.status,
-            code: json?.code || "NEUROEDGE_HTTP_ERROR",
-            details: { body: json || text, retryCount: attempt, upstreamStatus: res.status },
+            code: res.status === 429 ? "NEUROEDGE_RATE_LIMITED" : json?.code || "NEUROEDGE_HTTP_ERROR",
+            details: {
+              body: json || text,
+              retryCount: attempt,
+              upstreamStatus: res.status,
+              retryAfterMs,
+              retryAfterSeconds: toRetryAfterSeconds(retryAfterMs),
+              retryable: isRetriableStatus(res.status),
+            },
           }
         );
         if (attempt < DEFAULT_RETRIES && isRetriableStatus(res.status)) {
-          await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+          const delayMs = computeRetryDelayMs(attempt, retryAfterMs);
+          err.details = {
+            ...(err.details || {}),
+            backoffMs: delayMs,
+            nextRetryAttempt: attempt + 1,
+          };
+          await sleep(delayMs);
           attempt += 1;
           lastError = err;
           continue;
@@ -436,7 +557,14 @@ async function callOneBaseStream(
               }
             );
       if (!hasStreamedContent && attempt < DEFAULT_RETRIES) {
-        await sleep(DEFAULT_RETRY_BACKOFF_MS * (attempt + 1));
+        const delayMs = computeRetryDelayMs(attempt, wrapped?.details?.retryAfterMs || 0);
+        wrapped.details = {
+          ...(wrapped.details || {}),
+          backoffMs: delayMs,
+          retryable: true,
+          nextRetryAttempt: attempt + 1,
+        };
+        await sleep(delayMs);
         attempt += 1;
         lastError = wrapped;
         continue;
@@ -461,7 +589,12 @@ async function callNeuroEdge(path, { method = "POST", body, correlationId, idemp
   for (let i = 0; i < baseUrls.length; i += 1) {
     const base = baseUrls[i];
     if (isCircuitOpen(base)) {
-      errors.push(`${base}:CIRCUIT_OPEN`);
+      const circuitErr = buildCircuitOpenError(base);
+      errors.push(`${base}:${circuitErr.code}`);
+      if (i >= baseUrls.length - 1) {
+        circuitErr.details = { ...(circuitErr.details || {}), failoverErrors: errors };
+        throw circuitErr;
+      }
       continue;
     }
     try {
@@ -478,7 +611,7 @@ async function callNeuroEdge(path, { method = "POST", body, correlationId, idemp
         },
       };
     } catch (err) {
-      markFailure(base);
+      markFailure(base, err);
       errors.push(`${base}:${err?.code || err?.message || "ERROR"}`);
       if (i >= baseUrls.length - 1) {
         if (err instanceof NeuroEdgeGatewayError) {
@@ -516,7 +649,12 @@ async function callNeuroEdgeStream(
   for (let i = 0; i < baseUrls.length; i += 1) {
     const base = baseUrls[i];
     if (isCircuitOpen(base)) {
-      errors.push(`${base}:CIRCUIT_OPEN`);
+      const circuitErr = buildCircuitOpenError(base);
+      errors.push(`${base}:${circuitErr.code}`);
+      if (i >= baseUrls.length - 1) {
+        circuitErr.details = { ...(circuitErr.details || {}), failoverErrors: errors };
+        throw circuitErr;
+      }
       continue;
     }
     try {
@@ -541,7 +679,7 @@ async function callNeuroEdgeStream(
         },
       };
     } catch (err) {
-      markFailure(base);
+      markFailure(base, err);
       errors.push(`${base}:${err?.code || err?.message || "ERROR"}`);
       if (i >= baseUrls.length - 1) {
         if (err instanceof NeuroEdgeGatewayError) {
