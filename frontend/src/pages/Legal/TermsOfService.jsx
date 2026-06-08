@@ -120,7 +120,7 @@ export default function TermsOfService() {
       <section className="section">
         <div className="card legal-intro-card">
           <p>
-            Effective date: March 19, 2026. This document is a production-ready operating terms page for AfyaLink. It should still be reviewed by your legal counsel before public launch in any specific jurisdiction.
+            Effective date: June 10, 2026. This document is a production-ready operating terms page for AfyaLink. It should still be reviewed by your legal counsel before public launch in any specific jurisdiction.
           </p>
         </div>
       </section>
