@@ -118,7 +118,7 @@ export default function PrivacyPolicy() {
       <section className="section">
         <div className="card legal-intro-card">
           <p>
-            Effective date: March 19, 2026. This policy is written for AfyaLink’s real workflows and should still be reviewed by qualified counsel before jurisdiction-specific publication.
+            Effective date: June 10, 2026. This policy is written for AfyaLink’s real workflows and should still be reviewed by qualified counsel before jurisdiction-specific publication.
           </p>
         </div>
       </section>
