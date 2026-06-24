@@ -4,6 +4,9 @@ import otpStore from '../services/otpStore.js';
 import notifService from '../services/notificationService.js';
 import { getPaymentSettingsDoc } from '../utils/paymentSettingsStore.js';
 
+const isLiveSmsResult = (result) =>
+  result && ["twilio", "africastalking"].includes(String(result.provider || "").toLowerCase());
+
 /**
  * saveSettings(req): save encrypted settings (requires admin auth & adminPassword)
  */
@@ -138,21 +141,40 @@ export async function requestReveal2FA(req, res) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await otpStore.setOtp(`reveal:${String(user._id)}`, code, 300);
 
-    const to = user.phone || user.email || process.env.ADMIN_ALERT_PHONE;
+    const to = user.phone || process.env.ADMIN_ALERT_PHONE;
+    if (!to) {
+      await otpStore.delOtp(`reveal:${String(user._id)}`);
+      return res.status(400).json({
+        error: "Add a verified phone number to your account or configure ADMIN_ALERT_PHONE before requesting OTP.",
+      });
+    }
 
+    let smsResult;
     try {
-      await notifService.sendSMS({
-        provider: 'twilio',
+      smsResult = await notifService.sendSMS({
+        provider: 'auto',
         to,
         message: `Your AfyaLink reveal code is ${code}`
       });
-    } catch (e) {}
+    } catch (e) {
+      await otpStore.delOtp(`reveal:${String(user._id)}`);
+      return res.status(502).json({
+        error: e?.message || "Unable to send OTP. Check SMS provider configuration.",
+      });
+    }
+
+    if (process.env.NODE_ENV !== "test" && !isLiveSmsResult(smsResult)) {
+      await otpStore.delOtp(`reveal:${String(user._id)}`);
+      return res.status(503).json({
+        error: "SMS delivery is not configured. Add a live Twilio or Africa's Talking provider before requesting OTP.",
+      });
+    }
 
     await Audit.create({
       actor: user._id,
       action: 'payment_settings_reveal_otp_sent',
       target: 'PaymentSettings',
-      details: { to },
+      details: { to, provider: smsResult?.provider || "unknown" },
       ip: req.ip
     });
 

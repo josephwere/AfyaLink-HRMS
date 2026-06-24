@@ -133,6 +133,39 @@ const clearStepUpOtp = async (userId) => {
   await delOtp(key);
 };
 
+const setSessionStepUpOtp = async (userId, otp) => {
+  const key = `stepup:${userId}`;
+  let stored = false;
+  try {
+    const out = await withTimeout(redis.set(key, otp, { ex: 300 }), 900, null);
+    stored = Boolean(out);
+  } catch {
+    stored = false;
+  }
+  if (!stored) {
+    await setOtp(key, otp, 300);
+  } else {
+    fireAndForget(setOtp(key, otp, 300));
+  }
+};
+
+const getSessionStepUpOtp = async (userId) => {
+  const key = `stepup:${userId}`;
+  try {
+    const fromRedis = await withTimeout(redis.get(key), 900, null);
+    if (fromRedis) return String(fromRedis);
+  } catch {
+    // fallback below
+  }
+  return getOtp(key);
+};
+
+const clearSessionStepUpOtp = async (userId) => {
+  const key = `stepup:${userId}`;
+  fireAndForget(withTimeout(redis.del(key), 900, null));
+  await delOtp(key);
+};
+
 const persistRiskAssessment = async (user, risk) => {
   if (!user || !risk) return;
   try {
@@ -231,24 +264,78 @@ const securityCodeEmailTemplate = ({ otp, userName = "", expiresMinutes = 5 }) =
   `;
 };
 
-const send2FACode = async (user, otp) => {
+const isLiveSmsResult = (result) =>
+  result && ["twilio", "africastalking"].includes(String(result.provider || "").toLowerCase());
+
+const sendRequiredOtpSms = async ({ to, message }) => {
+  let result;
   try {
-    if (user.email) {
+    result = await sendSMS({ to, message });
+  } catch (err) {
+    err.code = err.code || "SMS_DELIVERY_FAILED";
+    err.statusCode = err.statusCode || 502;
+    throw err;
+  }
+
+  if (process.env.NODE_ENV !== "test" && !isLiveSmsResult(result)) {
+    const err = new Error("SMS delivery is not configured. Add a live Twilio or Africa's Talking provider and try again.");
+    err.code = "SMS_DELIVERY_REQUIRED";
+    err.statusCode = 503;
+    throw err;
+  }
+  return result;
+};
+
+const send2FACode = async (user, otp) => {
+  const deliveryErrors = [];
+
+  if (user.email) {
+    try {
       await sendEmail({
         to: user.email,
         subject: "Your AfyaLink Security Code",
         html: securityCodeEmailTemplate({ otp, userName: user.name, expiresMinutes: 5 }),
       });
-      return;
+      return { provider: "email" };
+    } catch (err) {
+      deliveryErrors.push(err);
     }
-    if (user.phone) {
-      await sendSMS({
-        to: user.phone,
-        message: `Your AfyaLink security code is ${otp}`,
-      });
-    }
-  } catch (_e) {
-    // Do not break auth flow if delivery channel is temporarily unavailable.
+  }
+
+  if (user.phone) {
+    return sendRequiredOtpSms({
+      to: user.phone,
+      message: `Your AfyaLink security code is ${otp}`,
+    });
+  }
+
+  const err = new Error(
+    deliveryErrors.length
+      ? "Unable to send the security code. Check email or SMS delivery configuration."
+      : "No email or phone number is available for this account."
+  );
+  err.code = "SECURITY_CODE_DELIVERY_FAILED";
+  err.statusCode = 502;
+  throw err;
+};
+
+const deliverStepUpCode = async (user, otp, step = "2FA_DELIVERY") => {
+  try {
+    return await withAuthStepTimeout(step, () => send2FACode(user, otp), 5000);
+  } catch (err) {
+    await clearStepUpOtp(user._id);
+    err.statusCode = err.statusCode || 502;
+    throw err;
+  }
+};
+
+const deliverSessionStepUpCode = async (user, otp, step = "STEPUP_DELIVERY") => {
+  try {
+    return await withAuthStepTimeout(step, () => send2FACode(user, otp), 5000);
+  } catch (err) {
+    await clearSessionStepUpOtp(user._id);
+    err.statusCode = err.statusCode || 502;
+    throw err;
   }
 };
 
@@ -351,10 +438,15 @@ export const register = async (req, res) => {
     if (normalizedPhone) {
       const otp = generateOtp();
       await setOtp(`phone:${user._id}`, otp, 300);
-      await sendSMS({
-        to: normalizedPhone,
-        message: `Your AfyaLink verification code is ${otp}`,
-      });
+      try {
+        await sendRequiredOtpSms({
+          to: normalizedPhone,
+          message: `Your AfyaLink verification code is ${otp}`,
+        });
+      } catch (smsErr) {
+        await delOtp(`phone:${user._id}`);
+        throw smsErr;
+      }
     }
 
     queueBrevoContactSync(user, { source: "REGISTER" });
@@ -366,6 +458,11 @@ export const register = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    if (["SMS_DELIVERY_FAILED", "SMS_DELIVERY_REQUIRED"].includes(err?.code)) {
+      return res.status(err.statusCode || 502).json({
+        msg: err.message || "Unable to send OTP right now. Check SMS provider configuration and try again.",
+      });
+    }
     res.status(500).json({ msg: "Server error" });
   }
 };
@@ -415,10 +512,15 @@ export const requestPasswordResetPhoneOtp = async (req, res) => {
 
     const otp = generateOtp();
     await setOtp(`password-reset:${user._id}`, otp, 600);
-    await sendSMS({
-      to: user.phone,
-      message: `Your AfyaLink password reset code is ${otp}. It expires in 10 minutes.`,
-    });
+    try {
+      await sendRequiredOtpSms({
+        to: user.phone,
+        message: `Your AfyaLink password reset code is ${otp}. It expires in 10 minutes.`,
+      });
+    } catch (smsErr) {
+      await delOtp(`password-reset:${user._id}`);
+      throw smsErr;
+    }
 
     await AuditLog.create({
       actorId: user._id,
@@ -441,8 +543,10 @@ export const requestPasswordResetPhoneOtp = async (req, res) => {
     return res.json({
       msg: "If the phone number exists, a reset code has been sent.",
     });
-  } catch {
-    return res.status(500).json({ msg: "Unable to process reset request" });
+  } catch (err) {
+    return res.status(502).json({
+      msg: err?.message || "Unable to send password reset code right now",
+    });
   }
 };
 
@@ -722,7 +826,7 @@ export const login = async (req, res) => {
     if (risk.level === "HIGH" || risk.level === "CRITICAL") {
       const otp = generateOtp();
       await setStepUpOtp(user._id, otp);
-      fireAndForget(withTimeout(send2FACode(user, otp), 3000, null));
+      await deliverStepUpCode(user, otp, "RISK_STEPUP_DELIVERY");
 
       if (risk.level === "CRITICAL") {
         const restrictionMinutes = Number(policy?.restrictionMinutes ?? 30);
@@ -788,7 +892,7 @@ export const login = async (req, res) => {
 
       const otp = generateOtp();
       await setStepUpOtp(user._id, otp);
-      fireAndForget(withTimeout(send2FACode(user, otp), 3000, null));
+      await deliverStepUpCode(user, otp, "ACCOUNT_2FA_DELIVERY");
       return res.json({
         success: true,
         requires2FA: true,
@@ -875,6 +979,12 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
+    if (["SMS_DELIVERY_FAILED", "SMS_DELIVERY_REQUIRED", "SECURITY_CODE_DELIVERY_FAILED"].includes(err?.code)) {
+      return res.status(err.statusCode || 502).json({
+        success: false,
+        msg: err.message || "Unable to send the security code right now. Check SMS or email delivery settings and try again.",
+      });
+    }
     if (err?.code === "AUTH_RUNTIME_TIMEOUT") {
       console.error("LOGIN TIMEOUT:", err.step, err.message);
       return res.status(503).json({
@@ -1176,14 +1286,21 @@ export const requestPhoneOtp = async (req, res) => {
 
     const otp = generateOtp();
     await setOtp(`phone:${user._id}`, otp, 300);
-    await sendSMS({
-      to: user.phone,
-      message: `Your AfyaLink verification code is ${otp}`,
-    });
+    try {
+      await sendRequiredOtpSms({
+        to: user.phone,
+        message: `Your AfyaLink verification code is ${otp}`,
+      });
+    } catch (smsErr) {
+      await delOtp(`phone:${user._id}`);
+      throw smsErr;
+    }
 
     res.json({ success: true, msg: "OTP sent" });
   } catch (err) {
-    res.status(500).json({ msg: "Failed to send OTP" });
+    res.status(502).json({
+      msg: err?.message || "Failed to send OTP",
+    });
   }
 };
 
@@ -1250,11 +1367,7 @@ export const resend2FA = async (req, res) => {
     const otp = generateOtp();
     await redis.set(`2fa:${user._id}`, otp, { ex: 300 });
 
-    await sendEmail({
-      to: user.email,
-      subject: "Your AfyaLink Security Code",
-      html: securityCodeEmailTemplate({ otp, userName: user.name, expiresMinutes: 5 }),
-    });
+    await send2FACode(user, otp);
 
     await AuditLog.create({
       actorId: user._id,
@@ -1273,8 +1386,10 @@ export const resend2FA = async (req, res) => {
     });
 
     res.json({ msg: "2FA code resent" });
-  } catch {
-    res.status(500).json({ msg: "Failed to resend 2FA" });
+  } catch (err) {
+    res.status(err?.statusCode || 500).json({
+      msg: err?.message || "Failed to resend 2FA",
+    });
   }
 };
 
@@ -1287,8 +1402,8 @@ export const requestStepUpOtp = async (req, res) => {
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     const otp = generateOtp();
-    await redis.set(`stepup:${user._id}`, otp, { ex: 300 });
-    await send2FACode(user, otp);
+    await setSessionStepUpOtp(user._id, otp);
+    await deliverSessionStepUpCode(user, otp, "STEPUP_DELIVERY");
 
     await AuditLog.create({
       actorId: user._id,
@@ -1303,7 +1418,10 @@ export const requestStepUpOtp = async (req, res) => {
     res.json({ success: true, msg: "Step-up code sent" });
   } catch (err) {
     console.error("STEPUP REQUEST ERROR:", err);
-    res.status(500).json({ success: false, msg: "Step-up request failed" });
+    res.status(err?.statusCode || 500).json({
+      success: false,
+      msg: err?.message || "Step-up request failed",
+    });
   }
 };
 
@@ -1315,12 +1433,11 @@ export const verifyStepUpOtp = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    const key = `stepup:${user._id}`;
-    const saved = await redis.get(key);
+    const saved = await getSessionStepUpOtp(user._id);
     if (!saved || saved !== String(otp)) {
       return res.status(401).json({ msg: "Invalid or expired OTP" });
     }
-    await redis.del(key);
+    await clearSessionStepUpOtp(user._id);
 
     const verifiedAt = new Date().toISOString();
     await redis.set(`stepup:last:${String(user._id)}`, verifiedAt, { ex: 3600 });

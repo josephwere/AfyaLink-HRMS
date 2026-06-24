@@ -2,8 +2,8 @@ import AuditLog from "../models/AuditLog.js";
 import Hospital from "../models/Hospital.js";
 import User from "../models/User.js";
 import { detectAnomaly } from "./anomaly.js";
-import { sendEmail } from "./mailer.js";// existing or stub
-import { sendSMS } from "./sms.js";            // stub for now
+import { sendEmail } from "./mailer.js";
+import { sendSMS } from "../services/notificationService.js";
 
 /* ======================================================
    NON-BLOCKING EMERGENCY ALERTS

@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import { sendEmail } from "../utils/mailer.js";
 import AuditLog from "../models/AuditLog.js";
-import { sendSMS } from "../utils/sms.js";
+import { sendSMS } from "../services/notificationService.js";
 
 const WINDOWS = [
   { tag: "14d", hours: 14 * 24, label: "14 days" },
@@ -53,7 +53,7 @@ export const sendVerificationReminders = async () => {
 
       if (user.phone) {
         try {
-          await sendSMS(user.phone, msg);
+          await sendSMS({ to: user.phone, message: msg });
         } catch (err) {
           console.error(`❌ SMS reminder failed for ${user.email}:`, err.message);
         }
@@ -75,4 +75,3 @@ export const sendVerificationReminders = async () => {
     console.error("❌ Verification reminders failed:", err);
   }
 };
-
