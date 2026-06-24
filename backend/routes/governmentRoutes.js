@@ -17,6 +17,10 @@ import {
   listGovernmentNotifications,
   listAuditLogs,
 } from "../controllers/governmentDashboardController.js";
+import {
+  listGovernmentStaff,
+  registerGovernmentStaff,
+} from "../controllers/governmentStaffController.js";
 
 const router = express.Router();
 
@@ -34,6 +38,8 @@ const GOVERNMENT_ROLES = [
 router.use(protect, requireRole(...GOVERNMENT_ROLES));
 
 router.get("/overview", getGovernmentOverview);
+router.get("/staff", listGovernmentStaff);
+router.post("/staff", registerGovernmentStaff);
 router.get("/claims", listGovernmentClaims);
 router.get("/hospitals", listGovernmentHospitals);
 router.get("/inspections", listInspections);

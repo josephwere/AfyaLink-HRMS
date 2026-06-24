@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import { listAvailableMedicines } from "../../services/pharmacyApi";
 import {
   createPharmacyReferral,
   listRegisteredPharmacies,
@@ -8,7 +9,13 @@ import {
 
 function emptyMedication() {
   return {
+    pharmacyItem: "",
     name: "",
+    sku: "",
+    unit: "",
+    stockStatus: "",
+    availableQuantityAtPrescription: null,
+    requestedQuantity: "",
     dosage: "",
     frequency: "",
     duration: "",
@@ -30,6 +37,14 @@ export default function Prescriptions() {
   const [pharmacies, setPharmacies] = useState([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState("");
   const [referrals, setReferrals] = useState([]);
+  const [medicineCatalog, setMedicineCatalog] = useState([]);
+  const [medicineError, setMedicineError] = useState("");
+
+  const medicineById = useMemo(() => {
+    const map = new Map();
+    medicineCatalog.forEach((item) => map.set(String(item._id), item));
+    return map;
+  }, [medicineCatalog]);
 
   useEffect(() => {
     if (!patientId) return;
@@ -54,6 +69,18 @@ export default function Prescriptions() {
       })
       .catch(() => setAppointments([]));
   }, [patientId]);
+
+  useEffect(() => {
+    listAvailableMedicines({ limit: 300, includeOutOfStock: true })
+      .then((res) => {
+        setMedicineCatalog(Array.isArray(res?.items) ? res.items : []);
+        setMedicineError("");
+      })
+      .catch((err) => {
+        setMedicineCatalog([]);
+        setMedicineError(err?.message || "Could not load pharmacy medicines.");
+      });
+  }, []);
 
   useEffect(() => {
     listRegisteredPharmacies({ limit: 100 })
@@ -87,7 +114,13 @@ export default function Prescriptions() {
         if (item?.medications?.length) {
           setMedications(
             item.medications.map((med) => ({
+              pharmacyItem: med.pharmacyItem || "",
               name: med.name || "",
+              sku: med.sku || "",
+              unit: med.unit || "",
+              stockStatus: med.stockStatus || "",
+              availableQuantityAtPrescription: med.availableQuantityAtPrescription ?? null,
+              requestedQuantity: med.requestedQuantity || "",
               dosage: med.dosage || "",
               frequency: med.frequency || "",
               duration: med.duration || "",
@@ -102,6 +135,29 @@ export default function Prescriptions() {
 
   const patchMedication = (index, patch) => {
     setMedications((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  };
+
+  const selectMedicine = (index, id) => {
+    const selected = medicineById.get(String(id));
+    if (!selected) {
+      patchMedication(index, {
+        pharmacyItem: "",
+        name: "",
+        sku: "",
+        unit: "",
+        stockStatus: "",
+        availableQuantityAtPrescription: null,
+      });
+      return;
+    }
+    patchMedication(index, {
+      pharmacyItem: selected._id,
+      name: selected.name || "",
+      sku: selected.sku || "",
+      unit: selected.unit || "",
+      stockStatus: selected.stockStatus || "",
+      availableQuantityAtPrescription: selected.totalQuantity ?? 0,
+    });
   };
 
   const addMedication = () => setMedications((prev) => [...prev, emptyMedication()]);
@@ -120,7 +176,16 @@ export default function Prescriptions() {
     try {
       const cleanedMeds = medications.filter((item) =>
         [item.name, item.dosage, item.frequency, item.duration].some((value) => String(value || "").trim())
-      );
+      ).map((item) => ({
+        pharmacyItem: item.pharmacyItem || null,
+        name: item.name,
+        sku: item.sku || "",
+        unit: item.unit || "",
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        requestedQuantity: item.requestedQuantity,
+      }));
       const payload = {
         appointmentId: selectedAppointmentId,
         patientId,
@@ -251,17 +316,48 @@ export default function Prescriptions() {
               </option>
             ))}
           </select>
+          {medicineError ? <div className="muted" style={{ marginTop: 8 }}>{medicineError}</div> : null}
+          {!medicineError && medicineCatalog.length ? (
+            <p className="muted" style={{ marginTop: 8 }}>
+              Select medicines from pharmacy inventory so prescriptions match current stock.
+            </p>
+          ) : null}
 
           <div className="alert-stack" style={{ marginTop: 12 }}>
             {medications.map((item, index) => (
               <div key={index} className="card">
                 <strong>Medication {index + 1}</strong>
                 <div className="panel-grid" style={{ marginTop: 8 }}>
-                  <input value={item.name} onChange={(e) => patchMedication(index, { name: e.target.value })} placeholder="Drug name" />
+                  <select value={item.pharmacyItem || ""} onChange={(e) => selectMedicine(index, e.target.value)}>
+                    <option value="">Select medicine from inventory</option>
+                    {medicineCatalog.map((med) => (
+                      <option key={med._id} value={med._id} disabled={med.stockStatus === "OUT_OF_STOCK"}>
+                        {med.name}
+                        {med.strength ? ` ${med.strength}` : ""}
+                        {med.form ? ` • ${med.form}` : ""}
+                        {` • ${med.totalQuantity ?? 0} ${med.unit || "units"}`}
+                        {med.stockStatus === "LOW_STOCK" ? " • low stock" : ""}
+                        {med.stockStatus === "OUT_OF_STOCK" ? " • out of stock" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <input value={item.name} onChange={(e) => patchMedication(index, { name: e.target.value, pharmacyItem: "" })} placeholder="Drug name" />
+                  <input value={item.requestedQuantity} onChange={(e) => patchMedication(index, { requestedQuantity: e.target.value })} placeholder={`Quantity${item.unit ? ` (${item.unit})` : ""}`} />
                   <input value={item.dosage} onChange={(e) => patchMedication(index, { dosage: e.target.value })} placeholder="Dosage" />
                   <input value={item.frequency} onChange={(e) => patchMedication(index, { frequency: e.target.value })} placeholder="Frequency" />
                   <input value={item.duration} onChange={(e) => patchMedication(index, { duration: e.target.value })} placeholder="Duration" />
                 </div>
+                {item.pharmacyItem ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Stock: {item.availableQuantityAtPrescription ?? 0} {item.unit || "units"}
+                    {item.sku ? ` • SKU ${item.sku}` : ""}
+                    {item.stockStatus === "LOW_STOCK" ? " • Low stock, confirm pharmacy can dispense." : ""}
+                  </p>
+                ) : (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Manual entry. Inventory availability will not be verified.
+                  </p>
+                )}
                 <div className="doctor-actions-row" style={{ marginTop: 8 }}>
                   <button type="button" className="btn-secondary" onClick={() => removeMedication(index)}>
                     Remove

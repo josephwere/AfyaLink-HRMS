@@ -1,4 +1,5 @@
 import Bed from "../models/Bed.js";
+import Ward from "../models/Ward.js";
 import Encounter from "../models/Encounter.js";
 import AuditLog from "../models/AuditLog.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
@@ -19,12 +20,67 @@ function scopedHospitalId(req) {
   return actorHospitalId(req);
 }
 
+function normalizeWardName(value) {
+  return String(value || "").trim();
+}
+
+async function ensureWard({ hospitalId, name, req, type = "GENERAL", department = "", capacity = 0 }) {
+  const wardName = normalizeWardName(name);
+  if (!hospitalId || !wardName) return null;
+  return Ward.findOneAndUpdate(
+    { hospital: hospitalId, name: wardName },
+    {
+      $setOnInsert: {
+        hospital: hospitalId,
+        name: wardName,
+        code: wardName.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24),
+        type,
+        department,
+        capacity,
+        active: true,
+        createdBy: req?.user?._id || null,
+      },
+      $set: {
+        updatedBy: req?.user?._id || null,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+}
+
+export async function listWards(req, res) {
+  const hospitalId = scopedHospitalId(req);
+  const filter = { active: { $ne: false } };
+  if (hospitalId) filter.hospital = hospitalId;
+  const wards = await Ward.find(filter)
+    .populate("hospital", "name code")
+    .sort({ name: 1 })
+    .lean();
+  return res.json({ items: wards });
+}
+
+export async function createWard(req, res) {
+  const hospitalId = scopedHospitalId(req);
+  if (!hospitalId) return res.status(400).json({ error: "Hospital is required" });
+  const ward = await ensureWard({
+    hospitalId,
+    name: req.body?.name,
+    type: String(req.body?.type || "GENERAL").trim().toUpperCase(),
+    department: String(req.body?.department || "").trim(),
+    capacity: Number(req.body?.capacity || 0) || 0,
+    req,
+  });
+  if (!ward) return res.status(400).json({ error: "Ward name is required" });
+  return res.status(201).json({ data: ward });
+}
+
 export async function listBeds(req,res){
   const hospitalId = scopedHospitalId(req);
   const filter = {};
   if (hospitalId) filter.hospital = hospitalId;
   const beds = await Bed.find(filter)
     .populate("hospital", "name code")
+    .populate("wardRef", "name code type department capacity")
     .populate("patient", "firstName lastName nationalId")
     .lean();
   res.json({ data: beds });
@@ -147,7 +203,10 @@ export async function getBedTimeline(req, res) {
   const hospitalId = scopedHospitalId(req);
   const filter = { _id: id };
   if (hospitalId) filter.hospital = hospitalId;
-  const bed = await Bed.findOne(filter).populate("patient", "firstName lastName nationalId").lean();
+  const bed = await Bed.findOne(filter)
+    .populate("wardRef", "name code type department capacity")
+    .populate("patient", "firstName lastName nationalId")
+    .lean();
   if (!bed) return res.status(404).json({ error: "Bed not found" });
 
   const logs = await AuditLog.find({
@@ -233,7 +292,9 @@ export async function createBed(req,res){
   const { ward, number } = req.body;
   const hospitalId = scopedHospitalId(req);
   if (!hospitalId) return res.status(400).json({ error: "Hospital is required" });
-  const b = await Bed.create({ hospital: hospitalId, ward, number, occupied:false });
+  const wardDoc = await ensureWard({ hospitalId, name: ward, req });
+  if (!wardDoc) return res.status(400).json({ error: "Ward is required" });
+  const b = await Bed.create({ hospital: hospitalId, ward: wardDoc.name, wardRef: wardDoc._id, number, occupied:false });
   await audit({
     req,
     action: "BED_CREATE",

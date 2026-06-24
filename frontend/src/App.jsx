@@ -461,7 +461,7 @@ export default function App() {
           <Route path="/app/operations/devices/connectivity" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminMachineConnectivity /></RequireRole>} />
           <Route path="/app/operations/devices/alerts" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminMachineAlerts /></RequireRole>} />
           <Route path="/app/operations/pharmacy/referrals" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "SURGEON", "NURSE", "RECEPTIONIST", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminPharmacyReferrals /></RequireRole>} />
-          <Route path="/app/operations/inventory/index" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "PHARMACIST"]}><Inventory /></RequireRole>} />
+          <Route path="/app/operations/inventory/index" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "PHARMACIST", "LAB_TECH", "DOCTOR"]}><Inventory /></RequireRole>} />
           <Route path="/app/operations/incidents/index" element={<RequireRole roles={["NURSE", "SECURITY_ADMIN", "SECURITY_OFFICER", "SUPER_ADMIN", "DEVELOPER"]}><NurseIncidentReports /></RequireRole>} />
 
           {/* Lab (ops) */}
@@ -521,7 +521,7 @@ export default function App() {
           <Route path="/app/platform/audit/logs" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><AuditLogs /></RequireRole>} />
           <Route path="/app/platform/audit/pharmacy-access" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyAccessAudit /></RequireRole>} />
           <Route path="/app/platform/security/access-control" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><AccessControl /></RequireRole>} />
-          <Route path="/app/platform/security/admin-creation" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN"]}><CreateAdmin /></RequireRole>} />
+          <Route path="/app/platform/security/admin-creation" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN"]}><CreateAdmin /></RequireRole>} />
           <Route path="/app/platform/security/abac" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><AbacPolicies /></RequireRole>} />
           <Route path="/app/platform/admin/home" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "DEVELOPER"]}><AdminDashboard /></RequireRole>} />
           <Route path="/app/platform/ai/unified-assistant" element={<RequireRole roles={["SUPER_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><UnifiedAssistantDashboard /></RequireRole>} />

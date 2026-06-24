@@ -39,6 +39,13 @@ export const registerDeveloper = async (data) => {
   });
 };
 
+export const registerGovernmentStaff = async (data) => {
+  return apiFetch("/api/government/staff", {
+    method: "POST",
+    body: data,
+  });
+};
+
 export const listHospitalAdmins = async (params = {}) => {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {

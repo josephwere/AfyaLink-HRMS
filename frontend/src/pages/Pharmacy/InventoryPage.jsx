@@ -1,14 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
+import { listAvailableMedicines } from "../../services/inventoryApi";
 import { listTransfers } from "../../services/transferApi";
 
 export default function InventoryPage() {
   const navigate = useNavigate();
+  const [medicines, setMedicines] = useState([]);
+  const [medicineError, setMedicineError] = useState("");
   const [transfers, setTransfers] = useState([]);
   const [transferError, setTransferError] = useState("");
 
   useEffect(() => {
+    listAvailableMedicines({ limit: 100, includeOutOfStock: true })
+      .then((res) => {
+        setMedicines(Array.isArray(res?.items) ? res.items : []);
+        setMedicineError("");
+      })
+      .catch((err) => {
+        setMedicines([]);
+        setMedicineError(err?.message || "Failed to load medicine inventory.");
+      });
     listTransfers({ limit: 6, scope: "facility" })
       .then((res) => {
         const items = Array.isArray(res?.items) ? res.items : [];
@@ -38,6 +50,48 @@ export default function InventoryPage() {
       />
 
       <section className="section doctor-main-grid">
+        <div className="card doctor-schedule-card">
+          <div className="card-header-actions">
+            <div>
+              <h3>Medicines Available To Prescribers</h3>
+              <p className="muted">Doctors see this stock list when creating prescriptions.</p>
+            </div>
+            <div className="action-pill">{medicines.filter((item) => item.stockStatus === "LOW_STOCK").length} low stock</div>
+          </div>
+          {medicineError ? <div className="muted">{medicineError}</div> : null}
+          <div className="table-wrap" style={{ marginTop: 12 }}>
+            <table className="doctor-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>SKU</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medicines.map((item) => (
+                  <tr key={item._id}>
+                    <td>
+                      {item.name}
+                      {item.strength ? ` ${item.strength}` : ""}
+                      {item.form ? <span className="muted"> • {item.form}</span> : null}
+                    </td>
+                    <td>{item.sku || "—"}</td>
+                    <td>{item.totalQuantity ?? 0} {item.unit || "units"}</td>
+                    <td>{item.stockStatus || "AVAILABLE"}</td>
+                  </tr>
+                ))}
+                {medicines.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="muted">No medicines listed yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div className="card doctor-schedule-card">
           <div className="card-header-actions">
             <div>

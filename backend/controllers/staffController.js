@@ -1,14 +1,47 @@
 import User from "../models/User.js";
+import Staff from "../models/Staff.js";
 import { STAFF_ROLES } from "../utils/roleSets.js";
 import { evaluateStaffIdentityChecklist } from "../utils/staffIdentityChecklist.js";
 
 const STAFF_ROLES_SET = new Set(STAFF_ROLES);
+const STRICT_STAFF_IDENTITY_ONBOARDING = ["1", "true", "yes"].includes(
+  String(process.env.STRICT_STAFF_IDENTITY_ONBOARDING || "").toLowerCase()
+);
 
 function resolveHospital(req) {
-  if (req.user?.role === "SUPER_ADMIN" && req.query.hospitalId) {
-    return req.query.hospitalId;
+  if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(String(req.user?.role || "").toUpperCase())) {
+    return req.query.hospitalId || req.body?.hospitalId || req.user?.hospital || req.user?.hospitalId;
   }
   return req.user?.hospital || req.user?.hospitalId;
+}
+
+async function upsertStaffProfile(user, checklist = null) {
+  if (!user?.hospital || !STAFF_ROLES_SET.has(String(user.role || "").toUpperCase())) return null;
+  return Staff.findOneAndUpdate(
+    { user: user._id },
+    {
+      $set: {
+        user: user._id,
+        role: user.role,
+        hospital: user.hospital,
+        status: user?.employment?.status || "ACTIVE",
+        employeeId: user?.employment?.employeeId || "",
+        department: user?.employment?.department || "",
+        licenseNumber: user?.licenseNumber || "",
+        licenseExpiry: user?.licenseExpiry || null,
+        checklist: checklist
+          ? {
+              compliant: Boolean(checklist.compliant),
+              completionRate: Number(checklist.completionRate || 0),
+              missingKeys: checklist.missingKeys || [],
+              missingLabels: checklist.missingLabels || [],
+              evaluatedAt: new Date(),
+            }
+          : undefined,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
 }
 
 export const getAllStaff = async (req, res) => {
@@ -116,7 +149,7 @@ export const createStaff = async (req, res) => {
       credentials: credentials && typeof credentials === "object" ? credentials : undefined,
     };
     const checklist = evaluateStaffIdentityChecklist(candidatePayload);
-    if (!checklist.compliant) {
+    if (STRICT_STAFF_IDENTITY_ONBOARDING && !checklist.compliant) {
       return res.status(422).json({
         msg: "Identity checklist incomplete for selected role",
         checklist,
@@ -126,6 +159,7 @@ export const createStaff = async (req, res) => {
     const created = await User.create({
       ...candidatePayload,
     });
+    await upsertStaffProfile(created, checklist);
 
     return res.status(201).json({
       id: created._id,
@@ -134,6 +168,10 @@ export const createStaff = async (req, res) => {
       role: created.role,
       hospital: created.hospital,
       active: created.active,
+      checklist,
+      msg: checklist.compliant
+        ? "Staff created"
+        : "Staff created. Complete the identity checklist before production access.",
     });
   } catch (err) {
     console.error(err);
@@ -164,6 +202,8 @@ export const updateStaff = async (req, res) => {
     ).select("-password -refreshTokens -trustedDevices -emergencyAccess");
 
     if (!item) return res.status(404).json({ msg: "Staff not found" });
+    const checklist = evaluateStaffIdentityChecklist(item);
+    await upsertStaffProfile(item, checklist);
     return res.json(item);
   } catch (err) {
     console.error(err);
@@ -191,6 +231,17 @@ export const deactivateStaff = async (req, res) => {
     item.employment.separationReason = "Removed from hospital staffing roster";
     item.active = true;
     await item.save();
+    await Staff.findOneAndUpdate(
+      { user: item._id },
+      {
+        $set: {
+          status: "INACTIVE",
+          hospital: hospital,
+          "metadata.deactivatedAt": new Date(),
+        },
+      },
+      { new: true }
+    );
 
     return res.json({ success: true, demotedTo: "PATIENT", staff: item });
   } catch (err) {

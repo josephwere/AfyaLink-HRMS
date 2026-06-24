@@ -5,6 +5,7 @@ import {
   registerSystemAdmin,
   registerSuperAssistant,
   registerDeveloper,
+  registerGovernmentStaff,
   listHospitals,
 } from "../../services/superAdminApi";
 import { useAuth } from "../../utils/auth";
@@ -31,12 +32,22 @@ export default function CreateAdmin() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [msg, setMsg] = useState(null);
   const actorRole = normalizeRole(user?.actualRole || user?.role);
-  const canCreateAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
+  const canCreateGlobalAdmins = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
+  const canCreateGovernmentStaff =
+    canCreateGlobalAdmins || actorRole === "DEVELOPER" || actorRole === "GOVERNMENT_ADMIN";
+  const canCreateAdmins = canCreateGlobalAdmins || canCreateGovernmentStaff;
   const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
   const canCreateSuperAssistant = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
+  const canCreateGovernmentAdmin = canCreateGlobalAdmins || actorRole === "DEVELOPER";
+
+  React.useEffect(() => {
+    if (!canCreateGlobalAdmins && form.role === "HOSPITAL_ADMIN") {
+      setForm((prev) => ({ ...prev, role: "GOVERNMENT_REGULATOR" }));
+    }
+  }, [canCreateGlobalAdmins, form.role]);
 
   if (!canCreateAdmins) {
-    return <AccessDeniedCard message="Only founder and system admin roles can create admin accounts from this screen." />;
+    return <AccessDeniedCard message="Only founder, system admin, developer, or government admin roles can create accounts from this screen." />;
   }
 
   const loadHospitals = React.useCallback(async (q = "") => {
@@ -64,15 +75,17 @@ export default function CreateAdmin() {
   }, []);
 
   React.useEffect(() => {
+    if (!canCreateGlobalAdmins) return;
     loadHospitals("");
-  }, [loadHospitals]);
+  }, [canCreateGlobalAdmins, loadHospitals]);
 
   React.useEffect(() => {
+    if (!canCreateGlobalAdmins) return undefined;
     const t = setTimeout(() => {
       loadHospitals(hospitalQuery.trim());
     }, 250);
     return () => clearTimeout(t);
-  }, [hospitalQuery, loadHospitals]);
+  }, [canCreateGlobalAdmins, hospitalQuery, loadHospitals]);
 
   const filteredHospitals = useMemo(() => {
     const q = hospitalQuery.trim().toLowerCase();
@@ -129,6 +142,19 @@ export default function CreateAdmin() {
           password: form.password,
         });
         setMsg("✅ Developer created");
+      } else if (String(form.role || "").startsWith("GOVERNMENT_")) {
+        if (form.role === "GOVERNMENT_ADMIN" && !canCreateGovernmentAdmin) {
+          setMsg("Only founder, system admin, or developer can create Government Admin accounts.");
+          return;
+        }
+        await registerGovernmentStaff({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: form.role,
+          agency: "Ministry of Health",
+        });
+        setMsg("✅ Government account created");
       } else {
         await registerHospitalAdmin({
           name: form.name,
@@ -193,16 +219,21 @@ export default function CreateAdmin() {
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
           >
-            <option value="HOSPITAL_ADMIN">Hospital Admin</option>
+            {canCreateGlobalAdmins && <option value="HOSPITAL_ADMIN">Hospital Admin</option>}
             {canCreateSuperAssistant && (
               <option value="SUPER_ASSISTANT">Super Assistant (Human)</option>
             )}
             {canCreateSystemLevel && <option value="SYSTEM_ADMIN">System Admin</option>}
             {canCreateSystemLevel && <option value="DEVELOPER">Developer</option>}
+            {canCreateGovernmentAdmin && <option value="GOVERNMENT_ADMIN">Government Admin</option>}
+            {canCreateGovernmentStaff && <option value="GOVERNMENT_REGULATOR">Government Regulator</option>}
+            {canCreateGovernmentStaff && <option value="GOVERNMENT_AUDITOR">Government Auditor</option>}
+            {canCreateGovernmentStaff && <option value="GOVERNMENT_INSPECTOR">Government Inspector</option>}
+            {canCreateGovernmentStaff && <option value="GOVERNMENT_ANALYST">Government Analyst</option>}
           </select>
         </DismissibleCardSection>
 
-        {form.role === "HOSPITAL_ADMIN" && (
+        {canCreateGlobalAdmins && form.role === "HOSPITAL_ADMIN" && (
           <DismissibleCardSection title="Hospital Assignment (No Admin Yet)">
             <input
               placeholder="Global search: hospital name, code, address"

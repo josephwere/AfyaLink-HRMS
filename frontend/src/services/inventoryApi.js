@@ -5,4 +5,13 @@ export async function listInventory({ q, page = 1, limit = 25 } = {}) {
   return apiFetch(`/api/inventory/list?${query}`);
 }
 
-export default { listInventory };
+export async function listAvailableMedicines({ q = "", limit = 200, includeOutOfStock = true } = {}) {
+  const query = new URLSearchParams({
+    q,
+    limit,
+    includeOutOfStock: includeOutOfStock ? "true" : "false",
+  }).toString();
+  return apiFetch(`/api/pharmacy/available-medicines?${query}`);
+}
+
+export default { listInventory, listAvailableMedicines };

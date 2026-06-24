@@ -1,5 +1,6 @@
 import Workflow from "../models/Workflow.js";
 import Prescription from "../models/Prescription.js";
+import PharmacyItem from "../models/PharmacyItem.js";
 import InsuranceAuthorization from "../models/InsuranceAuthorization.js";
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
@@ -39,16 +40,78 @@ export async function createPrescription(req, res) {
         error: "appointmentId or encounterId and meds are required",
       });
     }
-    const cleanedMeds = meds
+    const candidateMeds = meds
       .map((item) => ({
+        pharmacyItem: item?.pharmacyItem || item?.pharmacyItemId || null,
         name: String(item?.name || "").trim(),
+        sku: String(item?.sku || "").trim(),
+        unit: String(item?.unit || "").trim(),
         dosage: String(item?.dosage || "").trim(),
         frequency: String(item?.frequency || "").trim(),
         duration: String(item?.duration || "").trim(),
+        requestedQuantity: Math.max(0, Number(item?.requestedQuantity || 0)),
       }))
       .filter((item) => item.name);
+
+    const itemIds = [
+      ...new Set(
+        candidateMeds
+          .map((item) => (item.pharmacyItem ? String(item.pharmacyItem) : ""))
+          .filter(Boolean)
+      ),
+    ];
+    const inventoryById = new Map();
+    if (itemIds.length) {
+      const rows = await PharmacyItem.find({
+        _id: { $in: itemIds },
+        hospital: req.user.hospital,
+        active: { $ne: false },
+      })
+        .select("name sku unit totalQuantity minStock")
+        .lean();
+      rows.forEach((row) => inventoryById.set(String(row._id), row));
+    }
+
+    const cleanedMeds = candidateMeds
+      .map((item) => {
+        const linked = item.pharmacyItem ? inventoryById.get(String(item.pharmacyItem)) : null;
+        const totalQuantity = linked ? Number(linked.totalQuantity || 0) : null;
+        const minStock = linked ? Number(linked.minStock || 0) : 0;
+        const stockStatus = !linked
+          ? "UNLINKED"
+          : totalQuantity <= 0
+            ? "OUT_OF_STOCK"
+            : minStock > 0 && totalQuantity <= minStock
+              ? "LOW_STOCK"
+              : "AVAILABLE";
+        return {
+          pharmacyItem: linked?._id || null,
+          name: linked?.name || item.name,
+          sku: linked?.sku || item.sku || "",
+          unit: linked?.unit || item.unit || "",
+          dosage: item.dosage,
+          frequency: item.frequency,
+          duration: item.duration,
+          requestedQuantity: item.requestedQuantity,
+          availableQuantityAtPrescription: totalQuantity,
+          stockStatus,
+        };
+      })
+      .filter((item) => item.name);
+
     if (!cleanedMeds.length) {
       return res.status(400).json({ error: "At least one medication name is required" });
+    }
+    const unavailable = cleanedMeds.filter((item) => item.pharmacyItem && item.stockStatus === "OUT_OF_STOCK");
+    if (unavailable.length) {
+      return res.status(409).json({
+        error: "One or more selected medicines are out of stock",
+        unavailable: unavailable.map((item) => ({
+          pharmacyItem: item.pharmacyItem,
+          name: item.name,
+          stockStatus: item.stockStatus,
+        })),
+      });
     }
 
     let appointment = null;

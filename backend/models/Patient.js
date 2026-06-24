@@ -25,6 +25,13 @@ const patientSchema = new Schema(
       required: true,
       index: true,
     },
+    ward: { type: String, trim: true, default: "" },
+    wardRef: {
+      type: Schema.Types.ObjectId,
+      ref: "Ward",
+      default: null,
+      index: true,
+    },
 
     primaryDoctor: {
       type: Schema.Types.ObjectId,
@@ -122,6 +129,7 @@ const patientSchema = new Schema(
 patientSchema.index({ hospital: 1, active: 1, createdAt: -1 });
 patientSchema.index({ hospital: 1, lastName: 1, firstName: 1 });
 patientSchema.index({ hospital: 1, nationalId: 1 });
+patientSchema.index({ hospital: 1, wardRef: 1, active: 1 });
 patientSchema.index({ hospital: 1, "familyGroup.parentNationalIdNumber": 1, active: 1 });
 
 /* ======================================================

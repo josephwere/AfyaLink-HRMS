@@ -19,6 +19,12 @@ const EncounterSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    wardRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ward",
+      default: null,
+      index: true,
+    },
 
     appointment: {
       type: mongoose.Schema.Types.ObjectId,

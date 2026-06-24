@@ -11,6 +11,12 @@ const bedSchema = new Schema(
       index: true,
     },
     ward: { type: String, trim: true, required: true },
+    wardRef: {
+      type: Schema.Types.ObjectId,
+      ref: "Ward",
+      default: null,
+      index: true,
+    },
     number: { type: String, trim: true, required: true },
     occupied: { type: Boolean, default: false, index: true },
     patient: {
@@ -23,6 +29,7 @@ const bedSchema = new Schema(
 );
 
 bedSchema.index({ hospital: 1, ward: 1, number: 1 }, { unique: true });
+bedSchema.index({ hospital: 1, wardRef: 1, number: 1 });
 bedSchema.index({ hospital: 1, occupied: 1, ward: 1 });
 
 export default mongoose.models.Bed || model("Bed", bedSchema);

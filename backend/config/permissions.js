@@ -85,6 +85,8 @@ export const PERMISSIONS = {
     consultation: ["complete"],
     prescriptions: ["create", "read"],
     lab_orders: ["create", "read"],
+    inventory: ["read"],
+    pharmacy: ["read"],
     doctor: ["write"],
   },
 
@@ -98,6 +100,8 @@ export const PERMISSIONS = {
     patients: ["read"],
     lab_orders: ["read", "update"],
     lab_results: ["create", "read"],
+    inventory: ["read"],
+    pharmacy: ["read"],
   },
 
  

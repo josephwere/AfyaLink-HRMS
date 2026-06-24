@@ -1,5 +1,7 @@
 // backend/controllers/hospitalAdmin.js
 import User from '../models/User.js';
+import Staff from "../models/Staff.js";
+import { STAFF_ROLES } from "../utils/roleSets.js";
 import { evaluateStaffIdentityChecklist } from "../utils/staffIdentityChecklist.js";
 
 // Register staff: doctor, nurse, labtech
@@ -16,11 +18,45 @@ const STAFF_ROLE_MAP = {
   therapist: "THERAPIST",
   receptionist: "RECEPTIONIST",
   security_officer: "SECURITY_OFFICER",
+  security_admin: "SECURITY_ADMIN",
   hr_manager: "HR_MANAGER",
   payroll_officer: "PAYROLL_OFFICER",
   community_health_worker: "COMMUNITY_HEALTH_WORKER",
   chw: "COMMUNITY_HEALTH_WORKER",
 };
+const STAFF_ROLES_SET = new Set(STAFF_ROLES);
+const STRICT_STAFF_IDENTITY_ONBOARDING = ["1", "true", "yes"].includes(
+  String(process.env.STRICT_STAFF_IDENTITY_ONBOARDING || "").toLowerCase()
+);
+
+async function upsertStaffProfile(user, checklist = null) {
+  if (!user?.hospital || !STAFF_ROLES_SET.has(String(user.role || "").toUpperCase())) return null;
+  return Staff.findOneAndUpdate(
+    { user: user._id },
+    {
+      $set: {
+        user: user._id,
+        role: user.role,
+        hospital: user.hospital,
+        status: user?.employment?.status || "ACTIVE",
+        employeeId: user?.employment?.employeeId || "",
+        department: user?.employment?.department || "",
+        licenseNumber: user?.licenseNumber || "",
+        licenseExpiry: user?.licenseExpiry || null,
+        checklist: checklist
+          ? {
+              compliant: Boolean(checklist.compliant),
+              completionRate: Number(checklist.completionRate || 0),
+              missingKeys: checklist.missingKeys || [],
+              missingLabels: checklist.missingLabels || [],
+              evaluatedAt: new Date(),
+            }
+          : undefined,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+}
 
 export const registerStaff = async (req, res) => {
   const {
@@ -49,7 +85,7 @@ export const registerStaff = async (req, res) => {
       email,
       password,
       role: normalizedRole,
-      hospital: req.user.hospital,
+      hospital: req.user.hospital || req.user.hospitalId || req.body?.hospitalId,
       phone: phone ? String(phone).trim() : undefined,
       nationalIdNumber: nationalIdNumber ? String(nationalIdNumber).trim().toUpperCase() : undefined,
       nationalIdCountry: nationalIdCountry ? String(nationalIdCountry).trim().toUpperCase() : undefined,
@@ -64,18 +100,23 @@ export const registerStaff = async (req, res) => {
     };
 
     const checklist = evaluateStaffIdentityChecklist(candidate);
-    if (!checklist.compliant) {
+    if (STRICT_STAFF_IDENTITY_ONBOARDING && !checklist.compliant) {
       return res.status(422).json({ msg: "Identity checklist incomplete for selected role", checklist });
     }
 
     const staff = await User.create(candidate);
+    await upsertStaffProfile(staff, checklist);
     res.status(201).json({
       success: true,
+      msg: checklist.compliant
+        ? "Staff registered"
+        : "Staff registered. Complete the identity checklist before production access.",
       staff: {
         id: staff._id,
         name: staff.name,
         email: staff.email,
         role: staff.role,
+        checklist,
       },
     });
   } catch (err) {
@@ -101,6 +142,7 @@ export const getHospitalStaff = async (req, res) => {
           "THERAPIST",
           "RECEPTIONIST",
           "SECURITY_OFFICER",
+          "SECURITY_ADMIN",
           "HR_MANAGER",
           "PAYROLL_OFFICER",
           "COMMUNITY_HEALTH_WORKER",

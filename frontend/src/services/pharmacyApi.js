@@ -7,6 +7,15 @@ export async function listItems({ q, page = 1, limit = 25 } = {}) {
   return apiFetch(`/api/pharmacy?${query}`);
 }
 
+export async function listAvailableMedicines({ q = "", limit = 200, includeOutOfStock = false } = {}) {
+  const query = new URLSearchParams({
+    q,
+    limit,
+    includeOutOfStock: includeOutOfStock ? "true" : "false",
+  }).toString();
+  return apiFetch(`/api/pharmacy/available-medicines?${query}`);
+}
+
 export async function getItem(id) {
   return apiFetch(`/api/pharmacy/${id}`);
 }
@@ -48,6 +57,7 @@ export async function dispenseStock(id, payload) {
 // default export compatible with existing imports
 export default {
   listItems,
+  listAvailableMedicines,
   getItem,
   createItem,
   updateItem,

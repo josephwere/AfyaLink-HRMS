@@ -28,10 +28,25 @@ const PrescriptionSchema = new mongoose.Schema(
 
     medications: [
       {
+        pharmacyItem: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "PharmacyItem",
+          default: null,
+          index: true,
+        },
         name: String,
+        sku: String,
+        unit: String,
         dosage: String,
         frequency: String,
         duration: String,
+        requestedQuantity: { type: Number, default: 0 },
+        availableQuantityAtPrescription: { type: Number, default: null },
+        stockStatus: {
+          type: String,
+          enum: ["AVAILABLE", "LOW_STOCK", "OUT_OF_STOCK", "UNLINKED"],
+          default: "UNLINKED",
+        },
       },
     ],
 

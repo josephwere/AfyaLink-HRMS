@@ -48,6 +48,71 @@ export const listItems = async (req, res) => {
   }
 };
 
+export const listAvailableMedicines = async (req, res) => {
+  try {
+    const hospital = ensureHospital(req, res);
+    if (!hospital) return;
+
+    const q = String(req.query.q || "").trim();
+    const includeOutOfStock = String(req.query.includeOutOfStock || "").toLowerCase() === "true";
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "200", 10), 1), 500);
+    const filter = {
+      hospital,
+      active: { $ne: false },
+    };
+
+    if (!includeOutOfStock) {
+      filter.totalQuantity = { $gt: 0 };
+    }
+
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { sku: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const items = await PharmacyItem.find(filter)
+      .select("name sku description category form strength unit totalQuantity minStock batches updatedAt")
+      .sort({ totalQuantity: -1, name: 1 })
+      .limit(limit)
+      .lean();
+
+    res.json({
+      items: items.map((item) => {
+        const totalQuantity = Number(item.totalQuantity || 0);
+        const minStock = Number(item.minStock || 0);
+        const stockStatus =
+          totalQuantity <= 0
+            ? "OUT_OF_STOCK"
+            : minStock > 0 && totalQuantity <= minStock
+              ? "LOW_STOCK"
+              : "AVAILABLE";
+        return {
+          _id: item._id,
+          name: item.name,
+          sku: item.sku || "",
+          description: item.description || "",
+          category: item.category || "medicine",
+          form: item.form || "",
+          strength: item.strength || "",
+          unit: item.unit || "pcs",
+          totalQuantity,
+          minStock,
+          stockStatus,
+          batchCount: Array.isArray(item.batches) ? item.batches.length : 0,
+          updatedAt: item.updatedAt,
+        };
+      }),
+      total: items.length,
+    });
+  } catch (err) {
+    console.error("Available medicines error:", err);
+    res.status(500).json({ msg: "Failed to load available medicines" });
+  }
+};
+
 export const getItem = async (req, res) => {
   try {
     const hospital = ensureHospital(req, res);

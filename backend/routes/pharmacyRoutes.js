@@ -12,6 +12,7 @@ import {
   deleteItem,
   addStock,
   dispenseStock,
+  listAvailableMedicines,
 } from "../controllers/pharmacyInventoryController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/authorize.js";
@@ -41,6 +42,12 @@ router.get(
   "/prescriptions",
   requireRole("DOCTOR", "PHARMACIST", "PATIENT", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
   listPrescriptions
+);
+
+router.get(
+  "/available-medicines",
+  requireRole("DOCTOR", "SURGEON", "PHARMACIST", "LAB_TECH", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  listAvailableMedicines
 );
 
 /**
