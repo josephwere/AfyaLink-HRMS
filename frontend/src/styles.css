@@ -1644,19 +1644,18 @@ body.auth-route {
   overflow: hidden;
 }
 
-.sidebar-collapsed .sidebar {
-  display: none;
-}
-
 .sidebar {
   width: var(--sidebar-width, 300px);
+  max-width: min(86vw, 360px);
   background: var(--sidebar-bg);
   color: var(--sidebar-text);
-  min-height: 100vh;
+  min-height: calc(100dvh - 56px);
   height: calc(100dvh - 56px);
   overflow: hidden;
-  position: relative;
-  z-index: 19;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  z-index: 25;
   padding: 14px 12px;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -1665,12 +1664,23 @@ body.auth-route {
   flex-direction: column;
   border-right: 1px solid var(--app-border);
   box-shadow: none;
+  transform: translateX(-106%);
+  transition: transform 180ms ease;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.sidebar.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 .sidebar.collapsed {
-  width: 0;
-  padding: 0;
-  overflow: hidden;
+  width: var(--sidebar-width, 300px);
+  max-width: min(86vw, 360px);
+  padding: 14px 12px 24px;
+  transform: translateX(-106%);
+  pointer-events: none;
 }
 
 .sidebar-header {
@@ -1856,7 +1866,7 @@ body.auth-route {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
-  z-index: 18;
+  z-index: 24;
   border: none;
 }
 

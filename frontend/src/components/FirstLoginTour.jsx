@@ -182,9 +182,11 @@ export default function FirstLoginTour() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
+  const [activeTourIdentity, setActiveTourIdentity] = useState("");
   const effectiveRole = (user?.actualRole || user?.role || "").toUpperCase();
   const tourKey = effectiveRole || "DEFAULT";
-  const seenTours = uiPreferences?.onboarding?.toursSeen || {};
+  const seenTours = uiPreferences?.onboarding?.toursSeen;
+  const hasSeenTour = seenTours?.[tourKey] === true;
 
   const steps = useMemo(() => {
     const roleSteps = ROLE_STEPS[effectiveRole] || [];
@@ -193,13 +195,17 @@ export default function FirstLoginTour() {
 
   useEffect(() => {
     if (!user?.id) return;
+    const identity = `${user.id}:${tourKey}`;
     const key = `tour_seen_${user.id}_${tourKey}`;
     const seen = localStorage.getItem(key) === "true";
-    if (!seen && seenTours?.[tourKey] !== true) {
-      setIndex(0);
+    if (!seen && !hasSeenTour) {
+      if (activeTourIdentity !== identity) {
+        setActiveTourIdentity(identity);
+        setIndex(0);
+      }
       setOpen(true);
     }
-  }, [seenTours, tourKey, user?.id]);
+  }, [activeTourIdentity, hasSeenTour, tourKey, user?.id]);
 
   const close = () => {
     if (user?.id) {

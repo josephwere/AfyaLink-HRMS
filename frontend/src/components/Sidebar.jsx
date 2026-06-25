@@ -42,6 +42,19 @@ function dedupeByPath(items = []) {
   });
 }
 
+function sameStringArray(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function sameRecentItems(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => {
+    const other = b[index] || {};
+    return item?.path === other.path && item?.label === other.label && item?.icon === other.icon;
+  });
+}
+
 function scopedStorageKey(prefix, user) {
   const scope = user?.id || user?.email || user?.role || "anonymous";
   return `${prefix}_${scope}`;
@@ -144,6 +157,7 @@ export default function Sidebar({ open = true, onClose }) {
   const [pharmacyRiskAlertCount, setPharmacyRiskAlertCount] = useState(0);
 
   const effectiveRole = normalizeRole(user?.role || "");
+  const userStorageScope = user?.id || user?.email || user?.role || "anonymous";
   const navigationPrefs = uiPreferences?.navigation || {};
 
   const workspaces = useMemo(() => {
@@ -193,47 +207,59 @@ export default function Sidebar({ open = true, onClose }) {
       ? navigationPrefs.recentItems
       : readRecentItems(user);
     setRecentItems(
-      (Array.isArray(storedRecent) ? storedRecent : [])
-        .map((item) => ({ ...(item || {}), path: canonicalizeStoredPath(item?.path) }))
-        .filter((item) => item?.path)
+      (prev) => {
+        const next = (Array.isArray(storedRecent) ? storedRecent : [])
+          .map((item) => ({ ...(item || {}), path: canonicalizeStoredPath(item?.path) }))
+          .filter((item) => item?.path);
+        return sameRecentItems(prev, next) ? prev : next;
+      }
     );
 
     const storedStarred = Array.isArray(navigationPrefs?.starredPaths)
       ? navigationPrefs.starredPaths
       : readStarredPaths(user);
     setStarredPaths(
-      (Array.isArray(storedStarred) ? storedStarred : [])
-        .map((path) => canonicalizeStoredPath(path))
-        .filter(Boolean)
+      (prev) => {
+        const next = (Array.isArray(storedStarred) ? storedStarred : [])
+          .map((path) => canonicalizeStoredPath(path))
+          .filter(Boolean);
+        return sameStringArray(prev, next) ? prev : next;
+      }
     );
-    setSidebarWidth(
-      Number.isFinite(Number(navigationPrefs?.sidebarWidth))
-        ? Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Number(navigationPrefs.sidebarWidth)))
-        : readSidebarWidth(user)
-    );
-  }, [navigationPrefs?.recentItems, navigationPrefs?.sidebarWidth, navigationPrefs?.starredPaths, user]);
+    const nextWidth = Number.isFinite(Number(navigationPrefs?.sidebarWidth))
+      ? Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Number(navigationPrefs.sidebarWidth)))
+      : readSidebarWidth(user);
+    setSidebarWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+  }, [navigationPrefs?.recentItems, navigationPrefs?.sidebarWidth, navigationPrefs?.starredPaths, userStorageScope]);
 
   useEffect(() => {
     if (!user) return;
     writeStarredPaths(user, starredPaths);
+    const storedStarred = Array.isArray(navigationPrefs?.starredPaths)
+      ? navigationPrefs.starredPaths.map((path) => canonicalizeStoredPath(path)).filter(Boolean)
+      : [];
+    if (sameStringArray(storedStarred, starredPaths)) return;
+
     setUiPreferences({
       navigation: {
-        ...(uiPreferences?.navigation || {}),
         starredPaths,
       },
     });
-  }, [setUiPreferences, starredPaths, uiPreferences?.navigation, user]);
+  }, [navigationPrefs?.starredPaths, setUiPreferences, starredPaths, user, userStorageScope]);
 
   useEffect(() => {
     if (!user) return;
     writeSidebarWidth(user, sidebarWidth);
+    const storedWidth = Number(navigationPrefs?.sidebarWidth);
+    if (Number.isFinite(storedWidth) && storedWidth === sidebarWidth) return;
+    if (!Number.isFinite(storedWidth) && sidebarWidth === SIDEBAR_DEFAULT_WIDTH) return;
+
     setUiPreferences({
       navigation: {
-        ...(uiPreferences?.navigation || {}),
         sidebarWidth,
       },
     });
-  }, [setUiPreferences, sidebarWidth, uiPreferences?.navigation, user]);
+  }, [navigationPrefs?.sidebarWidth, setUiPreferences, sidebarWidth, user, userStorageScope]);
 
   useEffect(() => {
     if (!canPharmacyOps) {
@@ -265,14 +291,13 @@ export default function Sidebar({ open = true, onClose }) {
       writeRecentItems(user, next);
       setUiPreferences({
         navigation: {
-          ...(uiPreferences?.navigation || {}),
           recentItems: next,
         },
       });
       navigate(item.path);
       onClose?.();
     },
-    [navigate, onClose, recentItems, setUiPreferences, uiPreferences?.navigation, user]
+    [navigate, onClose, recentItems, setUiPreferences, user]
   );
 
   const toggleStarred = useCallback((item) => {

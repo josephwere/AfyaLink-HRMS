@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionCard } from "./Cards";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
@@ -156,12 +156,18 @@ function DashboardCardShelf({ storageKey, title, subtitle, items = [], emptyTitl
   const { uiPreferences, setUiPreferences } = useUiPreferences();
   const savedPrefs = uiPreferences?.dashboardShelves?.[storageKey];
   const [prefs, setPrefs] = useState(() => savedPrefs || readShelfPrefs(storageKey));
+  const hasMountedRef = useRef(false);
 
   useEffect(() => {
     setPrefs(savedPrefs || readShelfPrefs(storageKey));
   }, [savedPrefs, storageKey]);
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
     writeShelfPrefs(storageKey, prefs);
     setUiPreferences({
       dashboardShelves: {
