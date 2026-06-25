@@ -43,6 +43,20 @@ async function bootstrapAfterDbConnect() {
     await runAiAssistantBootstrap();
   });
 
+  await safeBootstrapStep("presentationSeed", async () => {
+    if (String(process.env.AFYALINK_PRESENTATION_SEED_ON_BOOT || "").toUpperCase() !== "YES") {
+      return;
+    }
+    process.env.AFYALINK_PRESENTATION_PRINT_PASSWORDS =
+      process.env.AFYALINK_PRESENTATION_PRINT_PASSWORDS || "0";
+    const { runPresentationSeed } = await import("./scripts/seedPresentationData.mjs");
+    await runPresentationSeed({
+      manageConnection: false,
+      requireConfirm: false,
+      logger: console,
+    });
+  });
+
   await safeBootstrapStep("backgroundJobs", async () => {
     await startBackgroundJobs();
   });

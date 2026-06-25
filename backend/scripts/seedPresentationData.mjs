@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import path from "path";
 import mongoose from "mongoose";
 import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
 import GovernmentStaff from "../models/GovernmentStaff.js";
@@ -18,16 +20,7 @@ const CONFIRM = String(process.env.AFYALINK_PRESENTATION_SEED || "").toUpperCase
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 const PASSWORD = process.env.AFYALINK_PRESENTATION_PASSWORD || "AfyaDemo@2026!";
 const RESET_PASSWORDS = String(process.env.AFYALINK_PRESENTATION_RESET_PASSWORDS || "true").toLowerCase() !== "false";
-
-if (CONFIRM !== "YES") {
-  console.error("Refusing to seed presentation data. Set AFYALINK_PRESENTATION_SEED=YES to continue.");
-  process.exit(1);
-}
-
-if (!MONGO_URI) {
-  console.error("Missing MONGO_URI or MONGODB_URI.");
-  process.exit(1);
-}
+const PRINT_PASSWORDS = String(process.env.AFYALINK_PRESENTATION_PRINT_PASSWORDS || "1").toLowerCase() !== "0";
 
 const hospitalSeed = {
   name: "AfyaLink Demo Medical Center",
@@ -478,74 +471,113 @@ async function seedPatient(hospital, doctor, wards) {
   return { user, patient };
 }
 
-async function run() {
-  await mongoose.connect(MONGO_URI, { autoIndex: true });
-  const hospital = await upsertHospital();
-
-  const createdHospitalUsers = [];
-  for (const [index, account] of hospitalAccounts.entries()) {
-    const user = await upsertUser(account, hospital, index + 1);
-    await syncStaffProfile(user);
-    createdHospitalUsers.push(user);
+export async function runPresentationSeed({
+  manageConnection = true,
+  requireConfirm = true,
+  logger = console,
+} = {}) {
+  if (requireConfirm && CONFIRM !== "YES") {
+    throw new Error("Refusing to seed presentation data. Set AFYALINK_PRESENTATION_SEED=YES to continue.");
+  }
+  if (manageConnection && !MONGO_URI) {
+    throw new Error("Missing MONGO_URI or MONGODB_URI.");
+  }
+  if (!manageConnection && mongoose.connection.readyState !== 1) {
+    throw new Error("Database must be connected before running presentation seed.");
   }
 
-  const admin = createdHospitalUsers.find((user) => user.role === "HOSPITAL_ADMIN");
-  if (admin) {
-    hospital.admins = hospital.admins || [];
-    if (!hospital.admins.some((id) => String(id) === String(admin._id))) {
-      hospital.admins.push(admin._id);
-      await hospital.save();
+  let connectedHere = false;
+  if (manageConnection) {
+    await mongoose.connect(MONGO_URI, { autoIndex: true });
+    connectedHere = true;
+  }
+
+  try {
+    const hospital = await upsertHospital();
+
+    const createdHospitalUsers = [];
+    for (const [index, account] of hospitalAccounts.entries()) {
+      const user = await upsertUser(account, hospital, index + 1);
+      await syncStaffProfile(user);
+      createdHospitalUsers.push(user);
+    }
+
+    const admin = createdHospitalUsers.find((user) => user.role === "HOSPITAL_ADMIN");
+    if (admin) {
+      hospital.admins = hospital.admins || [];
+      if (!hospital.admins.some((id) => String(id) === String(admin._id))) {
+        hospital.admins.push(admin._id);
+        await hospital.save();
+      }
+    }
+
+    const createdGovernmentUsers = [];
+    for (const [index, account] of governmentAccounts.entries()) {
+      const user = await upsertUser(account, null, index + 100);
+      user.employment = {
+        ...(user.employment || {}),
+        employeeId: account.employeeId,
+        department: account.department,
+        status: "ACTIVE",
+      };
+      await user.save();
+      await syncGovernmentProfile(user, account);
+      createdGovernmentUsers.push(user);
+    }
+
+    const wards = await seedWardsAndBeds(hospital);
+    await seedPharmacy(hospital);
+    const doctor = createdHospitalUsers.find((user) => user.role === "DOCTOR");
+    const { user: patientUser } = await seedPatient(hospital, doctor, wards);
+
+    const accounts = [
+      ...createdHospitalUsers,
+      ...createdGovernmentUsers,
+      patientUser,
+    ].map((user) => ({
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      ...(PRINT_PASSWORDS ? { password: PASSWORD } : {}),
+    }));
+
+    logger.log?.("\nAfyaLink presentation data is ready.\n");
+    if (typeof logger.table === "function") logger.table(accounts);
+    else logger.log?.(JSON.stringify(accounts, null, 2));
+    logger.log?.("\nHospital:");
+    logger.log?.({
+      id: String(hospital._id),
+      name: hospital.name,
+      code: hospital.code,
+      registrationNumber: hospital.verification?.registrationNumber,
+      marketplaceVisible: hospital.active && hospital.verification?.status === "VERIFIED" && hospital.verification?.publicVisible,
+    });
+    logger.log?.("\nUse these accounts only for presentation/demo testing. Rotate or remove them before real production use.\n");
+
+    return {
+      hospital: {
+        id: String(hospital._id),
+        name: hospital.name,
+        code: hospital.code,
+        marketplaceVisible: hospital.active && hospital.verification?.status === "VERIFIED" && hospital.verification?.publicVisible,
+      },
+      accounts: accounts.map(({ password, ...account }) => account),
+    };
+  } finally {
+    if (connectedHere) {
+      await mongoose.connection.close().catch(() => {});
     }
   }
-
-  const createdGovernmentUsers = [];
-  for (const [index, account] of governmentAccounts.entries()) {
-    const user = await upsertUser(account, null, index + 100);
-    user.employment = {
-      ...(user.employment || {}),
-      employeeId: account.employeeId,
-      department: account.department,
-      status: "ACTIVE",
-    };
-    await user.save();
-    await syncGovernmentProfile(user, account);
-    createdGovernmentUsers.push(user);
-  }
-
-  const wards = await seedWardsAndBeds(hospital);
-  await seedPharmacy(hospital);
-  const doctor = createdHospitalUsers.find((user) => user.role === "DOCTOR");
-  const { user: patientUser } = await seedPatient(hospital, doctor, wards);
-
-  const accounts = [
-    ...createdHospitalUsers,
-    ...createdGovernmentUsers,
-    patientUser,
-  ].map((user) => ({
-    name: user.name,
-    role: user.role,
-    email: user.email,
-    password: PASSWORD,
-  }));
-
-  console.log("\nAfyaLink presentation data is ready.\n");
-  console.table(accounts);
-  console.log("\nHospital:");
-  console.log({
-    id: String(hospital._id),
-    name: hospital.name,
-    code: hospital.code,
-    registrationNumber: hospital.verification?.registrationNumber,
-    marketplaceVisible: hospital.active && hospital.verification?.status === "VERIFIED" && hospital.verification?.publicVisible,
-  });
-  console.log("\nUse these accounts only for presentation/demo testing. Rotate or remove them before real production use.\n");
 }
 
-run()
+const isCliRun =
+  Boolean(process.argv[1]) &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isCliRun) {
+  runPresentationSeed()
   .catch((error) => {
     console.error("Presentation seed failed:", error);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await mongoose.connection.close().catch(() => {});
   });
+}
