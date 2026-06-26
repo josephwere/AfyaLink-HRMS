@@ -41,6 +41,12 @@ export const initSocket = (serverIo) => {
       1,
       "Socket.IO connection lifecycle events."
     );
+    if (socket.user?.id) {
+      socket.join(String(socket.user.id));
+      if (socket.user?.hospital || socket.user?.hospitalId) {
+        socket.join(String(socket.user.hospital || socket.user.hospitalId));
+      }
+    }
     socket.on('joinRoom', ({room}) => {
       socket.join(room);
     });
@@ -91,6 +97,16 @@ export const initSocket = (serverIo) => {
           callId: String(call._id),
           userId: String(socket.user.id),
           role: String(socket.user.role || "").toUpperCase(),
+        });
+        const joinedEvent =
+          String(socket.user.role || "").toUpperCase() === "DOCTOR"
+            ? "doctor_joined"
+            : "patient_joined";
+        io.to(roomKey).emit(joinedEvent, {
+          callId: String(call._id),
+          userId: String(socket.user.id),
+          role: String(socket.user.role || "").toUpperCase(),
+          joinedAt: new Date().toISOString(),
         });
       } catch {
         socket.emit("consultation:error", { callId, message: "Could not join consultation." });

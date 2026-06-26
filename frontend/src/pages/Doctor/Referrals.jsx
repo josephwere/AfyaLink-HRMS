@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import EditableSection from "../../components/EditableSection";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import GuidedEmptyState, { TableEmptyState } from "../../components/GuidedEmptyState";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 import {
   createPharmacyReferral,
   listPharmacyReferrals,
@@ -18,6 +22,8 @@ export default function Referrals() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [referralSaved, setReferralSaved] = useState(false);
+  const [referralEditing, setReferralEditing] = useState(true);
   const [form, setForm] = useState({
     patientName: "",
     patientPhone: "",
@@ -80,8 +86,7 @@ export default function Referrals() {
     [pharmacies, selectedPharmacyId]
   );
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!selectedPharmacyId || !form.patientName.trim()) {
       setMsg("Select a pharmacy and patient first.");
       return;
@@ -97,13 +102,25 @@ export default function Referrals() {
         medicationNotes: form.medicationNotes,
         urgent: form.urgent,
       });
-      setMsg("Referral sent to pharmacy.");
-      setForm((prev) => ({
-        ...prev,
-        reason: "",
-        medicationNotes: "",
-        urgent: false,
-      }));
+      setReferralSaved(true);
+      setReferralEditing(false);
+      showActionSuccessGuide({
+        title: "Pharmacy Referral Sent",
+        message: "The referral is locked and visible in recent pharmacy referrals.",
+        icon: "✓",
+        notificationTitle: "Pharmacy referral sent",
+        notificationBody: `${form.patientName} was referred to ${selectedPharmacy?.name || "a registered pharmacy"}.`,
+        notificationCategory: "CLINICAL",
+        aiRecommendation: "Use AI to prepare patient-friendly collection instructions before the patient leaves.",
+        nextActions: [
+          {
+            label: "Prepare Patient Instructions",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Write patient-friendly instructions for a pharmacy referral, including what to bring and what questions to ask.",
+          },
+        ],
+      });
       await loadReferrals();
     } catch (err) {
       setMsg(err?.message || "Could not create referral.");
@@ -124,9 +141,20 @@ export default function Referrals() {
       {msg ? <div className="card">{msg}</div> : null}
 
       <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
-          <h3>Pharmacy Referral</h3>
-          <form className="panel-grid" onSubmit={submit}>
+        <EditableSection
+          className="doctor-schedule-card"
+          title="Pharmacy Referral"
+          description="Confirm the patient, destination pharmacy, and medication notes before sending."
+          saved={referralSaved}
+          editing={referralEditing}
+          saving={saving}
+          saveLabel="Send Referral"
+          editLabel="New Referral"
+          onEdit={() => setReferralEditing(true)}
+          onCancel={() => setReferralEditing(false)}
+          onSave={submit}
+        >
+          <div className="panel-grid">
             <label>Patient</label>
             <input
               value={form.patientName}
@@ -178,13 +206,9 @@ export default function Referrals() {
               Mark urgent
             </label>
 
-            <div className="doctor-actions-row">
-              <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? "Sending..." : "Send Referral"}
-              </button>
-            </div>
-          </form>
-        </div>
+            {loading ? <ContentSkeleton title="Searching registered pharmacies" variant="table" rows={2} /> : null}
+          </div>
+        </EditableSection>
 
         <div className="card doctor-alerts-card">
           <h3>Selected Pharmacy</h3>
@@ -207,11 +231,33 @@ export default function Referrals() {
                   </p>
                 </div>
               ) : (
-                <div className="muted">No patient linked from query yet.</div>
+                <GuidedEmptyState
+                  compact
+                  icon="Pt"
+                  title="No Patient Context Linked"
+                  body="Open referrals from a patient chart to attach clinical context automatically."
+                  actions={[
+                    {
+                      label: "Ask AI For Referral Checklist",
+                      aiPrompt: "Give me a safe checklist for preparing a pharmacy referral without a linked patient context.",
+                    },
+                  ]}
+                />
               )}
             </div>
           ) : (
-            <div className="muted">Select a pharmacy to see details.</div>
+            <GuidedEmptyState
+              compact
+              icon="Rx"
+              title="Select A Registered Pharmacy"
+              body="Choose a pharmacy to confirm contact details and destination before sending the referral."
+              actions={[
+                {
+                  label: "Ask AI What To Verify",
+                  aiPrompt: "What should a doctor verify before sending a patient to an external pharmacy?",
+                },
+              ]}
+            />
           )}
         </div>
       </section>
@@ -244,9 +290,18 @@ export default function Referrals() {
                   </tr>
                 ))}
                 {!referrals.length && (
-                  <tr>
-                    <td colSpan={5} className="muted">No referrals yet.</td>
-                  </tr>
+                  <TableEmptyState
+                    colSpan={5}
+                    icon="Rx"
+                    title="No Pharmacy Referrals Yet"
+                    body="Referrals sent to registered pharmacies will appear here with status and creation time."
+                    actions={[
+                      {
+                        label: "Ask AI For Referral Criteria",
+                        aiPrompt: "List the situations where a doctor should create an external pharmacy referral.",
+                      },
+                    ]}
+                  />
                 )}
               </tbody>
             </table>

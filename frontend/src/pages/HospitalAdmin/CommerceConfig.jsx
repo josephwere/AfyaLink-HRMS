@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
+import EditableSection from "../../components/EditableSection";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import { TableEmptyState } from "../../components/GuidedEmptyState";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 
 function emptyInsurance() {
   return { code: "", name: "", country: "", enabled: true };
@@ -28,6 +32,8 @@ export default function CommerceConfig() {
   const [msg, setMsg] = useState("");
   const [insuranceProviders, setInsuranceProviders] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsEditing, setSettingsEditing] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -35,9 +41,14 @@ export default function CommerceConfig() {
       const data = await apiFetch("/api/hospital-admin/config");
       setInsuranceProviders(Array.isArray(data?.insuranceProviders) ? data.insuranceProviders : []);
       setPaymentMethods(Array.isArray(data?.patientPaymentMethods) ? data.patientPaymentMethods : []);
-    } catch {
+      setSettingsSaved(true);
+      setSettingsEditing(false);
+    } catch (err) {
       setInsuranceProviders([]);
       setPaymentMethods([]);
+      setSettingsSaved(false);
+      setSettingsEditing(true);
+      setMsg(err?.message || "Could not load billing settings.");
     } finally {
       setLoading(false);
     }
@@ -56,6 +67,23 @@ export default function CommerceConfig() {
         body: { insuranceProviders, patientPaymentMethods: paymentMethods },
       });
       setMsg("Hospital insurance and payment settings saved.");
+      setSettingsSaved(true);
+      setSettingsEditing(false);
+      showActionSuccessGuide({
+        title: "Billing Settings Saved",
+        message: "Patient insurance and payment options have been updated for this hospital.",
+        icon: "KES",
+        nextActions: [
+          { label: "Open Branding", path: "/hospital-admin/customization", variant: "secondary" },
+          {
+            label: "Ask AI",
+            action: "ai",
+            aiPrompt: "Review these hospital billing settings and suggest what should be checked before patients use online payments.",
+            variant: "secondary",
+          },
+        ],
+        notificationCategory: "ACCOUNT",
+      });
       await load();
     } catch (err) {
       setMsg(err?.message || "Failed to save");
@@ -64,7 +92,13 @@ export default function CommerceConfig() {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <ContentSkeleton title="Loading billing settings" variant="table" rows={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -80,11 +114,22 @@ export default function CommerceConfig() {
         </div>
       </div>
 
-      {msg && <div className="card">{msg}</div>}
-
-      <section className="section">
-        <h3>Insurance Providers</h3>
-        <div className="card premium-card">
+      <EditableSection
+        title="Billing Settings"
+        eyebrow="Hospital Admin"
+        description="Control insurance providers and payment methods shown to patients."
+        saved={settingsSaved}
+        editing={settingsEditing}
+        saving={saving}
+        onEdit={() => setSettingsEditing(true)}
+        onSave={save}
+        onCancel={() => setSettingsEditing(false)}
+        saveLabel="Save Settings"
+        message={msg}
+        aside={<span className="action-pill">{settingsSaved && !settingsEditing ? "Locked" : "Editable"}</span>}
+      >
+        <section className="section">
+          <h3>Insurance Providers</h3>
           <div className="table-wrap">
             <table className="table premium-table">
               <thead>
@@ -107,18 +152,21 @@ export default function CommerceConfig() {
                   </tr>
                 ))}
                 {insuranceProviders.length === 0 && (
-                  <tr><td colSpan={5} className="muted">No providers added yet.</td></tr>
+                  <TableEmptyState
+                    colSpan={5}
+                    icon="INS"
+                    title="No Insurance Providers Yet"
+                    body="Add SHA, private insurers, or hospital-supported coverage options when ready."
+                  />
                 )}
               </tbody>
             </table>
           </div>
           <button type="button" className="btn-secondary" onClick={() => setInsuranceProviders((prev) => [...prev, emptyInsurance()])}>Add Insurance Provider</button>
-        </div>
-      </section>
+        </section>
 
-      <section className="section">
-        <h3>Patient Payment Methods</h3>
-        <div className="card premium-card">
+        <section className="section">
+          <h3>Patient Payment Methods</h3>
           <div className="table-wrap">
             <table className="table premium-table">
               <thead>
@@ -155,20 +203,19 @@ export default function CommerceConfig() {
                   </tr>
                 ))}
                 {paymentMethods.length === 0 && (
-                  <tr><td colSpan={6} className="muted">No payment methods added yet.</td></tr>
+                  <TableEmptyState
+                    colSpan={6}
+                    icon="KES"
+                    title="No Payment Methods Yet"
+                    body="Add M-Pesa, bank, card, or invoice instructions before patients pay online."
+                  />
                 )}
               </tbody>
             </table>
           </div>
           <button type="button" className="btn-secondary" onClick={() => setPaymentMethods((prev) => [...prev, emptyPayment()])}>Add Payment Method</button>
-        </div>
-      </section>
-
-      <section className="section">
-        <button type="button" className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? "Saving..." : "Save Settings"}
-        </button>
-      </section>
+        </section>
+      </EditableSection>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import EditableSection from "../../components/EditableSection";
+import GuidedEmptyState from "../../components/GuidedEmptyState";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 
 export default function ReportsNotes() {
   const navigate = useNavigate();
@@ -10,6 +13,9 @@ export default function ReportsNotes() {
   const [note, setNote] = useState("");
   const [summary, setSummary] = useState("");
   const [msg, setMsg] = useState("");
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [draftEditing, setDraftEditing] = useState(true);
+  const [draftSaving, setDraftSaving] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
   useEffect(() => {
@@ -17,6 +23,8 @@ export default function ReportsNotes() {
       setPatient(null);
       setSummary("");
       setNote("");
+      setDraftSaved(false);
+      setDraftEditing(true);
       return;
     }
     apiFetch(`/api/patients/${patientId}`)
@@ -29,19 +37,27 @@ export default function ReportsNotes() {
         if (payload && typeof payload === "object") {
           setSummary(String(payload.summary || ""));
           setNote(String(payload.note || ""));
+          setDraftSaved(true);
+          setDraftEditing(false);
         } else {
           setSummary("");
           setNote("");
+          setDraftSaved(false);
+          setDraftEditing(true);
         }
       })
       .catch(() => {
         setSummary("");
         setNote("");
+        setDraftSaved(false);
+        setDraftEditing(true);
       });
   }, [patientId]);
 
   async function saveDraft() {
     if (!patientId) return;
+    setDraftSaving(true);
+    setMsg("");
     try {
       await apiFetch(`/api/clinical-drafts/DOCTOR_NOTE?patientId=${encodeURIComponent(patientId)}`, {
         method: "PUT",
@@ -52,9 +68,29 @@ export default function ReportsNotes() {
           },
         },
       });
-      setMsg("Note draft saved.");
+      setDraftSaved(true);
+      setDraftEditing(false);
+      showActionSuccessGuide({
+        title: "Doctor Note Template Saved",
+        message: "The note draft is locked and ready to promote into the patient record when reviewed.",
+        icon: "✓",
+        notificationTitle: "Doctor note saved",
+        notificationBody: "A clinical note draft was saved for this patient.",
+        notificationCategory: "CLINICAL",
+        aiRecommendation: "Use AI to review the note structure before promoting it to the official visit record.",
+        nextActions: [
+          {
+            label: "Review With AI",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Review this doctor note draft for clarity, missing clinical context, and a SOAP-style structure.",
+          },
+        ],
+      });
     } catch (e) {
       setMsg(e?.message || "Failed to save note draft.");
+    } finally {
+      setDraftSaving(false);
     }
   }
 
@@ -74,7 +110,23 @@ export default function ReportsNotes() {
       await apiFetch(`/api/clinical-drafts/DOCTOR_NOTE/promote?patientId=${encodeURIComponent(patientId)}`, {
         method: "POST",
       });
-      setMsg("Note promoted into the patient visit record.");
+      showActionSuccessGuide({
+        title: "Note Promoted To Visit Record",
+        message: "The reviewed note is now available in the patient visit record.",
+        icon: "✓",
+        notificationTitle: "Clinical note promoted",
+        notificationBody: "A doctor note was promoted into the patient record.",
+        notificationCategory: "CLINICAL",
+        aiRecommendation: "Ask AI to prepare follow-up reminders, referral suggestions, or patient education points.",
+        nextActions: [
+          {
+            label: "Ask AI For Follow-Up",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Suggest follow-up questions, reminders, and patient education points based on a promoted doctor note.",
+          },
+        ],
+      });
     } catch (e) {
       setMsg(e?.message || "Failed to promote note draft.");
     } finally {
@@ -100,9 +152,6 @@ export default function ReportsNotes() {
               </button>
             </>
           ) : null}
-          <button type="button" className="btn-secondary" onClick={saveDraft}>
-            Save Draft
-          </button>
           <button type="button" className="btn-secondary" onClick={promoteDraft} disabled={promoting}>
             {promoting ? "Promoting..." : "Promote To Visit"}
           </button>
@@ -120,7 +169,22 @@ export default function ReportsNotes() {
 
       {!patientId ? (
         <section className="section">
-          <div className="card muted">Open this page from a patient record, consultation, or ward board.</div>
+          <GuidedEmptyState
+            icon="Pt"
+            title="No Patient Context Selected"
+            body="Open reports and notes from a patient record, consultation, or ward board so the note is linked safely."
+            actions={[
+              {
+                label: "Find Patients",
+                path: "/app/care/patients/index",
+                variant: "primary",
+              },
+              {
+                label: "Ask AI For Note Checklist",
+                aiPrompt: "Give me a doctor note checklist I can use before selecting a patient context.",
+              },
+            ]}
+          />
         </section>
       ) : null}
 
@@ -142,8 +206,18 @@ export default function ReportsNotes() {
       ) : null}
 
       <section className="section doctor-main-grid">
-        <div className="card doctor-schedule-card">
-          <h3>Case Note</h3>
+        <EditableSection
+          className="doctor-schedule-card"
+          title="Case Note"
+          description="Save the draft, then review and promote it into the visit record."
+          saved={draftSaved}
+          editing={draftEditing}
+          saving={draftSaving}
+          saveLabel="Save Draft"
+          onEdit={() => setDraftEditing(true)}
+          onCancel={() => setDraftEditing(false)}
+          onSave={saveDraft}
+        >
           <div className="grid" style={{ gap: 12 }}>
             <label>
               Summary
@@ -154,7 +228,7 @@ export default function ReportsNotes() {
               <textarea rows={10} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Clinical note, review, handover, or report detail" />
             </label>
           </div>
-        </div>
+        </EditableSection>
 
         <div className="card doctor-alerts-card">
           <h3>Export Context</h3>

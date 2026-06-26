@@ -14,6 +14,8 @@ import AppShellSkeleton from "./components/AppShellSkeleton";
 import AuthGateFallback from "./components/AuthGateFallback";
 import GlobalProgressBar from "./components/GlobalProgressBar";
 import RouteProgressEvents from "./components/RouteProgressEvents";
+import ActionSuccessGuide from "./components/ActionSuccessGuide";
+import UXAuditMode from "./components/UXAuditMode";
 
 import AppShell from "./app/shell/AppShell";
 import { LEGACY_ROUTE_MAP } from "./app/routing/legacyRouteMap";
@@ -319,6 +321,7 @@ export default function App() {
       <AppErrorBoundary>
         <GlobalProgressBar />
         <RouteProgressEvents />
+        <ActionSuccessGuide />
         <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
         {/* ============ PUBLIC ROUTES ============ */}
@@ -603,6 +606,7 @@ export default function App() {
         </Routes>
         </Suspense>
         <FloatingAIGate />
+        <UXAuditMode />
       </AppErrorBoundary>
     </SocketProvider>
   );

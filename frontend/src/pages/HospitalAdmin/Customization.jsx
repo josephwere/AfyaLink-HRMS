@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
+import EditableSection from "../../components/EditableSection";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import { TableEmptyState } from "../../components/GuidedEmptyState";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 import {
   createCustomizationRequest,
   listCustomizationRequests,
@@ -46,14 +50,28 @@ const DEFAULT_FORM = {
   },
 };
 
+const CONFIG_SECTION_KEYS = ["enabled", "branding", "theme", "modules", "clinical"];
+
+function sectionSavedState(saved = true) {
+  return CONFIG_SECTION_KEYS.reduce((acc, key) => ({ ...acc, [key]: saved }), {});
+}
+
+function sectionEditingState(editing = false) {
+  return CONFIG_SECTION_KEYS.reduce((acc, key) => ({ ...acc, [key]: editing }), {});
+}
+
 export default function HospitalCustomization() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState("");
   const [msg, setMsg] = useState("");
+  const [sectionSaved, setSectionSaved] = useState(sectionSavedState(false));
+  const [sectionEditing, setSectionEditing] = useState(sectionEditingState(true));
   const [requests, setRequests] = useState([]);
   const [reqSaving, setReqSaving] = useState(false);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [requestEditing, setRequestEditing] = useState(true);
   const [requestForm, setRequestForm] = useState({
     scope: "HOSPITAL",
     country: "",
@@ -64,8 +82,8 @@ export default function HospitalCustomization() {
     desiredGoLiveDate: "",
   });
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const data = await apiFetch("/api/hospital-admin/config");
       setForm({
@@ -94,11 +112,15 @@ export default function HospitalCustomization() {
       });
       const reqData = await listCustomizationRequests();
       setRequests(reqData?.items || []);
+      setSectionSaved(sectionSavedState(true));
+      setSectionEditing(sectionEditingState(false));
     } catch {
       setForm(DEFAULT_FORM);
       setRequests([]);
+      setSectionSaved(sectionSavedState(false));
+      setSectionEditing(sectionEditingState(true));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -106,7 +128,31 @@ export default function HospitalCustomization() {
     load();
   }, []);
 
-  const persistCustomization = async (customizationPatch, successMsg = "Hospital customization saved successfully.") => {
+  const showCustomizationSuccess = (title, sectionName = "customization") => {
+    showActionSuccessGuide({
+      title,
+      message: "The hospital configuration is saved and ready for staff-facing workflows.",
+      icon: "✓",
+      notificationTitle: title,
+      notificationBody: "Hospital customization settings were updated.",
+      notificationCategory: "ACCOUNT",
+      aiRecommendation: "Ask AI to review the updated hospital experience before presenting it to staff.",
+      nextActions: [
+        {
+          label: "Review With AI",
+          action: "ai",
+          variant: "secondary",
+          aiPrompt: `Review this AfyaLink hospital ${sectionName} configuration and suggest any production-readiness checks.`,
+        },
+      ],
+    });
+  };
+
+  const persistCustomization = async (
+    customizationPatch,
+    successMsg = "Hospital customization saved successfully.",
+    sectionKey = ""
+  ) => {
     setSaving(true);
     setMsg("");
     try {
@@ -114,8 +160,15 @@ export default function HospitalCustomization() {
         method: "PUT",
         body: { customization: customizationPatch },
       });
-      setMsg(successMsg);
-      await load();
+      if (sectionKey) {
+        setSectionSaved((prev) => ({ ...prev, [sectionKey]: true }));
+        setSectionEditing((prev) => ({ ...prev, [sectionKey]: false }));
+      } else {
+        setSectionSaved(sectionSavedState(true));
+        setSectionEditing(sectionEditingState(false));
+      }
+      showCustomizationSuccess(successMsg, sectionKey || "all customization settings");
+      await load({ silent: true });
     } catch (error) {
       setMsg(error?.message || "Failed to save customization.");
     } finally {
@@ -139,10 +192,14 @@ export default function HospitalCustomization() {
     setSavingCard(key);
     await persistCustomization(
       patchMap[key],
-      `${key.charAt(0).toUpperCase()}${key.slice(1)} settings saved.`
+      `${key.charAt(0).toUpperCase()}${key.slice(1)} settings saved.`,
+      key
     );
     setSavingCard("");
   };
+
+  const editSection = (key) => setSectionEditing((prev) => ({ ...prev, [key]: true }));
+  const cancelSection = (key) => setSectionEditing((prev) => ({ ...prev, [key]: false }));
 
   const uploadBranding = async (key, file) => {
     if (!file) return;
@@ -172,7 +229,25 @@ export default function HospitalCustomization() {
         exclusiveDeployment: requestForm.exclusiveDeployment,
         desiredGoLiveDate: requestForm.desiredGoLiveDate || undefined,
       });
-      setMsg("Customization request submitted. AfyaLink developers will review and deliver your dedicated version plan.");
+      setRequestSubmitted(true);
+      setRequestEditing(false);
+      showActionSuccessGuide({
+        title: "Dedicated Version Request Submitted",
+        message: "AfyaLink developers will review the request and prepare the next implementation plan.",
+        icon: "✓",
+        notificationTitle: "Customization request submitted",
+        notificationBody: "A dedicated version request is ready for review.",
+        notificationCategory: "ACCOUNT",
+        aiRecommendation: "Ask AI to convert this request into a launch checklist for your hospital team.",
+        nextActions: [
+          {
+            label: "Prepare With AI",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Create a practical launch checklist for a dedicated AfyaLink hospital or country deployment request.",
+          },
+        ],
+      });
       setRequestForm({
         scope: "HOSPITAL",
         country: "",
@@ -182,7 +257,7 @@ export default function HospitalCustomization() {
         exclusiveDeployment: true,
         desiredGoLiveDate: "",
       });
-      await load();
+      await load({ silent: true });
     } catch (error) {
       setMsg(error?.message || "Failed to submit customization request.");
     } finally {
@@ -190,7 +265,13 @@ export default function HospitalCustomization() {
     }
   };
 
-  if (loading) return <p>Loading customization...</p>;
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <ContentSkeleton title="Loading hospital customization" variant="cards" cards={4} />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -208,11 +289,20 @@ export default function HospitalCustomization() {
         </div>
       </div>
 
-      {msg && <div className="card">{msg}</div>}
+      {msg && <div className="card status-card error">{msg}</div>}
 
       <section className="section">
-        <h3>Activation</h3>
-        <div className="card form">
+        <EditableSection
+          title="Activation"
+          description="Control whether this hospital uses custom branding and workflow settings."
+          saved={sectionSaved.enabled}
+          editing={sectionEditing.enabled}
+          saving={saving || savingCard === "enabled"}
+          saveLabel="Save Activation"
+          onEdit={() => editSection("enabled")}
+          onCancel={() => cancelSection("enabled")}
+          onSave={() => saveCard("enabled")}
+        >
           <label>
             <input
               type="checkbox"
@@ -221,20 +311,21 @@ export default function HospitalCustomization() {
             />
             Enable hospital customization
           </label>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => saveCard("enabled")}
-            disabled={saving || savingCard === "enabled"}
-          >
-            {savingCard === "enabled" ? "Saving..." : "Save Activation"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
-        <h3>Branding</h3>
-        <div className="card form">
+        <EditableSection
+          title="Branding"
+          description="Manage the visible name, logo, icon, and background assets for the hospital workspace."
+          saved={sectionSaved.branding}
+          editing={sectionEditing.branding}
+          saving={saving || savingCard === "branding"}
+          saveLabel="Save Branding"
+          onEdit={() => editSection("branding")}
+          onCancel={() => cancelSection("branding")}
+          onSave={() => saveCard("branding")}
+        >
           <label>App Name</label>
           <input
             value={form.branding.appName}
@@ -265,20 +356,21 @@ export default function HospitalCustomization() {
           <input type="file" accept="image/*" onChange={(e) => uploadBranding("loginBackground", e.target.files?.[0])} />
           <label>Home Background</label>
           <input type="file" accept="image/*" onChange={(e) => uploadBranding("homeBackground", e.target.files?.[0])} />
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => saveCard("branding")}
-            disabled={saving || savingCard === "branding"}
-          >
-            {savingCard === "branding" ? "Saving..." : "Save Branding"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
-        <h3>Theme</h3>
-        <div className="card form">
+        <EditableSection
+          title="Theme"
+          description="Set the hospital color system and navigation density."
+          saved={sectionSaved.theme}
+          editing={sectionEditing.theme}
+          saving={saving || savingCard === "theme"}
+          saveLabel="Save Theme"
+          onEdit={() => editSection("theme")}
+          onCancel={() => cancelSection("theme")}
+          onSave={() => saveCard("theme")}
+        >
           <label>Primary Color</label>
           <input
             type="color"
@@ -329,20 +421,21 @@ export default function HospitalCustomization() {
             <option value="MINIMAL">Minimal</option>
             <option value="DENSE">Dense</option>
           </select>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => saveCard("theme")}
-            disabled={saving || savingCard === "theme"}
-          >
-            {savingCard === "theme" ? "Saving..." : "Save Theme"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
-        <h3>Module Visibility</h3>
-        <div className="card form">
+        <EditableSection
+          title="Module Visibility"
+          description="Choose which major hospital modules should be visible to staff."
+          saved={sectionSaved.modules}
+          editing={sectionEditing.modules}
+          saving={saving || savingCard === "modules"}
+          saveLabel="Save Module Visibility"
+          onEdit={() => editSection("modules")}
+          onCancel={() => cancelSection("modules")}
+          onSave={() => saveCard("modules")}
+        >
           <label>
             <input
               type="checkbox"
@@ -382,20 +475,21 @@ export default function HospitalCustomization() {
             />
             Show Analytics navigation
           </label>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => saveCard("modules")}
-            disabled={saving || savingCard === "modules"}
-          >
-            {savingCard === "modules" ? "Saving..." : "Save Module Visibility"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
-        <h3>Clinical Workflow Overrides</h3>
-        <div className="card form">
+        <EditableSection
+          title="Clinical Workflow Overrides"
+          description="Override visit-close rules for this hospital only when required by operations."
+          saved={sectionSaved.clinical}
+          editing={sectionEditing.clinical}
+          saving={saving || savingCard === "clinical"}
+          saveLabel="Save Clinical Overrides"
+          onEdit={() => editSection("clinical")}
+          onCancel={() => cancelSection("clinical")}
+          onSave={() => saveCard("clinical")}
+        >
           <p className="muted">
             Override the global visit-close rules for this hospital only. Leave the override disabled to inherit the system-wide policy.
           </p>
@@ -478,20 +572,21 @@ export default function HospitalCustomization() {
             />
             Require prescription handoff when pharmacy is enabled
           </label>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => saveCard("clinical")}
-            disabled={saving || savingCard === "clinical"}
-          >
-            {savingCard === "clinical" ? "Saving..." : "Save Clinical Overrides"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
-        <h3>Dedicated Version Request (Hospital/Country)</h3>
-        <div className="card form">
+        <EditableSection
+          title="Dedicated Version Request"
+          description="Request a hospital, regional, country, or global AfyaLink variant for a specific program."
+          saved={requestSubmitted}
+          editing={requestEditing}
+          saving={reqSaving}
+          saveLabel="Submit Dedicated Version Request"
+          onEdit={() => setRequestEditing(true)}
+          onCancel={() => setRequestEditing(false)}
+          onSave={submitRequest}
+        >
           <label>Scope</label>
           <select
             value={requestForm.scope}
@@ -549,11 +644,7 @@ export default function HospitalCustomization() {
             value={requestForm.desiredGoLiveDate}
             onChange={(e) => setRequestForm((prev) => ({ ...prev, desiredGoLiveDate: e.target.value }))}
           />
-
-          <button type="button" className="btn-secondary" onClick={submitRequest} disabled={reqSaving}>
-            {reqSaving ? "Submitting..." : "Submit Dedicated Version Request"}
-          </button>
-        </div>
+        </EditableSection>
       </section>
 
       <section className="section">
@@ -571,9 +662,18 @@ export default function HospitalCustomization() {
             </thead>
             <tbody>
               {requests.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>No requests yet.</td>
-                </tr>
+                <TableEmptyState
+                  colSpan={5}
+                  icon="Req"
+                  title="No Customization Requests Yet"
+                  body="Dedicated version requests will appear here after they are submitted."
+                  actions={[
+                    {
+                      label: "Plan With AI",
+                      aiPrompt: "Help me draft a dedicated AfyaLink customization request with scope, modules, compliance, and launch needs.",
+                    },
+                  ]}
+                />
               ) : (
                 requests.map((r) => (
                   <tr key={r._id}>

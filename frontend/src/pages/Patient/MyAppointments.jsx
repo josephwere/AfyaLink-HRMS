@@ -1,14 +1,125 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
-import ConsultationRoom from "../../components/ConsultationRoom";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
+const CALL_HISTORY_DAYS = 30;
+
+function getBrowserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Nairobi";
+  } catch {
+    return "Africa/Nairobi";
+  }
+}
+
+function formatDateTime(value) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not set";
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function getNextLocalMidnight() {
+  const next = new Date();
+  next.setHours(24, 0, 0, 0);
+  return next;
+}
+
+function isSameLocalDay(value) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+}
+
+function resolveDoctorName(appointment) {
+  if (!appointment?.doctor) return "Hospital will assign one";
+  if (typeof appointment.doctor === "object") return appointment.doctor.name || "Assigned doctor";
+  return appointment.doctor;
+}
+
+function getCallTime(call) {
+  return new Date(call?.endedAt || call?.updatedAt || call?.createdAt || Date.now());
+}
+
+function isRecentHistoryCall(call) {
+  const status = String(call?.status || "").toUpperCase();
+  if (!["ENDED", "TERMINATED"].includes(status)) return false;
+  const time = getCallTime(call).getTime();
+  if (Number.isNaN(time)) return false;
+  return Date.now() - time <= CALL_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function getHistoryDayLabel(call) {
+  const time = getCallTime(call);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (time.toDateString() === today.toDateString()) return "Today";
+  if (time.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return time.toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
+function getDoctorAvailability(doctor) {
+  const rawStatus = String(doctor?.doctorStatus || doctor?.status || "").toUpperCase();
+  if (rawStatus.includes("CONSULT") || rawStatus.includes("BUSY")) {
+    return { label: "Busy In Consultation", tone: "warning" };
+  }
+  if (doctor?.availableToday && doctor?.consultationAvailable !== false && rawStatus !== "OFFLINE") {
+    return { label: "Available Now", tone: "connected" };
+  }
+  return { label: "Offline", tone: "muted" };
+}
+
+function buildBookingLockFromAppointments(appointments = []) {
+  const latest = (appointments || [])
+    .filter((item) => item?.createdAt && isSameLocalDay(item.createdAt) && String(item?.status || "").toLowerCase() !== "cancelled")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  if (!latest?.createdAt) return null;
+  return {
+    message: "Good news! You already have an appointment booked for today.",
+    nextAvailableAt: getNextLocalMidnight().toISOString(),
+    lastBookedAt: latest.createdAt,
+    existingAppointment: latest,
+    guidance: {
+      title: "You're Already Scheduled",
+      message: "Good news! You already have an appointment booked for today. You can make another appointment tomorrow after midnight.",
+      emergencyMessage: "If this is an emergency, please contact a healthcare provider immediately.",
+    },
+  };
+}
+
+function bookingLockFromError(err) {
+  const code = err?.code || err?.data?.code;
+  if (code !== "APPOINTMENT_DAILY_LIMIT") {
+    return null;
+  }
+  const data = err?.data || {};
+  return {
+    message: data?.msg || err?.message || "Good news! You already have an appointment booked for today.",
+    nextAvailableAt: data?.nextAvailableAt || null,
+    lastBookedAt: data?.lastBookedAt || null,
+    existingAppointment: data?.existingAppointment || null,
+    guidance: data?.guidance || {
+      title: "You're Already Scheduled",
+      message: "Good news! You already have an appointment booked for today. You can make another appointment tomorrow after midnight.",
+      emergencyMessage: "If this is an emergency, please contact a healthcare provider immediately.",
+    },
+  };
+}
 
 export default function MyAppointments() {
   const { t } = usePatientLanguage();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const hospitalFromQuery = searchParams.get("hospitalId") || "";
   const savedLocation = (() => {
@@ -31,7 +142,9 @@ export default function MyAppointments() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [callMsg, setCallMsg] = useState("");
-  const [activeCall, setActiveCall] = useState(null);
+  const [bookingLock, setBookingLock] = useState(null);
+  const [bookingLimitNotice, setBookingLimitNotice] = useState(null);
+  const [bookingSuccess, setBookingSuccess] = useState(null);
   const [doctorSearch, setDoctorSearch] = useState("");
   const [locationMode, setLocationMode] = useState(savedLocation?.mode || "manual");
   const [lat, setLat] = useState(savedLocation?.lat ?? "");
@@ -64,6 +177,32 @@ export default function MyAppointments() {
   }, [doctors, doctorSearch]);
 
   const locationReady = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+  const bookingTimeZone = useMemo(() => getBrowserTimeZone(), []);
+  const localBookingLock = useMemo(() => buildBookingLockFromAppointments(appointments), [appointments]);
+  const activeBookingLock = bookingLock || localBookingLock;
+  const bookingLocked =
+    activeBookingLock?.nextAvailableAt && Date.now() < new Date(activeBookingLock.nextAvailableAt).getTime();
+  const consultationHistory = useMemo(
+    () => calls.filter(isRecentHistoryCall).sort((a, b) => getCallTime(b) - getCallTime(a)).slice(0, 8),
+    [calls]
+  );
+
+  const showDailyLimitNotice = (lock) => {
+    if (!lock) return;
+    setBookingLimitNotice(lock);
+    setMsg("");
+  };
+
+  const openAiAssistant = (prompt) => {
+    window.dispatchEvent(
+      new CustomEvent("afyalink:ai-open", {
+        detail: {
+          prompt,
+          source: "patient-appointments",
+        },
+      })
+    );
+  };
 
   const loadHospitals = async () => {
     if (!locationReady) {
@@ -100,6 +239,7 @@ export default function MyAppointments() {
       const data = await apiFetch(`/api/appointments?hospitalId=${hospitalId}&limit=50`);
       const rows = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
       setAppointments(rows);
+      setBookingLock(null);
     } catch (e) {
       setAppointments([]);
       setMsg(e?.message || "Failed to load appointments");
@@ -237,10 +377,14 @@ export default function MyAppointments() {
       setMsg("Select hospital and date/time");
       return;
     }
+    if (bookingLocked) {
+      showDailyLimitNotice(activeBookingLock);
+      return;
+    }
     setSaving(true);
     setMsg("");
     try {
-      await apiFetch("/api/appointments", {
+      const appointment = await apiFetch("/api/appointments", {
         method: "POST",
         body: {
           hospitalId,
@@ -249,8 +393,29 @@ export default function MyAppointments() {
           serviceType: form.serviceType,
           consultationMode: form.consultationMode,
           doctor: form.doctor || undefined,
+          timeZone: bookingTimeZone,
         },
       });
+      setBookingSuccess({
+        appointment,
+        scheduledAt: appointment?.scheduledAt || form.scheduledAt,
+        serviceType: appointment?.serviceType || form.serviceType,
+        consultationMode: appointment?.consultationMode || form.consultationMode,
+        hospitalName: selectedHospital?.name || "Selected hospital",
+      });
+      window.dispatchEvent(
+        new CustomEvent("afyalink:notification-local", {
+          detail: {
+            title: "Appointment confirmed",
+            body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`,
+            category: "CLINICAL",
+            meta: {
+              appointmentId: appointment?._id,
+              path: "/patient/appointments",
+            },
+          },
+        })
+      );
       setForm({
         scheduledAt: "",
         reason: "",
@@ -261,7 +426,13 @@ export default function MyAppointments() {
       setMsg("Appointment request submitted.");
       await loadAppointments();
     } catch (e2) {
-      setMsg(e2?.message || "Failed to create appointment");
+      const lock = bookingLockFromError(e2);
+      if (lock) {
+        setBookingLock(lock);
+        showDailyLimitNotice(lock);
+      } else {
+        setMsg(e2?.message || "Failed to create appointment");
+      }
     } finally {
       setSaving(false);
     }
@@ -273,10 +444,14 @@ export default function MyAppointments() {
       setMsg("Suggested slot is not ready.");
       return;
     }
+    if (bookingLocked) {
+      showDailyLimitNotice(activeBookingLock);
+      return;
+    }
     setSaving(true);
     setMsg("");
     try {
-      await apiFetch("/api/appointments", {
+      const appointment = await apiFetch("/api/appointments", {
         method: "POST",
         body: {
           hospitalId,
@@ -285,12 +460,40 @@ export default function MyAppointments() {
           serviceType: form.serviceType,
           consultationMode: form.consultationMode,
           reason: form.reason || undefined,
+          timeZone: bookingTimeZone,
         },
       });
+      setBookingSuccess({
+        appointment,
+        scheduledAt: appointment?.scheduledAt || slotDate.toISOString(),
+        serviceType: appointment?.serviceType || form.serviceType,
+        consultationMode: appointment?.consultationMode || form.consultationMode,
+        hospitalName: selectedHospital?.name || "Selected hospital",
+        doctorName: suggestion?.doctorName || "",
+      });
+      window.dispatchEvent(
+        new CustomEvent("afyalink:notification-local", {
+          detail: {
+            title: "Appointment confirmed",
+            body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`,
+            category: "CLINICAL",
+            meta: {
+              appointmentId: appointment?._id,
+              path: "/patient/appointments",
+            },
+          },
+        })
+      );
       setMsg("Suggested slot booked.");
       await loadAppointments();
     } catch (err) {
-      setMsg(err?.message || "Failed to book suggested slot");
+      const lock = bookingLockFromError(err);
+      if (lock) {
+        setBookingLock(lock);
+        showDailyLimitNotice(lock);
+      } else {
+        setMsg(err?.message || "Failed to book suggested slot");
+      }
     } finally {
       setSaving(false);
     }
@@ -307,7 +510,8 @@ export default function MyAppointments() {
           callType,
         },
       });
-      setCallMsg(`${callType === "VIDEO" ? "Video" : "Voice"} consultation request sent.`);
+      window.dispatchEvent(new CustomEvent("afyalink:calls-refresh"));
+      setCallMsg(`${callType === "VIDEO" ? "Video" : "Voice"} consultation request sent. We will notify you when the doctor accepts.`);
       await loadCalls();
     } catch (err) {
       setCallMsg(err?.message || "Could not start consultation request");
@@ -325,12 +529,163 @@ export default function MyAppointments() {
 
       {msg && <div className="card">{msg}</div>}
       {callMsg && <div className="card">{callMsg}</div>}
-      {activeCall && (
-        <ConsultationRoom
-          call={activeCall}
-          role="PATIENT"
-          onClose={() => setActiveCall(null)}
-        />
+      {bookingLimitNotice && (
+        <div className="appointment-success-backdrop" role="dialog" aria-modal="true" aria-live="polite">
+          <div className="appointment-success-modal">
+            <button
+              type="button"
+              className="appointment-success-close"
+              onClick={() => setBookingLimitNotice(null)}
+              aria-label="Close booking limit message"
+            >
+              ×
+            </button>
+            <div className="appointment-success-icon appointment-limit-icon" aria-hidden="true">★</div>
+            <div className="appointment-success-kicker">Daily booking limit</div>
+            <h2>{bookingLimitNotice.guidance?.title || "You're Already Scheduled"}</h2>
+            <p>
+              {bookingLimitNotice.guidance?.message ||
+                "Good news! You already have an appointment booked for today. You can make another appointment tomorrow after midnight."}
+            </p>
+            <div className="appointment-success-summary">
+              <strong>Your Appointment</strong>
+              <dl>
+                <dt>Date & time</dt>
+                <dd>{formatDateTime(bookingLimitNotice.existingAppointment?.scheduledAt)}</dd>
+                <dt>Doctor</dt>
+                <dd>{resolveDoctorName(bookingLimitNotice.existingAppointment)}</dd>
+                <dt>Status</dt>
+                <dd>{bookingLimitNotice.existingAppointment?.status || "Confirmed"}</dd>
+                <dt>Service</dt>
+                <dd>{bookingLimitNotice.existingAppointment?.serviceType || "General Consultation"}</dd>
+                <dt>Next booking</dt>
+                <dd>{formatDateTime(bookingLimitNotice.nextAvailableAt)}</dd>
+              </dl>
+            </div>
+            <div className="success-guide-panel">
+              <strong>Need assistance before then?</strong>
+              <ul>
+                <li>Chat with the AI Health Assistant while you wait.</li>
+                <li>Connect with an online doctor if your appointment has a clinician assigned.</li>
+                <li>Review your upcoming appointment details any time.</li>
+              </ul>
+            </div>
+            <p className="muted">
+              {bookingLimitNotice.guidance?.emergencyMessage ||
+                "If this is an emergency, please contact a healthcare provider immediately."}
+            </p>
+            <div className="appointment-success-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setBookingLimitNotice(null);
+                  openAiAssistant("I already have an appointment today. Help me prepare questions, symptoms, and next steps while I wait.");
+                }}
+              >
+                AI Assistant
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!bookingLimitNotice.existingAppointment?._id || !bookingLimitNotice.existingAppointment?.doctor}
+                onClick={async () => {
+                  const appointmentId = bookingLimitNotice.existingAppointment?._id;
+                  setBookingLimitNotice(null);
+                  if (appointmentId) await startConsultation(appointmentId, "VOICE");
+                }}
+              >
+                Online Doctor
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setBookingLimitNotice(null);
+                  document.getElementById("patient-appointments-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                My Appointment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {bookingSuccess && (
+        <div className="appointment-success-backdrop" role="dialog" aria-modal="true" aria-live="polite">
+          <div className="appointment-success-modal">
+            <button
+              type="button"
+              className="appointment-success-close"
+              onClick={() => setBookingSuccess(null)}
+              aria-label="Close appointment success message"
+            >
+              ×
+            </button>
+            <div className="appointment-success-icon" aria-hidden="true">✓</div>
+            <div className="appointment-success-kicker">Appointment confirmed</div>
+            <h2>Appointment Successfully Booked</h2>
+            <p>Your appointment has been scheduled. While you wait, AfyaLink can help you prepare and reach care faster.</p>
+            <div className="appointment-success-summary">
+              <dl>
+                <dt>Date & time</dt>
+                <dd>{formatDateTime(bookingSuccess.scheduledAt)}</dd>
+                <dt>Hospital</dt>
+                <dd>{bookingSuccess.hospitalName}</dd>
+                <dt>Service</dt>
+                <dd>{bookingSuccess.serviceType || "General Consultation"}</dd>
+                <dt>Mode</dt>
+                <dd>{String(bookingSuccess.consultationMode || "IN_PERSON").replace(/_/g, " ")}</dd>
+                <dt>Doctor</dt>
+                <dd>{bookingSuccess.doctorName || bookingSuccess.appointment?.doctor?.name || bookingSuccess.appointment?.doctor || "Hospital will assign one"}</dd>
+              </dl>
+            </div>
+            <div className="success-guide-panel">
+              <strong>Did you know?</strong>
+              <ul>
+                <li>You can use the AI Health Assistant to prepare symptoms and questions.</li>
+                <li>You can request a voice consultation if a doctor has already been assigned.</li>
+                <li>Your appointment record is now available in My Appointments.</li>
+              </ul>
+            </div>
+            <div className="appointment-success-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setBookingSuccess(null);
+                  openAiAssistant(
+                    `Prepare me for my ${bookingSuccess.serviceType || "General Consultation"} appointment at ${bookingSuccess.hospitalName}. Suggest symptoms to track and questions to ask.`
+                  );
+                }}
+              >
+                Open AI Assistant
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!bookingSuccess.appointment?._id || !bookingSuccess.appointment?.doctor}
+                onClick={async () => {
+                  const appointmentId = bookingSuccess.appointment?._id;
+                  setBookingSuccess(null);
+                  if (appointmentId) await startConsultation(appointmentId, "VOICE");
+                }}
+              >
+                Talk To Doctor
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setBookingSuccess(null);
+                  document.getElementById("patient-appointments-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                My Appointments
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <section className="section">
@@ -518,8 +873,30 @@ export default function MyAppointments() {
           <p className="muted" style={{ marginTop: 6 }}>
             The hospital will assign the best available doctor if you leave this blank.
           </p>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? t("submitting", "Submitting...") : t("bookNow", "Book Now")}
+          {bookingLocked ? (
+            <div className="appointment-lock-card" role="status" style={{ marginBottom: 12 }}>
+              <strong>You're already scheduled today</strong>
+              <p style={{ margin: "8px 0 0" }}>
+                {activeBookingLock?.message || "Good news! You already have an appointment booked for today."}
+              </p>
+              <p style={{ margin: "8px 0 0" }}>
+                You can make another appointment tomorrow after midnight: <strong>{formatDateTime(activeBookingLock.nextAvailableAt)}</strong>
+              </p>
+              <p style={{ margin: "8px 0 0" }}>
+                Need help before then? Use the AI Assistant or request an online doctor from your appointment.
+              </p>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ marginTop: 12 }}
+                onClick={() => showDailyLimitNotice(activeBookingLock)}
+              >
+                View My Options
+              </button>
+            </div>
+          ) : null}
+          <button type="submit" className="btn-primary" disabled={saving || bookingLocked}>
+            {saving ? t("submitting", "Submitting...") : bookingLocked ? "Already Scheduled Today" : t("bookNow", "Book Now")}
           </button>
         </form>
       </section>
@@ -563,7 +940,7 @@ export default function MyAppointments() {
                 type="button"
                 className="btn-primary"
                 style={{ marginTop: 8 }}
-                disabled={saving}
+                disabled={saving || bookingLocked}
                 data-ai-action="book-suggested-slot"
                 data-ai-label="Book Suggested Slot"
                 data-ai-aliases="book now|confirm slot booking|book doctor slot"
@@ -591,11 +968,17 @@ export default function MyAppointments() {
               <p className="muted" style={{ marginBottom: 8 }}>
                 {doctor.specialization || doctor?.employment?.department || "General Practice"}
               </p>
-              <div className="action-pill">Today: {doctor.availableToday ? "Available" : "Busy"}</div>
+              {(() => {
+                const availability = getDoctorAvailability(doctor);
+                return (
+                  <div className={`action-pill ${availability.tone}`}>
+                    {availability.label}
+                  </div>
+                );
+              })()}
               <div className="action-pill">
-                Consult: {doctor.consultationAvailable ? "Open" : "Closed"}
+                Online consultations: {doctor.consultationAvailable ? "Open" : "Closed"}
               </div>
-              <div className="action-pill">Status: {doctor.doctorStatus || "ONLINE"}</div>
               <button
                 type="button"
                 className="btn-secondary"
@@ -619,45 +1002,36 @@ export default function MyAppointments() {
       </section>
 
       <section className="section">
-        <h3>{t("activeCalls", "Active Calls")}</h3>
-        <div className="grid info-grid">
-          {calls.map((call) => (
-            <div key={call._id} className="card premium-card">
-              <h4 style={{ marginTop: 0 }}>
-                {call.callType === "VIDEO" ? "Video" : "Voice"} Consultation
-              </h4>
-              <p className="muted">
-                Status: {call.status} • Doctor: {call.doctor?.name || "Assigned doctor"}
-              </p>
-              <p className="muted">
-                Service: {call.appointment?.serviceType || "Consultation"}
-              </p>
-              <div className="doctor-actions-row">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={call.status !== "ACTIVE"}
-                  data-ai-action="join-consultation-room"
-                  data-ai-label="Join Consultation Room"
-                  data-ai-aliases="join room|open consultation room|enter voice or video room"
-                  data-ai-help={`${call.callType === "VIDEO" ? "Video" : "Voice"} consultation | ${call.doctor?.name || "Assigned doctor"} | ${call.status}`}
-                  onClick={() => setActiveCall(call)}
-                >
-                  {call.status === "ACTIVE" ? t("joinRoom", "Join Room") : t("waiting", "Waiting")}
-                </button>
+        <div className="section-heading-row">
+          <div>
+            <h3>Consultation History</h3>
+            <p className="muted">Completed voice and video consultations are archived here. Active calls appear in the Calls button in the top bar.</p>
+          </div>
+        </div>
+        <div className="card premium-card consultation-history-card">
+          {consultationHistory.map((call) => (
+            <div key={call._id} className="consultation-history-row">
+              <div>
+                <span className="telehealth-kicker">{getHistoryDayLabel(call)}</span>
+                <strong>{call.callType === "VIDEO" ? "Video Consultation" : "Voice Consultation"}</strong>
+                <p className="muted">
+                  {call.doctor?.name || "Assigned doctor"} • {call.appointment?.serviceType || "General Consultation"}
+                </p>
               </div>
+              <span className="action-pill connected">Completed</span>
             </div>
           ))}
-          {!calls.length && (
-            <div className="card premium-card">
-              <p className="muted">{t("noConsultationCalls", "No consultation calls yet.")}</p>
+          {!consultationHistory.length ? (
+            <div className="empty-state-panel">
+              <strong>No completed consultations yet.</strong>
+              <p className="muted">When an online doctor consultation ends, it will move here automatically.</p>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
 
       <section className="section">
-        <h3>{t("recentAppointments", "Recent Appointments")}</h3>
+        <h3 id="patient-appointments-list">{t("recentAppointments", "Recent Appointments")}</h3>
         <div className="card premium-card">
           {loading ? (
             <p className="muted">Loading...</p>

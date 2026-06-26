@@ -9,6 +9,7 @@ import AuditLog from "../models/AuditLog.js";
 import PharmacyReferral from "../models/PharmacyReferral.js";
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import { assertWorkflowState } from "../services/clinicalWorkflowGuard.js";
+import { getIO } from "../utils/socket.js";
 
 async function resolveActorPharmacyIds(req) {
   const direct = req.user?.registeredPharmacy ? [String(req.user.registeredPharmacy)] : [];
@@ -208,6 +209,18 @@ export async function createPrescription(req, res) {
         path: "/patient/prescriptions",
       },
     });
+
+    try {
+      getIO().to(String(patientUserId)).emit("prescription_issued", {
+        prescriptionId: String(rx._id),
+        appointmentId: appointmentId || null,
+        hospitalId: req.user.hospital ? String(req.user.hospital) : null,
+        status: rx.status,
+        message: "Medication Ready",
+        path: "/patient/prescriptions",
+        emittedAt: new Date().toISOString(),
+      });
+    } catch (_) {}
 
     await AuditLog.create({
       actorId: req.user._id,

@@ -21,9 +21,21 @@ import {
 } from "../utils/accessibilityPrefs";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
+import { showActionSuccessGuide } from "../components/ActionSuccessGuide";
+import EditableSection from "../components/EditableSection";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 const PROFILE_CACHE_VERSION = 1;
+const PROFILE_SECTION_LABELS = {
+  nationalId: "National ID",
+  professionalLicense: "Professional license",
+  basicInfo: "Personal information",
+  employmentInfo: "Employment information",
+  credentialsInfo: "Credentials",
+  financialInfo: "Financial information",
+  insuranceProfile: "Insurance profile",
+  systemData: "System data",
+};
 
 function profileCacheKey(user) {
   const id = user?._id || user?.id || user?.email || user?.phone || "anonymous";
@@ -86,6 +98,38 @@ function toCachedProfilePayload(me) {
     insuranceProfile: me?.insuranceProfile || {},
     familyMonitoring: me?.familyMonitoring || {},
     uiPreferences: me?.uiPreferences || {},
+  };
+}
+
+function hasAnyProfileValue(value) {
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.values(value).some(hasAnyProfileValue);
+  return String(value).trim() !== "";
+}
+
+function inferSavedProfileSections(me = {}) {
+  return {
+    nationalId: hasAnyProfileValue({
+      nationalIdNumber: me?.nationalIdNumber,
+      nationalIdCountry: me?.nationalIdCountry,
+    }),
+    professionalLicense: hasAnyProfileValue({
+      licenseNumber: me?.licenseNumber,
+      licenseExpiry: me?.licenseExpiry,
+    }),
+    basicInfo: hasAnyProfileValue({
+      gender: me?.gender,
+      dateOfBirth: me?.dateOfBirth,
+      nationality: me?.nationality,
+      address: me?.address,
+      emergencyContact: me?.emergencyContact,
+    }),
+    employmentInfo: hasAnyProfileValue(me?.employment),
+    credentialsInfo: hasAnyProfileValue(me?.credentials),
+    financialInfo: hasAnyProfileValue(me?.financial),
+    insuranceProfile: hasAnyProfileValue(me?.insuranceProfile),
+    systemData: hasAnyProfileValue(me?.systemProfile),
   };
 }
 
@@ -194,6 +238,8 @@ export default function Profile() {
   const [extendedMsg, setExtendedMsg] = useState("");
   const [sectionSaving, setSectionSaving] = useState({});
   const [sectionMsg, setSectionMsg] = useState({});
+  const [sectionSaved, setSectionSaved] = useState({});
+  const [sectionEditing, setSectionEditing] = useState({});
 
   // Global production profile fields
   const [basic, setBasic] = useState({
@@ -458,6 +504,8 @@ export default function Profile() {
     setLinkedMinors([]);
     setFamilyLoaded(false);
     setShowSecretsOnHover(Boolean(me?.uiPreferences?.showSecretsOnHover));
+    setSectionSaved(inferSavedProfileSections(me));
+    setSectionEditing({});
   };
 
   /* -------------------------
@@ -588,6 +636,13 @@ export default function Profile() {
     systemData: { systemProfile: allPayload.systemProfile },
   });
 
+  const isSectionLocked = (sectionKey) => Boolean(sectionSaved[sectionKey] && !sectionEditing[sectionKey]);
+
+  const beginSectionEdit = (sectionKey) => {
+    setSectionEditing((prev) => ({ ...prev, [sectionKey]: true }));
+    setSectionMsg((prev) => ({ ...prev, [sectionKey]: "" }));
+  };
+
   const saveExtendedProfile = async (sectionKey = "") => {
     setExtendedSaving(true);
     setExtendedMsg("");
@@ -605,8 +660,45 @@ export default function Profile() {
       const okMsg = sectionKey ? "Section saved." : "Profile details updated.";
       setExtendedMsg(okMsg);
       if (sectionKey) {
+        setSectionSaved((prev) => ({ ...prev, [sectionKey]: true }));
+        setSectionEditing((prev) => ({ ...prev, [sectionKey]: false }));
         setSectionMsg((prev) => ({ ...prev, [sectionKey]: okMsg }));
       }
+      showActionSuccessGuide({
+        title: sectionKey
+          ? `${PROFILE_SECTION_LABELS[sectionKey] || "Profile section"} saved`
+          : "Profile Updated Successfully",
+        message: "Your information has been securely saved and is ready for your care team where applicable.",
+        tips: [
+          "Book appointments",
+          "Consult doctors online",
+          "Use the AI health assistant",
+          "View prescriptions and records",
+        ],
+        actions: isPatientProfile
+          ? [
+              { label: "Book Appointment", path: "/app/portal/appointments/index" },
+              {
+                label: "Ask AI",
+                action: "ai",
+                aiPrompt: "Review my health profile and suggest what I should prepare before my next healthcare visit.",
+                variant: "secondary",
+              },
+              { label: "Health Records", path: "/app/portal/records/index", variant: "secondary" },
+            ]
+          : [
+              { label: "Return Dashboard", path: redirectByRole(user) },
+              {
+                label: "Ask AI",
+                action: "ai",
+                aiPrompt: "Help me understand the next best action after updating this AfyaLink profile.",
+                variant: "secondary",
+              },
+              { label: "Notifications", path: "/app/platform/inbox/notifications", variant: "secondary" },
+            ],
+        aiPrompt: "Review my saved AfyaLink profile and suggest what I should do next.",
+        notificationCategory: "ACCOUNT",
+      });
     } catch (err) {
       const failMsg = err.message || "Failed to update profile details";
       setExtendedMsg(failMsg);
@@ -983,6 +1075,23 @@ export default function Profile() {
         },
       });
       setIdMsg("National ID updated");
+      setSectionSaved((prev) => ({ ...prev, nationalId: true }));
+      setSectionEditing((prev) => ({ ...prev, nationalId: false }));
+      showActionSuccessGuide({
+        title: "National ID Saved",
+        message: "Your identity details have been securely saved.",
+        icon: "ID",
+        nextActions: [
+          { label: "Edit Profile", path: "/app/platform/account/profile", variant: "secondary" },
+          {
+            label: "Ask AI",
+            action: "ai",
+            aiPrompt: "Explain what profile details I should keep current before healthcare visits.",
+            variant: "secondary",
+          },
+        ],
+        notificationCategory: "ACCOUNT",
+      });
     } catch (err) {
       setIdMsg(err.message || "Failed to update National ID");
     } finally {
@@ -1005,6 +1114,23 @@ export default function Profile() {
         },
       });
       setLicenseMsg("License updated");
+      setSectionSaved((prev) => ({ ...prev, professionalLicense: true }));
+      setSectionEditing((prev) => ({ ...prev, professionalLicense: false }));
+      showActionSuccessGuide({
+        title: "Professional License Saved",
+        message: "Your clinical credential details have been updated.",
+        icon: "ID",
+        nextActions: [
+          { label: "Return Dashboard", path: redirectByRole(user), variant: "secondary" },
+          {
+            label: "Ask AI",
+            action: "ai",
+            aiPrompt: "Help me review which professional profile details should stay current in a hospital system.",
+            variant: "secondary",
+          },
+        ],
+        notificationCategory: "ACCOUNT",
+      });
     } catch (err) {
       setLicenseMsg(err.message || "Failed to update license");
     } finally {
@@ -2251,17 +2377,27 @@ export default function Profile() {
         );
 
       case "nationalId":
+        {
+          const locked = isSectionLocked("nationalId");
         return (
-          <DismissibleSection
+          <EditableSection
             title="National ID"
             eyebrow="Account"
+            saved={sectionSaved.nationalId}
+            editing={sectionEditing.nationalId}
+            saving={idSaving}
+            onEdit={() => beginSectionEdit("nationalId")}
+            onSave={saveNationalId}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, nationalId: false }))}
+            saveLabel="Save National ID"
+            message={idMsg}
             aside={<span className="action-pill">{idNumber ? "On file" : "Missing"}</span>}
           >
             <label>National ID Number</label>
-            <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
+            <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} disabled={locked} />
 
             <label>National ID Country</label>
-            <select value={idCountry} onChange={(e) => setIdCountry(e.target.value)}>
+            <select value={idCountry} onChange={(e) => setIdCountry(e.target.value)} disabled={locked}>
               <option value="">Select country</option>
               {countries.map((country) => (
                 <option key={country.code} value={country.code}>
@@ -2269,24 +2405,25 @@ export default function Profile() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              className="primary"
-              onClick={saveNationalId}
-              disabled={idSaving}
-              style={{ marginTop: 8 }}
-            >
-              {idSaving ? "Saving..." : "Save National ID"}
-            </button>
-            {idMsg && <p style={{ marginTop: 8 }}>{idMsg}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
+        }
 
       case "professionalLicense":
+        {
+          const locked = isSectionLocked("professionalLicense");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Professional License"
             eyebrow="Account"
+            saved={sectionSaved.professionalLicense}
+            editing={sectionEditing.professionalLicense}
+            saving={licenseSaving}
+            onEdit={() => beginSectionEdit("professionalLicense")}
+            onSave={saveLicense}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, professionalLicense: false }))}
+            saveLabel="Save License"
+            message={licenseMsg}
             aside={<span className="action-pill">{licenseNumber ? "On file" : "Optional"}</span>}
           >
             <label>Professional License Number</label>
@@ -2294,23 +2431,14 @@ export default function Profile() {
               value={licenseNumber}
               onChange={(e) => setLicenseNumber(e.target.value)}
               placeholder="e.g. KMPDC-123456"
+              disabled={locked}
             />
 
             <label>License Expiry Date</label>
-            <input type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} />
-
-            <button
-              type="button"
-              className="primary"
-              onClick={saveLicense}
-              disabled={licenseSaving}
-              style={{ marginTop: 8 }}
-            >
-              {licenseSaving ? "Saving..." : "Save License"}
-            </button>
-            {licenseMsg && <p style={{ marginTop: 8 }}>{licenseMsg}</p>}
-          </DismissibleSection>
+            <input type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} disabled={locked} />
+          </EditableSection>
         );
+        }
       case "accessibility":
         return (
           <DismissibleSection
@@ -2424,15 +2552,25 @@ export default function Profile() {
             {uiPrefMsg ? <p style={{ marginTop: 8 }}>{uiPrefMsg}</p> : null}
           </DismissibleSection>
         );
-      case "basicInfo":
+      case "basicInfo": {
+        const locked = isSectionLocked("basicInfo");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Personal Information"
             eyebrow="Account"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.basicInfo}
+            editing={sectionEditing.basicInfo}
+            saving={sectionSaving.basicInfo}
+            onEdit={() => beginSectionEdit("basicInfo")}
+            onSave={() => saveExtendedProfile("basicInfo")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, basicInfo: false }))}
+            saveLabel="Save Basic Info"
+            message={sectionMsg.basicInfo}
             aside={<span className="action-pill">{sectionSaving.basicInfo ? "Saving" : "Profile data"}</span>}
           >
             <label>Gender</label>
-            <select value={basic.gender} onChange={(e) => setBasic({ ...basic, gender: e.target.value })}>
+            <select value={basic.gender} onChange={(e) => setBasic({ ...basic, gender: e.target.value })} disabled={locked}>
               <option value="">Select</option>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
@@ -2444,11 +2582,13 @@ export default function Profile() {
               type="date"
               value={basic.dateOfBirth}
               onChange={(e) => setBasic({ ...basic, dateOfBirth: e.target.value })}
+              disabled={locked}
             />
             <label>Nationality</label>
             <select
               value={basic.nationality}
               onChange={(e) => setBasic({ ...basic, nationality: e.target.value })}
+              disabled={locked}
             >
               <option value="">Select country</option>
               {countries.map((country) => (
@@ -2458,57 +2598,64 @@ export default function Profile() {
               ))}
             </select>
             <label>Address</label>
-            <input value={basic.address} onChange={(e) => setBasic({ ...basic, address: e.target.value })} />
+            <input value={basic.address} onChange={(e) => setBasic({ ...basic, address: e.target.value })} disabled={locked} />
             <label>Emergency Contact Name</label>
-            <input value={basic.emergencyName} onChange={(e) => setBasic({ ...basic, emergencyName: e.target.value })} />
+            <input value={basic.emergencyName} onChange={(e) => setBasic({ ...basic, emergencyName: e.target.value })} disabled={locked} />
             <label>Emergency Contact Relationship</label>
             <input
               value={basic.emergencyRelationship}
               onChange={(e) => setBasic({ ...basic, emergencyRelationship: e.target.value })}
+              disabled={locked}
             />
             <label>Emergency Contact Phone</label>
             <input
               value={basic.emergencyPhone}
               onChange={(e) => setBasic({ ...basic, emergencyPhone: e.target.value })}
+              disabled={locked}
             />
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("basicInfo")}
-              disabled={Boolean(sectionSaving.basicInfo)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.basicInfo ? "Saving..." : "Save Basic Info"}
-            </button>
-            {sectionMsg.basicInfo && <p style={{ marginTop: 8 }}>{sectionMsg.basicInfo}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
-      case "employmentInfo":
+      }
+      case "employmentInfo": {
+        const locked = isSectionLocked("employmentInfo");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Employment Information"
             eyebrow="Professional"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.employmentInfo}
+            editing={sectionEditing.employmentInfo}
+            saving={sectionSaving.employmentInfo}
+            onEdit={() => beginSectionEdit("employmentInfo")}
+            onSave={() => saveExtendedProfile("employmentInfo")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, employmentInfo: false }))}
+            saveLabel="Save Employment Info"
+            message={sectionMsg.employmentInfo}
             aside={<span className="action-pill">{employment.department || "Staff profile"}</span>}
           >
             <label>Employee ID</label>
             <input
               value={employment.employeeId}
               onChange={(e) => setEmployment({ ...employment, employeeId: e.target.value })}
+              disabled={locked}
             />
             <label>Department</label>
             <input
               value={employment.department}
               onChange={(e) => setEmployment({ ...employment, department: e.target.value })}
+              disabled={locked}
             />
             <label>Reporting Manager</label>
             <input
               value={employment.reportingManager}
               onChange={(e) => setEmployment({ ...employment, reportingManager: e.target.value })}
+              disabled={locked}
             />
             <label>Employment Type</label>
             <select
               value={employment.employmentType}
               onChange={(e) => setEmployment({ ...employment, employmentType: e.target.value })}
+              disabled={locked}
             >
               <option value="">Select</option>
               <option value="FULL_TIME">Full-time</option>
@@ -2522,156 +2669,176 @@ export default function Profile() {
               type="date"
               value={employment.hireDate}
               onChange={(e) => setEmployment({ ...employment, hireDate: e.target.value })}
+              disabled={locked}
             />
             <label>Contract Start</label>
             <input
               type="date"
               value={employment.contractStart}
               onChange={(e) => setEmployment({ ...employment, contractStart: e.target.value })}
+              disabled={locked}
             />
             <label>Contract End</label>
             <input
               type="date"
               value={employment.contractEnd}
               onChange={(e) => setEmployment({ ...employment, contractEnd: e.target.value })}
+              disabled={locked}
             />
             <label>Work Location</label>
             <input
               value={employment.workLocation}
               onChange={(e) => setEmployment({ ...employment, workLocation: e.target.value })}
+              disabled={locked}
             />
             <label>Branch</label>
-            <input value={employment.branch} onChange={(e) => setEmployment({ ...employment, branch: e.target.value })} />
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("employmentInfo")}
-              disabled={Boolean(sectionSaving.employmentInfo)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.employmentInfo ? "Saving..." : "Save Employment Info"}
-            </button>
-            {sectionMsg.employmentInfo && <p style={{ marginTop: 8 }}>{sectionMsg.employmentInfo}</p>}
-          </DismissibleSection>
+            <input value={employment.branch} onChange={(e) => setEmployment({ ...employment, branch: e.target.value })} disabled={locked} />
+          </EditableSection>
         );
-      case "credentialsInfo":
+      }
+      case "credentialsInfo": {
+        const locked = isSectionLocked("credentialsInfo");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Credentials & Professional Data"
             eyebrow="Professional"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.credentialsInfo}
+            editing={sectionEditing.credentialsInfo}
+            saving={sectionSaving.credentialsInfo}
+            onEdit={() => beginSectionEdit("credentialsInfo")}
+            onSave={() => saveExtendedProfile("credentialsInfo")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, credentialsInfo: false }))}
+            saveLabel="Save Credentials"
+            message={sectionMsg.credentialsInfo}
             aside={<span className="action-pill">{credentials.specialization || "Pending"}</span>}
           >
             <label>Specialization</label>
             <input
               value={credentials.specialization}
               onChange={(e) => setCredentials({ ...credentials, specialization: e.target.value })}
+              disabled={locked}
             />
             <label>Sub-specialization</label>
             <input
               value={credentials.subSpecialization}
               onChange={(e) => setCredentials({ ...credentials, subSpecialization: e.target.value })}
+              disabled={locked}
             />
             <label>Certifications (comma-separated)</label>
             <input
               value={credentials.certifications}
               onChange={(e) => setCredentials({ ...credentials, certifications: e.target.value })}
+              disabled={locked}
             />
             <label>Education History (comma-separated)</label>
             <input
               value={credentials.educationHistory}
               onChange={(e) => setCredentials({ ...credentials, educationHistory: e.target.value })}
+              disabled={locked}
             />
             <label>CME Credits</label>
             <input
               type="number"
               value={credentials.cmeCredits}
               onChange={(e) => setCredentials({ ...credentials, cmeCredits: e.target.value })}
+              disabled={locked}
             />
             <label>Research Publications</label>
             <input
               type="number"
               value={credentials.researchPublications}
               onChange={(e) => setCredentials({ ...credentials, researchPublications: e.target.value })}
+              disabled={locked}
             />
             <label>Test Authorization Level</label>
             <input
               value={credentials.testAuthorizationLevel}
               onChange={(e) => setCredentials({ ...credentials, testAuthorizationLevel: e.target.value })}
+              disabled={locked}
             />
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("credentialsInfo")}
-              disabled={Boolean(sectionSaving.credentialsInfo)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.credentialsInfo ? "Saving..." : "Save Credentials"}
-            </button>
-            {sectionMsg.credentialsInfo && <p style={{ marginTop: 8 }}>{sectionMsg.credentialsInfo}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
-      case "financialInfo":
+      }
+      case "financialInfo": {
+        const locked = isSectionLocked("financialInfo");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Financial Information"
             eyebrow="Professional"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.financialInfo}
+            editing={sectionEditing.financialInfo}
+            saving={sectionSaving.financialInfo}
+            onEdit={() => beginSectionEdit("financialInfo")}
+            onSave={() => saveExtendedProfile("financialInfo")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, financialInfo: false }))}
+            saveLabel="Save Financial Info"
+            message={sectionMsg.financialInfo}
             aside={<span className="action-pill">{financial.bankName || "Payroll"}</span>}
           >
             <label>Bank Name</label>
-            <input value={financial.bankName} onChange={(e) => setFinancial({ ...financial, bankName: e.target.value })} />
+            <input value={financial.bankName} onChange={(e) => setFinancial({ ...financial, bankName: e.target.value })} disabled={locked} />
             <label>Bank Account Name</label>
             <input
               value={financial.bankAccountName}
               onChange={(e) => setFinancial({ ...financial, bankAccountName: e.target.value })}
+              disabled={locked}
             />
             <label>Bank Account Number</label>
             <input
               value={financial.bankAccountNumber}
               onChange={(e) => setFinancial({ ...financial, bankAccountNumber: e.target.value })}
+              disabled={locked}
             />
             <label>Bank Branch</label>
-            <input value={financial.bankBranch} onChange={(e) => setFinancial({ ...financial, bankBranch: e.target.value })} />
+            <input value={financial.bankBranch} onChange={(e) => setFinancial({ ...financial, bankBranch: e.target.value })} disabled={locked} />
             <label>Tax ID</label>
-            <input value={financial.taxId} onChange={(e) => setFinancial({ ...financial, taxId: e.target.value })} />
+            <input value={financial.taxId} onChange={(e) => setFinancial({ ...financial, taxId: e.target.value })} disabled={locked} />
             <label>Pension Info</label>
             <input
               value={financial.pensionInfo}
               onChange={(e) => setFinancial({ ...financial, pensionInfo: e.target.value })}
+              disabled={locked}
             />
             <label>Salary Structure</label>
             <input
               value={financial.salaryStructure}
               onChange={(e) => setFinancial({ ...financial, salaryStructure: e.target.value })}
+              disabled={locked}
             />
             <label>Allowances</label>
             <input
               type="number"
               value={financial.allowances}
               onChange={(e) => setFinancial({ ...financial, allowances: e.target.value })}
+              disabled={locked}
             />
             <label>Deductions</label>
             <input
               type="number"
               value={financial.deductions}
               onChange={(e) => setFinancial({ ...financial, deductions: e.target.value })}
+              disabled={locked}
             />
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("financialInfo")}
-              disabled={Boolean(sectionSaving.financialInfo)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.financialInfo ? "Saving..." : "Save Financial Info"}
-            </button>
-            {sectionMsg.financialInfo && <p style={{ marginTop: 8 }}>{sectionMsg.financialInfo}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
-      case "insuranceProfile":
+      }
+      case "insuranceProfile": {
+        const locked = isSectionLocked("insuranceProfile");
         return (
-          <DismissibleSection
+          <EditableSection
             title="Insurance Profile"
             eyebrow="Care & Coverage"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.insuranceProfile}
+            editing={sectionEditing.insuranceProfile}
+            saving={sectionSaving.insuranceProfile}
+            onEdit={() => beginSectionEdit("insuranceProfile")}
+            onSave={() => saveExtendedProfile("insuranceProfile")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, insuranceProfile: false }))}
+            saveLabel="Save Insurance Profile"
+            message={sectionMsg.insuranceProfile}
             aside={<span className="action-pill">{insurance.status}</span>}
           >
             <label>Provider Code</label>
@@ -2679,36 +2846,29 @@ export default function Profile() {
               value={insurance.providerCode}
               onChange={(e) => setInsurance({ ...insurance, providerCode: e.target.value.toUpperCase() })}
               placeholder="SHA, NHIF, PRIVATE_X"
+              disabled={locked}
             />
             <label>Provider Name</label>
-            <input value={insurance.providerName} onChange={(e) => setInsurance({ ...insurance, providerName: e.target.value })} />
+            <input value={insurance.providerName} onChange={(e) => setInsurance({ ...insurance, providerName: e.target.value })} disabled={locked} />
             <label>Member Number</label>
-            <input value={insurance.memberNumber} onChange={(e) => setInsurance({ ...insurance, memberNumber: e.target.value })} />
+            <input value={insurance.memberNumber} onChange={(e) => setInsurance({ ...insurance, memberNumber: e.target.value })} disabled={locked} />
             <label>Balance</label>
-            <input type="number" value={insurance.balance} onChange={(e) => setInsurance({ ...insurance, balance: e.target.value })} />
+            <input type="number" value={insurance.balance} onChange={(e) => setInsurance({ ...insurance, balance: e.target.value })} disabled={locked} />
             <label>Currency</label>
             <input
               value={insurance.currency}
               onChange={(e) => setInsurance({ ...insurance, currency: e.target.value.toUpperCase() })}
+              disabled={locked}
             />
             <label>Status</label>
-            <select value={insurance.status} onChange={(e) => setInsurance({ ...insurance, status: e.target.value })}>
+            <select value={insurance.status} onChange={(e) => setInsurance({ ...insurance, status: e.target.value })} disabled={locked}>
               <option value="PENDING">Pending</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
             </select>
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("insuranceProfile")}
-              disabled={Boolean(sectionSaving.insuranceProfile)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.insuranceProfile ? "Saving..." : "Save Insurance Profile"}
-            </button>
-            {sectionMsg.insuranceProfile && <p style={{ marginTop: 8 }}>{sectionMsg.insuranceProfile}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
+      }
       case "familyPreferences":
         return (
           <DismissibleSection
@@ -2877,17 +3037,28 @@ export default function Profile() {
             )}
           </DismissibleSection>
         );
-      case "systemData":
+      case "systemData": {
+        const locked = isSectionLocked("systemData");
         return (
-          <DismissibleSection
+          <EditableSection
             title="System Data"
             eyebrow="Administration"
+            className={locked ? "profile-section-locked" : ""}
+            saved={sectionSaved.systemData}
+            editing={sectionEditing.systemData}
+            saving={sectionSaving.systemData}
+            onEdit={() => beginSectionEdit("systemData")}
+            onSave={() => saveExtendedProfile("systemData")}
+            onCancel={() => setSectionEditing((prev) => ({ ...prev, systemData: false }))}
+            saveLabel="Save System Data"
+            message={sectionMsg.systemData}
             aside={<span className="action-pill">{systemProfile.status}</span>}
           >
             <label>Status</label>
             <select
               value={systemProfile.status}
               onChange={(e) => setSystemProfile({ ...systemProfile, status: e.target.value })}
+              disabled={locked}
             >
               <option value="ACTIVE">Active</option>
               <option value="SUSPENDED">Suspended</option>
@@ -2898,19 +3069,11 @@ export default function Profile() {
               type="date"
               value={systemProfile.accessExpiresAt}
               onChange={(e) => setSystemProfile({ ...systemProfile, accessExpiresAt: e.target.value })}
+              disabled={locked}
             />
-            <button
-              type="button"
-              className="primary"
-              onClick={() => saveExtendedProfile("systemData")}
-              disabled={Boolean(sectionSaving.systemData)}
-              style={{ marginTop: 8 }}
-            >
-              {sectionSaving.systemData ? "Saving..." : "Save System Data"}
-            </button>
-            {sectionMsg.systemData && <p style={{ marginTop: 8 }}>{sectionMsg.systemData}</p>}
-          </DismissibleSection>
+          </EditableSection>
         );
+      }
       case "roleChecklist":
         return (
           <DismissibleSection

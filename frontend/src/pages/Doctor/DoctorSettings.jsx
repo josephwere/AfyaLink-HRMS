@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
+import EditableSection from "../../components/EditableSection";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 
@@ -31,6 +34,8 @@ export default function DoctorSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [availabilitySaved, setAvailabilitySaved] = useState(false);
+  const [availabilityEditing, setAvailabilityEditing] = useState(false);
   const weeklySectionRef = useRef(null);
 
   const todayIndex = new Date().getDay();
@@ -47,6 +52,8 @@ export default function DoctorSettings() {
       const res = await apiFetch(`/api/appointments/doctors/${user.id}/availability`);
       const items = Array.isArray(res?.items) ? res.items : [];
       setRows(items.length ? items : buildDefaultRows());
+      setAvailabilitySaved(true);
+      setAvailabilityEditing(false);
     } catch (err) {
       setRows(buildDefaultRows());
       setMsg(err?.message || "Could not load your schedule.");
@@ -83,6 +90,23 @@ export default function DoctorSettings() {
         },
       });
       setMsg("Availability saved.");
+      setAvailabilitySaved(true);
+      setAvailabilityEditing(false);
+      showActionSuccessGuide({
+        title: "Availability Saved",
+        message: "Your consultation schedule and booking capacity have been updated.",
+        icon: "✓",
+        nextActions: [
+          { label: "View Schedule", path: "/doctor/schedule" },
+          {
+            label: "Ask AI",
+            action: "ai",
+            aiPrompt: "Review my weekly doctor availability and suggest how I can reduce patient waiting time.",
+            variant: "secondary",
+          },
+        ],
+        notificationCategory: "ACCOUNT",
+      });
       await load();
     } catch (err) {
       setMsg(err?.message || "Could not save availability.");
@@ -106,41 +130,52 @@ export default function DoctorSettings() {
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "Loading..." : "Refresh"}
           </button>
-          <button type="button" className="btn-primary" onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save Availability"}
-          </button>
         </div>
       </div>
 
       {msg && <div className="card">{msg}</div>}
+      {loading ? <ContentSkeleton variant="table" title="Loading doctor availability" rows={3} /> : null}
 
-      <section className="section">
-        <h3>Today</h3>
-        <div className="grid info-grid">
-          <StatCard title="Day" value={DAY_NAMES[todayIndex]} onClick={openWeeklyAvailability} />
-          <StatCard
-            title="Schedule"
-            value={todayRow ? `${todayRow.startTime} - ${todayRow.endTime}` : "Closed"}
-            onClick={openWeeklyAvailability}
-          />
-          <StatCard
-            title="Booking"
-            value={todayRow?.isAvailable === false ? "Closed" : "Open"}
-            onClick={openWeeklyAvailability}
-          />
-          <StatCard
-            title="Consultations"
-            value={todayRow?.consultationAvailable === false ? "Closed" : "Open"}
-            onClick={() => navigate("/doctor/schedule")}
-          />
-        </div>
-      </section>
+      {!loading ? (
+        <>
+          <section className="section">
+            <h3>Today</h3>
+            <div className="grid info-grid">
+              <StatCard title="Day" value={DAY_NAMES[todayIndex]} onClick={openWeeklyAvailability} />
+              <StatCard
+                title="Schedule"
+                value={todayRow ? `${todayRow.startTime} - ${todayRow.endTime}` : "Closed"}
+                onClick={openWeeklyAvailability}
+              />
+              <StatCard
+                title="Booking"
+                value={todayRow?.isAvailable === false ? "Closed" : "Open"}
+                onClick={openWeeklyAvailability}
+              />
+              <StatCard
+                title="Consultations"
+                value={todayRow?.consultationAvailable === false ? "Closed" : "Open"}
+                onClick={() => navigate("/doctor/schedule")}
+              />
+            </div>
+          </section>
 
-      <section className="section" ref={weeklySectionRef}>
-        <h3>Weekly Availability</h3>
-        <div className="card premium-card">
-          <div className="table-wrap">
-            <table className="table premium-table">
+          <section className="section" ref={weeklySectionRef}>
+            <EditableSection
+              title="Weekly Availability"
+              eyebrow="Doctor"
+              description="Set clinic hours, appointment capacity, and consultation channels."
+              saved={availabilitySaved}
+              editing={availabilityEditing}
+              saving={saving}
+              onEdit={() => setAvailabilityEditing(true)}
+              onSave={save}
+              onCancel={() => setAvailabilityEditing(false)}
+              saveLabel="Save Availability"
+              aside={<span className="action-pill">{availabilitySaved && !availabilityEditing ? "Locked" : "Editable"}</span>}
+            >
+              <div className="table-wrap">
+                <table className="table premium-table">
               <thead>
                 <tr>
                   <th>Day</th>
@@ -236,10 +271,12 @@ export default function DoctorSettings() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+                </table>
+              </div>
+            </EditableSection>
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

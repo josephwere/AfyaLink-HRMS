@@ -30,10 +30,47 @@ export default function Notifications(){
   }, [category, read]);
   useEffect(()=>{
     if (!socket) return;
-    socket.on('invoiceCreated', (data)=> setItems(i=>[...i,{title:'Invoice', body:'New invoice created', meta:data, read:false}]));
-    socket.on('paymentRecorded', (data)=> setItems(i=>[...i,{title:'Payment', body:'Payment recorded', meta:data, read:false}]));
-    socket.on('labResult', (data)=> setItems(i=>[...i,{title:'Lab', body:'Lab result available', meta:data, read:false}]));
-    return ()=>{ socket.off('invoiceCreated'); socket.off('paymentRecorded'); socket.off('labResult'); }
+    const pushLocal = (item) => setItems((prev) => [{ ...item, read: false, createdAt: new Date().toISOString() }, ...prev]);
+    const invoiceCreated = (data)=> pushLocal({title:'Invoice', body:'New invoice created', category: 'BILLING', meta:data});
+    const paymentRecorded = (data)=> pushLocal({title:'Payment', body:'Payment recorded', category: 'BILLING', meta:data});
+    const labResult = (data)=> pushLocal({title:'Lab results available', body:'New lab results are ready for review.', category: 'LAB', meta:data});
+    const consultationRequested = (data)=> pushLocal({title:'Incoming consultation request', body:'A patient requested an online consultation.', category: 'CONSULTATION', meta:data});
+    const consultationAccepted = (data)=> pushLocal({title:'Doctor accepted consultation', body:'Your doctor is ready. Join your secure consultation room.', category: 'CONSULTATION', meta:data});
+    const consultationDeclined = (data)=> pushLocal({title:'Consultation request declined', body:'The doctor could not join this consultation.', category: 'CONSULTATION', meta:data});
+    const consultationCompleted = (data)=> pushLocal({title:'Consultation completed', body:'Summary, prescription, or follow-up details will appear when available.', category: 'CONSULTATION', meta:data});
+    const appointmentCreated = (data)=> pushLocal({title:'Appointment confirmed', body:'Your appointment has been booked and added to your schedule.', category: 'APPOINTMENT', meta:data});
+    const appointmentUpdated = (data)=> {
+      const followUpRequired = Boolean(data?.metadata?.followUpRequired);
+      pushLocal({
+        title: followUpRequired ? 'Follow-up scheduled' : 'Appointment updated',
+        body: followUpRequired ? 'Your doctor recommended a follow-up appointment.' : 'Your appointment details were updated.',
+        category: 'APPOINTMENT',
+        meta:data,
+      });
+    };
+    const prescriptionIssued = (data)=> pushLocal({title:'Prescription issued', body:'Medication details are ready in your prescriptions.', category: 'PHARMACY', meta:data});
+    socket.on('invoiceCreated', invoiceCreated);
+    socket.on('paymentRecorded', paymentRecorded);
+    socket.on('labResult', labResult);
+    socket.on('consultation_requested', consultationRequested);
+    socket.on('consultation_accepted', consultationAccepted);
+    socket.on('consultation_declined', consultationDeclined);
+    socket.on('consultation_completed', consultationCompleted);
+    socket.on('appointmentCreated', appointmentCreated);
+    socket.on('appointmentUpdated', appointmentUpdated);
+    socket.on('prescription_issued', prescriptionIssued);
+    return ()=>{
+      socket.off('invoiceCreated', invoiceCreated);
+      socket.off('paymentRecorded', paymentRecorded);
+      socket.off('labResult', labResult);
+      socket.off('consultation_requested', consultationRequested);
+      socket.off('consultation_accepted', consultationAccepted);
+      socket.off('consultation_declined', consultationDeclined);
+      socket.off('consultation_completed', consultationCompleted);
+      socket.off('appointmentCreated', appointmentCreated);
+      socket.off('appointmentUpdated', appointmentUpdated);
+      socket.off('prescription_issued', prescriptionIssued);
+    }
   },[socket]);
   return (
     <div className="card">
@@ -52,6 +89,9 @@ export default function Notifications(){
             <option value="INTEGRATION">Integration</option>
             <option value="AI">AI</option>
             <option value="PHARMACY">Pharmacy</option>
+            <option value="CONSULTATION">Consultation</option>
+            <option value="APPOINTMENT">Appointment</option>
+            <option value="LAB">Lab</option>
           </select>
           <select value={read} onChange={(e) => setRead(e.target.value)}>
             <option value="ALL">All Status</option>

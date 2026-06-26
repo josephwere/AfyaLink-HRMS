@@ -181,6 +181,12 @@ appointmentSchema.index(
   { name: "patient_history_idx" }
 );
 
+// Patient self-service daily booking limit
+appointmentSchema.index(
+  { patient: 1, createdAt: -1, status: 1 },
+  { name: "patient_daily_booking_idx" }
+);
+
 // Workflow tracking
 appointmentSchema.index(
   { status: 1, scheduledAt: -1 },

@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
-import DismissibleCardSection from "../../components/DismissibleCardSection";
+import EditableSection from "../../components/EditableSection";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 import PasswordInput from "../../components/PasswordInput";
+
+const PAYMENT_SECTION_KEYS = ["mode", "bank", "card", "mpesa", "gateways"];
+
+function paymentSectionState(value) {
+  return PAYMENT_SECTION_KEYS.reduce((acc, key) => ({ ...acc, [key]: value }), {});
+}
 
 export default function PaymentSettings() {
   const [meta, setMeta] = useState({});
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [savingSection, setSavingSection] = useState("");
   const [msg, setMsg] = useState("");
+  const [sectionSaved, setSectionSaved] = useState(paymentSectionState(false));
+  const [sectionEditing, setSectionEditing] = useState(paymentSectionState(true));
   const [step, setStep] = useState("edit");
   const [revealed, setRevealed] = useState(null);
   const [form, setForm] = useState({
@@ -42,28 +53,37 @@ export default function PaymentSettings() {
     cardVaultRef: "",
   });
 
-  const load = async () => {
-    const js = await apiFetch("/api/payment-settings/get");
-    setMeta(js || {});
-    setForm((prev) => ({
-      ...prev,
-      mode: js?.mode || "test",
-      stripePublishable: js?.stripe?.publishable || "",
-      mpesaShortcode: js?.mpesa?.shortcode || "",
-      mpesaPaybill: js?.mpesa?.paybillNumber || "",
-      mpesaTill: js?.mpesa?.tillNumber || "",
-      mpesaAccountReference: js?.mpesa?.accountReference || "",
-      mpesaBusinessName: js?.mpesa?.businessName || "",
-      bankName: js?.bank?.bankName || "",
-      bankBranch: js?.bank?.branch || "",
-      bankAccountName: js?.bank?.accountName || "",
-      bankSwiftCode: js?.bank?.swiftCode || "",
-      cardHolderName: js?.card?.holderName || "",
-      cardBrand: js?.card?.brand || "",
-      cardLast4: js?.card?.last4 || "",
-      cardExpiryMonth: js?.card?.expiryMonth || "",
-      cardExpiryYear: js?.card?.expiryYear || "",
-    }));
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const js = await apiFetch("/api/payment-settings/get");
+      setMeta(js || {});
+      setForm((prev) => ({
+        ...prev,
+        mode: js?.mode || "test",
+        stripePublishable: js?.stripe?.publishable || "",
+        mpesaShortcode: js?.mpesa?.shortcode || "",
+        mpesaPaybill: js?.mpesa?.paybillNumber || "",
+        mpesaTill: js?.mpesa?.tillNumber || "",
+        mpesaAccountReference: js?.mpesa?.accountReference || "",
+        mpesaBusinessName: js?.mpesa?.businessName || "",
+        bankName: js?.bank?.bankName || "",
+        bankBranch: js?.bank?.branch || "",
+        bankAccountName: js?.bank?.accountName || "",
+        bankSwiftCode: js?.bank?.swiftCode || "",
+        cardHolderName: js?.card?.holderName || "",
+        cardBrand: js?.card?.brand || "",
+        cardLast4: js?.card?.last4 || "",
+        cardExpiryMonth: js?.card?.expiryMonth || "",
+        cardExpiryYear: js?.card?.expiryYear || "",
+      }));
+      setSectionSaved(paymentSectionState(true));
+      setSectionEditing(paymentSectionState(false));
+    } catch (e) {
+      setMsg(e?.message || "Failed to load payment settings.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -109,7 +129,7 @@ export default function PaymentSettings() {
   const save = async (sectionLabel = "all settings") => {
     if (!form.adminPassword || form.adminPassword.length < 8) {
       setMsg("Admin password is required (min 8 chars) to encrypt and save.");
-      return;
+      return false;
     }
     setBusy(true);
     setMsg("");
@@ -118,10 +138,28 @@ export default function PaymentSettings() {
         method: "POST",
         body: buildPayload(),
       });
-      setMsg(`${sectionLabel} saved and encrypted.`);
-      await load();
+      await load({ silent: true });
+      showActionSuccessGuide({
+        title: `${sectionLabel} Saved`,
+        message: "Payment configuration was encrypted and saved successfully.",
+        icon: "✓",
+        notificationTitle: "Payment settings saved",
+        notificationBody: `${sectionLabel} were encrypted and updated.`,
+        notificationCategory: "ACCOUNT",
+        aiRecommendation: "Ask AI to review payout and gateway readiness before switching to live mode.",
+        nextActions: [
+          {
+            label: "Review With AI",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Review this AfyaLink payment configuration for launch readiness, without exposing any secrets.",
+          },
+        ],
+      });
+      return true;
     } catch (e) {
       setMsg(e.message || "Failed to save payment settings");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -136,9 +174,16 @@ export default function PaymentSettings() {
       mpesa: "M-Pesa details",
       gateways: "Gateway keys",
     };
-    await save(labelMap[section] || "Settings");
+    const didSave = await save(labelMap[section] || "Settings");
+    if (didSave) {
+      setSectionSaved((prev) => ({ ...prev, [section]: true }));
+      setSectionEditing((prev) => ({ ...prev, [section]: false }));
+    }
     setSavingSection("");
   };
+
+  const editSection = (section) => setSectionEditing((prev) => ({ ...prev, [section]: true }));
+  const cancelSection = (section) => setSectionEditing((prev) => ({ ...prev, [section]: false }));
 
   const requestOtp = async () => {
     setBusy(true);
@@ -147,7 +192,23 @@ export default function PaymentSettings() {
       const js = await apiFetch("/api/payment-settings/reveal/request", { method: "POST" });
       if (js?.error) throw new Error(js?.error || "Failed to request OTP");
       setStep("otp_requested");
-      setMsg(js.message || "OTP sent.");
+      showActionSuccessGuide({
+        title: "OTP Sent",
+        message: js.message || "A verification code was sent for this secure payment settings action.",
+        icon: "✓",
+        notificationTitle: "Payment settings OTP sent",
+        notificationBody: "A verification code was sent for revealing encrypted settings.",
+        notificationCategory: "ACCOUNT",
+        aiRecommendation: "Keep OTPs private and reveal secrets only from a trusted device.",
+        nextActions: [
+          {
+            label: "Ask AI About Secure Handling",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Explain safe operational handling for OTP-protected payment settings without exposing secrets.",
+          },
+        ],
+      });
     } catch (e) {
       setMsg(e.message || "Failed to request OTP");
     } finally {
@@ -166,7 +227,23 @@ export default function PaymentSettings() {
       if (js?.error) throw new Error(js?.error || "Failed to verify OTP");
       setRevealed(js?.secrets || {});
       setStep("edit");
-      setMsg("Secrets revealed for this session.");
+      showActionSuccessGuide({
+        title: "Secrets Revealed For This Session",
+        message: "Encrypted payment settings are available temporarily. Review them carefully and close the session when done.",
+        icon: "✓",
+        notificationTitle: "Payment secrets revealed",
+        notificationBody: "Encrypted payment settings were revealed for the current session.",
+        notificationCategory: "ACCOUNT",
+        aiRecommendation: "Ask AI for a safe rotation and audit checklist after reviewing payment secrets.",
+        nextActions: [
+          {
+            label: "Create Security Checklist",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Create a secure checklist for reviewing, rotating, and auditing payment gateway secrets.",
+          },
+        ],
+      });
     } catch (e) {
       setMsg(e.message || "Failed to verify OTP");
     } finally {
@@ -186,13 +263,37 @@ export default function PaymentSettings() {
         body: { oldPassword, newPassword },
       });
       if (js?.error) throw new Error(js?.error || "Failed to rotate password");
-      setMsg("Encryption password rotated successfully.");
+      showActionSuccessGuide({
+        title: "Encryption Password Rotated",
+        message: "Payment settings encryption has been rotated successfully.",
+        icon: "✓",
+        notificationTitle: "Payment encryption rotated",
+        notificationBody: "The payment settings encryption password was rotated.",
+        notificationCategory: "ACCOUNT",
+        aiRecommendation: "Ask AI to generate a post-rotation audit checklist for payment operations.",
+        nextActions: [
+          {
+            label: "Generate Audit Checklist",
+            action: "ai",
+            variant: "secondary",
+            aiPrompt: "Generate a post-rotation audit checklist for encrypted payment settings.",
+          },
+        ],
+      });
     } catch (e) {
       setMsg(e.message || "Failed to rotate password");
     } finally {
       setBusy(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <ContentSkeleton title="Loading payment settings" variant="cards" cards={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -205,10 +306,20 @@ export default function PaymentSettings() {
         </div>
       </div>
 
-      {msg && <div className="card">{msg}</div>}
+      {msg && <div className="card status-card error">{msg}</div>}
 
       <div className="grid info-grid">
-        <DismissibleCardSection className="card form" title="Global Mode & Admin Security">
+        <EditableSection
+          title="Global Mode & Admin Security"
+          description="Set the payment environment and confirm secure admin access before revealing or saving secrets."
+          saved={sectionSaved.mode}
+          editing={sectionEditing.mode}
+          saving={busy && savingSection === "mode"}
+          saveLabel="Save Security Settings"
+          onEdit={() => editSection("mode")}
+          onCancel={() => cancelSection("mode")}
+          onSave={() => saveSection("mode")}
+        >
           <label>Mode</label>
           <select value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
             <option value="test">Test</option>
@@ -224,9 +335,6 @@ export default function PaymentSettings() {
           />
 
           <div className="welcome-actions">
-            <button type="button" className="btn-primary" onClick={() => saveSection("mode")} disabled={busy}>
-              {savingSection === "mode" ? "Saving..." : "Save Security Card"}
-            </button>
             <button type="button" className="btn-secondary" onClick={requestOtp} disabled={busy}>Request OTP</button>
             <button type="button" className="btn-secondary" onClick={rotatePassword} disabled={busy}>Rotate Password</button>
           </div>
@@ -242,9 +350,19 @@ export default function PaymentSettings() {
               <button type="button" className="btn-primary" onClick={verifyOtp} disabled={busy}>Verify & Reveal</button>
             </>
           )}
-        </DismissibleCardSection>
+        </EditableSection>
 
-        <DismissibleCardSection className="card form" title="Bank Payout Details">
+        <EditableSection
+          title="Bank Payout Details"
+          description="Maintain encrypted bank payout metadata for founder settlements."
+          saved={sectionSaved.bank}
+          editing={sectionEditing.bank}
+          saving={busy && savingSection === "bank"}
+          saveLabel="Save Bank Details"
+          onEdit={() => editSection("bank")}
+          onCancel={() => cancelSection("bank")}
+          onSave={() => saveSection("bank")}
+        >
           <label>Bank Name</label>
           <input value={form.bankName} onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))} />
           <label>Bank Branch</label>
@@ -262,12 +380,19 @@ export default function PaymentSettings() {
           <label>SWIFT/BIC</label>
           <input value={form.bankSwiftCode} onChange={(e) => setForm((f) => ({ ...f, bankSwiftCode: e.target.value }))} />
           <p className="muted">Stored metadata: {meta?.bank?.bankName || "-"} • {meta?.bank?.accountName || "-"} • account encrypted: {meta?.bank?.hasAccountNumber ? "Yes" : "No"}</p>
-          <button type="button" className="btn-primary" onClick={() => saveSection("bank")} disabled={busy}>
-            {savingSection === "bank" ? "Saving..." : "Save Bank Card"}
-          </button>
-        </DismissibleCardSection>
+        </EditableSection>
 
-        <DismissibleCardSection className="card form" title="Card Payout / Settlement">
+        <EditableSection
+          title="Card Payout / Settlement"
+          description="Store settlement card metadata and encrypted vault references only."
+          saved={sectionSaved.card}
+          editing={sectionEditing.card}
+          saving={busy && savingSection === "card"}
+          saveLabel="Save Card Details"
+          onEdit={() => editSection("card")}
+          onCancel={() => cancelSection("card")}
+          onSave={() => saveSection("card")}
+        >
           <label>Card Holder Name</label>
           <input value={form.cardHolderName} onChange={(e) => setForm((f) => ({ ...f, cardHolderName: e.target.value }))} />
           <label>Card Brand</label>
@@ -293,12 +418,19 @@ export default function PaymentSettings() {
             onChange={(e) => setForm((f) => ({ ...f, cardVaultRef: e.target.value }))}
           />
           <p className="muted">Stored metadata: {meta?.card?.brand || "-"} • ****{meta?.card?.last4 || "----"} • vault encrypted: {meta?.card?.hasVaultRef ? "Yes" : "No"}</p>
-          <button type="button" className="btn-primary" onClick={() => saveSection("card")} disabled={busy}>
-            {savingSection === "card" ? "Saving..." : "Save Card Payout Card"}
-          </button>
-        </DismissibleCardSection>
+        </EditableSection>
 
-        <DismissibleCardSection className="card form" title="M-Pesa Details">
+        <EditableSection
+          title="M-Pesa Details"
+          description="Configure M-Pesa business metadata and encrypted API credentials."
+          saved={sectionSaved.mpesa}
+          editing={sectionEditing.mpesa}
+          saving={busy && savingSection === "mpesa"}
+          saveLabel="Save M-Pesa Details"
+          onEdit={() => editSection("mpesa")}
+          onCancel={() => cancelSection("mpesa")}
+          onSave={() => saveSection("mpesa")}
+        >
           <label>Consumer Key</label>
           <input value={form.mpesaConsumerKey} onChange={(e) => setForm((f) => ({ ...f, mpesaConsumerKey: e.target.value }))} />
           <label>Consumer Secret (encrypted)</label>
@@ -319,12 +451,19 @@ export default function PaymentSettings() {
           <input value={form.mpesaAccountReference} onChange={(e) => setForm((f) => ({ ...f, mpesaAccountReference: e.target.value }))} />
           <label>Business Name</label>
           <input value={form.mpesaBusinessName} onChange={(e) => setForm((f) => ({ ...f, mpesaBusinessName: e.target.value }))} />
-          <button type="button" className="btn-primary" onClick={() => saveSection("mpesa")} disabled={busy}>
-            {savingSection === "mpesa" ? "Saving..." : "Save M-Pesa Card"}
-          </button>
-        </DismissibleCardSection>
+        </EditableSection>
 
-        <DismissibleCardSection className="card form" title="Gateway Keys">
+        <EditableSection
+          title="Gateway Keys"
+          description="Manage encrypted Stripe and Flutterwave secrets without exposing raw values in the UI."
+          saved={sectionSaved.gateways}
+          editing={sectionEditing.gateways}
+          saving={busy && savingSection === "gateways"}
+          saveLabel="Save Gateway Keys"
+          onEdit={() => editSection("gateways")}
+          onCancel={() => cancelSection("gateways")}
+          onSave={() => saveSection("gateways")}
+        >
           <label>Stripe Publishable Key</label>
           <input value={form.stripePublishable} onChange={(e) => setForm((f) => ({ ...f, stripePublishable: e.target.value }))} />
           <label>Stripe Secret Key (encrypted)</label>
@@ -346,15 +485,18 @@ export default function PaymentSettings() {
           <p className="muted">
             Stripe secret saved: {meta?.stripe?.hasSecret ? "Yes" : "No"} • M-Pesa secret saved: {meta?.mpesa?.hasSecret ? "Yes" : "No"} • Flutterwave secret saved: {meta?.flutterwave?.hasSecret ? "Yes" : "No"}
           </p>
-          <button type="button" className="btn-primary" onClick={() => saveSection("gateways")} disabled={busy}>
-            {savingSection === "gateways" ? "Saving..." : "Save Gateway Card"}
-          </button>
-        </DismissibleCardSection>
+        </EditableSection>
 
         {revealed && (
-          <DismissibleCardSection className="card" title="Revealed Secrets (Session)">
+          <section className="card profile-card">
+            <div className="card-header-actions">
+              <div>
+                <h3>Revealed Secrets (Session)</h3>
+                <p className="muted">Temporary view for verified admins. Do not leave this screen unattended.</p>
+              </div>
+            </div>
             <pre>{JSON.stringify(revealed, null, 2)}</pre>
-          </DismissibleCardSection>
+          </section>
         )}
       </div>
     </div>

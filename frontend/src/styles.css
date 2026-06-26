@@ -1635,6 +1635,186 @@ body.auth-route {
   background: var(--app-border);
 }
 
+.success-guide-backdrop,
+.appointment-success-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(9, 9, 11, 0.54);
+}
+
+.success-guide-modal,
+.appointment-success-modal {
+  width: min(620px, 94vw);
+  max-height: min(760px, 92dvh);
+  overflow-y: auto;
+  position: relative;
+  background: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  border-radius: 22px;
+  padding: clamp(22px, 4vw, 34px);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+}
+
+.success-guide-close,
+.appointment-success-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.success-guide-icon,
+.appointment-success-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 32px;
+  font-weight: 800;
+  border: 1px solid #86efac;
+}
+
+[data-theme="dark"] .success-guide-icon,
+[data-theme="dark"] .appointment-success-icon {
+  background: rgba(22, 101, 52, 0.28);
+  color: #bbf7d0;
+  border-color: rgba(134, 239, 172, 0.32);
+}
+
+.appointment-limit-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+[data-theme="dark"] .appointment-limit-icon {
+  background: rgba(29, 78, 216, 0.24);
+  color: #bfdbfe;
+  border-color: rgba(147, 197, 253, 0.34);
+}
+
+.success-guide-kicker,
+.appointment-success-kicker {
+  margin-top: 16px;
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.success-guide-modal h2,
+.appointment-success-modal h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1.18;
+}
+
+.success-guide-modal p,
+.appointment-success-modal p {
+  color: var(--app-muted);
+  line-height: 1.6;
+}
+
+.success-guide-panel,
+.appointment-success-summary,
+.appointment-lock-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface-2);
+}
+
+.appointment-lock-card {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+[data-theme="dark"] .appointment-lock-card {
+  background: rgba(120, 53, 15, 0.24);
+  color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+.success-guide-panel ul,
+.appointment-success-summary dl {
+  margin: 10px 0 0;
+}
+
+.success-guide-panel li {
+  margin: 6px 0;
+  color: var(--app-muted);
+}
+
+.success-guide-ai {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface-2);
+}
+
+.success-guide-ai strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.success-guide-ai p {
+  margin: 0;
+}
+
+.appointment-success-summary dl {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.4fr) 1fr;
+  gap: 8px 14px;
+}
+
+.appointment-success-summary dt {
+  color: var(--app-muted);
+  font-weight: 700;
+}
+
+.appointment-success-summary dd {
+  margin: 0;
+  color: var(--app-text);
+}
+
+.success-guide-actions,
+.appointment-success-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-section-locked input,
+.profile-section-locked select,
+.profile-section-locked textarea {
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  cursor: default;
+}
+
 /* =========================
    SIDEBAR REWORK
 ========================= */
@@ -4507,6 +4687,24 @@ button.premium-shell-stat {
   border-color: color-mix(in oklab, var(--app-accent-2) 25%, var(--app-border));
 }
 
+.action-pill.connected {
+  background: rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.32);
+  color: #166534;
+}
+
+.action-pill.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.34);
+  color: #92400e;
+}
+
+.action-pill.muted {
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.24);
+  color: #475569;
+}
+
 .action-link {
   display: inline-flex;
   align-items: center;
@@ -7061,6 +7259,1153 @@ button.card.stat {
   background: rgba(34, 197, 94, 0.18);
 }
 
+[data-theme="dark"] .action-pill.warning {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.34);
+}
+
+[data-theme="dark"] .action-pill.muted {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.14);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.global-call-launcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.global-call-button {
+  min-height: 44px;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 999px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #0f172a);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.global-call-button.has-calls {
+  border-color: #0f766e;
+  color: #0f766e;
+  background: #ecfdf5;
+}
+
+.global-call-button strong {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: #0f766e;
+  color: #fff;
+  font-size: 12px;
+}
+
+.global-call-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(15, 118, 110, 0.12);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.global-call-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1100;
+  width: min(380px, calc(100vw - 24px));
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 22px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #0f172a);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 14px;
+}
+
+.global-call-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.global-call-panel-header button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.global-call-message {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--app-text, #0f172a);
+}
+
+.global-call-list {
+  display: grid;
+  gap: 10px;
+}
+
+.global-call-item,
+.global-call-empty,
+.consultation-inbox-card,
+.consultation-history-row,
+.empty-state-panel {
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 14px;
+}
+
+.global-call-item {
+  display: grid;
+  gap: 12px;
+}
+
+.global-call-item strong {
+  display: block;
+  margin-top: 3px;
+}
+
+.global-call-item p,
+.global-call-empty p {
+  margin: 4px 0 0;
+  color: var(--app-muted, #64748b);
+}
+
+.global-call-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-center {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-center-button {
+  min-height: 44px;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 999px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #0f172a);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notification-center-button.has-unread {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.notification-center-button strong {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.notification-center-label {
+  font-size: 13px;
+}
+
+.notification-center-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1200;
+  width: min(430px, calc(100vw - 24px));
+  max-height: min(680px, calc(100vh - 96px));
+  overflow: hidden;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 22px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #0f172a);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.notification-center-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--app-border, #dbe4f0);
+}
+
+.notification-center-header strong,
+.notification-center-item strong {
+  display: block;
+}
+
+.notification-center-header span,
+.notification-center-meta,
+.notification-center-empty p,
+.notification-center-message {
+  color: var(--app-muted, #64748b);
+}
+
+.notification-center-message {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--app-border, #dbe4f0);
+  background: var(--app-surface-2, #f8fafc);
+}
+
+.notification-center-list {
+  min-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.notification-center-list section {
+  display: grid;
+  gap: 8px;
+}
+
+.notification-center-list h4 {
+  margin: 0;
+  color: var(--app-muted, #64748b);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notification-center-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: var(--app-surface, #fff);
+}
+
+.notification-center-item.unread {
+  border-color: rgba(29, 78, 216, 0.38);
+  background: #f8fbff;
+}
+
+.notification-center-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-grid;
+  place-items: center;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.notification-center-copy {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.notification-center-copy p {
+  margin: 0;
+  color: var(--app-muted, #64748b);
+  line-height: 1.55;
+}
+
+.notification-center-meta,
+.notification-center-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notification-center-meta {
+  font-size: 12px;
+}
+
+.notification-center-empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 28px;
+  border: 1px dashed var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: var(--app-surface-2, #f8fafc);
+}
+
+.notification-center-footer {
+  min-height: 46px;
+  border: 0;
+  border-top: 1px solid var(--app-border, #dbe4f0);
+  background: var(--app-surface-2, #f8fafc);
+  color: var(--app-text, #0f172a);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ai-empty-state {
+  border-style: dashed !important;
+  background: var(--app-surface-2, #f8fafc) !important;
+}
+
+.ai-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.ai-recommendation-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-content: start;
+}
+
+.ai-recommendation-card h4 {
+  margin: 0 0 6px;
+}
+
+.ai-recommendation-card p {
+  margin: 0;
+}
+
+.ai-recommendation-card .doctor-actions-row {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.ai-recommendation-marker {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-grid;
+  place-items: center;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.editable-section {
+  display: grid;
+  gap: 16px;
+}
+
+.editable-section-fields {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.editable-section-fields:disabled {
+  opacity: 1;
+}
+
+.editable-section-fields:disabled :is(input, select, textarea) {
+  cursor: default;
+  color: var(--app-text, #0f172a);
+  background: var(--app-surface-2, #f8fafc);
+  border-color: var(--app-border, #dbe4f0);
+}
+
+.editable-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.editable-section-message {
+  margin: 0;
+  color: var(--app-muted, #64748b);
+  line-height: 1.55;
+}
+
+.guided-empty-state {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 28px;
+  border: 1px dashed var(--app-border, #dbe4f0);
+  border-radius: 20px;
+  background: var(--app-surface-2, #f8fafc);
+  color: var(--app-text, #0f172a);
+}
+
+.guided-empty-state.compact {
+  min-height: 150px;
+  padding: 18px;
+}
+
+.guided-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-grid;
+  place-items: center;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guided-empty-state strong {
+  display: block;
+  font-size: 16px;
+}
+
+.guided-empty-state p {
+  max-width: 520px;
+  margin: 6px auto 0;
+  color: var(--app-muted, #64748b);
+  line-height: 1.6;
+}
+
+.guided-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.guided-empty-row td {
+  padding: 14px !important;
+}
+
+.content-skeleton {
+  display: grid;
+  gap: 16px;
+  padding: var(--page-surface-padding, 18px);
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: var(--page-surface-radius, 22px);
+  background: var(--app-surface, #fff);
+}
+
+.content-skeleton-head,
+.content-skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.content-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+}
+
+.content-skeleton-card,
+.content-skeleton-table {
+  display: grid;
+  gap: 12px;
+}
+
+.content-skeleton-card,
+.content-skeleton-row {
+  padding: 14px;
+  border: 1px solid var(--app-border, #dbe4f0);
+  border-radius: 18px;
+  background: var(--app-surface-2, #f8fafc);
+}
+
+.incoming-call-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2800;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.incoming-call-card {
+  width: min(480px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 30px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 36px 90px rgba(0, 0, 0, 0.38);
+  padding: clamp(22px, 4vw, 34px);
+  text-align: center;
+  animation: incoming-call-enter 420ms ease-out both;
+}
+
+.incoming-call-card h2 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.incoming-call-card p {
+  margin: 10px 0 0;
+  color: #475569;
+  font-weight: 700;
+}
+
+.incoming-call-pulse {
+  width: 82px;
+  height: 82px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.incoming-call-pulse::before,
+.incoming-call-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 2px solid rgba(20, 184, 166, 0.5);
+  border-radius: inherit;
+  animation: incoming-call-ring 1.6s ease-out infinite;
+}
+
+.incoming-call-pulse::after {
+  animation-delay: 0.55s;
+}
+
+.incoming-call-countdown {
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-weight: 800;
+}
+
+.incoming-call-countdown strong {
+  font-size: 24px;
+}
+
+@keyframes incoming-call-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes incoming-call-ring {
+  from {
+    opacity: 0.85;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.telehealth-overlay,
+.telehealth-room-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.telehealth-overlay {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.telehealth-lobby,
+.telehealth-complete-card {
+  position: relative;
+  width: min(920px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border: 1px solid #dbe4f0;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.16);
+  padding: clamp(20px, 4vw, 36px);
+}
+
+.telehealth-lobby-copy {
+  max-width: 680px;
+}
+
+.telehealth-kicker {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.telehealth-lobby h2,
+.telehealth-complete-card h2,
+.telehealth-room-topbar h2,
+.telehealth-voice-stage h2 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.telehealth-lobby p,
+.telehealth-complete-card p {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.telehealth-countdown {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 18px 0;
+  background: #0f766e;
+  color: #fff;
+  font-size: 42px;
+  font-weight: 900;
+  box-shadow: 0 14px 32px rgba(15, 118, 110, 0.26);
+}
+
+.telehealth-lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  margin: 22px 0;
+}
+
+.telehealth-preview-card,
+.telehealth-side-card,
+.telehealth-readiness-grid > div {
+  border: 1px solid #dbe4f0;
+  border-radius: 22px;
+  background: #f8fafc;
+}
+
+.telehealth-preview-card {
+  padding: 14px;
+}
+
+.telehealth-preview {
+  min-height: 260px;
+  border-radius: 18px;
+  background: #0f172a;
+  color: #f8fafc;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.telehealth-preview span {
+  display: block;
+  margin-top: 6px;
+  color: #cbd5e1;
+}
+
+.telehealth-readiness-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.telehealth-readiness-grid.compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.telehealth-readiness-grid > div {
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.telehealth-readiness-grid span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.telehealth-room-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 18px;
+  background: #020617;
+  color: #f8fafc;
+}
+
+.telehealth-room-topbar {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 0 4px 14px;
+}
+
+.telehealth-room-timer {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  min-width: 112px;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  padding: 9px 14px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.telehealth-room-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #cbd5e1;
+}
+
+.telehealth-room-meta strong {
+  min-width: 64px;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.telehealth-room-meta .quality {
+  min-width: 138px;
+}
+
+.telehealth-room-meta .quality.excellent {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+.telehealth-room-meta .quality.fair {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+}
+
+.telehealth-room-meta .quality.checking {
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+}
+
+.telehealth-error {
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid rgba(252, 165, 165, 0.5);
+  color: #fecaca;
+  padding: 12px 14px;
+}
+
+.telehealth-room-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+  gap: 14px;
+}
+
+.telehealth-stage {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 26px;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.telehealth-remote-video,
+.telehealth-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #0f172a;
+}
+
+.telehealth-remote-video {
+  position: absolute;
+  inset: 0;
+}
+
+.telehealth-video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #e2e8f0;
+  pointer-events: none;
+}
+
+.telehealth-local-tile {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: min(240px, 32vw);
+  aspect-ratio: 16 / 10;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 20px;
+  overflow: hidden;
+  background: #020617;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.telehealth-local-tile span {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.72);
+  color: #fff;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.telehealth-voice-stage {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+}
+
+.telehealth-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.telehealth-avatar.large {
+  width: 132px;
+  height: 132px;
+  font-size: 54px;
+}
+
+.telehealth-wave {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 72px;
+  margin-top: 8px;
+}
+
+.telehealth-wave span {
+  width: 8px;
+  border-radius: 999px;
+  background: #14b8a6;
+  animation: telehealth-wave 1.2s ease-in-out infinite;
+}
+
+.telehealth-wave span:nth-child(1) { height: 26px; animation-delay: 0s; }
+.telehealth-wave span:nth-child(2) { height: 48px; animation-delay: 0.12s; }
+.telehealth-wave span:nth-child(3) { height: 68px; animation-delay: 0.24s; }
+.telehealth-wave span:nth-child(4) { height: 44px; animation-delay: 0.36s; }
+.telehealth-wave span:nth-child(5) { height: 30px; animation-delay: 0.48s; }
+
+@keyframes telehealth-wave {
+  0%, 100% { transform: scaleY(0.55); opacity: 0.55; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+.telehealth-side-panel {
+  min-height: 0;
+  overflow: auto;
+}
+
+.telehealth-side-card {
+  background: #fff;
+  color: #0f172a;
+  padding: 16px;
+}
+
+.telehealth-side-card h3 {
+  margin-top: 0;
+}
+
+.telehealth-info-list {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 14px 0;
+}
+
+.telehealth-info-list dt {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.telehealth-info-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.telehealth-details {
+  border-top: 1px solid #dbe4f0;
+  padding-top: 12px;
+}
+
+.telehealth-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.telehealth-control {
+  min-width: 86px;
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.telehealth-control span {
+  font-size: 11px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.telehealth-control:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.telehealth-control.muted {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.telehealth-control.danger {
+  background: #dc2626;
+  border-color: #ef4444;
+}
+
+.telehealth-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.telehealth-complete-card {
+  max-width: 560px;
+}
+
+.telehealth-complete-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.consultation-history-card {
+  display: grid;
+  gap: 10px;
+}
+
+.consultation-history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.consultation-history-row strong {
+  display: block;
+}
+
+.consultation-history-row p {
+  margin: 4px 0 0;
+}
+
+.consultation-history-summary {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border, #dbe4f0);
+}
+
+.consultation-history-summary h4 {
+  margin: 0 0 10px;
+}
+
+[data-theme="dark"] .global-call-button,
+[data-theme="dark"] .global-call-panel,
+[data-theme="dark"] .notification-center-button,
+[data-theme="dark"] .notification-center-panel {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .global-call-item,
+[data-theme="dark"] .global-call-empty,
+[data-theme="dark"] .consultation-inbox-card,
+[data-theme="dark"] .consultation-history-row,
+[data-theme="dark"] .empty-state-panel,
+[data-theme="dark"] .notification-center-item,
+[data-theme="dark"] .notification-center-empty,
+[data-theme="dark"] .notification-center-message,
+[data-theme="dark"] .notification-center-footer,
+[data-theme="dark"] .ai-empty-state,
+[data-theme="dark"] .guided-empty-state,
+[data-theme="dark"] .content-skeleton,
+[data-theme="dark"] .content-skeleton-card,
+[data-theme="dark"] .content-skeleton-row {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: var(--app-border);
+}
+
+[data-theme="dark"] .global-call-button.has-calls {
+  background: rgba(20, 184, 166, 0.16);
+  color: #99f6e4;
+}
+
+[data-theme="dark"] .notification-center-button.has-unread {
+  background: rgba(37, 99, 235, 0.18);
+  color: #bfdbfe;
+}
+
+[data-theme="dark"] .notification-center-item.unread {
+  background: rgba(30, 64, 175, 0.16);
+  border-color: rgba(96, 165, 250, 0.38);
+}
+
+[data-theme="dark"] .notification-center-icon {
+  background: rgba(14, 165, 233, 0.18);
+  color: #bae6fd;
+}
+
+[data-theme="dark"] .ai-recommendation-marker {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+[data-theme="dark"] .guided-empty-icon {
+  background: rgba(14, 165, 233, 0.18);
+  color: #bae6fd;
+}
+
+[data-theme="dark"] .incoming-call-card {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .incoming-call-card p {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .incoming-call-countdown {
+  background: rgba(20, 184, 166, 0.16);
+  color: #99f6e4;
+}
+
+[data-theme="dark"] .telehealth-overlay {
+  background: #020617;
+}
+
+[data-theme="dark"] .telehealth-lobby,
+[data-theme="dark"] .telehealth-complete-card,
+[data-theme="dark"] .telehealth-side-card {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+[data-theme="dark"] .telehealth-lobby p,
+[data-theme="dark"] .telehealth-complete-card p,
+[data-theme="dark"] .telehealth-readiness-grid span,
+[data-theme="dark"] .telehealth-info-list dt {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .telehealth-preview-card,
+[data-theme="dark"] .telehealth-readiness-grid > div {
+  background: rgba(15, 23, 42, 0.74);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
 @media (max-width: 900px) {
   .consultation-stage,
   .consultation-stage.voice,
@@ -7072,6 +8417,94 @@ button.card.stat {
   .consultation-audio-state,
   .consultation-video {
     min-height: 180px;
+  }
+
+  .telehealth-lobby-grid,
+  .telehealth-room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .telehealth-room-shell {
+    overflow: auto;
+  }
+
+  .telehealth-stage {
+    min-height: 460px;
+  }
+
+  .telehealth-side-panel {
+    max-height: 42vh;
+  }
+
+  .telehealth-readiness-grid.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .global-call-button span:not(.global-call-icon) {
+    display: none;
+  }
+
+  .notification-center-label {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .notification-center-panel {
+    position: fixed;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100vh - 96px);
+  }
+
+  .notification-center-item,
+  .ai-recommendation-card {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-center-icon,
+  .ai-recommendation-marker {
+    width: 38px;
+    height: 38px;
+  }
+
+  .telehealth-overlay {
+    padding: 12px;
+  }
+
+  .telehealth-room-shell {
+    padding: 10px;
+  }
+
+  .telehealth-room-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 54px;
+  }
+
+  .telehealth-room-timer {
+    left: 4px;
+    top: 0;
+    transform: none;
+  }
+
+  .telehealth-stage {
+    min-height: 360px;
+  }
+
+  .telehealth-local-tile {
+    width: 150px;
+  }
+
+  .telehealth-control {
+    min-width: 74px;
+  }
+
+  .consultation-history-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -10418,6 +11851,101 @@ form.auth-card {
 
 .app-icon svg {
   display: block;
+}
+
+.status-card.error {
+  border-color: rgba(185, 28, 28, 0.28) !important;
+  background: rgba(254, 242, 242, 0.92) !important;
+  color: #7f1d1d;
+}
+
+[data-theme="dark"] .status-card.error {
+  background: rgba(127, 29, 29, 0.22) !important;
+  color: #fecaca;
+}
+
+.ux-audit-nav-button {
+  min-width: 44px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.ux-audit-panel {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 1300;
+  width: min(360px, calc(100vw - 36px));
+  padding: 14px;
+  border: 1px solid #92400e;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #451a03;
+  box-shadow: 0 18px 44px rgba(69, 26, 3, 0.18);
+}
+
+.ux-audit-panel p {
+  margin: 4px 0 0;
+  color: #78350f;
+  font-size: 13px;
+}
+
+.ux-audit-counts,
+.ux-audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ux-audit-counts span {
+  padding: 4px 8px;
+  border: 1px solid rgba(146, 64, 14, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ux-audit-flag {
+  position: relative !important;
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.18) !important;
+}
+
+.ux-audit-flag::after {
+  content: attr(data-ux-audit-reason);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 1301;
+  max-width: min(360px, 90vw);
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #92400e;
+  color: #fff7ed;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .ux-audit-panel {
+  border-color: #f59e0b;
+  background: #1c1917;
+  color: #fef3c7;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+[data-theme="dark"] .ux-audit-panel p {
+  color: #fde68a;
+}
+
+[data-theme="dark"] .ux-audit-counts span {
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(120, 53, 15, 0.42);
 }
 
 @media (max-width: 900px) {

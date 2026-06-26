@@ -94,6 +94,24 @@ export default function MySchedule() {
     () => availability.find((row) => Number(row.dayOfWeek) === new Date().getDay()) || null,
     [availability]
   );
+  const requestedCalls = useMemo(
+    () => calls.filter((call) => String(call.status || "").toUpperCase() === "REQUESTED"),
+    [calls]
+  );
+  const activeCalls = useMemo(
+    () => calls.filter((call) => String(call.status || "").toUpperCase() === "ACTIVE"),
+    [calls]
+  );
+  const completedTodayCalls = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    return calls.filter((call) => {
+      const status = String(call.status || "").toUpperCase();
+      const endedAt = new Date(call.endedAt || call.updatedAt || call.createdAt);
+      return ["ENDED", "TERMINATED"].includes(status) && endedAt >= start;
+    });
+  }, [calls]);
 
   const focusSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -119,19 +137,32 @@ export default function MySchedule() {
     return items[0] || "";
   };
 
-  const runCallAction = async (callId, action) => {
+  const runCallAction = async (callOrId, action, options = {}) => {
+    const callId = typeof callOrId === "string" ? callOrId : callOrId?._id;
+    const sourceCall = typeof callOrId === "string" ? calls.find((item) => String(item._id) === String(callId)) : callOrId;
+    const keepRoomOpen = Boolean(options.keepRoomOpen);
+    if (!callId) return;
     try {
       setMsg("");
       const res = await apiFetch(`/api/appointments/calls/${callId}/${action}`, {
         method: "PATCH",
       });
       if (action === "activate") {
-        setActiveCall(res);
-        setMsg(`Consultation ${res?.callType || "session"} activated.`);
+        setActiveCall({
+          ...(sourceCall || {}),
+          ...res,
+          appointment: sourceCall?.appointment || res?.appointment,
+          patient: sourceCall?.patient || res?.patient,
+          doctor: sourceCall?.doctor || res?.doctor,
+        });
+        setMsg("Consultation accepted. Preparing secure consultation room...");
       } else {
-        setActiveCall((prev) => (String(prev?._id) === String(callId) ? null : prev));
-        setMsg("Consultation ended.");
+        if (!keepRoomOpen) {
+          setActiveCall((prev) => (String(prev?._id) === String(callId) ? null : prev));
+        }
+        setMsg(sourceCall?.status === "REQUESTED" ? "Consultation request declined." : "Consultation completed.");
       }
+      window.dispatchEvent(new CustomEvent("afyalink:calls-refresh"));
       await load();
     } catch (err) {
       setMsg(err?.message || "Call action failed.");
@@ -180,15 +211,16 @@ export default function MySchedule() {
         <ConsultationRoom
           call={activeCall}
           role="DOCTOR"
+          autoJoin
           onClose={() => setActiveCall(null)}
           onEnded={async (call) => {
-            await runCallAction(call._id, "end");
+            await runCallAction(call, "end", { keepRoomOpen: true });
           }}
         />
       )}
 
       <section className="section">
-        <h3>Today</h3>
+        <h3>Today's Schedule</h3>
         <div className="grid info-grid">
           <div
             className="card stat stat-clickable"
@@ -211,15 +243,15 @@ export default function MySchedule() {
               if (event.key === "Enter" || event.key === " ") focusSection(callsSectionRef);
             }}
           >
-            <div className="card-title">Requested Calls</div>
-            <div className="card-value">{calls.filter((c) => c.status === "REQUESTED").length}</div>
+            <div className="card-title">Consultation Requests</div>
+            <div className="card-value">{requestedCalls.length}</div>
           </div>
           <div
             className="card stat stat-clickable"
             role="button"
             tabIndex={0}
             onClick={() => {
-              const openCall = calls.find((call) => call.status === "ACTIVE");
+              const openCall = activeCalls[0];
               if (openCall) {
                 setActiveCall(openCall);
                 return;
@@ -228,7 +260,7 @@ export default function MySchedule() {
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
-                const openCall = calls.find((call) => call.status === "ACTIVE");
+                const openCall = activeCalls[0];
                 if (openCall) {
                   setActiveCall(openCall);
                   return;
@@ -237,8 +269,8 @@ export default function MySchedule() {
               }
             }}
           >
-            <div className="card-title">Active Calls</div>
-            <div className="card-value">{calls.filter((c) => c.status === "ACTIVE").length}</div>
+            <div className="card-title">Active Consultation</div>
+            <div className="card-value">{activeCalls.length}</div>
           </div>
           <div
             className="card stat stat-clickable"
@@ -249,7 +281,7 @@ export default function MySchedule() {
               if (event.key === "Enter" || event.key === " ") navigate("/doctor/settings");
             }}
           >
-            <div className="card-title">Clinic Status</div>
+            <div className="card-title">Clinic Open</div>
             <div className="card-value">
               {todayAvailability?.consultationAvailable === false
                 ? "Consults Off"
@@ -340,38 +372,64 @@ export default function MySchedule() {
 
         <div className="card doctor-alerts-card" ref={callsSectionRef}>
           <h3>Consultation Inbox</h3>
+          <p className="muted">Incoming requests stay here until accepted or declined. Accepted calls open in the secure room automatically.</p>
           <div className="alert-stack">
-            {calls.map((call) => (
-              <div key={call._id} className="card" style={{ marginBottom: 8 }}>
-                <div><strong>{call.callType}</strong> • {call.status}</div>
+            {[...requestedCalls, ...activeCalls].map((call) => (
+              <div key={call._id} className="consultation-inbox-card">
+                <span className="telehealth-kicker">
+                  {call.status === "REQUESTED" ? "Incoming Consultation Request" : "Consultation Ready"}
+                </span>
+                <div><strong>{call.patient?.firstName ? `${call.patient.firstName} ${call.patient.lastName || ""}`.trim() : call.patient?.name || "Patient"}</strong></div>
                 <div className="muted">
-                  Appointment: {call.appointment?.serviceType || "Consultation"} •
-                  Patient: {call.patient?.firstName || "Patient"}
+                  Service: {call.appointment?.serviceType || "General Consultation"} • Mode: {call.callType === "VIDEO" ? "Video" : "Voice"}
                 </div>
                 <div className="doctor-actions-row" style={{ marginTop: 8 }}>
                   {call.status === "REQUESTED" && (
-                    <button type="button" className="btn-secondary" onClick={() => runCallAction(call._id, "activate")}>
+                    <button type="button" className="btn-primary" onClick={() => runCallAction(call, "activate")}>
                       Accept
+                    </button>
+                  )}
+                  {call.status === "REQUESTED" && (
+                    <button type="button" className="btn-secondary" onClick={() => runCallAction(call, "end")}>
+                      Decline
                     </button>
                   )}
                   {call.status === "ACTIVE" && (
                     <button
                       type="button"
-                      className="btn-secondary"
+                      className="btn-primary"
                       onClick={() => setActiveCall(call)}
                     >
-                      Open Room
+                      Enter Consultation
                     </button>
                   )}
                   {call.status === "ACTIVE" && (
-                    <button type="button" className="btn-secondary" onClick={() => runCallAction(call._id, "end")}>
-                      End
+                    <button type="button" className="btn-secondary" onClick={() => runCallAction(call, "end")}>
+                      Mark Completed
                     </button>
                   )}
                 </div>
               </div>
             ))}
-            {!calls.length && <div className="muted">No consultation requests.</div>}
+            {!requestedCalls.length && !activeCalls.length && <div className="muted">No consultation requests right now.</div>}
+          </div>
+
+          <div className="consultation-history-summary">
+            <h4>Consultation History</h4>
+            <div className="telehealth-readiness-grid compact">
+              <div>
+                <strong>Completed Today</strong>
+                <span>{completedTodayCalls.length}</span>
+              </div>
+              <div>
+                <strong>Voice</strong>
+                <span>{completedTodayCalls.filter((call) => call.callType === "VOICE").length}</span>
+              </div>
+              <div>
+                <strong>Video</strong>
+                <span>{completedTodayCalls.filter((call) => call.callType === "VIDEO").length}</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

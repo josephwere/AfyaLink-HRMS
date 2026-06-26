@@ -6,6 +6,7 @@ import {
   createPharmacyReferral,
   listRegisteredPharmacies,
 } from "../../services/pharmacyNetworkApi";
+import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
 
 function emptyMedication() {
   return {
@@ -221,6 +222,29 @@ export default function Prescriptions() {
       });
       if (existing) setExistingPrescription(existing);
       setMsg(existingPrescription ? "Prescription summary updated on the visit record." : "Prescription created and linked to the visit.");
+      showActionSuccessGuide({
+        title: "Prescription Saved Successfully",
+        message: "Patient records have been updated and the prescription plan is ready for pharmacy follow-up.",
+        tips: [
+          "Send the prescription to a registered pharmacy",
+          "Review the appointment summary",
+          "Open patient medical records",
+        ],
+        actions: [
+          { label: "Patient Records", path: `/app/care/records/index?patientId=${encodeURIComponent(patientId)}` },
+          {
+            label: "Ask AI",
+            action: "ai",
+            aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
+            variant: "secondary",
+          },
+          { label: "Appointments", path: "/app/operations/scheduling/appointments", variant: "secondary" },
+        ],
+        aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
+        notificationTitle: "Prescription saved",
+        notificationBody: "Patient prescription was generated and linked to the visit.",
+        notificationCategory: "PRESCRIPTIONS",
+      });
     } catch (err) {
       setMsg(err?.message || "Could not save prescription plan.");
     } finally {

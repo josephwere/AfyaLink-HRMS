@@ -14,6 +14,7 @@ import { calendarOptimizeSlot } from "../utils/aiAdvanced.js";
 import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
+const DEFAULT_BOOKING_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || "Africa/Nairobi";
 
 function parseTimeToMinutes(value, fallback) {
   const match = String(value || fallback || "08:00").match(/^(\d{1,2}):(\d{2})$/);
@@ -31,6 +32,114 @@ function normalizeConsultationMode(input) {
   return ["IN_PERSON", "CHAT", "VOICE", "VIDEO"].includes(value) ? value : "IN_PERSON";
 }
 
+function normalizeTimeZone(value) {
+  const candidate = String(value || DEFAULT_BOOKING_TIME_ZONE).trim();
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: candidate }).format(new Date());
+    return candidate;
+  } catch {
+    return DEFAULT_BOOKING_TIME_ZONE;
+  }
+}
+
+function getTimeZoneParts(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour === "24" ? "0" : values.hour),
+    minute: Number(values.minute),
+    second: Number(values.second),
+  };
+}
+
+function getTimeZoneOffsetMs(date, timeZone) {
+  const parts = getTimeZoneParts(date, timeZone);
+  const localAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
+  return localAsUtc - date.getTime();
+}
+
+function zonedDateTimeToUtc({ year, month, day, hour = 0, minute = 0, second = 0, millisecond = 0 }, timeZone) {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second, millisecond);
+  const firstOffset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
+  const firstResult = utcGuess - firstOffset;
+  const secondOffset = getTimeZoneOffsetMs(new Date(firstResult), timeZone);
+  return new Date(utcGuess - secondOffset);
+}
+
+function getPatientBookingDayBounds(timeZoneInput) {
+  const timeZone = normalizeTimeZone(timeZoneInput);
+  const now = new Date();
+  const today = getTimeZoneParts(now, timeZone);
+  const tomorrowUtc = new Date(Date.UTC(today.year, today.month - 1, today.day + 1));
+  const tomorrow = {
+    year: tomorrowUtc.getUTCFullYear(),
+    month: tomorrowUtc.getUTCMonth() + 1,
+    day: tomorrowUtc.getUTCDate(),
+  };
+  const startOfToday = zonedDateTimeToUtc({ year: today.year, month: today.month, day: today.day }, timeZone);
+  const startOfTomorrow = zonedDateTimeToUtc(tomorrow, timeZone);
+  return { startOfToday, startOfTomorrow, timeZone };
+}
+
+async function enforcePatientDailyBookingLimit({ role, patientId, timeZone, res }) {
+  if (role !== "PATIENT" || !patientId) return false;
+  const { startOfToday, startOfTomorrow, timeZone: normalizedTimeZone } = getPatientBookingDayBounds(timeZone);
+
+  const existingAppointment = await Appointment.findOne({
+    patient: patientId,
+    status: { $ne: "Cancelled" },
+    createdAt: { $gte: startOfToday, $lt: startOfTomorrow },
+  })
+    .sort({ createdAt: -1 })
+    .select("_id createdAt scheduledAt status serviceType consultationMode doctor reason")
+    .populate("doctor", "name")
+    .lean();
+
+  if (!existingAppointment) return false;
+
+  res.status(409).json({
+    msg: "You're already scheduled for today.",
+    code: "APPOINTMENT_DAILY_LIMIT",
+    nextAvailableAt: startOfTomorrow,
+    timeZone: normalizedTimeZone,
+    existingAppointment: {
+      _id: existingAppointment._id,
+      createdAt: existingAppointment.createdAt,
+      scheduledAt: existingAppointment.scheduledAt,
+      status: existingAppointment.status,
+      serviceType: existingAppointment.serviceType,
+      consultationMode: existingAppointment.consultationMode,
+      reason: existingAppointment.reason,
+      doctor: existingAppointment.doctor || null,
+    },
+    guidance: {
+      title: "You're Already Scheduled",
+      message: "Good news! You already have an appointment booked for today. You can make another appointment tomorrow after midnight.",
+      emergencyMessage: "If this is an emergency, please contact a healthcare provider immediately.",
+    },
+  });
+  return true;
+}
+
 async function getConsultationSettings() {
   const settings = await getSystemSettingsDoc({ lean: true });
   return settings?.communications || {
@@ -38,6 +147,36 @@ async function getConsultationSettings() {
     videoCallsEnabled: true,
     voiceCallsEnabled: true,
   };
+}
+
+async function getPatientUserId(patientId) {
+  if (!patientId) return "";
+  const patient = await Patient.findById(patientId).select("metadata.userId").lean();
+  return patient?.metadata?.userId ? String(patient.metadata.userId) : "";
+}
+
+async function emitConsultationLifecycle(eventName, callSession, extra = {}) {
+  try {
+    const patientUserId = await getPatientUserId(callSession.patient);
+    const payload = {
+      callId: String(callSession._id),
+      patientId: callSession.patient ? String(callSession.patient) : null,
+      doctorId: callSession.doctor ? String(callSession.doctor) : null,
+      hospitalId: callSession.hospital ? String(callSession.hospital) : null,
+      appointmentId: callSession.appointment ? String(callSession.appointment) : null,
+      callType: callSession.callType,
+      status: callSession.status,
+      event: eventName,
+      emittedAt: new Date().toISOString(),
+      ...extra,
+    };
+    const io = getIO();
+    if (patientUserId) io.to(patientUserId).emit(eventName, payload);
+    if (callSession.doctor) io.to(String(callSession.doctor)).emit(eventName, payload);
+    if (callSession.hospital) io.to(String(callSession.hospital)).emit(eventName, payload);
+  } catch (_) {
+    // Realtime delivery is best-effort; API success must not depend on sockets.
+  }
 }
 
 async function validatePreferredDoctor({ doctorId, hospitalId, scheduledDate }) {
@@ -272,6 +411,7 @@ async function buildHospitalSlotSuggestions({
 
 async function notifyAppointmentLifecycle({ appointment, action, actorId }) {
   const notifications = [];
+  const patientUserId = await getPatientUserId(appointment.patient);
   if (appointment.doctor) {
     notifications.push({
       title: action === "created" ? "New Appointment Assigned" : "Appointment Reassigned",
@@ -294,6 +434,7 @@ async function notifyAppointmentLifecycle({ appointment, action, actorId }) {
       ? "Your appointment has been booked and a clinician has been assigned."
       : "Your appointment has been received and will be assigned by the hospital.",
     category: "APPOINTMENT",
+    user: patientUserId || undefined,
     hospital: appointment.hospital,
     meta: {
       appointmentId: appointment._id,
@@ -365,6 +506,14 @@ export const createAppointment = async (req, res, next) => {
       return res.status(400).json({ msg: "scheduledAt must be a valid date" });
     }
 
+    const patientDailyLimitBlocked = await enforcePatientDailyBookingLimit({
+      role,
+      patientId: patient,
+      timeZone: req.body?.timeZone || req.headers["x-time-zone"],
+      res,
+    });
+    if (patientDailyLimitBlocked) return;
+
     serviceType = normalizeServiceType(serviceType);
     consultationMode = normalizeConsultationMode(consultationMode);
 
@@ -425,6 +574,12 @@ export const createAppointment = async (req, res, next) => {
       if (assignedDoctor) {
         getIO()
           .to(String(assignedDoctor))
+          .emit("appointmentCreated", appointment);
+      }
+      const patientUserId = await getPatientUserId(appointment.patient);
+      if (patientUserId) {
+        getIO()
+          .to(patientUserId)
           .emit("appointmentCreated", appointment);
       }
     } catch (_) {}
@@ -891,6 +1046,10 @@ export const createCallSession = async (req, res, next) => {
       },
     });
 
+    await emitConsultationLifecycle("consultation_requested", item, {
+      requestedBy: req.user._id ? String(req.user._id) : String(req.user.id || ""),
+    });
+
     return res.status(201).json(item);
   } catch (err) {
     return next(err);
@@ -952,6 +1111,17 @@ export const activateCallSession = async (req, res, next) => {
       roomKey: item.metadata?.roomKey || `call_${String(item._id)}`,
     };
     await item.save();
+    const patientUserId = await getPatientUserId(item.patient);
+    if (patientUserId) {
+      await Notification.create({
+        title: "Doctor accepted consultation",
+        body: "Your doctor is ready. Join your secure consultation room.",
+        category: "CONSULTATION",
+        user: patientUserId,
+        hospital: item.hospital,
+        meta: { appointmentId: item.appointment, callId: item._id, callType: item.callType },
+      });
+    }
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
@@ -964,6 +1134,9 @@ export const activateCallSession = async (req, res, next) => {
         appointmentId: item.appointment || null,
         callType: item.callType,
       },
+    });
+    await emitConsultationLifecycle("consultation_accepted", item, {
+      acceptedBy: req.user._id ? String(req.user._id) : String(req.user.id || ""),
     });
     return res.json(item);
   } catch (err) {
@@ -990,6 +1163,7 @@ export const endCallSession = async (req, res, next) => {
     ) {
       return res.status(403).json({ msg: "You can only end your own consultation calls" });
     }
+    const previousStatus = item.status;
     item.status = "ENDED";
     item.endedAt = new Date();
     item.metadata = {
@@ -998,6 +1172,20 @@ export const endCallSession = async (req, res, next) => {
       endedAt: new Date().toISOString(),
     };
     await item.save();
+    const patientUserId = await getPatientUserId(item.patient);
+    if (patientUserId) {
+      await Notification.create({
+        title: previousStatus === "REQUESTED" ? "Consultation request declined" : "Consultation completed",
+        body:
+          previousStatus === "REQUESTED"
+            ? "The doctor could not join this consultation. You can request another online consultation from your appointment."
+            : "Your consultation has ended. Summary, prescription, or follow-up details will appear when available.",
+        category: "CONSULTATION",
+        user: patientUserId,
+        hospital: item.hospital,
+        meta: { appointmentId: item.appointment, callId: item._id, callType: item.callType },
+      });
+    }
     await AuditLog.create({
       actorId: req.user._id,
       actorRole: req.user.role,
@@ -1011,6 +1199,14 @@ export const endCallSession = async (req, res, next) => {
         callType: item.callType,
       },
     });
+    await emitConsultationLifecycle(
+      previousStatus === "REQUESTED" ? "consultation_declined" : "consultation_completed",
+      item,
+      {
+        endedBy: req.user._id ? String(req.user._id) : String(req.user.id || ""),
+        previousStatus,
+      }
+    );
     return res.json(item);
   } catch (err) {
     return next(err);
@@ -1094,9 +1290,12 @@ export const updateAppointment = async (req, res, next) => {
     }
 
     try {
-      getIO()
-        .to(String(updated.patient))
-        .emit("appointmentUpdated", updated);
+      const patientUserId = await getPatientUserId(updated.patient);
+      if (patientUserId) {
+        getIO()
+          .to(patientUserId)
+          .emit("appointmentUpdated", updated);
+      }
     } catch (_) {}
 
     res.json(updated);

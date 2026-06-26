@@ -537,6 +537,24 @@ export default function FloatingAI() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open]);
 
+  useEffect(() => {
+    const handleOpenAi = (event) => {
+      const detail = event?.detail || {};
+      const prompt = String(detail.prompt || "").trim();
+      if (prompt) {
+        setChatPrompt(prompt);
+        setChatExpanded(true);
+      }
+      setOpen(true);
+      window.requestAnimationFrame(() => {
+        chatInputRef.current?.focus({ preventScroll: true });
+        chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("afyalink:ai-open", handleOpenAi);
+    return () => window.removeEventListener("afyalink:ai-open", handleOpenAi);
+  }, []);
+
   const setFieldValue = (field, value) => {
     if (!value) return;
     if (field === "symptoms") setSymptoms((prev) => `${prev}${prev ? ", " : ""}${value}`.trim());

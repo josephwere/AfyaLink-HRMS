@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import apiFetch from "../../utils/apiFetch";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
+import ContentSkeleton from "../../components/ContentSkeleton";
+import GuidedEmptyState from "../../components/GuidedEmptyState";
 
 export default function PatientPrescriptions() {
   const [items, setItems] = useState([]);
@@ -35,6 +37,17 @@ export default function PatientPrescriptions() {
     return items.filter((item) => String(item.status) === filter);
   }, [items, filter]);
 
+  const openAiAssistant = (prompt) => {
+    window.dispatchEvent(
+      new CustomEvent("afyalink:ai-open", {
+        detail: {
+          prompt,
+          source: "patient-prescriptions",
+        },
+      })
+    );
+  };
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
@@ -50,6 +63,7 @@ export default function PatientPrescriptions() {
       </div>
 
       {msg ? <div className="card">{msg}</div> : null}
+      {loading && !items.length ? <ContentSkeleton title="Loading prescriptions" cards={2} /> : null}
 
       <section className="section">
         <div className="card premium-card">
@@ -79,6 +93,19 @@ export default function PatientPrescriptions() {
               ) : null}
               {item.summary ? <p>{item.summary}</p> : null}
               {item.advice ? <p className="muted">Advice: {item.advice}</p> : null}
+              <div className="doctor-actions-row" style={{ margin: "10px 0" }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() =>
+                    openAiAssistant(
+                      `Explain this prescription in simple language, including how to take the medicines and what questions I should ask my doctor. Summary: ${item.summary || "No summary"}. Advice: ${item.advice || "No advice"}. Medicines: ${(item.medications || []).map((med) => `${med.name || "Medicine"} ${med.dosage || ""} ${med.frequency || ""} ${med.duration || ""}`).join("; ")}`
+                    )
+                  }
+                >
+                  Explain With AI
+                </button>
+              </div>
               <div className="alert-stack">
                 {(item.medications || []).map((med, index) => (
                   <div key={index} className="card">
@@ -97,10 +124,19 @@ export default function PatientPrescriptions() {
               ) : null}
             </div>
           ))}
-          {!visible.length ? (
-            <div className="card premium-card">
-              <p className="muted">No prescriptions in this filter.</p>
-            </div>
+          {!visible.length && !loading ? (
+            <GuidedEmptyState
+              icon="Rx"
+              title="No Prescriptions Yet"
+              body="Prescriptions from your doctor will appear here with medicine details and pharmacy progress."
+              actions={[
+                { label: "Book Consultation", path: "/patient/appointments", variant: "primary" },
+                {
+                  label: "Ask AI",
+                  aiPrompt: "I do not have prescriptions yet. Help me prepare questions to ask my doctor about medicines, side effects, and follow-up.",
+                },
+              ]}
+            />
           ) : null}
           </div>
 
@@ -115,7 +151,20 @@ export default function PatientPrescriptions() {
                   {item.medicationNotes ? <p className="muted" style={{ marginTop: 8 }}>{item.medicationNotes}</p> : null}
                 </div>
               ))}
-              {!referrals.length ? <div className="muted">No pharmacy referrals yet.</div> : null}
+              {!referrals.length ? (
+                <GuidedEmptyState
+                  compact
+                  icon="H"
+                  title="No Referrals Available"
+                  body="Your doctor can create pharmacy referrals when medication handoff is needed."
+                  actions={[
+                    {
+                      label: "Ask AI",
+                      aiPrompt: "Explain what a pharmacy referral is and what I should ask my clinician if I need medication support.",
+                    },
+                  ]}
+                />
+              ) : null}
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPatientDashboard } from "../../services/dashboardApi";
 import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
@@ -95,6 +95,80 @@ export default function Dashboard() {
   const latestPrescriptionStatus = latestPrescription?.status || t("notAvailable", "Not available");
   const latestReferralStatus = latestReferral?.status || t("notAvailable", "Not available");
   const latestVisitStatus = latestVisit || latestEncounter ? t("ready", "Ready") : t("noneYet", "None yet");
+  const openAiAssistant = (prompt) => {
+    window.dispatchEvent(
+      new CustomEvent("afyalink:ai-open", {
+        detail: {
+          prompt,
+          source: "patient-dashboard",
+        },
+      })
+    );
+  };
+  const careRecommendations = useMemo(() => {
+    const rows = [];
+    const upcomingAppointments = Number(data?.upcomingAppointments || 0);
+    const activePrescriptions = Number(data?.prescriptionsActive || 0);
+    const labResults = Number(data?.labResults || 0);
+    const followUpDate = latestVisit?.metadata?.consultationSummary?.followUpDate;
+
+    if (upcomingAppointments > 0) {
+      rows.push({
+        title: t("prepareForAppointment", "Prepare for your appointment"),
+        body: t(
+          "prepareForAppointmentBody",
+          "Use the AI assistant to list symptoms, medicines, and questions before you meet the clinician."
+        ),
+        actionLabel: t("askAi", "Ask AI"),
+        aiPrompt: "Help me prepare for my upcoming appointment. Suggest what symptoms, medicines, allergies, and questions I should organize before seeing the doctor.",
+      });
+    } else {
+      rows.push({
+        title: t("bookCareVisit", "Book a care visit"),
+        body: t("bookCareVisitBody", "Choose a hospital service and schedule your next appointment."),
+        actionLabel: t("bookAppointment", "Book Appointment"),
+        path: "/patient/appointments",
+      });
+    }
+
+    if (latestPrescription || activePrescriptions > 0) {
+      rows.push({
+        title: t("understandPrescription", "Understand your prescription"),
+        body: t("understandPrescriptionBody", "Get a simple explanation of how to take medicines and what to ask your doctor."),
+        actionLabel: t("explainWithAi", "Explain With AI"),
+        aiPrompt: `Explain my latest prescription in simple patient language. Status: ${latestPrescriptionStatus}. Summary: ${latestPrescription?.summary || "No summary available"}. Advice: ${latestPrescription?.advice || "No advice available"}.`,
+      });
+    }
+
+    if (followUpDate) {
+      rows.push({
+        title: t("followUpRecommended", "Follow-up recommended"),
+        body: `${t("followUp", "Follow-up")}: ${new Date(followUpDate).toLocaleDateString()}`,
+        actionLabel: t("openAppointments", "Open Appointments"),
+        path: "/patient/appointments",
+      });
+    }
+
+    if (labResults > 0) {
+      rows.push({
+        title: t("reviewLabResults", "Review lab results"),
+        body: t("reviewLabResultsBody", "Open completed results and ask AI to prepare questions for your clinician."),
+        actionLabel: t("explainResults", "Explain Results"),
+        aiPrompt: "Explain my latest lab results in simple language and list questions I should ask my clinician. Do not diagnose me; help me understand what to review with a professional.",
+      });
+    }
+
+    if (!rows.length) {
+      rows.push({
+        title: t("annualCheckupReminder", "Plan a routine checkup"),
+        body: t("annualCheckupReminderBody", "If you are not sure which service you need, the AI assistant can help you prepare."),
+        actionLabel: t("askAi", "Ask AI"),
+        aiPrompt: "Help me decide what type of routine checkup or appointment I should consider based on general health maintenance.",
+      });
+    }
+
+    return rows.slice(0, 4);
+  }, [data, latestPrescription, latestPrescriptionStatus, latestVisit, t]);
 
   return (
     <DashboardHomeShell
@@ -270,6 +344,54 @@ export default function Dashboard() {
         },
       ]}
     >
+      <DashboardSection
+        className="patient-ai-recommendations"
+        title={t("recommendedForYou", "Recommended For You")}
+        subtitle={t("recommendedForYouSubtitle", "Helpful next steps based on appointments, prescriptions, lab results, and records.")}
+        actions={[
+          {
+            label: t("askAi", "Ask AI"),
+            variant: "secondary",
+            onClick: () =>
+              openAiAssistant("Review my AfyaLink dashboard and help me choose the most useful next step today."),
+          },
+        ]}
+      >
+        <div className="ai-recommendations-grid">
+          {careRecommendations.map((item) => (
+            <article className="premium-card ai-recommendation-card" key={`${item.title}-${item.actionLabel}`}>
+              <div className="ai-recommendation-marker" aria-hidden="true">
+                AI
+              </div>
+              <div>
+                <h4>{item.title}</h4>
+                <p className="muted">{item.body}</p>
+              </div>
+              <div className="doctor-actions-row">
+                <button
+                  type="button"
+                  className={item.path ? "btn-secondary" : "btn-primary"}
+                  onClick={() => {
+                    if (item.aiPrompt) {
+                      openAiAssistant(item.aiPrompt);
+                      return;
+                    }
+                    if (item.path) navigate(item.path);
+                  }}
+                >
+                  {item.actionLabel}
+                </button>
+                {item.path && item.aiPrompt ? (
+                  <button type="button" className="btn-secondary" onClick={() => navigate(item.path)}>
+                    {t("open", "Open")}
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </DashboardSection>
+
       <DashboardSection
         className="doctor-main-grid"
         title={t("latestVisitSummary", "Latest Visit Summary")}

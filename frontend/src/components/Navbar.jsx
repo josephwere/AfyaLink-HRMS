@@ -8,6 +8,8 @@ import { useSystemSettings } from "../utils/systemSettings.jsx";
 import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { triggerAction } from "../services/actionApi";
 import AppIcon from "./AppIcon";
+import GlobalCallLauncher from "./GlobalCallLauncher";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOpen = false }) {
   const { user } = useAuth();
@@ -17,6 +19,8 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
   const { translateText } = useAppLanguage();
   const logo = settings?.branding?.logo;
   const nextThemeLabel = theme === "dark" ? "Light mode" : "Dark mode";
+  const role = String(user?.role || "").toUpperCase();
+  const canUseUxAudit = ["DEVELOPER", "SYSTEM_ADMIN", "SUPER_ADMIN"].includes(role);
 
   const homePath = user ? redirectByRole(user) : "/";
 
@@ -75,6 +79,22 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
             onClick={onToggleContextRail}
           >
             <AppIcon name="panel" />
+          </button>
+        ) : null}
+
+        {user ? <NotificationCenter /> : null}
+
+        {user ? <GlobalCallLauncher user={user} /> : null}
+
+        {canUseUxAudit ? (
+          <button
+            type="button"
+            className="icon-btn ghost ux-audit-nav-button"
+            title="Toggle UX audit mode"
+            aria-label="Toggle UX audit mode"
+            onClick={() => window.dispatchEvent(new CustomEvent("afyalink:toggle-ux-audit"))}
+          >
+            UX
           </button>
         ) : null}
 
