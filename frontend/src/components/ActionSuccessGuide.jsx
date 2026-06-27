@@ -67,7 +67,7 @@ export default function ActionSuccessGuide() {
         <h2>{guide.title}</h2>
         <p>{guide.message}</p>
         <div className="success-guide-panel">
-          <strong>Did you know?</strong>
+          <strong>Did you know you can?</strong>
           <ul>
             {guide.tips.map((tip) => (
               <li key={tip}>{tip}</li>
