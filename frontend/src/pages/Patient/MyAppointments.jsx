@@ -641,7 +641,7 @@ export default function MyAppointments() {
               </dl>
             </div>
             <div className="success-guide-panel">
-              <strong>Did you know?</strong>
+              <strong>Did you know you can?</strong>
               <ul>
                 <li>You can use the AI Health Assistant to prepare symptoms and questions.</li>
                 <li>You can request a voice consultation if a doctor has already been assigned.</li>
