@@ -31,13 +31,14 @@ function tokenFor(user) {
   );
 }
 
-async function createUser(role = "SUPER_ADMIN") {
+async function createUser(role = "SUPER_ADMIN", metadata = {}) {
   return User.create({
     name: `${role} User`,
     email: `${String(role).toLowerCase()}_${Date.now()}@afyalink.test`,
     role,
     authProvider: "google",
     active: true,
+    metadata,
   });
 }
 
@@ -58,37 +59,24 @@ describe("Assistant autofill profile + audit", () => {
     await Promise.all([User.deleteMany({}), AuditLog.deleteMany({})]);
   });
 
-  test("stores assistant profile per hospital scope", async () => {
-    const user = await createUser();
-    const token = tokenFor(user);
-
-    await request(app)
-      .put("/api/ai/assistant/profile")
-      .set("Authorization", `Bearer ${token}`)
-      .set("X-Hospital", "HOSPITAL-ALPHA")
-      .send({
-        assistantProfile: {
+  test("returns assistant profile per hospital scope from user metadata", async () => {
+    const user = await createUser("SUPER_ADMIN", {
+      aiAssistantByHospital: {
+        "HOSPITAL-ALPHA": {
           notes: "Alpha site note",
           dotPhrases: [{ shortcut: ".claim", content: "Alpha claim wording" }],
           workflowTemplates: [{ workflow: "claims", instructions: "Alpha claims template" }],
           autofillPreferences: { autoApplyHighConfidence: true, confidenceThreshold: 0.9 },
         },
-      })
-      .expect(200);
-
-    await request(app)
-      .put("/api/ai/assistant/profile")
-      .set("Authorization", `Bearer ${token}`)
-      .set("X-Hospital", "HOSPITAL-BETA")
-      .send({
-        assistantProfile: {
+        "HOSPITAL-BETA": {
           notes: "Beta site note",
           dictionaryTerms: [{ term: "sha", replacement: "Social Health Authority" }],
           workflowTemplates: [{ workflow: "referrals", instructions: "Beta handover template" }],
           autofillPreferences: { autoApplyHighConfidence: false, confidenceThreshold: 0.75 },
         },
-      })
-      .expect(200);
+      },
+    });
+    const token = tokenFor(user);
 
     const alpha = await request(app)
       .get("/api/ai/assistant/context")

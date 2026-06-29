@@ -7,6 +7,7 @@ import {
   submitAssistantFeedback,
 } from "../../services/assistantApi";
 import { useAuth } from "../../utils/auth";
+import { useAIContext } from "../../context/AIContextProvider";
 import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
 import { getPreferredAssetSource, markAssetBroken } from "../../utils/assetFallbacks";
 
@@ -36,6 +37,7 @@ export default function Chatbot() {
     setIconSrc(getPreferredAssetSource(aiIcon, DEFAULT_AI_ICON));
   }, [aiIcon]);
 
+  const { aiContext } = useAIContext();
   const supportsRecognition = useMemo(() => {
     if (typeof window === "undefined") return false;
     return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -186,9 +188,17 @@ export default function Chatbot() {
     try {
       const out = await streamAssistantChat(
         {
-        message: prompt,
-        userMessage: prompt,
-          pageContext: routeContext,
+          request: {
+            message: prompt,
+            userMessage: prompt,
+            pageContext: routeContext,
+            channel: "web",
+            client: "browser",
+          },
+          aiContext: {
+            ...aiContext,
+            pageContext: routeContext,
+          },
         },
         {
           onChunk: (delta) => {

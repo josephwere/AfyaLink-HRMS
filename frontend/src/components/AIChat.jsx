@@ -1,7 +1,9 @@
 import React, { useRef, useState } from "react";
+import { useAIContext } from "../context/AIContextProvider";
 import { streamAssistantChat, submitAssistantFeedback } from "../services/assistantApi";
 
 export default function AIChat() {
+  const { aiContext } = useAIContext();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
@@ -25,8 +27,21 @@ export default function AIChat() {
     ]);
     setInput("");
     try {
+      const routeContext = typeof window !== "undefined" ? window.location.pathname : "";
       const out = await streamAssistantChat(
-        { message, userMessage: message, pageContext: typeof window !== "undefined" ? window.location.pathname : "" },
+        {
+          request: {
+            message,
+            userMessage: message,
+            pageContext: routeContext,
+            channel: "web",
+            client: "browser",
+          },
+          aiContext: {
+            ...aiContext,
+            pageContext: routeContext,
+          },
+        },
         {
           onChunk: (delta) => {
             setMessages((prev) =>

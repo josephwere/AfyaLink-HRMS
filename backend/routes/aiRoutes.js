@@ -3,16 +3,11 @@
 import express from "express";
 import multer from "multer";
 import {
-  suggestSlot,
-  patientRisk,
   extractDocument,
   getAssistantContext,
-  updateAssistantProfile,
-  getAssistantAdvice,
   getAssistantChat,
   streamAssistantChatResponse,
   submitAssistantChatFeedback,
-  summarizeAssistantPage,
   clearAssistantMemory,
   logAssistantAutofillAudit,
 } from "../controllers/aiController.js";
@@ -37,16 +32,11 @@ router.use(
   planGuard({ feature: "ai" }) // 🔐 AI FEATURE TOGGLE
 );
 
-router.get("/slot", suggestSlot);
-router.post("/risk", patientRisk);
 router.post("/extract", upload.single("file"), extractDocument);
 router.get("/assistant/context", getAssistantContext);
-router.put("/assistant/profile", updateAssistantProfile);
-router.post("/assistant/advice", getAssistantAdvice);
 router.post("/assistant/chat", getAssistantChat);
 router.post("/assistant/chat/stream", streamAssistantChatResponse);
 router.post("/assistant/feedback", submitAssistantChatFeedback);
-router.post("/assistant/summarize", summarizeAssistantPage);
 router.post("/assistant/clear-memory", clearAssistantMemory);
 router.post("/assistant/autofill-audit", logAssistantAutofillAudit);
 router.use("/gateway", aiGatewayRoutes);

@@ -71,6 +71,9 @@ function toText({ html, text }) {
 }
 
 function resolveProvider() {
+  if (process.env.NODE_ENV === "test") {
+    return "console";
+  }
   if (process.env.BREVO_API_KEY) return "brevo";
   if (process.env.SENDGRID_API_KEY) return "sendgrid";
   if (

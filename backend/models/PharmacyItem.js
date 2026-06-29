@@ -14,11 +14,15 @@ const BatchSchema = new Schema({
 const PharmacyItemSchema = new Schema({
   hospital: { type: Schema.Types.ObjectId, ref: 'Hospital', required: true, index: true },
   name: { type: String, required: true, index: true },
+  genericName: { type: String, default: '' },
+  therapeuticClass: { type: String, default: '' },
   sku: { type: String, index: true, default: null },
   description: { type: String, default: '' },
   category: { type: String, default: 'medicine', index: true },
   form: { type: String, default: '' },
   strength: { type: String, default: '' },
+  storageLocation: { type: String, default: '' },
+  controlledDrug: { type: Boolean, default: false },
   unit: { type: String, default: 'pcs' }, // e.g., pcs, box, vial
   totalQuantity: { type: Number, default: 0 },
   minStock: { type: Number, default: 0 }, // low stock threshold

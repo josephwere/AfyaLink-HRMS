@@ -11,6 +11,7 @@ import {
   updateItem,
   deleteItem,
   addStock,
+  reserveStock,
   dispenseStock,
   listAvailableMedicines,
 } from "../controllers/pharmacyInventoryController.js";
@@ -67,6 +68,7 @@ router.post("/", authorize("inventory", "update"), createItem);
 router.put("/:id", authorize("inventory", "update"), updateItem);
 router.delete("/:id", authorize("inventory", "update"), deleteItem);
 router.post("/:id/add-stock", authorize("inventory", "update"), addStock);
+router.post("/:id/reserve", authorize("pharmacy", "dispense"), reserveStock);
 router.post("/:id/dispense", authorize("pharmacy", "dispense"), dispenseStock);
 
 export default router;

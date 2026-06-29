@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { streamAssistantChat, submitAssistantFeedback } from "../services/assistantApi";
+import { useAIContext } from "../context/AIContextProvider";
 
-export default function AIChatWS() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+export default function AIChatWS({ messages: externalMessages, setMessages: externalSetMessages, input: externalInput, setInput: externalSetInput, presetPrompt = "", pageContext = "" }) {
+  const [localMessages, setLocalMessages] = useState([]);
+  const [localInput, setLocalInput] = useState("");
+  const messages = externalMessages || localMessages;
+  const setMessages = externalSetMessages || setLocalMessages;
+  const input = typeof externalInput === "string" ? externalInput : localInput;
+  const setInput = externalSetInput || setLocalInput;
+  const { aiContext } = useAIContext();
   const [feedbackByMessage, setFeedbackByMessage] = useState({});
   const [status, setStatus] = useState("");
   const streamIdRef = useRef("");
@@ -14,6 +20,11 @@ export default function AIChatWS() {
     messageSeedRef.current += 1;
     return `${from}-${Date.now()}-${messageSeedRef.current}`;
   };
+
+  useEffect(() => {
+    if (!presetPrompt) return;
+    setInput(presetPrompt);
+  }, [presetPrompt]);
 
   useEffect(() => {
     if (!logRef.current) return;
@@ -77,11 +88,20 @@ export default function AIChatWS() {
     setInput("");
 
     try {
+      const routeContext = pageContext || (typeof window !== "undefined" ? window.location.pathname : "medical-assistant");
       const out = await streamAssistantChat(
         {
-          message: prompt,
-          userMessage: prompt,
-          pageContext: typeof window !== "undefined" ? window.location.pathname : "medical-assistant",
+          request: {
+            message: prompt,
+            userMessage: prompt,
+            pageContext: routeContext,
+            channel: "web",
+            client: "browser",
+          },
+          aiContext: {
+            ...aiContext,
+            pageContext: routeContext,
+          },
         },
         {
           onChunk: (delta) => appendPendingChunk(pendingId, delta),

@@ -1,83 +1,21 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/authorize.js";
-
-import User from "../models/User.js";
-import AuditLog from "../models/AuditLog.js";
+import { activateEmergency, deactivateEmergency, listSessions, getSession, reviewSession } from "../controllers/emergencyController.js";
+import { protect, requireRole } from "../middleware/authMiddleware.js";
+import { requirePermission } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   🚨 REVOKE EMERGENCY ACCESS — SUPER_ADMIN ONLY
-====================================================== */
-router.post(
-  "/revoke/:userId",
-  protect,
-  authorize("emergency", "revoke"), // SUPER_ADMIN policy
-  async (req, res) => {
-    try {
-      const { userId } = req.params;
+router.use(protect);
 
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+// Activate emergency override (requires facility:emergency_override permission)
+router.post("/activate", requirePermission("facility", "emergency_override"), activateEmergency);
 
-      if (!user.emergencyAccess?.active) {
-        return res.status(400).json({
-          message: "User does not have active emergency access",
-        });
-      }
+// Deactivate emergency override (actor or super admin)
+router.post("/deactivate", requirePermission("facility", "emergency_override"), deactivateEmergency);
 
-      const beforeState = user.emergencyAccess;
-
-      // 🔥 REVOKE
-      user.emergencyAccess = {
-        active: false,
-        revokedAt: new Date(),
-        revokedBy: req.user._id,
-      };
-
-      await user.save();
-
-      /* ================= AUDIT LOG ================= */
-      await AuditLog.create({
-        actorId: req.user._id,
-        actorRole: req.user.role,
-        action: "REVOKE_EMERGENCY_ACCESS",
-        resource: "User",
-        resourceId: user._id,
-        hospital: user.hospital,
-        before: beforeState,
-        after: user.emergencyAccess,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
-        success: true,
-      });
-
-      res.json({
-        message: "Emergency access revoked successfully",
-      });
-    } catch (err) {
-      console.error(err);
-
-      await AuditLog.create({
-        actorId: req.user?._id,
-        actorRole: req.user?.role,
-        action: "REVOKE_EMERGENCY_ACCESS_FAILED",
-        resource: "User",
-        resourceId: req.params.userId,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
-        success: false,
-        error: err.message,
-      });
-
-      res.status(500).json({
-        message: "Failed to revoke emergency access",
-      });
-    }
-  }
-);
+// Sessions and reviews
+router.get("/sessions", requireRole("HOSPITAL_ADMIN"), listSessions);
+router.get("/sessions/:id", requireRole("HOSPITAL_ADMIN"), getSession);
+router.patch("/sessions/:id/review", requireRole("HOSPITAL_ADMIN"), reviewSession);
 
 export default router;

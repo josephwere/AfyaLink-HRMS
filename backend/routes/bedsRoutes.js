@@ -10,18 +10,18 @@ import {
   createWard,
 } from "../controllers/bedsController.js";
 import { protect } from "../middleware/authMiddleware.js";
-import { requireRole } from "../middleware/roleMiddleware.js";
+import { requirePermission, requireRole } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 router.use(protect);
 
-router.get("/wards", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE", "DOCTOR"), listWards);
-router.post("/wards", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"), createWard);
-router.get("/", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE", "DOCTOR"), listBeds);
-router.get("/:id/timeline", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE", "DOCTOR"), getBedTimeline);
-router.post("/", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"), createBed);
-router.post("/:id/transfer", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE"), transferBed);
-router.post("/:id/discharge", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE"), dischargeBed);
-router.put("/:id", requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "NURSE"), updateBed);
+router.get("/wards", requirePermission("wards", "read"), listWards);
+router.post("/wards", requirePermission("wards", "create"), createWard);
+router.get("/", requirePermission("beds", "read"), listBeds);
+router.get("/:id/timeline", requirePermission("beds", "read"), getBedTimeline);
+router.post("/", requirePermission("beds", "create"), createBed);
+router.post("/:id/transfer", requirePermission("beds", "transfer"), transferBed);
+router.post("/:id/discharge", requirePermission("beds", "discharge"), dischargeBed);
+router.put("/:id", requirePermission("beds", "update"), updateBed);
 
 export default router;

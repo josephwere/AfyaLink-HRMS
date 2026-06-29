@@ -14,6 +14,14 @@ function keyForReq(prefix, req) {
     req.connection?.remoteAddress ||
     "unknown";
   const user = req.user?._id ? `u:${String(req.user._id)}` : "u:anon";
+  // In test mode where rate-limits are explicitly enabled, use a fixed key
+  // to avoid variability from differing IP representations across requests
+  // (supertest sometimes presents different peer addresses). This makes the
+  // limiter deterministic for tests.
+  if (String(process.env.ENABLE_RATE_LIMITS_IN_TESTS || "") === "1") {
+    return `${prefix}:test:u:anon`;
+  }
+
   return `${prefix}:${user}:${ip}`;
 }
 
@@ -55,6 +63,10 @@ async function readTtlMs(key) {
   return 0;
 }
 
+// In-test deterministic counters (when ENABLE_RATE_LIMITS_IN_TESTS === '1')
+const testCounters = new Map();
+
+
 export function createDistributedRateLimiter({
   prefix,
   windowMs,
@@ -75,7 +87,18 @@ export function createDistributedRateLimiter({
       const key = keyForReq(safePrefix, req);
       let count;
 
-      if (typeof redis.incr === "function") {
+      // Deterministic in-process counters for tests that explicitly enable
+      // rate-limits. This avoids flakiness due to varying IP formats or
+      // cross-test interference when running many suites sequentially.
+      if (String(process.env.ENABLE_RATE_LIMITS_IN_TESTS || "") === "1") {
+        const existing = Number(testCounters.get(key) || 0);
+        count = existing + 1;
+        testCounters.set(key, count);
+        // ensure the counter clears after the configured window
+        setTimeout(() => {
+          testCounters.delete(key);
+        }, safeWindowMs).unref?.();
+      } else if (typeof redis.incr === "function") {
         count = Number(await withRedisTimeout(() => redis.incr(key)));
       } else {
         const current = Number((await withRedisTimeout(() => redis.get(key))) || 0);

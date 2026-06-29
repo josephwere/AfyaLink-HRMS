@@ -2,25 +2,11 @@ import "../config/loadEnv.js";
 import { neuroedgeGatewayClient, NeuroEdgeGatewayError } from "./neuroedgeGatewayClient.js";
 
 const NEUROEDGE_KEY = process.env.NEUROEDGE_API_KEY || "";
-const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
-const NEUROEDGE_CHAT_MODEL = String(process.env.NEUROEDGE_CHAT_MODEL || "").trim();
-let openAiClientPromise = null;
 
 const TEXT_MIME_RE = /^(text\/|application\/(json|xml|csv)|image\/svg\+xml)/i;
 const TEXT_EXTENSION_RE = /\.(txt|csv|json|md|markdown|xml|html?|log)$/i;
 const MAX_TEXT_EXTRACT_CHARS = 16000;
 
-async function getOpenAiClient() {
-  if (!OPENAI_KEY) throw new Error("OpenAI key not configured");
-  if (!openAiClientPromise) {
-    openAiClientPromise = (async () => {
-      const mod = await import("openai");
-      const OpenAI = mod?.default || mod;
-      return new OpenAI({ apiKey: OPENAI_KEY });
-    })();
-  }
-  return openAiClientPromise;
-}
 
 function hasNeuroEdge() {
   return Boolean(NEUROEDGE_KEY);
@@ -65,40 +51,86 @@ function extractCompletionText(payload) {
   return "";
 }
 
-function buildChatPayload(messages) {
-  const payload = { messages };
-  if (NEUROEDGE_CHAT_MODEL) {
-    payload.model = NEUROEDGE_CHAT_MODEL;
-  }
-  return payload;
+function normalizeAssistantPayload(payload = {}) {
+  const request = payload?.request || {
+    message: String(payload?.message || "").trim(),
+    userMessage: String(payload?.userMessage || payload?.message || "").trim(),
+    pageContext: String(payload?.pageContext || "").trim(),
+    channel: String(payload?.channel || "web").trim(),
+    client: String(payload?.client || "browser").trim(),
+  };
+
+  return {
+    request,
+    aiContext: payload?.aiContext || payload?.assistantContext || {},
+    role: String(payload?.role || payload?.request?.role || payload?.aiContext?.actor?.role || "USER").trim(),
+    healthProfile: payload?.healthProfile || payload?.aiContext?.actor?.healthProfile || {},
+    rawPayload: payload,
+  };
 }
 
-function buildAssistantMessages({ message, role, pageContext, healthProfile }) {
-  const safeRole = String(role || "USER");
-  const safeMessage = String(message || "").trim();
-  const safePage = String(pageContext || "").slice(0, 8000);
-  const safeHealth = typeof healthProfile === "object" && healthProfile ? healthProfile : {};
+function buildNeuroEdgeRequestContract({ request, aiContext, role, healthProfile } = {}) {
+  const safeRequest = {
+    ...request,
+    message: String(request?.message || "").trim(),
+    userMessage: String(request?.userMessage || request?.message || "").trim(),
+    pageContext: String(request?.pageContext || "").trim(),
+    channel: String(request?.channel || "web").trim(),
+    client: String(request?.client || "browser").trim(),
+  };
 
-  return [
-    {
-      role: "system",
-      content: [
-        "You are NeuroEdge Personal Assistant inside AfyaLink.",
-        "Be concise, practical, and safe.",
-        "If medical risk appears high, advise seeking clinician or emergency help.",
-        "Never claim diagnosis certainty.",
-      ].join("\n"),
+  const workspace = aiContext?.workspace || {};
+  const actor = aiContext?.actor || {};
+  const subject = aiContext?.subject || {};
+  const events = Array.isArray(aiContext?.events) ? aiContext.events.slice(0, 25) : [];
+  const conversation = Array.isArray(aiContext?.conversation) ? aiContext.conversation.slice(-20) : [];
+
+  return {
+    session: {
+      locale: String(workspace?.language || "en").toLowerCase(),
+      organizationId: workspace?.organizationId || null,
+      hospitalId: workspace?.hospitalId || null,
+      channel: safeRequest.channel,
+      client: safeRequest.client,
+      timestamp: new Date().toISOString(),
     },
-    {
-      role: "user",
-      content: [
-        `User role: ${safeRole}`,
-        `Health profile: ${JSON.stringify(safeHealth)}`,
-        `Page context: ${safePage || "N/A"}`,
-        `User message: ${safeMessage}`,
-      ].join("\n"),
+    actor: {
+      id: actor?.id || null,
+      role: String(role || actor?.role || "USER").toUpperCase(),
+      permissions: Array.isArray(actor?.permissions) ? actor.permissions : [],
+      preferences: actor?.preferences || {},
+      healthProfile: healthProfile || {},
     },
-  ];
+    subject: {
+      ...subject,
+    },
+    workspace: {
+      ...workspace,
+    },
+    permissions: Array.isArray(actor?.permissions) ? actor.permissions : [],
+    events,
+    conversation,
+    request: safeRequest,
+  };
+}
+
+function buildNeuroEdgePayload({ requestContract } = {}) {
+  return {
+    request: requestContract.request,
+    context: {
+      session: requestContract.session,
+      actor: requestContract.actor,
+      subject: requestContract.subject,
+      workspace: requestContract.workspace,
+      permissions: requestContract.permissions,
+      events: requestContract.events,
+      conversation: requestContract.conversation,
+    },
+    metadata: {
+      source: "afyalink",
+      timestamp: new Date().toISOString(),
+    },
+  };
 }
 
 function splitTextIntoChunks(text, maxChunkLength = 180) {
@@ -157,9 +189,25 @@ function buildAssistantFeedbackPayload({ message, answer, rating, reason, metada
   };
 }
 
-async function runNeuroEdgeChat(messages) {
+function buildNeuroEdgeCapabilityPayload({ capability, payload = {}, aiContext = {}, role = "USER", healthProfile = {} } = {}) {
+  const requestPayload = {
+    capability: String(capability || "").trim(),
+    ...payload,
+  };
+
+  const requestContract = buildNeuroEdgeRequestContract({
+    request: requestPayload,
+    aiContext,
+    role: String(role || aiContext?.actor?.role || "USER").trim(),
+    healthProfile: healthProfile || aiContext?.actor?.healthProfile || {},
+  });
+
+  return buildNeuroEdgePayload({ requestContract });
+}
+
+async function runNeuroEdgeRequest(payload) {
   try {
-    const response = await neuroedgeGatewayClient.chatCompletions(buildChatPayload(messages));
+    const response = await neuroedgeGatewayClient.chatCompletions(payload);
     return {
       provider: "neuroedge",
       raw: response,
@@ -179,9 +227,9 @@ async function runNeuroEdgeChat(messages) {
   }
 }
 
-async function runNeuroEdgeChatStream(messages, { onChunk } = {}) {
+async function runNeuroEdgeRequestStream(payload, { onChunk } = {}) {
   try {
-    const response = await neuroedgeGatewayClient.chatStream(buildChatPayload(messages), { onChunk });
+    const response = await neuroedgeGatewayClient.chatStream(payload, { onChunk });
     return {
       provider: "neuroedge",
       raw: response,
@@ -201,17 +249,6 @@ async function runNeuroEdgeChatStream(messages, { onChunk } = {}) {
     }
     throw error;
   }
-}
-
-async function callOpenAI(prompt, opts = {}) {
-  const client = await getOpenAiClient();
-  const resp = await client.chat.completions.create({
-    model: opts.model || "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: opts.max_tokens || 512,
-    temperature: opts.temperature ?? 0.2,
-  });
-  return resp.choices?.[0]?.message?.content ?? "";
 }
 
 function isTextLikeDocument({ mimeType, filename }) {
@@ -288,78 +325,60 @@ function buildFeedbackRateLimitMessage(error) {
   return "Feedback could not be saved right now because NeuroEdge is busy. Please try again shortly.";
 }
 
-export async function diagnoseSymptoms(symptoms) {
+export async function diagnoseSymptoms(symptoms, aiContext = {}) {
   if (hasNeuroEdge()) {
-    const prompt = [
-      "You are a cautious medical triage assistant inside AfyaLink.",
-      "Do not claim certainty or provide a final diagnosis.",
-      "Respond with three short sections: Summary, Possible concerns, Next safe steps.",
-      `Symptoms: ${JSON.stringify(symptoms || [])}`,
-    ].join("\n");
-    const out = await runNeuroEdgeChat([
-      { role: "system", content: "You provide safe, concise medical triage guidance." },
-      { role: "user", content: prompt },
-    ]);
-    return { provider: out.provider, text: out.text || "No response generated." };
+    const payloadBody = buildNeuroEdgeCapabilityPayload({
+      capability: "diagnoseSymptoms",
+      payload: { symptoms: Array.isArray(symptoms) ? symptoms : [symptoms] },
+      aiContext,
+    });
+
+    const out = await runNeuroEdgeRequest(payloadBody);
+    return {
+      provider: out.provider,
+      text: out.text || "No response generated.",
+      degraded: out.degraded === true,
+      code: out.code || "",
+      retryAfterMs: Number(out.retryAfterMs || 0),
+    };
   }
 
-  if (OPENAI_KEY) {
-    const prompt = `You are a medical assistant. Given symptoms: ${JSON.stringify(
-      symptoms
-    )}. Provide top differential diagnoses (3) and recommended next steps.`;
-    const txt = await callOpenAI(prompt, { max_tokens: 600 });
-    return { provider: "openai", text: txt };
-  }
-
-  return { placeholder: true, symptoms };
+  return { provider: "unavailable", placeholder: true, symptoms };
 }
 
-export async function treatmentGuidelines(condition) {
+export async function treatmentGuidelines(condition, aiContext = {}) {
   if (hasNeuroEdge()) {
-    const out = await runNeuroEdgeChat([
-      {
-        role: "system",
-        content: "You provide concise, evidence-aligned treatment guidance with explicit caution to confirm with a licensed clinician.",
-      },
-      {
-        role: "user",
-        content: `Provide practical treatment guidance and follow-up considerations for: ${String(
-          condition || ""
-        )}`,
-      },
-    ]);
-    return { provider: out.provider, text: out.text || "No response generated." };
+    const payloadBody = buildNeuroEdgeCapabilityPayload({
+      capability: "treatmentGuidelines",
+      payload: { condition: String(condition || "") },
+      aiContext,
+    });
+
+    const out = await runNeuroEdgeRequest(payloadBody);
+    return {
+      provider: out.provider,
+      text: out.text || "No response generated.",
+      degraded: out.degraded === true,
+      code: out.code || "",
+      retryAfterMs: Number(out.retryAfterMs || 0),
+    };
   }
 
-  if (OPENAI_KEY) {
-    const prompt = `Provide evidence-based treatment guidelines for: ${condition}`;
-    const txt = await callOpenAI(prompt, { max_tokens: 400 });
-    return { provider: "openai", text: txt };
-  }
-
-  return { placeholder: true, condition };
+  return { provider: "unavailable", placeholder: true, condition };
 }
 
 export async function transcribeAudioBase64(b64) {
   if (hasNeuroEdge()) {
     return {
       provider: "neuroedge",
-      capability: "chat-completions",
+      capability: "audio-transcription",
       text: buildUnsupportedCapabilityMessage("audio transcription"),
       placeholder: true,
       sizeBytes: Buffer.byteLength(String(b64 || ""), "utf8"),
     };
   }
 
-  if (OPENAI_KEY) {
-    return {
-      provider: "openai-fallback",
-      text: "Transcription using OpenAI is not enabled in this backend yet.",
-      placeholder: true,
-    };
-  }
-
-  return { placeholder: true };
+  return { provider: "unavailable", placeholder: true };
 }
 
 export async function extractDocumentBase64({ contentBase64, mimeType, filename }) {
@@ -374,58 +393,20 @@ export async function extractDocumentBase64({ contentBase64, mimeType, filename 
       };
     }
 
-    const rawText = decodeBase64Utf8(contentBase64).slice(0, MAX_TEXT_EXTRACT_CHARS);
-    if (!rawText.trim()) {
-      return {
-        provider: "neuroedge",
-        rawText: "",
-        summary: "This text document could not be decoded into readable UTF-8 content.",
-        fields: {},
-      };
-    }
-
-    const prompt = [
-      "Review the following document text and return JSON only.",
-      'Schema: {"rawText":"string","summary":"string","fields":{"documentType":"string","entities":["..."],"dates":["..."],"identifiers":["..."]}}',
-      "Keep rawText concise and preserve the most useful readable content.",
-      `Filename: ${filename || "unknown"}`,
-      `MimeType: ${mimeType || "text/plain"}`,
-      "",
-      rawText,
-    ].join("\n");
-
-    const out = await runNeuroEdgeChat([
-      { role: "system", content: "You extract structured fields from text documents and answer with valid JSON only." },
-      { role: "user", content: prompt },
-    ]);
-
-    const parsed = extractJsonBlock(out.text);
-    if (parsed && typeof parsed === "object") {
-      return {
-        provider: out.provider,
-        rawText: String(parsed.rawText || rawText).slice(0, MAX_TEXT_EXTRACT_CHARS),
-        summary: String(parsed.summary || "").trim() || "Structured extraction completed.",
-        fields: parsed.fields && typeof parsed.fields === "object" ? parsed.fields : {},
-      };
-    }
+    const response = await neuroedgeGatewayClient.extract({
+      contentBase64: String(contentBase64 || ""),
+      mimeType: String(mimeType || "").trim(),
+      filename: String(filename || "").trim(),
+      metadata: { source: "afyalink" },
+    });
 
     return {
-      provider: out.provider,
-      rawText,
-      summary: out.text || "Structured extraction completed.",
-      fields: {},
+      provider: "neuroedge",
+      rawText: String(response?.rawText || "").slice(0, MAX_TEXT_EXTRACT_CHARS),
+      summary: String(response?.summary || "").trim() || "Document extraction completed.",
+      fields: response?.fields && typeof response.fields === "object" ? response.fields : {},
+      rawResponse: response,
     };
-  }
-
-  if (OPENAI_KEY) {
-    const prompt = [
-      "Extract all readable raw text and key structured fields from this uploaded document.",
-      `Filename: ${filename || "unknown"}`,
-      `MimeType: ${mimeType || "application/octet-stream"}`,
-      "If image/PDF parsing is not available, return best-effort summary and 'rawText' as empty.",
-    ].join("\n");
-    const txt = await callOpenAI(prompt, { max_tokens: 700 });
-    return { provider: "openai-fallback", rawText: "", summary: txt, fields: {} };
   }
 
   return {
@@ -436,11 +417,18 @@ export async function extractDocumentBase64({ contentBase64, mimeType, filename 
   };
 }
 
-export async function assistantChat({ message, role, pageContext, healthProfile }) {
-  const messages = buildAssistantMessages({ message, role, pageContext, healthProfile });
+export async function assistantChat(payload = {}) {
+  const normalized = normalizeAssistantPayload(payload);
+  const requestMessage = String(normalized.request.message || "").trim();
+  if (!requestMessage) {
+    throw new Error("message is required");
+  }
+
+  const requestContract = buildNeuroEdgeRequestContract(normalized);
+  const payloadBody = buildNeuroEdgePayload({ requestContract });
 
   if (hasNeuroEdge()) {
-    const out = await runNeuroEdgeChat(messages);
+    const out = await runNeuroEdgeRequest(payloadBody);
     return {
       provider: out.provider,
       text: out.text || "No response generated.",
@@ -448,40 +436,26 @@ export async function assistantChat({ message, role, pageContext, healthProfile 
       code: out.code || "",
       retryAfterMs: Number(out.retryAfterMs || 0),
     };
-  }
-
-  if (OPENAI_KEY) {
-    const prompt = [
-      "You are NeuroEdge Personal Assistant inside AfyaLink.",
-      "Rules:",
-      "- Be concise and practical.",
-      "- If medical risk appears high, advise seeking clinician/emergency help.",
-      "- Never claim diagnosis certainty.",
-      "",
-      `User role: ${String(role || "USER")}`,
-      `Health profile: ${JSON.stringify(healthProfile || {})}`,
-      `Page context: ${String(pageContext || "").slice(0, 8000) || "N/A"}`,
-      `User message: ${String(message || "").trim()}`,
-      "",
-      "Respond with plain text and optional short bullets.",
-    ].join("\n");
-
-    const text = await callOpenAI(prompt, { max_tokens: 600, temperature: 0.2 });
-    return { provider: "openai", text };
   }
 
   return {
-    provider: "fallback",
-    text:
-      "AI chat provider is not configured. Configure NEUROEDGE_API_KEY or OPENAI_API_KEY to enable full assistant responses.",
+    provider: "unavailable",
+    text: "AI chat provider is not configured. Configure NEUROEDGE_API_KEY to enable assistant responses.",
   };
 }
 
-export async function assistantChatStream({ message, role, pageContext, healthProfile, onChunk }) {
-  const messages = buildAssistantMessages({ message, role, pageContext, healthProfile });
+export async function assistantChatStream({ onChunk, ...payload } = {}) {
+  const normalized = normalizeAssistantPayload(payload);
+  const requestMessage = String(normalized.request.message || "").trim();
+  if (!requestMessage) {
+    throw new Error("message is required");
+  }
+
+  const requestContract = buildNeuroEdgeRequestContract(normalized);
+  const payloadBody = buildNeuroEdgePayload({ requestContract });
 
   if (hasNeuroEdge()) {
-    const out = await runNeuroEdgeChatStream(messages, { onChunk });
+    const out = await runNeuroEdgeRequestStream(payloadBody, { onChunk });
     return {
       provider: out.provider,
       text: out.text || "No response generated.",
@@ -491,9 +465,10 @@ export async function assistantChatStream({ message, role, pageContext, healthPr
     };
   }
 
-  const fallback = await assistantChat({ message, role, pageContext, healthProfile });
-  await emitSyntheticChunks(fallback?.text || "", onChunk);
-  return fallback;
+  return {
+    provider: "unavailable",
+    text: "AI chat provider is not configured. Configure NEUROEDGE_API_KEY to enable assistant streaming.",
+  };
 }
 
 export async function assistantFeedback({ message, answer, rating, reason, metadata = {} }) {
@@ -536,7 +511,7 @@ export async function assistantFeedback({ message, answer, rating, reason, metad
   }
 
   return {
-    provider: OPENAI_KEY ? "openai-fallback" : "fallback",
+    provider: "fallback",
     accepted: false,
     degraded: true,
     reason: "FEEDBACK_CAPTURED_LOCALLY_ONLY",

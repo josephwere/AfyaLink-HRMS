@@ -5,6 +5,7 @@ import apiFetch from "../utils/apiFetch";
 import { Link, useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
+import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
 import PasswordInput from "../components/PasswordInput";
 import DownloadMenu from "../components/DownloadMenu";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -79,6 +80,7 @@ function toCachedProfilePayload(me) {
     emailVerified: Boolean(me?.emailVerified),
     phoneVerified: Boolean(me?.phoneVerified),
     authProvider: me?.authProvider || "local",
+    authMethods: Array.isArray(me?.authMethods) ? me.authMethods : [me?.authProvider || "local"],
     hasPassword: Boolean(me?.hasPassword),
     phone: me?.phone || "",
     nationalIdNumber: me?.nationalIdNumber || "",
@@ -199,8 +201,10 @@ export default function Profile() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const loadRetryRef = useRef(null);
   const [syncing, setSyncing] = useState(false);
-  const [authProvider, setAuthProvider] = useState("local");
+  const [authMethods, setAuthMethods] = useState(["local"]);
   const [hasPassword, setHasPassword] = useState(true);
+  const [googleLinkMessage, setGoogleLinkMessage] = useState("");
+  const [googleLinkError, setGoogleLinkError] = useState("");
 
   // 2FA
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -374,6 +378,26 @@ export default function Profile() {
     applyAccessibilityPrefs(prefs);
   }, [user]);
 
+  const handleLinkedGoogleSuccess = (data) => {
+    setGoogleLinkError("");
+    setGoogleLinkMessage("Google sign-in linked to your account.");
+    const methods = Array.isArray(data?.user?.authMethods)
+      ? data.user.authMethods
+      : [data?.user?.authProvider || "local"];
+    setAuthMethods(methods);
+  };
+
+  const { GoogleButton, error: googleButtonError, clearError: clearGoogleButtonError } = useGoogleAuth({
+    onSuccess: handleLinkedGoogleSuccess,
+    redirectOnSuccess: false,
+  });
+
+  useEffect(() => {
+    if (googleButtonError) {
+      setGoogleLinkError(googleButtonError);
+    }
+  }, [googleButtonError]);
+
   /* -------------------------
      Restore resend cooldown
   -------------------------- */
@@ -410,7 +434,10 @@ export default function Profile() {
     setTwoFAMethod(me?.twoFactorMethod || "OTP");
     setEmailVerified(Boolean(me?.emailVerified));
     setPhoneVerified(Boolean(me?.phoneVerified));
-    setAuthProvider(me?.authProvider || "local");
+    const methods = Array.isArray(me?.authMethods)
+      ? me.authMethods
+      : [me?.authProvider || "local"];
+    setAuthMethods(methods);
     setHasPassword(Boolean(me?.hasPassword));
 
     const parsedPhone = splitDialAndLocal(me?.phone || "");
@@ -1192,8 +1219,8 @@ export default function Profile() {
 
     setPwLoading(true);
     const needsCurrentPassword = !(
-      actualRole === "SUPER_ADMIN" &&
-      authProvider === "google" &&
+      authMethods.includes("google") &&
+      !authMethods.includes("local") &&
       !hasPassword
     );
 
@@ -2225,8 +2252,13 @@ export default function Profile() {
     },
     {
       label: "Security",
-      value: twoFAEnabled ? `2FA ${twoFAMethod}` : "Password only",
-      meta: hasPassword ? "Backup login ready" : "Set password",
+      value: twoFAEnabled ? `2FA ${twoFAMethod}` : hasPassword ? "Password only" : "Social login",
+      meta:
+        authMethods.length > 1
+          ? "Multiple sign-in methods"
+          : authMethods.includes("google")
+          ? "Google-only sign-in"
+          : "Local sign-in only",
     },
     {
       label: isPatientProfile ? "Family coverage" : "Workspace language",
@@ -2236,7 +2268,7 @@ export default function Profile() {
   ];
 
   const formatRoleLabel = (value) => String(value || "").replaceAll("_", " ").trim() || "User";
-  const requiresDeletePassword = authProvider === "local" || hasPassword;
+  const requiresDeletePassword = authMethods.includes("local") || hasPassword;
   const deleteReady =
     deleteConfirmText.trim().toUpperCase() === "DELETE MY ACCOUNT" &&
     (!requiresDeletePassword || deletePassword.trim().length > 0);
@@ -3274,17 +3306,59 @@ export default function Profile() {
           >
             {pwError && <div className="auth-error">{pwError}</div>}
             {pwMessage && <div className="auth-success">{pwMessage}</div>}
-            {actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword && (
+            {(!authMethods.includes("local") || !authMethods.includes("google")) && (
               <div className="subtle-banner" style={{ marginBottom: 12 }}>
-                <strong>Set a password for backup login.</strong>
+                <strong>Manage your sign-in methods.</strong>
                 <div style={{ marginTop: 6 }}>
-                  Your account is currently Google-only. Create a password here to enable email or phone login as well.
+                  {authMethods.includes("local") && authMethods.includes("google")
+                    ? "Your account can sign in with both Google and password. Use the button below to add or refresh linked methods."
+                    : authMethods.includes("google")
+                    ? "Your account is currently Google-only. Create a password here to enable direct email/phone sign-in."
+                    : "Your account is currently password-based. Link Google for faster login and account recovery."}
                 </div>
               </div>
             )}
 
+            <div className="auth-detail-grid" style={{ marginBottom: 16 }}>
+              <div className="auth-detail-card">
+                <strong>Linked methods</strong>
+                <span>{authMethods.join(" + ")}</span>
+              </div>
+              <div className="auth-detail-card">
+                <strong>Backup login</strong>
+                <span>{hasPassword ? "Password available" : "Password not set"}</span>
+              </div>
+            </div>
+
+            {authMethods.includes("google") ? (
+              <div className="auth-detail-card subtle-banner" style={{ marginBottom: 12 }}>
+                <strong>Google access is linked</strong>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  You can continue signing in with Google and keep a password as a backup method.
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 14 }}>
+                <strong>Link Google sign-in</strong>
+                <p className="muted" style={{ margin: "8px 0 12px" }}>
+                  Connect Google to this account so you can sign in faster and recover access from the same email.
+                </p>
+                <div
+                  onClick={() => {
+                    setGoogleLinkMessage("");
+                    setGoogleLinkError("");
+                    clearGoogleButtonError?.();
+                  }}
+                >
+                  <GoogleButton />
+                </div>
+                {googleLinkError ? <div className="auth-error">{googleLinkError}</div> : null}
+                {googleLinkMessage ? <div className="auth-success-panel">{googleLinkMessage}</div> : null}
+              </div>
+            )}
+
             <form className="form" onSubmit={handlePasswordChange}>
-              {!(actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword) && (
+              {!(authMethods.includes("google") && !authMethods.includes("local") && !hasPassword) && (
                 <PasswordInput
                   label="Current password"
                   value={currentPassword}
@@ -3296,7 +3370,7 @@ export default function Profile() {
 
               <PasswordInput
                 label={
-                  actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+                  authMethods.includes("google") && !authMethods.includes("local") && !hasPassword
                     ? "Create password"
                     : "New password"
                 }
@@ -3318,7 +3392,7 @@ export default function Profile() {
               <button className="btn-primary" type="submit" disabled={pwLoading} style={{ marginTop: 8 }}>
                 {pwLoading
                   ? "Updating..."
-                  : actualRole === "SUPER_ADMIN" && authProvider === "google" && !hasPassword
+                  : authMethods.includes("google") && !authMethods.includes("local") && !hasPassword
                     ? "Set password"
                     : "Change password"}
               </button>
@@ -3450,7 +3524,13 @@ export default function Profile() {
         </div>
         <div className="profile-settings-hero-pills">
           <span className="action-pill">{roleOverride ? `Viewing ${roleOverride}` : actualRole}</span>
-          <span className="action-pill">{authProvider === "google" ? "Google sign-in" : "Local sign-in"}</span>
+          <span className="action-pill">
+            {authMethods.includes("google") && authMethods.includes("local")
+              ? "Google + Local"
+              : authMethods.includes("google")
+              ? "Google sign-in"
+              : "Local sign-in"}
+          </span>
           <span className="action-pill">{selectedLanguageLabel}</span>
           {syncing ? <span className="action-pill">Syncing…</span> : null}
         </div>

@@ -39,15 +39,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate backend lockfile
+        run: |
+          test -f pnpm-lock.yaml
+          echo "Backend lockfile found: pnpm-lock.yaml"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
+          cache: "pnpm"
+          cache-dependency-path: backend/pnpm-lock.yaml
 
       - name: Install backend dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Verify readiness assets
         run: npm run readiness:program

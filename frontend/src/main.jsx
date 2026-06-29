@@ -11,6 +11,7 @@ import { AuthProvider } from "./utils/auth";
 import { ThemeProvider } from "./utils/theme.jsx";
 import { SystemSettingsProvider } from "./utils/systemSettings.jsx";
 import { AppLanguageProvider } from "./utils/appLanguage.jsx";
+import { AIContextProvider } from "./context/AIContextProvider";
 import "./styles.css";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -47,10 +48,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <SystemSettingsProvider>
             <AuthProvider>
               <AppLanguageProvider>
-                <AppErrorBoundary>
-                  <App />
-                  <Analytics />
-                </AppErrorBoundary>
+                <AIContextProvider>
+                  <AppErrorBoundary>
+                    <App />
+                    <Analytics />
+                  </AppErrorBoundary>
+                </AIContextProvider>
               </AppLanguageProvider>
             </AuthProvider>
           </SystemSettingsProvider>

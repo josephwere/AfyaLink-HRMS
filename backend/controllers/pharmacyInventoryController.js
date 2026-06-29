@@ -1,4 +1,6 @@
 import PharmacyItem from "../models/PharmacyItem.js";
+import PharmacyInventoryMovement from "../models/PharmacyInventoryMovement.js";
+import PharmacyReservation from "../models/PharmacyReservation.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 
 function resolveHospital(req) {
@@ -136,25 +138,66 @@ export const createItem = async (req, res) => {
     const hospital = ensureHospital(req, res);
     if (!hospital) return;
 
-    const { name, sku, description, unit, minStock, batches } = req.body || {};
+    const {
+      name,
+      genericName,
+      therapeuticClass,
+      sku,
+      description,
+      unit,
+      minStock,
+      storageLocation,
+      controlledDrug,
+      batches,
+    } = req.body || {};
     if (!name) return res.status(400).json({ msg: "Name is required" });
 
-    const totalQuantity = Array.isArray(batches)
-      ? batches.reduce((sum, b) => sum + (Number(b.quantity) || 0), 0)
-      : 0;
+    const normalizedBatches = Array.isArray(batches)
+      ? batches.map((batch) => ({
+          batchNumber: batch?.batchNumber || "",
+          expiryDate: batch?.expiryDate || null,
+          quantity: Number(batch?.quantity) || 0,
+          costPrice: Number(batch?.costPrice) || 0,
+          sellingPrice: Number(batch?.sellingPrice) || 0,
+        }))
+      : [];
+
+    const totalQuantity = normalizedBatches.reduce((sum, batch) => sum + (Number(batch.quantity) || 0), 0);
 
     const item = await PharmacyItem.create({
       hospital,
       name,
+      genericName: genericName || "",
+      therapeuticClass: therapeuticClass || "",
       sku,
       description,
       unit,
+      storageLocation: storageLocation || "",
+      controlledDrug: Boolean(controlledDrug),
       minStock: Number(minStock) || 0,
-      batches: Array.isArray(batches) ? batches : [],
+      batches: normalizedBatches,
       totalQuantity,
       createdBy: req.user?._id,
       updatedBy: req.user?._id,
     });
+
+    if (normalizedBatches.length) {
+      await PharmacyInventoryMovement.insertMany(
+        normalizedBatches.map((batch) => ({
+          itemId: item._id,
+          hospital,
+          movementType: "RECEIPT",
+          batchNumber: batch.batchNumber,
+          expiryDate: batch.expiryDate ? new Date(batch.expiryDate) : null,
+          quantity: Number(batch.quantity) || 0,
+          previousQuantity: 0,
+          newQuantity: Number(batch.quantity) || 0,
+          referenceType: "INITIAL_STOCK",
+          note: "Initial stock entry",
+          performedBy: req.user?._id,
+        }))
+      );
+    }
 
     res.status(201).json(item);
   } catch (err) {
@@ -212,7 +255,7 @@ export const addStock = async (req, res) => {
     const hospital = ensureHospital(req, res);
     if (!hospital) return;
 
-    const { quantity, batchNumber, expiryDate, costPrice, sellingPrice } =
+    const { quantity, batchNumber, expiryDate, costPrice, sellingPrice, note } =
       req.body || {};
     const qty = Number(quantity) || 0;
     if (qty <= 0) return res.status(400).json({ msg: "Quantity must be > 0" });
@@ -223,6 +266,7 @@ export const addStock = async (req, res) => {
     });
     if (!item) return res.status(404).json({ msg: "Item not found" });
 
+    const previousQuantity = Number(item.totalQuantity || 0);
     const existingBatch =
       batchNumber &&
       item.batches.find((b) => b.batchNumber === String(batchNumber));
@@ -247,10 +291,62 @@ export const addStock = async (req, res) => {
     item.updatedBy = req.user?._id;
     await item.save();
 
+    await PharmacyInventoryMovement.create({
+      itemId: item._id,
+      hospital,
+      movementType: "RECEIPT",
+      batchNumber: batchNumber || "",
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
+      quantity: qty,
+      previousQuantity,
+      newQuantity: Number(item.totalQuantity || 0),
+      referenceType: "STOCK_RECEIPT",
+      note: note || "Stock added",
+      performedBy: req.user?._id,
+    });
+
     res.json(item);
   } catch (err) {
     console.error("Pharmacy add stock error:", err);
     res.status(500).json({ msg: "Failed to add stock" });
+  }
+};
+
+export const reserveStock = async (req, res) => {
+  try {
+    const hospital = ensureHospital(req, res);
+    if (!hospital) return;
+
+    const { quantity, batchNumber, prescriptionId, note } = req.body || {};
+    const qty = Number(quantity) || 0;
+    if (qty <= 0) return res.status(400).json({ msg: "Quantity must be > 0" });
+
+    const item = await PharmacyItem.findOne({ _id: req.params.id, hospital });
+    if (!item) return res.status(404).json({ msg: "Item not found" });
+
+    const batch = batchNumber
+      ? item.batches.find((entry) => entry.batchNumber === String(batchNumber))
+      : item.batches.sort((a, b) => new Date(a.expiryDate || 0) - new Date(b.expiryDate || 0))[0];
+
+    if (!batch) return res.status(400).json({ msg: "No stock batch available" });
+    if (batch.quantity < qty) return res.status(400).json({ msg: "Insufficient batch stock" });
+
+    const reservation = await PharmacyReservation.create({
+      hospital,
+      itemId: item._id,
+      prescriptionId: prescriptionId || null,
+      batchNumber: batch.batchNumber,
+      quantity: qty,
+      status: "ACTIVE",
+      reservedBy: req.user?._id,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      note: note || "Reserved for dispensing",
+    });
+
+    res.status(201).json(reservation);
+  } catch (err) {
+    console.error("Pharmacy reserve error:", err);
+    res.status(500).json({ msg: "Failed to reserve stock" });
   }
 };
 
@@ -259,33 +355,47 @@ export const dispenseStock = async (req, res) => {
     const hospital = ensureHospital(req, res);
     if (!hospital) return;
 
-    const { quantity, batchNumber } = req.body || {};
+    const { reservationId, quantity, note } = req.body || {};
     const qty = Number(quantity) || 0;
     if (qty <= 0) return res.status(400).json({ msg: "Quantity must be > 0" });
 
-    const item = await PharmacyItem.findOne({
-      _id: req.params.id,
-      hospital,
-    });
+    const reservation = await PharmacyReservation.findOne({ _id: reservationId, hospital, status: "ACTIVE" });
+    if (!reservation) return res.status(404).json({ msg: "Reservation not found" });
+    if (reservation.quantity < qty) return res.status(400).json({ msg: "Reservation quantity exceeded" });
+
+    const item = await PharmacyItem.findOne({ _id: reservation.itemId, hospital });
     if (!item) return res.status(404).json({ msg: "Item not found" });
-    if (item.totalQuantity < qty) {
-      return res.status(400).json({ msg: "Insufficient stock" });
-    }
 
-    if (batchNumber) {
-      const batch = item.batches.find((b) => b.batchNumber === String(batchNumber));
-      if (!batch) return res.status(400).json({ msg: "Batch not found" });
-      if (batch.quantity < qty) {
-        return res.status(400).json({ msg: "Insufficient batch stock" });
-      }
-      batch.quantity -= qty;
-    }
+    const previousQuantity = Number(item.totalQuantity || 0);
+    const batch = item.batches.find((entry) => entry.batchNumber === String(reservation.batchNumber));
+    if (!batch) return res.status(400).json({ msg: "Batch not found" });
+    if (batch.quantity < qty) return res.status(400).json({ msg: "Insufficient batch stock" });
 
+    batch.quantity -= qty;
     item.totalQuantity -= qty;
     item.updatedBy = req.user?._id;
     await item.save();
 
-    res.json(item);
+    reservation.quantity -= qty;
+    reservation.status = reservation.quantity === 0 ? "FULFILLED" : "ACTIVE";
+    reservation.fulfilledBy = req.user?._id;
+    await reservation.save();
+
+    await PharmacyInventoryMovement.create({
+      itemId: item._id,
+      hospital,
+      movementType: "DISPENSE",
+      batchNumber: batch.batchNumber,
+      expiryDate: batch.expiryDate || null,
+      quantity: qty,
+      previousQuantity,
+      newQuantity: Number(item.totalQuantity || 0),
+      referenceType: "DISPENSE",
+      note: note || "Medication dispensed",
+      performedBy: req.user?._id,
+    });
+
+    res.json({ item, reservation });
   } catch (err) {
     console.error("Pharmacy dispense error:", err);
     res.status(500).json({ msg: "Failed to dispense stock" });

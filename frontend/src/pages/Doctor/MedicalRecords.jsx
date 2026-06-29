@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import apiFetch from "../../utils/apiFetch";
+import { publishPatientSelected, publishAppointmentOpened } from "../../ai/neuroedgeEventHelpers";
 
 export default function MedicalRecords() {
   const navigate = useNavigate();
@@ -19,7 +20,10 @@ export default function MedicalRecords() {
       return;
     }
     apiFetch(`/api/patients/${patientId}`)
-      .then(setPatient)
+      .then((loadedPatient) => {
+        setPatient(loadedPatient);
+        publishPatientSelected(loadedPatient);
+      })
       .catch(() => setPatient(null));
 
     apiFetch("/api/appointments?limit=50&cursorMode=1")
@@ -106,7 +110,7 @@ export default function MedicalRecords() {
               </thead>
               <tbody>
                 {appointments.map((item) => (
-                  <tr key={item._id}>
+                  <tr key={item._id} onClick={() => publishAppointmentOpened(item)}>
                     <td>{item.scheduledAt ? new Date(item.scheduledAt).toLocaleString() : "-"}</td>
                     <td>{item.type || item.serviceType || "Consultation"}</td>
                     <td>{item.status || "-"}</td>

@@ -9,8 +9,73 @@ function actorHospitalId(req) {
   return req.user?.hospitalId || req.user?.hospital || null;
 }
 
+function userRole(req) {
+  return String(req.user?.effectiveRole || req.user?.role || "").toUpperCase();
+}
+
 function isGlobalRole(req) {
-  return ["SUPER_ADMIN", "SYSTEM_ADMIN"].includes(String(req.user?.role || "").toUpperCase());
+  return ["SUPER_ADMIN", "SYSTEM_ADMIN"].includes(userRole(req));
+}
+
+function isHospitalAdminLike(req) {
+  return ["SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(userRole(req));
+}
+
+function normalizeWardAccess(req) {
+  const candidates = [
+    req.user?.metadata?.wardAccess,
+    req.user?.metadata?.wards,
+    req.user?.wardAccess,
+  ];
+
+  const seen = new Set();
+  const wards = [];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const items = Array.isArray(candidate) ? candidate : [candidate];
+    for (const item of items) {
+      if (!item) continue;
+      const wardName = typeof item === "string" ? item : item?.name || item?.ward || item?.value;
+      if (typeof wardName === "string") {
+        const cleaned = wardName.trim();
+        if (cleaned && !seen.has(cleaned)) {
+          seen.add(cleaned);
+          wards.push(cleaned);
+        }
+      }
+    }
+  }
+  return wards.length ? wards : null;
+}
+
+function scopedWardFilter(req, hospitalId) {
+  const accessibleWards = normalizeWardAccess(req);
+  const role = userRole(req);
+  if (isHospitalAdminLike(req) || !hospitalId || !accessibleWards || !["NURSE", "DOCTOR", "SURGEON", "PHARMACIST"].includes(role)) {
+    return hospitalId ? { hospital: hospitalId } : {};
+  }
+  return { hospital: hospitalId, ward: { $in: accessibleWards } };
+}
+
+function canAccessBed(req, bed) {
+  if (req?.emergencyOverride?.active) return true;
+  if (isHospitalAdminLike(req)) return true;
+  const accessibleWards = normalizeWardAccess(req);
+  if (!accessibleWards) return true;
+  return accessibleWards.includes(String(bed?.ward || ""));
+}
+
+function authorizationContext(req, bed) {
+  const role = userRole(req);
+  const hospitalId = actorHospitalId(req);
+  const accessibleWards = normalizeWardAccess(req);
+  return {
+    role,
+    hospitalId,
+    requestedWard: bed?.ward || null,
+    allowedWards: accessibleWards || [],
+    scopeType: accessibleWards ? "ward" : "global",
+  };
 }
 
 function scopedHospitalId(req) {
@@ -52,6 +117,10 @@ export async function listWards(req, res) {
   const hospitalId = scopedHospitalId(req);
   const filter = { active: { $ne: false } };
   if (hospitalId) filter.hospital = hospitalId;
+  const accessibleWards = normalizeWardAccess(req);
+  if (accessibleWards && !isHospitalAdminLike(req)) {
+    filter.name = { $in: accessibleWards };
+  }
   const wards = await Ward.find(filter)
     .populate("hospital", "name code")
     .sort({ name: 1 })
@@ -76,8 +145,7 @@ export async function createWard(req, res) {
 
 export async function listBeds(req,res){
   const hospitalId = scopedHospitalId(req);
-  const filter = {};
-  if (hospitalId) filter.hospital = hospitalId;
+  const filter = scopedWardFilter(req, hospitalId);
   const beds = await Bed.find(filter)
     .populate("hospital", "name code")
     .populate("wardRef", "name code type department capacity")
@@ -94,6 +162,18 @@ export async function updateBed(req,res){
   if (hospitalId) filter.hospital = hospitalId;
   const bed = await Bed.findOne(filter);
   if(!bed) return res.status(404).json({error:'Bed not found'});
+  if (!canAccessBed(req, bed)) {
+    await audit({
+      req,
+      action: "BED_ACCESS_DENIED",
+      resource: "Bed",
+      resourceId: bed._id,
+      success: false,
+      error: "Forbidden: ward scope denied",
+      metadata: authorizationContext(req, bed),
+    });
+    return res.status(403).json({ error: "Forbidden: ward scope denied" });
+  }
   const before = bed.toObject();
 
   if (occupied === false && bed.patient) {
@@ -147,6 +227,21 @@ export async function transferBed(req, res) {
 
   if (!sourceBed || !targetBed) {
     return res.status(404).json({ error: "Bed not found" });
+  }
+  if (!canAccessBed(req, sourceBed) || !canAccessBed(req, targetBed)) {
+    await audit({
+      req,
+      action: "BED_ACCESS_DENIED",
+      resource: "Bed",
+      resourceId: sourceBed?._id || targetBed?._id || null,
+      success: false,
+      error: "Forbidden: ward scope denied",
+      metadata: {
+        ...authorizationContext(req, sourceBed),
+        targetWard: targetBed?.ward || null,
+      },
+    });
+    return res.status(403).json({ error: "Forbidden: ward scope denied" });
   }
   if (!sourceBed.occupied || !sourceBed.patient) {
     return res.status(400).json({ error: "Source bed has no assigned patient" });
@@ -208,6 +303,9 @@ export async function getBedTimeline(req, res) {
     .populate("patient", "firstName lastName nationalId")
     .lean();
   if (!bed) return res.status(404).json({ error: "Bed not found" });
+  if (!canAccessBed(req, bed)) {
+    return res.status(403).json({ error: "Forbidden: ward scope denied" });
+  }
 
   const logs = await AuditLog.find({
     hospital: bed.hospital,
@@ -244,6 +342,18 @@ export async function dischargeBed(req, res) {
   if (hospitalId) filter.hospital = hospitalId;
   const bed = await Bed.findOne(filter);
   if (!bed) return res.status(404).json({ error: "Bed not found" });
+  if (!canAccessBed(req, bed)) {
+    await audit({
+      req,
+      action: "BED_ACCESS_DENIED",
+      resource: "Bed",
+      resourceId: bed._id,
+      success: false,
+      error: "Forbidden: ward scope denied",
+      metadata: authorizationContext(req, bed),
+    });
+    return res.status(403).json({ error: "Forbidden: ward scope denied" });
+  }
   if (!bed.occupied || !bed.patient) {
     return res.status(400).json({ error: "Bed has no assigned patient" });
   }
@@ -294,6 +404,18 @@ export async function createBed(req,res){
   if (!hospitalId) return res.status(400).json({ error: "Hospital is required" });
   const wardDoc = await ensureWard({ hospitalId, name: ward, req });
   if (!wardDoc) return res.status(400).json({ error: "Ward is required" });
+  if (!canAccessBed(req, { ward: wardDoc.name })) {
+    await audit({
+      req,
+      action: "BED_ACCESS_DENIED",
+      resource: "Bed",
+      resourceId: null,
+      success: false,
+      error: "Forbidden: ward scope denied",
+      metadata: authorizationContext(req, { ward: wardDoc.name }),
+    });
+    return res.status(403).json({ error: "Forbidden: ward scope denied" });
+  }
   const b = await Bed.create({ hospital: hospitalId, ward: wardDoc.name, wardRef: wardDoc._id, number, occupied:false });
   await audit({
     req,

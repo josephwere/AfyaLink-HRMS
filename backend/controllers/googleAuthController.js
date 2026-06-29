@@ -65,6 +65,7 @@ export const googleLogin = async (req, res) => {
           email,
           googleId,
           authProvider: "google",
+          authMethods: ["google"],
           emailVerified: true,
           emailVerifiedAt: new Date(),
           role: "PATIENT", // default for new users
@@ -73,9 +74,17 @@ export const googleLogin = async (req, res) => {
       );
       queueBrevoContactSync(user, { source: "GOOGLE_LOGIN_CONTROLLER_REGISTER" });
     } else if (!user.googleId) {
-      // Link existing account to Google
+      // Link existing account to Google without losing existing local login.
+      if (!Array.isArray(user.authMethods)) {
+        user.authMethods = user.authProvider ? [user.authProvider] : [];
+      }
+      if (!user.authMethods.includes("google")) {
+        user.authMethods.push("google");
+      }
       user.googleId = googleId;
-      user.authProvider = "google";
+      if (!user.authProvider) {
+        user.authProvider = user.authMethods.includes("local") ? "local" : "google";
+      }
       if (!user.emailVerified) {
         user.emailVerified = true;
         user.emailVerifiedAt = new Date();
@@ -136,7 +145,10 @@ export const googleLogin = async (req, res) => {
         role: user.role,
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
-        authProvider: "google",
+        authProvider: user.authProvider || "local",
+        authMethods: Array.isArray(user.authMethods)
+          ? user.authMethods
+          : [user.authProvider || "local"],
       },
     });
   } catch (err) {
@@ -144,7 +156,31 @@ export const googleLogin = async (req, res) => {
       console.error("Google login timeout:", err.message);
       return res.status(503).json({ msg: "Google sign-in is temporarily unavailable. Please retry." });
     }
-    console.error("Google login error:", err);
+
+    // Log specific failure reason for debugging (server logs only)
+    const failureReason = err?.message || String(err);
+    let diagnosticDetail = "unknown_error";
+
+    if (failureReason.includes("audience")) {
+      diagnosticDetail = "audience_mismatch";
+    } else if (failureReason.includes("signature")) {
+      diagnosticDetail = "invalid_signature";
+    } else if (failureReason.includes("expired")) {
+      diagnosticDetail = "token_expired";
+    } else if (failureReason.includes("malformed")) {
+      diagnosticDetail = "malformed_token";
+    } else if (failureReason.includes("email_verified")) {
+      diagnosticDetail = "unverified_email";
+    }
+
+    console.error("[GOOGLE_AUTH_VERIFICATION_FAILED]", {
+      failureReason: diagnosticDetail,
+      errorMessage: failureReason,
+      googleClientIdConfigured: Boolean(process.env.GOOGLE_CLIENT_ID),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Generic client-facing message for security
     res.status(401).json({ msg: "Invalid Google token" });
   }
 };

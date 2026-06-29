@@ -29,18 +29,21 @@ describe("Distributed rate limiter", () => {
     process.env.ENABLE_RATE_LIMITS_IN_TESTS = "1";
 
     const stallMs = 5000;
-    jest.spyOn(redis, "incr").mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(1), stallMs))
-    );
+    const originalIncr = redis.incr;
+    redis.incr = () => new Promise((resolve) => setTimeout(() => resolve(1), stallMs));
 
-    const startedAt = Date.now();
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ identifier: "missing-user@afya.test", password: "WrongPass123!" });
-    const elapsedMs = Date.now() - startedAt;
+    try {
+      const startedAt = Date.now();
+      const res = await request(app)
+        .post("/api/auth/login")
+        .send({ identifier: "missing-user@afya.test", password: "WrongPass123!" });
+      const elapsedMs = Date.now() - startedAt;
 
-    expect(res.status).toBe(401);
-    expect(res.body.success).toBe(false);
-    expect(elapsedMs).toBeLessThan(3000);
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(elapsedMs).toBeLessThan(3000);
+    } finally {
+      redis.incr = originalIncr;
+    }
   });
 });

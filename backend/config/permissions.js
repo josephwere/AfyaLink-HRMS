@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   SUPER_ADMIN: {
     "*": ["*"],
    audit: ["read"],
+   facility: ["emergency_override"],
   },
   SYSTEM_ADMIN: {
     "*": ["*"],
@@ -60,9 +61,13 @@ export const PERMISSIONS = {
     users: ["create", "read", "update"],
     billing: ["read", "update"],
     reports: ["read"],
-     audit: ["read"],
+    audit: ["read"],
     inventory: ["read", "update"],
     pharmacy: ["read", "write", "dispense"],
+    beds: ["create", "read", "update", "transfer", "discharge"],
+    wards: ["create", "read", "update"],
+    rooms: ["create", "read", "update"],
+    facility: ["emergency_override"],
     security: ["view"],
     ACCESS_ENTRY: ["VERIFY", "CHECK_IN", "CHECK_OUT"],
     emergency: ["revoke"],
@@ -75,6 +80,9 @@ export const PERMISSIONS = {
     reports: ["read"],
     inventory: ["read"],
     pharmacy: ["read"],
+    beds: ["create", "read", "update", "transfer", "discharge"],
+    wards: ["create", "read", "update"],
+    rooms: ["create", "read", "update"],
     security: ["view"],
   },
 
@@ -87,6 +95,7 @@ export const PERMISSIONS = {
     lab_orders: ["create", "read"],
     inventory: ["read"],
     pharmacy: ["read"],
+    beds: ["read"],
     doctor: ["write"],
   },
 
@@ -94,6 +103,7 @@ export const PERMISSIONS = {
     appointments: ["read"],
     patients: ["read"],
     records: ["read"],
+    beds: ["read", "transfer", "discharge"],
   },
 
   LAB_TECH: {
@@ -104,10 +114,10 @@ export const PERMISSIONS = {
     pharmacy: ["read"],
   },
 
- 
 PHARMACIST: {
   pharmacy: ["read", "write", "dispense"],
   inventory: ["read", "update"],
+  beds: ["read"],
 },
 
   SECURITY_ADMIN: {

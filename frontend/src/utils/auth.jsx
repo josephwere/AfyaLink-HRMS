@@ -19,6 +19,7 @@ import { flushOfflineRegistrations } from "./offlineRegistration";
 import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
 import { assertSecureApiBase, getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
 import { AUTH_EXPIRED_EVENT } from "../lib/api/client";
+import { publishUserSignedIn, publishUserSignedOut } from "../ai/neuroedgeEventHelpers";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -435,18 +436,19 @@ export function AuthProvider({ children }) {
       if (!accessToken) {
         throw new Error("Missing access token");
       }
-      const decoded = parseJwt(accessToken);
 
-      const decodedRole = normalizeRole(decoded?.role);
+      const directUser = passwordOrOptions?.user || {};
+      const decoded = parseJwt(accessToken);
+      const decodedRole = normalizeRole(decoded?.role || directUser?.role);
       if (!decodedRole) {
         throw new Error("Invalid Google token");
       }
 
       const safeUser = {
-        id: decoded.id,
-        name: decoded.name,
-        email: decoded.email,
-        phone: decoded.phone,
+        id: directUser?.id || decoded?.id,
+        name: directUser?.name || decoded?.name,
+        email: directUser?.email || decoded?.email,
+        phone: directUser?.phone || decoded?.phone,
         role: decodedRole,
       };
 
@@ -644,6 +646,15 @@ export function AuthProvider({ children }) {
     }
     return true;
   };
+
+  useEffect(() => {
+    if (loading) return;
+    if (baseUser) {
+      publishUserSignedIn(baseUser);
+    } else {
+      publishUserSignedOut();
+    }
+  }, [baseUser, loading]);
 
   useEffect(() => {
     if (loading) return;

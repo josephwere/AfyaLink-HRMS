@@ -5,7 +5,7 @@ import { getHospitalAdminDashboard } from "../../services/dashboardApi";
 import { runStaffingForecast } from "../../services/mlApi";
 import { listTrainingTrackers } from "../../services/trainingTrackerApi";
 import { listTransfers } from "../../services/transferApi";
-import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import HospitalAdminCommandCenterShell, { DashboardSection } from "./CommandCenterShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
 
@@ -154,14 +154,18 @@ export default function Dashboard() {
 
   const overdueLearning = trainingStats.overdueNotStarted + trainingStats.overdueInProgress;
   const machineAlerts = machineStats.offline + machineStats.error;
+  const pharmacyRiskStatus = data?.pharmacyCoverageRisk ? "Active risk" : "Clear";
+  const pharmacyRiskTone = data?.pharmacyCoverageRisk ? "risk" : "good";
+  const staffRiskCount = clampNumber(data?.incompleteStaff) + clampNumber(data?.inactiveStaff) + clampNumber(data?.missingLicenses);
+  const wardOccupancyRows = Array.isArray(data?.wardOccupancy) ? data.wardOccupancy.slice(0, 5) : [];
 
   return (
-    <DashboardHomeShell
+    <HospitalAdminCommandCenterShell
       className="hospital-admin-dashboard-shell"
       shellKey="hospital-admin"
-      kicker="Hospital operations"
-      title="Hospital Admin Dashboard"
-      subtitle="Daily staffing, service delivery, approvals, and facility operations from one command surface."
+      kicker="Hospital command center"
+      title="Hospital Admin Control Center"
+      subtitle="Operational domains, workflow entry points, and executive pulse for the hospital."
       actions={[
         { label: "Staff Directory", path: "/hospital-admin/staff" },
         { label: "Approvals", path: "/hospital-admin/approvals", variant: "secondary" },
@@ -173,15 +177,15 @@ export default function Dashboard() {
           label: "Bed occupancy",
           value: `${data?.bedOccupancyRate ?? "—"}%`,
           note: `${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0} occupied`,
-          path: "/admin/beds",
+          path: "/hospital-admin/ward-board",
         },
-        { label: "Pending approvals", value: data?.pendingRequests ?? "—", note: "Needs admin attention", path: "/hospital-admin/approvals" },
-        { label: "Transfer backlog", value: pendingTransfers, note: "Continuity watch", path: "/hospital-admin/transfer-command-center" },
+        { label: "Pending approvals", value: data?.pendingRequests ?? "—", note: "Needs admin action", path: "/hospital-admin/approvals" },
+        { label: "Active consultations", value: data?.activeConsultationCalls ?? "—", note: "Care coordination", path: "/hospital-admin/consultation-monitor" },
       ]}
       brief={{
-        kicker: "Daily brief",
-        title: "What needs action now",
-        body: "Start with approvals, connectivity drift, and continuity handoffs.",
+        kicker: "Executive pulse",
+        title: "What needs attention first",
+        body: "The command center aligns facility operations, staffing, pharmacy, and finance around the highest-risk workflows.",
         items: [
           {
             label: "Pending approvals",
@@ -189,19 +193,19 @@ export default function Dashboard() {
             tone: clampNumber(data?.pendingRequests, 0) > 0 ? "warn" : "good",
           },
           {
+            label: "Transfer backlog",
+            value: pendingTransfers,
+            tone: pendingTransfers > 0 ? "warn" : "good",
+          },
+          {
+            label: "Pharmacy risk",
+            value: pharmacyRiskStatus,
+            tone: pharmacyRiskTone,
+          },
+          {
             label: "Offline devices",
             value: machineStats.offline,
             tone: machineStats.offline > 0 ? "warn" : "good",
-          },
-          {
-            label: "Training completion %",
-            value: trainingStats.completionRate,
-            tone: completionTone(trainingStats.completionRate),
-          },
-          {
-            label: "Pending transfers",
-            value: pendingTransfers,
-            tone: pendingTransfers > 0 ? "warn" : "good",
           },
         ],
       }}
@@ -215,12 +219,12 @@ export default function Dashboard() {
           badge: `${data?.pendingRequests ?? 0}`,
         },
         {
-          id: "hospital-runway-transfers",
-          title: "Transfer continuity",
-          description: "Track pending handovers and prevent transfer delays.",
-          eyebrow: "Continuity",
-          path: "/hospital-admin/transfer-command-center",
-          badge: `${pendingTransfers}`,
+          id: "hospital-runway-ward",
+          title: "Resolve bed capacity pressure",
+          description: "Open ward and bed flow operations before occupancy spikes.",
+          eyebrow: "Capacity",
+          path: "/hospital-admin/ward-board",
+          badge: `${data?.totalBeds ? `${data?.occupiedBeds ?? 0}/${data?.totalBeds ?? 0}` : "—"}`,
         },
         {
           id: "hospital-runway-consults",
@@ -231,12 +235,12 @@ export default function Dashboard() {
           badge: `${data?.activeConsultationCalls ?? 0}`,
         },
         {
-          id: "hospital-runway-appointments",
-          title: "Appointment ops",
-          description: "Review doctor assignments, queue pressure, and clinic movement from one surface.",
-          eyebrow: "Flow",
-          path: "/hospital-admin/appointments",
-          badge: `${data?.pendingAssignments ?? 0}`,
+          id: "hospital-runway-transfers",
+          title: "Transfer continuity",
+          description: "Track pending handovers and prevent transfer delays.",
+          eyebrow: "Continuity",
+          path: "/hospital-admin/transfer-command-center",
+          badge: `${pendingTransfers}`,
         },
         {
           id: "hospital-runway-machines",
@@ -289,11 +293,11 @@ export default function Dashboard() {
           variant: "compact",
         },
         {
-          id: "hospital-tool-revenue",
-          title: "Revenue intelligence",
-          description: "Keep claims, invoices, and collection signals visible.",
-          eyebrow: "Finance",
-          path: "/hospital-admin/revenue-intelligence",
+          id: "hospital-tool-pharmacy",
+          title: "Pharmacy referrals",
+          description: "Open the pharmacy oversight and coverage workflows.",
+          eyebrow: "Pharmacy",
+          path: "/hospital-admin/pharmacy-referrals",
           variant: "compact",
         },
       ]}
@@ -327,7 +331,7 @@ export default function Dashboard() {
         {
           id: "hospital-view-staff-gap",
           title: "Staffing gap pressure",
-          description: "Saved view into staff registration and workforce shortage follow-up.",
+          description: "Saved entry into staff registration and workforce shortage follow-up.",
           eyebrow: "Saved view",
           path: "/hospital-admin/register-staff",
           variant: "compact",
@@ -339,26 +343,71 @@ export default function Dashboard() {
           subtitle: "The signals most likely to move today's workload.",
           items: [
             { label: "Offline devices", value: machineStats.offline, tone: machineStats.offline > 0 ? "warn" : "good" },
-            { label: "Training completion %", value: trainingStats.completionRate, tone: completionTone(trainingStats.completionRate) },
-            { label: "Pharmacy risk", value: data?.pharmacyCoverageRisk ? "Active" : "Clear", tone: data?.pharmacyCoverageRisk ? "risk" : "good" },
+            { label: "Active consultations", value: data?.activeConsultationCalls ?? 0, tone: data?.activeConsultationCalls > 0 ? "warn" : "good" },
+            { label: "Pharmacy risk", value: pharmacyRiskStatus, tone: pharmacyRiskTone },
           ],
           actions: [
             { label: "Open Machine Connectivity", path: "/hospital-admin/machine-connectivity", variant: "secondary" },
-            { label: "Training Tracker", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "secondary" },
+            { label: "Consultation Monitor", path: "/hospital-admin/consultation-monitor", variant: "secondary" },
           ],
         },
         {
-          title: "Staffing intelligence",
-          subtitle: "AI staffing pressure paired with operational action.",
+          title: "Workforce readiness",
+          subtitle: "Staff profile, training, and license health for the hospital.",
           items: [
-            { label: "Doctor gap", value: forecast?.forecast?.doctorGap ?? "—", tone: gapTone(forecast?.forecast?.doctorGap) },
-            { label: "Nurse gap", value: forecast?.forecast?.nurseGap ?? "—", tone: gapTone(forecast?.forecast?.nurseGap) },
+            { label: "At-risk staff", value: staffRiskCount, tone: staffRiskCount > 0 ? "warn" : "good" },
             { label: "Unlinked pharmacists", value: data?.unlinkedPharmacists ?? "—", tone: (data?.unlinkedPharmacists ?? 0) > 0 ? "warn" : "good" },
+            { label: "Open shifts", value: data?.openShifts ?? 0, tone: data?.openShifts > 0 ? "warn" : "good" },
           ],
           actions: [
-            { label: "Recruitment Requests", path: "/hospital-admin/register-staff", variant: "secondary" },
-            { label: "Transfer Continuity", path: "/hospital-admin/transfer-command-center", variant: "secondary" },
+            { label: "Staff directory", path: "/hospital-admin/staff", variant: "secondary" },
+            { label: "Training tracker", path: "/admin/training-tracker?status=IN_PROGRESS", variant: "secondary" },
           ],
+        },
+      ]}
+      commandGroups={[
+        {
+          id: "hospital-command-operations",
+          title: "Operations console",
+          description: "Open transfer, consultation, device, and capacity workflows.",
+          eyebrow: "Operations",
+          path: "/hospital-admin/transfer-command-center",
+          badge: `${pendingTransfers ?? 0}`,
+        },
+        {
+          id: "hospital-command-workforce",
+          title: "Workforce administration",
+          description: "Review staff, approvals, training, and hiring from one place.",
+          eyebrow: "Workforce",
+          path: "/hospital-admin/staff",
+        },
+        {
+          id: "hospital-command-clinical",
+          title: "Clinical services",
+          description: "Surface appointments, consultations, and patient flow control.",
+          eyebrow: "Clinical",
+          path: "/hospital-admin/consultation-monitor",
+        },
+        {
+          id: "hospital-command-pharmacy",
+          title: "Pharmacy oversight",
+          description: "Move pharmacy referrals, medication coverage, and supply signals.",
+          eyebrow: "Pharmacy",
+          path: "/hospital-admin/pharmacy-referrals",
+        },
+        {
+          id: "hospital-command-finance",
+          title: "Finance & compliance",
+          description: "Keep revenue, invoices, and claim health visible.",
+          eyebrow: "Finance",
+          path: "/hospital-admin/financials",
+        },
+        {
+          id: "hospital-command-facility",
+          title: "Facility management",
+          description: "Track ward capacity, bed flow, and machine health for the hospital.",
+          eyebrow: "Facility",
+          path: "/hospital-admin/ward-board",
         },
       ]}
     >
@@ -420,6 +469,6 @@ export default function Dashboard() {
           </div>
         </div>
       </DashboardSection>
-    </DashboardHomeShell>
+    </HospitalAdminCommandCenterShell>
   );
 }

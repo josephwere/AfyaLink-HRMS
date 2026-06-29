@@ -76,6 +76,20 @@ export const audit = async ({
       role: req.user.role,
     });
 
+    // Enrich metadata with emergency override/session info if present
+    const emergency = req?.emergencyOverride
+      ? {
+          emergencyOverride: true,
+          emergencySessionId: req.emergencyOverride.token,
+          emergencyActorId: req.emergencyOverride.actorId,
+          emergencyActorRole: req.emergencyOverride.actorRole,
+          emergencyReason: req.emergencyOverride.reason,
+          emergencyExpiresAt: req.emergencyOverride.expiresAt,
+          emergencyHospitalId: req.emergencyOverride.hospitalId,
+          reviewStatus: "PENDING",
+        }
+      : { emergencyOverride: false, reviewStatus: null };
+
     await AuditLog.create({
       /* ================= WHO ================= */
       actorId: req.user._id,
@@ -102,10 +116,11 @@ export const audit = async ({
       error,
 
       /* ================= METADATA ================= */
-      metadata: {
-        ...metadata,
+      metadata: Object.assign({}, metadata || {}, {
         anomaly,
-      },
+        permissionUsed: metadata?.permissionUsed || null,
+        ...(emergency || {}),
+      }),
     });
 
     /* ======================================================

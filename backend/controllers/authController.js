@@ -398,6 +398,8 @@ export const register = async (req, res) => {
       verificationRemindersSent: [],
       nationalIdNumber: normalizedNationalId || undefined,
       nationalIdCountry: normalizedNationalIdCountry || undefined,
+      authMethods: ["local"],
+      authProvider: "local",
     });
 
     await AuditLog.create({
@@ -488,7 +490,8 @@ export const forgotPassword = async (req, res) => {
     });
 
     return res.json({ msg: "If the email exists, a reset link has been sent." });
-  } catch {
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR:", err);
     return res.status(500).json({ msg: "Unable to process reset request" });
   }
 };
@@ -805,10 +808,10 @@ export const login = async (req, res) => {
       });
     }
 
-    if (user.authProvider === "google" && !user.password) {
+    if (!user.hasAuthMethod("local") && !user.password) {
       return res.status(400).json({
         success: false,
-        msg: "This Google account does not have a password yet. Use Google sign-in or reset your password to create one.",
+        msg: "This account does not have a password yet. Use Google sign-in or reset your password to create one.",
       });
     }
 
@@ -976,6 +979,10 @@ export const login = async (req, res) => {
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
         verificationDeadline: user.verificationDeadline,
+        authProvider: user.authProvider || "local",
+        authMethods: Array.isArray(user.authMethods)
+          ? user.authMethods
+          : [user.authProvider || "local"],
       },
     });
   } catch (err) {
@@ -1553,11 +1560,8 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ msg: "New password is required" });
     }
 
-    const canSkipCurrent =
-      user.authProvider === "google" &&
-      user.role === "SUPER_ADMIN" &&
-      !currentPassword &&
-      !user.password;
+    const hasLocalAuth = user.hasAuthMethod("local");
+    const canSkipCurrent = !hasLocalAuth && !user.password;
 
     if (user.password && !canSkipCurrent) {
       if (!currentPassword) {
@@ -1571,6 +1575,16 @@ export const changePassword = async (req, res) => {
 
     user.password = newPassword;
     user.passwordSetAt = new Date();
+    if (!Array.isArray(user.authMethods)) {
+      user.authMethods = user.authProvider ? [user.authProvider] : [];
+    }
+    if (!user.authMethods.includes("local")) {
+      user.authMethods.push("local");
+    }
+    if (!user.authProvider) {
+      user.authProvider = "local";
+    }
+
     revokeAllRefreshSessions(user, { reason: "PASSWORD_CHANGE", source: "AUTH" });
     await user.save();
 

@@ -342,7 +342,7 @@ export const updateProfile = async (req, res) => {
       };
     }
 
-    await user.save();
+    await user.save({ validateBeforeSave: false });
     res.json({ message: "Profile updated successfully", user });
   } catch {
     res.status(500).json({ message: "We could not save your profile changes." });
@@ -669,7 +669,8 @@ export const deleteMyAccount = async (req, res) => {
     user.phoneVerified = false;
     user.phoneVerifiedAt = null;
     user.googleId = undefined;
-    user.authProvider = "google";
+    user.authProvider = undefined;
+    user.authMethods = [];
     user.nationalIdNumber = undefined;
     user.nationalIdCountry = undefined;
     user.licenseNumber = undefined;
@@ -689,6 +690,10 @@ export const deleteMyAccount = async (req, res) => {
     user.twoFactorTempSecret = null;
     user.twoFactorRecoveryCodes = [];
     user.trustedDevices = [];
+    // Ensure schema pre-validate logic does not re-introduce 'local' auth requirement
+    user.authMethods = ["google"];
+    user.authProvider = "google";
+
     user.metadata = {
       ...(user.metadata || {}),
       accountDeletedAt: new Date().toISOString(),
@@ -706,7 +711,7 @@ export const deleteMyAccount = async (req, res) => {
 
     clearRefreshTokenCookie(res);
     return res.json({ message: "Account deleted. You have been signed out." });
-  } catch {
+  } catch (err) {
     return res.status(500).json({ message: "We could not delete this account right now." });
   }
 };

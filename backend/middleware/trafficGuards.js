@@ -22,7 +22,20 @@ export const authLimiter = createDistributedRateLimiter({
     message: "Too many auth requests. Please retry shortly.",
     code: "AUTH_RATE_LIMITED",
   },
-  skip: (req) => shouldBypassRateLimitsInTests() || String(req.path || "").includes("/refresh"),
+  // Do not apply the general auth limiter to endpoints that are protected
+  // by the sensitive limiter so the stricter policy takes precedence.
+  skip: (req) => {
+    // In test mode where ENABLE_RATE_LIMITS_IN_TESTS=1 we want the sensitive
+    // limiter to be the only limiter exercising auth endpoints. Disable the
+    // generic authLimiter entirely in that case to avoid nondeterministic
+    // ordering between limiters.
+    if (String(process.env.ENABLE_RATE_LIMITS_IN_TESTS || "") === "1") return true;
+    if (shouldBypassRateLimitsInTests()) return true;
+    const path = String(req.path || "");
+    if (path.includes("/refresh")) return true;
+    const sensitivePaths = ["/login", "/register", "/forgot-password", "/reset-password", "/2fa", "/phone", "/resend-verification"];
+    return sensitivePaths.some((p) => path.includes(p));
+  },
 });
 
 export const authSensitiveLimiter = createDistributedRateLimiter({

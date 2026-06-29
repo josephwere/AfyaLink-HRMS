@@ -7,15 +7,18 @@ import Hospital from "../models/Hospital.js";
 import Bed from "../models/Bed.js";
 import Patient from "../models/Patient.js";
 import Encounter from "../models/Encounter.js";
+import AuditLog from "../models/AuditLog.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
 
 let teardown;
 let hospitalAdminToken;
 let nurseToken;
 let doctorToken;
+let scopedNurseToken;
 let otherHospitalBedId;
 let ownHospitalBedId;
 let transferTargetBedId;
+let scopedWardBedId;
 let patientId;
 let hospitalAId;
 let adminId;
@@ -60,6 +63,17 @@ beforeAll(async () => {
     emailVerified: true,
   });
 
+  const scopedNurse = await User.create({
+    name: "Scoped Ward Nurse",
+    email: "scoped-ward-nurse@afya.test",
+    password: "Pass123!",
+    role: "NURSE",
+    hospital: hospitalA._id,
+    active: true,
+    emailVerified: true,
+    metadata: { wardAccess: ["Ward 1"] },
+  });
+
   hospitalAdminToken = jwt.sign(
     { id: String(admin._id), twoFactorVerified: true },
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
@@ -72,16 +86,22 @@ beforeAll(async () => {
     { id: String(doctor._id), twoFactorVerified: true },
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
   );
+  scopedNurseToken = jwt.sign(
+    { id: String(scopedNurse._id), twoFactorVerified: true },
+    process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+  );
 
   const beds = await Bed.create([
     { hospital: hospitalA._id, ward: "Ward 1", number: "A-1", occupied: false },
     { hospital: hospitalA._id, ward: "Ward 1", number: "A-2", occupied: false },
+    { hospital: hospitalA._id, ward: "Ward 2", number: "A-3", occupied: false },
     { hospital: hospitalB._id, ward: "Ward 2", number: "B-1", occupied: false },
   ]);
 
   ownHospitalBedId = String(beds[0]._id);
   transferTargetBedId = String(beds[1]._id);
-  otherHospitalBedId = String(beds[2]._id);
+  scopedWardBedId = String(beds[2]._id);
+  otherHospitalBedId = String(beds[3]._id);
 
   const patient = await Patient.create({
     firstName: "Bed",
@@ -113,8 +133,8 @@ describe("Beds hospital scope", () => {
 
     expect(listRes.status).toBe(200);
     expect(Array.isArray(listRes.body.data)).toBe(true);
-    expect(listRes.body.data).toHaveLength(2);
-    expect(listRes.body.data.map((row) => row.number).sort()).toEqual(["A-1", "A-2"]);
+    expect(listRes.body.data).toHaveLength(3);
+    expect(listRes.body.data.map((row) => row.number).sort()).toEqual(["A-1", "A-2", "A-3"]);
     expect(listRes.body.data.every((row) => String(row.hospital?._id) === hospitalAId)).toBe(true);
 
     const updateRes = await request(app)
@@ -132,7 +152,7 @@ describe("Beds hospital scope", () => {
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data).toHaveLength(3);
     expect(res.body.data.every((row) => String(row.hospital?._id) === hospitalAId)).toBe(true);
   });
 
@@ -143,7 +163,7 @@ describe("Beds hospital scope", () => {
 
     expect(listRes.status).toBe(200);
     expect(Array.isArray(listRes.body.data)).toBe(true);
-    expect(listRes.body.data).toHaveLength(2);
+    expect(listRes.body.data).toHaveLength(3);
 
     const mutateRes = await request(app)
       .put(`/api/beds/${ownHospitalBedId}`)
@@ -151,6 +171,35 @@ describe("Beds hospital scope", () => {
       .send({ occupied: true, patient: patientId });
 
     expect(mutateRes.status).toBe(403);
+  });
+
+  test("ward-scoped nurse only sees beds in the assigned ward and cannot mutate another ward bed", async () => {
+    const listRes = await request(app)
+      .get("/api/beds")
+      .set("Authorization", `Bearer ${scopedNurseToken}`);
+
+    expect(listRes.status).toBe(200);
+    expect(Array.isArray(listRes.body.data)).toBe(true);
+    expect(listRes.body.data).toHaveLength(2);
+    expect(listRes.body.data.every((row) => String(row.ward) === "Ward 1")).toBe(true);
+
+    const mutateRes = await request(app)
+      .put(`/api/beds/${scopedWardBedId}`)
+      .set("Authorization", `Bearer ${scopedNurseToken}`)
+      .send({ occupied: true, patient: patientId });
+
+    expect(mutateRes.status).toBe(403);
+
+    const auditEntry = await AuditLog.findOne({
+      action: "BED_ACCESS_DENIED",
+      resource: "Bed",
+      success: false,
+    }).sort({ createdAt: -1 }).lean();
+
+    expect(auditEntry).toBeTruthy();
+    expect(auditEntry.metadata?.role).toBe("NURSE");
+    expect(auditEntry.metadata?.requestedWard).toBe("Ward 2");
+    expect(auditEntry.metadata?.allowedWards).toContain("Ward 1");
   });
 
   test("hospital admin cannot release a bed while patient has an open encounter", async () => {

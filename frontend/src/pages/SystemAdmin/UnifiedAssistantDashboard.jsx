@@ -1193,7 +1193,19 @@ export default function UnifiedAssistantDashboard() {
     setAiDraft("");
     try {
       const prompt = buildAiPrompt(selection, recordData, workspaceSettings);
-      const data = await chatAssistant({ message: prompt, userMessage: prompt, pageContext: "unified-assistant" });
+      const routeContext = "unified-assistant";
+      const data = await chatAssistant({
+        request: {
+          message: prompt,
+          userMessage: prompt,
+          pageContext: routeContext,
+          channel: "web",
+          client: "browser",
+        },
+        aiContext: {
+          pageContext: routeContext,
+        },
+      });
       setAiDraft(data?.answer || data?.text || "No AI suggestion returned.");
     } catch (err) {
       setAiDraft(err?.message || "AI suggestion is unavailable right now.");

@@ -54,6 +54,9 @@ const userSchema = new Schema(
       type: String,
       // ✅ only required for local auth users
       required: function () {
+        if (Array.isArray(this.authMethods)) {
+          return this.authMethods.includes("local");
+        }
         return this.authProvider === "local";
       },
       select: false,
@@ -156,6 +159,12 @@ const userSchema = new Schema(
     googleId: {
       type: String,
       index: true,
+    },
+
+    authMethods: {
+      type: [String],
+      enum: ["local", "google"],
+      default: undefined,
     },
 
     authProvider: {
@@ -455,6 +464,26 @@ userSchema.pre("validate", function (next) {
     return next(new Error(`${this.role} must be linked to a hospital`));
   }
 
+  if (!Array.isArray(this.authMethods) || this.authMethods.length === 0) {
+    this.authMethods = this.authProvider ? [this.authProvider] : ["local"];
+  }
+
+  if (this.authProvider && !this.authMethods.includes(this.authProvider)) {
+    this.authMethods.push(this.authProvider);
+  }
+
+  if (this.googleId && !this.authMethods.includes("google")) {
+    this.authMethods.push("google");
+  }
+
+  if (this.password && !this.authMethods.includes("local")) {
+    this.authMethods.push("local");
+  }
+
+  if (!this.authProvider) {
+    this.authProvider = this.authMethods.includes("local") ? "local" : this.authMethods[0];
+  }
+
   this.employment = this.employment || {};
   if (HOSPITAL_SCOPED_ROLES.includes(this.role)) {
     if (!this.employment.status || this.employment.status === "INACTIVE") {
@@ -501,6 +530,14 @@ userSchema.pre("save", async function (next) {
   }
   next();
 });
+
+userSchema.methods.hasAuthMethod = function (method) {
+  if (!method) return false;
+  if (Array.isArray(this.authMethods)) {
+    return this.authMethods.includes(method);
+  }
+  return this.authProvider === method;
+};
 
 /* ======================================================
    🔍 PASSWORD COMPARE

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import MedicationSelector from "../../components/MedicationSelector";
 import { listAvailableMedicines } from "../../services/pharmacyApi";
 import {
   createPharmacyReferral,
@@ -352,19 +353,13 @@ export default function Prescriptions() {
               <div key={index} className="card">
                 <strong>Medication {index + 1}</strong>
                 <div className="panel-grid" style={{ marginTop: 8 }}>
-                  <select value={item.pharmacyItem || ""} onChange={(e) => selectMedicine(index, e.target.value)}>
-                    <option value="">Select medicine from inventory</option>
-                    {medicineCatalog.map((med) => (
-                      <option key={med._id} value={med._id} disabled={med.stockStatus === "OUT_OF_STOCK"}>
-                        {med.name}
-                        {med.strength ? ` ${med.strength}` : ""}
-                        {med.form ? ` • ${med.form}` : ""}
-                        {` • ${med.totalQuantity ?? 0} ${med.unit || "units"}`}
-                        {med.stockStatus === "LOW_STOCK" ? " • low stock" : ""}
-                        {med.stockStatus === "OUT_OF_STOCK" ? " • out of stock" : ""}
-                      </option>
-                    ))}
-                  </select>
+                  <MedicationSelector
+                    options={medicineCatalog}
+                    value={item.pharmacyItem || ""}
+                    onSelect={(id) => selectMedicine(index, id)}
+                    placeholder="Search medications or inventory"
+                    disabled={medicineCatalog.length === 0}
+                  />
                   <input value={item.name} onChange={(e) => patchMedication(index, { name: e.target.value, pharmacyItem: "" })} placeholder="Drug name" />
                   <input value={item.requestedQuantity} onChange={(e) => patchMedication(index, { requestedQuantity: e.target.value })} placeholder={`Quantity${item.unit ? ` (${item.unit})` : ""}`} />
                   <input value={item.dosage} onChange={(e) => patchMedication(index, { dosage: e.target.value })} placeholder="Dosage" />

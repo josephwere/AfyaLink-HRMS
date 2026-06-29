@@ -7,6 +7,11 @@ import { normalizeRole } from "./normalizeRole.js";
 export function hasPermission(user, resourceName, action, req) {
   if (!user) return false;
 
+  // Emergency override grants temporary bypass of normal policy checks
+  if (req?.emergencyOverride?.active) {
+    return true;
+  }
+
   // 👑 PLATFORM SUPER ADMIN (NO TENANT LIMITS)
   const actualRole = normalizeRole(user.actualRole || user.role);
   const userRole = normalizeRole(user.role);

@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import apiFetch from "../../utils/apiFetch";
+import {
+  publishPatientSelected,
+  publishFormOpened,
+  publishFieldFocused,
+  publishFieldChanged,
+  publishFormSubmitted,
+} from "../../ai/neuroedgeEventHelpers";
 
 const INITIAL_FORM = {
   temperature: "",
@@ -29,7 +36,10 @@ export default function VitalsEntry() {
       return;
     }
     apiFetch(`/api/patients/${patientId}`)
-      .then(setPatient)
+      .then((loadedPatient) => {
+        setPatient(loadedPatient);
+        publishPatientSelected(loadedPatient);
+      })
       .catch(() => setPatient(null));
     apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`)
       .then((rows) => {
@@ -38,6 +48,10 @@ export default function VitalsEntry() {
       })
       .catch(() => setEncounter(null));
   }, [patientId]);
+
+  useEffect(() => {
+    publishFormOpened("Vitals Entry");
+  }, []);
 
   const readinessLabel = (() => {
     if (!encounter?._id) return "No active visit";
@@ -54,14 +68,27 @@ export default function VitalsEntry() {
     return "Escalation resolved";
   })();
 
+  function getFieldCounts(nextForm) {
+    const values = Object.values(nextForm || {});
+    const completed = values.filter((value) => value !== "" && value !== null && value !== undefined).length;
+    const remaining = values.length - completed;
+    return { completedFields: completed, remainingFields: remaining };
+  }
+
   function updateField(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const nextForm = { ...prev, [key]: value };
+      const counts = getFieldCounts(nextForm);
+      publishFieldChanged(counts.completedFields, counts.remainingFields);
+      return nextForm;
+    });
   }
 
   function saveDraft() {
     const patientName = patient
       ? [patient.firstName, patient.lastName].filter(Boolean).join(" ")
       : "selected patient";
+    publishFormSubmitted("Vitals Entry", "draft");
     setMsg(`Vitals draft prepared for ${patientName || "patient"}.`);
   }
 

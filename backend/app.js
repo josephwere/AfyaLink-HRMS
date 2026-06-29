@@ -18,6 +18,7 @@ import {
 } from "./utils/metrics.js";
 import { authLimiter, aiGatewayLimiter } from "./middleware/trafficGuards.js";
 import { isAllowedOrigin } from "./utils/corsOrigins.js";
+import { emergencyResolver } from "./middleware/emergencyMiddleware.js";
 
 /* ======================================================
    🌱 ENV
@@ -261,6 +262,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(trace);
 app.use(metricsMiddleware);
+app.use(emergencyResolver);
 app.use(
   "/uploads",
   express.static(path.resolve(process.cwd(), "uploads"), {

@@ -10,7 +10,8 @@ import {
   warmAuthRuntime,
 } from "../services/guardedAuthFetch";
 
-export function useGoogleAuth() {
+export function useGoogleAuth(options = {}) {
+  const { onSuccess, redirectOnSuccess = true, endpoint = "/api/auth/google" } = options;
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
@@ -24,7 +25,7 @@ export function useGoogleAuth() {
         throw new Error("Missing Google credential");
       }
 
-      const data = await guardedAuthFetch("/api/auth/google", {
+      const data = await guardedAuthFetch(endpoint, {
         method: "POST",
         body: { credential: credentialResponse.credential },
       });
@@ -37,7 +38,13 @@ export function useGoogleAuth() {
         user: data.user,
       });
 
-      navigate(redirectByRole(data.user), { replace: true });
+      if (typeof onSuccess === "function") {
+        onSuccess(data);
+      }
+
+      if (redirectOnSuccess) {
+        navigate(redirectByRole(data.user), { replace: true });
+      }
     } catch (err) {
       setError(
         normalizeAuthUiError(err, {
