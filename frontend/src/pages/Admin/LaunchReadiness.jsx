@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React, { useMemo } from "react";
+import useLaunchReadiness from "../../hooks/useLaunchReadiness";
 
 const PHASES = [
   {
@@ -47,58 +47,8 @@ const PHASES = [
 ];
 
 export default function LaunchReadiness() {
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [signals, setSignals] = useState({
-    backendHealth: null,
-    aiGatewayHealth: null,
-    systemSettings: null,
-    offlineOps: null,
-    trainingTracker: null,
-  });
+  const { loading, err, signals, loadSignals, readinessScore } = useLaunchReadiness();
 
-  const loadSignals = async () => {
-    setLoading(true);
-    setErr("");
-    try {
-      const [backendHealth, aiGatewayHealth, systemSettings, offlineOps, trainingTracker] =
-        await Promise.all([
-          apiFetch("/health").catch(() => null),
-          apiFetch("/api/ai/gateway/health").catch(() => null),
-          apiFetch("/api/system-settings").catch(() => null),
-          apiFetch("/api/offline/status").catch(() => null),
-          apiFetch("/api/training/tracker?limit=1").catch(() => null),
-        ]);
-
-      setSignals({
-        backendHealth,
-        aiGatewayHealth,
-        systemSettings,
-        offlineOps,
-        trainingTracker,
-      });
-    } catch (e) {
-      setErr(String(e?.message || "Failed to load readiness signals"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadSignals();
-  }, []);
-
-  const readinessScore = useMemo(() => {
-    const checks = [
-      Boolean(signals.backendHealth?.ok),
-      Boolean(signals.aiGatewayHealth?.ok),
-      Boolean(signals.systemSettings),
-      Boolean(signals.offlineOps),
-      Boolean(signals.trainingTracker),
-    ];
-    const passed = checks.filter(Boolean).length;
-    return Math.round((passed / checks.length) * 100);
-  }, [signals]);
 
   const phaseStatus = (phaseId) => {
     switch (phaseId) {
