@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-08T15:06:25.162Z",
+  "generatedAt": "2026-07-08T15:40:25.996Z",
   "summary": {
     "totalPages": 207,
-    "migratedPages": 175,
-    "remainingPages": 32,
-    "overallCompletion": 85,
+    "migratedPages": 180,
+    "remainingPages": 27,
+    "overallCompletion": 87,
     "domainsCompleted": 22,
     "highPriorityDomainsRemaining": 0
   },
@@ -23,8 +23,8 @@
     },
     "Admin": {
       "total": 34,
-      "migrated": 26,
-      "remaining": 8,
+      "migrated": 31,
+      "remaining": 3,
       "files": [
         "src/pages/Admin/AIAutofillAudit.jsx",
         "src/pages/Admin/AccessControl.jsx",
