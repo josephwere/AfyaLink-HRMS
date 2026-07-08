@@ -1,37 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import useDLQEditor from '../../hooks/useDLQEditor';
 
 export default function DLQEditor(){
-  const [items,setItems]=useState([]);
-  const [selected,setSelected]=useState(null);
-  const [payload,setPayload]=useState('');
-
-  useEffect(()=>{ load(); },[]);
-
-  const asList = (data) => {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.items)) return data.items;
-    if (Array.isArray(data?.data)) return data.data;
-    return [];
-  };
-
-  async function load(){
-    const js = await apiFetch('/api/integrations/dlq');
-    setItems(asList(js));
-  }
-  async function view(id){
-    const js = await apiFetch('/api/integrations/dlq/' + id);
-    setSelected(js); setPayload(JSON.stringify(js.data, null, 2));
-  }
-  async function saveAndRetry(id){
-    try{
-      const newData = JSON.parse(payload);
-      const js = await apiFetch('/api/integrations/dlq/' + id + '/edit-retry', { method:'POST', body: { newData } });
-      alert(JSON.stringify(js));
-      load();
-      setSelected(null);
-    }catch(e){ alert('Invalid JSON: ' + e.message); }
-  }
+  const { items, selected, payload, setPayload, load, view, saveAndRetry } = useDLQEditor();
 
   return (
     <div className="dashboard">

@@ -1,47 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import useDLQInspectEdit from '../../hooks/useDLQInspectEdit';
 
 export default function DLQInspectEdit(){
-  const [items,setItems]=useState([]);
-  const [selected,setSelected]=useState(null);
-  const [editData,setEditData]=useState('');
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const asList = (data) => {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.items)) return data.items;
-    if (Array.isArray(data?.data)) return data.data;
-    return [];
-  };
-
-  async function load(){
-    const js = await apiFetch('/api/integrations/dlq-inspect');
-    setItems(asList(js));
-  }
-
-  async function view(id){
-    const js = await apiFetch('/api/integrations/dlq-inspect/' + id);
-    setSelected(js);
-    setEditData(JSON.stringify(js.data, null, 2));
-  }
-
-  async function save(){
-    try{
-      const payload = JSON.parse(editData);
-      const js = await apiFetch('/api/integrations/dlq-inspect/' + selected.id, { method:'PUT', body: { data: payload } });
-      alert(JSON.stringify(js));
-      load();
-    }catch(e){ alert('Invalid JSON'); }
-  }
-
-  async function retry(){
-    const js = await apiFetch('/api/integrations/dlq-inspect/' + selected.id + '/retry', { method:'POST' });
-    alert(JSON.stringify(js));
-    load();
-  }
+  const { items, selected, editData, setEditData, load, view, save, retry } = useDLQInspectEdit();
 
   return (
     <div className="dashboard">
