@@ -1,25 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import useDLQInspector from '../../hooks/useDLQInspector';
 
 export default function DLQInspector(){
-  const [items,setItems]=useState([]);
-  const [msg, setMsg] = useState("");
-  useEffect(()=>{ load(); },[]);
-  async function load(){
-    setMsg("");
-    const js = await apiFetch('/api/integrations/dlq');
-    setItems(Array.isArray(js) ? js : Array.isArray(js?.items) ? js.items : []);
-  }
-  async function retry(id){
-    setMsg("");
-    try {
-      await apiFetch('/api/integrations/dlq/' + id + '/retry', { method:'POST' });
-      setMsg("Queued for reprocessing.");
-      load();
-    } catch (e) {
-      setMsg(e?.message || "Could not reprocess this item.");
-    }
-  }
+  const { items, msg, load, retry } = useDLQInspector();
+
   return (
     <div className="dashboard">
       <div className="welcome-panel">
