@@ -1,0 +1,458 @@
+{
+  "generatedAt": "2026-07-08T15:06:25.162Z",
+  "summary": {
+    "totalPages": 207,
+    "migratedPages": 175,
+    "remainingPages": 32,
+    "overallCompletion": 85,
+    "domainsCompleted": 22,
+    "highPriorityDomainsRemaining": 0
+  },
+  "domains": {
+    "AI": {
+      "total": 5,
+      "migrated": 1,
+      "remaining": 4,
+      "files": [
+        "src/pages/AI/Chatbot.jsx",
+        "src/pages/AI/MedicalAssistant.jsx",
+        "src/pages/AI/NeuroEdgeExtract.jsx",
+        "src/pages/AI/Triage.jsx",
+        "src/pages/AI/VoiceDictation.jsx"
+      ]
+    },
+    "Admin": {
+      "total": 34,
+      "migrated": 26,
+      "remaining": 8,
+      "files": [
+        "src/pages/Admin/AIAutofillAudit.jsx",
+        "src/pages/Admin/AccessControl.jsx",
+        "src/pages/Admin/AdminInsuranceActions.jsx",
+        "src/pages/Admin/Analytics/index.jsx",
+        "src/pages/Admin/AuditLogs.jsx",
+        "src/pages/Admin/Beds.jsx",
+        "src/pages/Admin/CRDTPatientEditor.jsx",
+        "src/pages/Admin/ConnectorAnalytics.jsx",
+        "src/pages/Admin/ConnectorRetryPolicy.jsx",
+        "src/pages/Admin/CreateAdmin.jsx",
+        "src/pages/Admin/DLQEditor.jsx",
+        "src/pages/Admin/DLQInspectEdit.jsx",
+        "src/pages/Admin/DLQInspector.jsx",
+        "src/pages/Admin/Dashboard.jsx",
+        "src/pages/Admin/HospitalKPIDashboard.jsx",
+        "src/pages/Admin/Integrations.jsx",
+        "src/pages/Admin/IntegrationsLogs.jsx",
+        "src/pages/Admin/IntegrationsRealtime.jsx",
+        "src/pages/Admin/LaunchReadiness.jsx",
+        "src/pages/Admin/MappingEditor.jsx",
+        "src/pages/Admin/NotificationsPage.jsx",
+        "src/pages/Admin/OfflineOps.jsx",
+        "src/pages/Admin/OfflineSync.jsx",
+        "src/pages/Admin/PaymentSettings.jsx",
+        "src/pages/Admin/PilotOnboardingOps.jsx",
+        "src/pages/Admin/PrintCenter.jsx",
+        "src/pages/Admin/RealTimeIntegrations.jsx",
+        "src/pages/Admin/Reports/index.jsx",
+        "src/pages/Admin/SreIncidentOps.jsx",
+        "src/pages/Admin/SuperAssistants.jsx",
+        "src/pages/Admin/SupportTickets.jsx",
+        "src/pages/Admin/TrainingPlaybook.jsx",
+        "src/pages/Admin/TrainingTracker.jsx",
+        "src/pages/Admin/TransactionsDashboard.jsx"
+      ]
+    },
+    "Analytics": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Analytics/Index.jsx"
+      ]
+    },
+    "pages": {
+      "total": 16,
+      "migrated": 16,
+      "remaining": 0,
+      "files": [
+        "src/pages/Appointments.jsx",
+        "src/pages/CareersLanding.jsx",
+        "src/pages/Forbidden.jsx",
+        "src/pages/ForgotPassword.jsx",
+        "src/pages/GuestDashboard.jsx",
+        "src/pages/Login.jsx",
+        "src/pages/Profile.jsx",
+        "src/pages/Register.jsx",
+        "src/pages/ResetPassword.jsx",
+        "src/pages/StepUp.jsx",
+        "src/pages/TwoFactor.jsx",
+        "src/pages/TwoFactorVerify.jsx",
+        "src/pages/Unauthorized.jsx",
+        "src/pages/VerifyEmail.jsx",
+        "src/pages/VerifyOtp.jsx",
+        "src/pages/VerifySuccess.jsx"
+      ]
+    },
+    "Audit": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Audit/index.jsx"
+      ]
+    },
+    "Branches": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Branches/Index.jsx"
+      ]
+    },
+    "Communication": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Communication/Center.jsx"
+      ]
+    },
+    "CommunityHealthWorker": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/CommunityHealthWorker/Dashboard.jsx"
+      ]
+    },
+    "Dashboard": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Dashboard/index.jsx"
+      ]
+    },
+    "Developer": {
+      "total": 6,
+      "migrated": 3,
+      "remaining": 3,
+      "files": [
+        "src/pages/Developer/AIExtractionHistory.jsx",
+        "src/pages/Developer/Dashboard.jsx",
+        "src/pages/Developer/DecisionCockpit.jsx",
+        "src/pages/Developer/ProvenanceVerify.jsx",
+        "src/pages/Developer/QueueReplay.jsx",
+        "src/pages/Developer/WebhookRetry.jsx"
+      ]
+    },
+    "Doctor": {
+      "total": 19,
+      "migrated": 19,
+      "remaining": 0,
+      "files": [
+        "src/pages/Doctor/Appointments.jsx",
+        "src/pages/Doctor/CMECertifications.jsx",
+        "src/pages/Doctor/Dashboard.jsx",
+        "src/pages/Doctor/DoctorModuleLayout.jsx",
+        "src/pages/Doctor/DoctorSettings.jsx",
+        "src/pages/Doctor/InpatientWard.jsx",
+        "src/pages/Doctor/LabResults.jsx",
+        "src/pages/Doctor/LeaveRequests.jsx",
+        "src/pages/Doctor/MedicalRecords.jsx",
+        "src/pages/Doctor/MyPatients.jsx",
+        "src/pages/Doctor/MySchedule.jsx",
+        "src/pages/Doctor/OPDWorkspace.jsx",
+        "src/pages/Doctor/OPDWorkspace.test.jsx",
+        "src/pages/Doctor/Performance.jsx",
+        "src/pages/Doctor/Prescriptions.jsx",
+        "src/pages/Doctor/Referrals.jsx",
+        "src/pages/Doctor/ReportsNotes.jsx",
+        "src/pages/Doctor/SurgeryProcedures.jsx",
+        "src/pages/Doctor/Transfers.jsx"
+      ]
+    },
+    "HRManager": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/HRManager/Dashboard.jsx"
+      ]
+    },
+    "HospitalAdmin": {
+      "total": 23,
+      "migrated": 23,
+      "remaining": 0,
+      "files": [
+        "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+        "src/pages/HospitalAdmin/Appointments.jsx",
+        "src/pages/HospitalAdmin/Approvals.jsx",
+        "src/pages/HospitalAdmin/Branches.jsx",
+        "src/pages/HospitalAdmin/ClaimsDashboard.jsx",
+        "src/pages/HospitalAdmin/CommandCenterShell.jsx",
+        "src/pages/HospitalAdmin/CommerceConfig.jsx",
+        "src/pages/HospitalAdmin/ConsultationMonitor.jsx",
+        "src/pages/HospitalAdmin/Customization.jsx",
+        "src/pages/HospitalAdmin/Dashboard.jsx",
+        "src/pages/HospitalAdmin/EscalationQueue.jsx",
+        "src/pages/HospitalAdmin/Financials.jsx",
+        "src/pages/HospitalAdmin/Inventory/index.jsx",
+        "src/pages/HospitalAdmin/MachineAlerts.jsx",
+        "src/pages/HospitalAdmin/MachineConnectivity.jsx",
+        "src/pages/HospitalAdmin/Patients.jsx",
+        "src/pages/HospitalAdmin/Pharmacy.jsx",
+        "src/pages/HospitalAdmin/PharmacyReferrals.jsx",
+        "src/pages/HospitalAdmin/RecruitmentAds.jsx",
+        "src/pages/HospitalAdmin/RegisterStaff.jsx",
+        "src/pages/HospitalAdmin/StaffManagement.jsx",
+        "src/pages/HospitalAdmin/StaffTransfers.jsx",
+        "src/pages/HospitalAdmin/TransferCommandCenter.jsx"
+      ]
+    },
+    "Innovation": {
+      "total": 3,
+      "migrated": 0,
+      "remaining": 3,
+      "files": [
+        "src/pages/Innovation/ClinicalOrderCopilot.jsx",
+        "src/pages/Innovation/DigitalHospitalTwin.jsx",
+        "src/pages/Innovation/InteropMarketplace.jsx"
+      ]
+    },
+    "Inventory": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Inventory/Index.jsx"
+      ]
+    },
+    "Lab": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Lab/Index.jsx"
+      ]
+    },
+    "LabTech": {
+      "total": 9,
+      "migrated": 9,
+      "remaining": 0,
+      "files": [
+        "src/pages/LabTech/Dashboard.jsx",
+        "src/pages/LabTech/EquipmentLogs.jsx",
+        "src/pages/LabTech/Lab/index.jsx",
+        "src/pages/LabTech/LabTests.jsx",
+        "src/pages/LabTech/QualityControl.jsx",
+        "src/pages/LabTech/ReportsArchive.jsx",
+        "src/pages/LabTech/SafetyChecklist.jsx",
+        "src/pages/LabTech/SampleTracking.jsx",
+        "src/pages/LabTech/TestQueue.jsx"
+      ]
+    },
+    "Legal": {
+      "total": 2,
+      "migrated": 2,
+      "remaining": 0,
+      "files": [
+        "src/pages/Legal/PrivacyPolicy.jsx",
+        "src/pages/Legal/TermsOfService.jsx"
+      ]
+    },
+    "Nurse": {
+      "total": 8,
+      "migrated": 8,
+      "remaining": 0,
+      "files": [
+        "src/pages/Nurse/AssignedPatients.jsx",
+        "src/pages/Nurse/Dashboard.jsx",
+        "src/pages/Nurse/IncidentReports.jsx",
+        "src/pages/Nurse/LeaveRequests.jsx",
+        "src/pages/Nurse/MedicationAdministration.jsx",
+        "src/pages/Nurse/MyShift.jsx",
+        "src/pages/Nurse/Performance.jsx",
+        "src/pages/Nurse/VitalsEntry.jsx"
+      ]
+    },
+    "Operations": {
+      "total": 8,
+      "migrated": 8,
+      "remaining": 0,
+      "files": [
+        "src/pages/Operations/DialysisOpsDashboard.jsx",
+        "src/pages/Operations/EmergencyCommandDashboard.jsx",
+        "src/pages/Operations/IcuOpsDashboard.jsx",
+        "src/pages/Operations/ImagingOpsDashboard.jsx",
+        "src/pages/Operations/NeonatalIcuDashboard.jsx",
+        "src/pages/Operations/OncologyDaycareDashboard.jsx",
+        "src/pages/Operations/TheatreOpsDashboard.jsx",
+        "src/pages/Operations/TriageOpsDashboard.jsx"
+      ]
+    },
+    "Patient": {
+      "total": 15,
+      "migrated": 15,
+      "remaining": 0,
+      "files": [
+        "src/pages/Patient/AdsFeed.jsx",
+        "src/pages/Patient/Billing.jsx",
+        "src/pages/Patient/Dashboard.jsx",
+        "src/pages/Patient/FamilyRecords.jsx",
+        "src/pages/Patient/FamilyTimeline.jsx",
+        "src/pages/Patient/Feedback.jsx",
+        "src/pages/Patient/Hospitals.jsx",
+        "src/pages/Patient/Insurance.jsx",
+        "src/pages/Patient/LabResults.jsx",
+        "src/pages/Patient/MedicalRecords.jsx",
+        "src/pages/Patient/MyAppointments.jsx",
+        "src/pages/Patient/Patients.jsx",
+        "src/pages/Patient/Payments.jsx",
+        "src/pages/Patient/Prescriptions.jsx",
+        "src/pages/Patient/Transfers.jsx"
+      ]
+    },
+    "Payments": {
+      "total": 3,
+      "migrated": 3,
+      "remaining": 0,
+      "files": [
+        "src/pages/Payments/CheckoutStripe.jsx",
+        "src/pages/Payments/PaymentsFull.jsx",
+        "src/pages/Payments/PaymentsPage.jsx"
+      ]
+    },
+    "PayrollOfficer": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/PayrollOfficer/Dashboard.jsx"
+      ]
+    },
+    "Pharmacy": {
+      "total": 7,
+      "migrated": 7,
+      "remaining": 0,
+      "files": [
+        "src/pages/Pharmacy/ControlledDrugs.jsx",
+        "src/pages/Pharmacy/ExpiryAlerts.jsx",
+        "src/pages/Pharmacy/Index.jsx",
+        "src/pages/Pharmacy/InventoryPage.jsx",
+        "src/pages/Pharmacy/PrescriptionQueue.jsx",
+        "src/pages/Pharmacy/ReportsPage.jsx",
+        "src/pages/Pharmacy/SupplierOrders.jsx"
+      ]
+    },
+    "Radiologist": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Radiologist/Dashboard.jsx"
+      ]
+    },
+    "Receptionist": {
+      "total": 2,
+      "migrated": 2,
+      "remaining": 0,
+      "files": [
+        "src/pages/Receptionist/BookingDesk.jsx",
+        "src/pages/Receptionist/Dashboard.jsx"
+      ]
+    },
+    "Reports": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Reports/Index.jsx"
+      ]
+    },
+    "Security": {
+      "total": 2,
+      "migrated": 2,
+      "remaining": 0,
+      "files": [
+        "src/pages/Security/AdminDashboard.jsx",
+        "src/pages/Security/OfficerDashboard.jsx"
+      ]
+    },
+    "Staff": {
+      "total": 1,
+      "migrated": 1,
+      "remaining": 0,
+      "files": [
+        "src/pages/Staff/Dashboard.jsx"
+      ]
+    },
+    "SuperAdmin": {
+      "total": 8,
+      "migrated": 1,
+      "remaining": 7,
+      "files": [
+        "src/pages/SuperAdmin/AdminVerifyUser.jsx",
+        "src/pages/SuperAdmin/Dashboard.jsx",
+        "src/pages/SuperAdmin/HospitalFeatures.jsx",
+        "src/pages/SuperAdmin/Hospitals.jsx",
+        "src/pages/SuperAdmin/ML.jsx",
+        "src/pages/SuperAdmin/Pharmacies.jsx",
+        "src/pages/SuperAdmin/RBAC.jsx",
+        "src/pages/SuperAdmin/SystemSettings.jsx"
+      ]
+    },
+    "Surgeon": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Surgeon/Dashboard.jsx"
+      ]
+    },
+    "SystemAdmin": {
+      "total": 21,
+      "migrated": 21,
+      "remaining": 0,
+      "files": [
+        "src/pages/SystemAdmin/AbacPolicies.jsx",
+        "src/pages/SystemAdmin/ClaimRules.jsx",
+        "src/pages/SystemAdmin/ClinicalIntelligence.jsx",
+        "src/pages/SystemAdmin/ComplianceCenter.jsx",
+        "src/pages/SystemAdmin/ConnectorSdk.jsx",
+        "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+        "src/pages/SystemAdmin/Dashboard.jsx",
+        "src/pages/SystemAdmin/FraudGuard.jsx",
+        "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+        "src/pages/SystemAdmin/GovernmentHospitalRegistry.jsx",
+        "src/pages/SystemAdmin/HospitalVerificationReview.jsx",
+        "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+        "src/pages/SystemAdmin/IntegrationHub.jsx",
+        "src/pages/SystemAdmin/MappingStudio.jsx",
+        "src/pages/SystemAdmin/Migrations.jsx",
+        "src/pages/SystemAdmin/NlpAnalytics.jsx",
+        "src/pages/SystemAdmin/PatientIdentityRegistry.jsx",
+        "src/pages/SystemAdmin/PharmacyAccessAudit.jsx",
+        "src/pages/SystemAdmin/RegulatoryReports.jsx",
+        "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+        "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx"
+      ]
+    },
+    "Therapist": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Therapist/Dashboard.jsx"
+      ]
+    },
+    "Workforce": {
+      "total": 1,
+      "migrated": 0,
+      "remaining": 1,
+      "files": [
+        "src/pages/Workforce/MyRequests.jsx"
+      ]
+    }
+  }
+}
