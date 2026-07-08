@@ -1,45 +1,10 @@
-import React, { useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React from "react";
+import useRealTimeIntegrations from "../../hooks/useRealTimeIntegrations";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
 export default function RealTimeIntegrations() {
-  const [source, setSource] = useState("hospital-a");
-  const [hl7, setHl7] = useState("");
-  const [fhir, setFhir] = useState("");
-  const [res, setRes] = useState(null);
-
-  async function sendHL7() {
-    try {
-      const j = await apiFetch(`/api/webhooks/${source}`, {
-        method: "POST",
-        body: { hl7 },
-      });
-      setRes(j);
-    } catch (e) {
-      setRes({ error: e?.message || "Failed to send HL7 payload" });
-    }
-  }
-
-  async function sendFHIR() {
-    let obj = {};
-    try {
-      obj = JSON.parse(fhir);
-    } catch (e) {
-      alert("Invalid JSON");
-      return;
-    }
-
-    try {
-      const j = await apiFetch(`/api/webhooks/${source}`, {
-        method: "POST",
-        body: { resource: obj },
-      });
-      setRes(j);
-    } catch (e) {
-      setRes({ error: e?.message || "Failed to send FHIR payload" });
-    }
-  }
+  const { source, setSource, hl7, setHl7, fhir, setFhir, res, sendHL7, sendFHIR } = useRealTimeIntegrations();
 
   return (
     <div className="dashboard">
