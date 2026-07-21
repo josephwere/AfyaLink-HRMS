@@ -9,8 +9,8 @@ export default function IntegrationsRealtime(){
     <pre>X-AFYA-SIGNATURE: &lt;hmac_sha256_hex&gt;</pre>
     <p>Payload: HL7 raw text or FHIR JSON resource.</p>
     <h3>Example (curl)</h3>
-    <pre>sig=$(printf "%s" "$body" | openssl dgst -sha256 -hmac "$secret" | awk '{print $2}')
-curl -X POST "$url" -H "X-AFYA-SIGNATURE: $sig" -H "Content-Type: text/plain" --data-binary @payload.txt</pre>
+    <pre>{`sig=$(printf "%s" "$body" | openssl dgst -sha256 -hmac "$secret" | awk '{print $2}')
+curl -X POST "$url" -H "X-AFYA-SIGNATURE: $sig" -H "Content-Type: text/plain" --data-binary @payload.txt`}</pre>
     <p>Incoming webhooks are verified and queued for processing. Results will appear in the Integrations Logs.</p>
   </div>);
 }

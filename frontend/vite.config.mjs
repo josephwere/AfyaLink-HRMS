@@ -26,7 +26,9 @@ export default defineConfig({
     setupFiles: "./src/setupTests.js",
   },
   build: {
+    sourcemap: true,
     rollupOptions: {
+      external: ["@stripe/stripe-js"],
       output: {
         manualChunks(id) {
           if (id.includes("/src/pages/")) {
@@ -113,12 +115,6 @@ export default defineConfig({
               const group = rest.split("/")[0];
               if (group) return `page-${group.toLowerCase()}`;
             }
-          }
-          if (id.includes("/src/components/")) {
-            return "ui";
-          }
-          if (id.includes("/src/services/")) {
-            return "services";
           }
           if (!id.includes("node_modules")) return;
           if (id.includes("recharts") || id.includes("d3")) return "charts";

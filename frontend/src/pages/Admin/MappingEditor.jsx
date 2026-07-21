@@ -11,7 +11,7 @@ export default function MappingEditor(){
         <h3>Create / Edit</h3>
         <input placeholder='connector id' value={form.connector} onChange={e=>setForm(f=>({...f,connector:e.target.value}))} />
         <input placeholder='name' value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} />
-        <h4>HL7 mappings (example PID-5.1 => firstName)</h4>
+        <h4>HL7 mappings (example PID-5.1 =&gt; firstName)</h4>
         <textarea placeholder='one per line: PID-5.1=firstName' onBlur={e=>{ const obj={}; e.target.value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{ const [k,v]=line.split('='); if(k && v) obj[k.trim()]=v.trim(); }); setForm(f=>({...f,fields:{...f.fields,hl7:obj}})); }} style={{width:'100%',height:120}} />
         <h4>FHIR mappings (json path dot notation)</h4>
         <textarea placeholder='one per line: name[0].given[0]=firstName' onBlur={e=>{ const obj={}; e.target.value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{ const [k,v]=line.split('='); if(k && v) obj[k.trim()]=v.trim(); }); setForm(f=>({...f,fields:{...f.fields,fhir:obj}})); }} style={{width:'100%',height:120}} />

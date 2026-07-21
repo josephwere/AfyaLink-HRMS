@@ -1,124 +1,135 @@
 const prefetchedRoles = new Set();
 const prefetchedGroups = new Set();
 
-const COMMON_PREFETCHERS = [
-  () => import("../pages/Profile"),
-  () => import("../pages/Admin/NotificationsPage"),
-  () => import("../pages/Reports/Index"),
+const pageModules = import.meta.glob("../pages/**/*.jsx");
+
+function loadPage(relPath) {
+  const fullPath = `../pages/${relPath}.jsx`;
+  const loader = pageModules[fullPath];
+  if (typeof loader === "function") {
+    return loader();
+  }
+  return Promise.resolve(null);
+}
+
+const COMMON_PREFETCH_KEYS = [
+  "Profile",
+  "Admin/NotificationsPage",
+  "Reports/Index",
 ];
 
-const ROLE_PREFETCHERS = {
+const ROLE_PREFETCH_KEYS = {
   PATIENT: [
-    () => import("../pages/Patient/MyAppointments"),
-    () => import("../pages/Patient/MedicalRecords"),
-    () => import("../pages/Patient/FamilyRecords"),
-    () => import("../pages/Patient/FamilyTimeline"),
-    () => import("../pages/Patient/Billing"),
+    "Patient/MyAppointments",
+    "Patient/MedicalRecords",
+    "Patient/FamilyRecords",
+    "Patient/FamilyTimeline",
+    "Patient/Billing",
   ],
   DOCTOR: [
-    () => import("../pages/Doctor/Appointments"),
-    () => import("../pages/Doctor/MyPatients"),
-    () => import("../pages/Doctor/OPDWorkspace"),
-    () => import("../pages/Doctor/MySchedule"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
+    "Doctor/Appointments",
+    "Doctor/MyPatients",
+    "Doctor/OPDWorkspace",
+    "Doctor/MySchedule",
+    "Innovation/ClinicalOrderCopilot",
   ],
   SURGEON: [
-    () => import("../pages/Surgeon/Dashboard"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
-    () => import("../pages/Operations/TheatreOpsDashboard"),
+    "Surgeon/Dashboard",
+    "Innovation/ClinicalOrderCopilot",
+    "Operations/TheatreOpsDashboard",
   ],
   NURSE: [
-    () => import("../pages/Nurse/MyShift"),
-    () => import("../pages/Nurse/AssignedPatients"),
-    () => import("../pages/Nurse/MedicationAdministration"),
+    "Nurse/MyShift",
+    "Nurse/AssignedPatients",
+    "Nurse/MedicationAdministration",
   ],
   LAB_TECH: [
-    () => import("../pages/LabTech/TestQueue"),
-    () => import("../pages/LabTech/SampleTracking"),
-    () => import("../pages/LabTech/ReportsArchive"),
+    "LabTech/TestQueue",
+    "LabTech/SampleTracking",
+    "LabTech/ReportsArchive",
   ],
   PHARMACIST: [
-    () => import("../pages/Pharmacy/PrescriptionQueue"),
-    () => import("../pages/Pharmacy/InventoryPage"),
-    () => import("../pages/Pharmacy/ReportsPage"),
+    "Pharmacy/PrescriptionQueue",
+    "Pharmacy/InventoryPage",
+    "Pharmacy/ReportsPage",
   ],
   HOSPITAL_ADMIN: [
-    () => import("../pages/HospitalAdmin/Financials"),
-    () => import("../pages/HospitalAdmin/Appointments"),
-    () => import("../pages/HospitalAdmin/ClaimsDashboard"),
-    () => import("../pages/HospitalAdmin/Customization"),
-    () => import("../pages/SystemAdmin/RevenueIntelligence"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
-    () => import("../pages/Innovation/DigitalHospitalTwin"),
-    () => import("../pages/Innovation/InteropMarketplace"),
+    "HospitalAdmin/Financials",
+    "HospitalAdmin/Appointments",
+    "HospitalAdmin/ClaimsDashboard",
+    "HospitalAdmin/Customization",
+    "SystemAdmin/RevenueIntelligence",
+    "Innovation/ClinicalOrderCopilot",
+    "Innovation/DigitalHospitalTwin",
+    "Innovation/InteropMarketplace",
   ],
   HOSPITAL_ADMIN_ASSISTANT: [
-    () => import("../pages/HospitalAdmin/Appointments"),
-    () => import("../pages/HospitalAdmin/Approvals"),
-    () => import("../pages/HospitalAdmin/TransferCommandCenter"),
-    () => import("../pages/SystemAdmin/RevenueIntelligence"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
-    () => import("../pages/Innovation/DigitalHospitalTwin"),
-    () => import("../pages/Innovation/InteropMarketplace"),
+    "HospitalAdmin/Appointments",
+    "HospitalAdmin/Approvals",
+    "HospitalAdmin/TransferCommandCenter",
+    "SystemAdmin/RevenueIntelligence",
+    "Innovation/ClinicalOrderCopilot",
+    "Innovation/DigitalHospitalTwin",
+    "Innovation/InteropMarketplace",
   ],
   SYSTEM_ADMIN: [
-    () => import("../pages/SystemAdmin/UnifiedAssistantDashboard"),
-    () => import("../pages/SystemAdmin/IntegrationHub"),
-    () => import("../pages/SystemAdmin/GovernmentClaimsDashboard"),
-    () => import("../pages/SystemAdmin/RevenueIntelligence"),
-    () => import("../pages/SystemAdmin/ComplianceCenter"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
-    () => import("../pages/Innovation/DigitalHospitalTwin"),
-    () => import("../pages/Innovation/InteropMarketplace"),
-    () => import("../pages/SuperAdmin/SystemSettings"),
+    "SystemAdmin/UnifiedAssistantDashboard",
+    "SystemAdmin/IntegrationHub",
+    "SystemAdmin/GovernmentClaimsDashboard",
+    "SystemAdmin/RevenueIntelligence",
+    "SystemAdmin/ComplianceCenter",
+    "Innovation/ClinicalOrderCopilot",
+    "Innovation/DigitalHospitalTwin",
+    "Innovation/InteropMarketplace",
+    "SuperAdmin/SystemSettings",
   ],
   SUPER_ADMIN: [
-    () => import("../pages/SuperAdmin/SystemSettings"),
-    () => import("../pages/SuperAdmin/Hospitals"),
-    () => import("../pages/SystemAdmin/UnifiedAssistantDashboard"),
-    () => import("../pages/SystemAdmin/RevenueIntelligence"),
-    () => import("../pages/SystemAdmin/ComplianceCenter"),
-    () => import("../pages/Innovation/ClinicalOrderCopilot"),
-    () => import("../pages/Innovation/DigitalHospitalTwin"),
-    () => import("../pages/Innovation/InteropMarketplace"),
-    () => import("../pages/Admin/SuperAssistants"),
-    // Founder often role-switches; warm core page chunks opportunistically.
-    () => import("../pages/HospitalAdmin/Dashboard"),
-    () => import("../pages/Doctor/Dashboard"),
-    () => import("../pages/Patient/Dashboard"),
-    () => import("../pages/CommunityHealthWorker/Dashboard"),
-    () => import("../pages/LabTech/Dashboard"),
-    () => import("../pages/Staff/Dashboard"),
-    () => import("../pages/Receptionist/Dashboard"),
+    "SuperAdmin/SystemSettings",
+    "SuperAdmin/Hospitals",
+    "SystemAdmin/UnifiedAssistantDashboard",
+    "SystemAdmin/RevenueIntelligence",
+    "SystemAdmin/ComplianceCenter",
+    "Innovation/ClinicalOrderCopilot",
+    "Innovation/DigitalHospitalTwin",
+    "Innovation/InteropMarketplace",
+    "Admin/SuperAssistants",
+    "HospitalAdmin/Dashboard",
+    "Doctor/Dashboard",
+    "Patient/Dashboard",
+    "CommunityHealthWorker/Dashboard",
+    "LabTech/Dashboard",
+    "Staff/Dashboard",
+    "Receptionist/Dashboard",
   ],
   DEVELOPER: [
-    () => import("../pages/Developer/Dashboard"),
-    () => import("../pages/Developer/DecisionCockpit"),
-    () => import("../pages/SystemAdmin/IntegrationControlPlane"),
-    () => import("../pages/HospitalAdmin/Dashboard"),
-    () => import("../pages/Doctor/Dashboard"),
-    () => import("../pages/Patient/Dashboard"),
-    () => import("../pages/CommunityHealthWorker/Dashboard"),
+    "Developer/Dashboard",
+    "Developer/DecisionCockpit",
+    "SystemAdmin/IntegrationControlPlane",
+    "HospitalAdmin/Dashboard",
+    "Doctor/Dashboard",
+    "Patient/Dashboard",
+    "CommunityHealthWorker/Dashboard",
   ],
   RECEPTIONIST: [
-    () => import("../pages/Receptionist/BookingDesk"),
-    () => import("../pages/Communication/Center"),
+    "Receptionist/BookingDesk",
+    "Communication/Center",
   ],
   HR_MANAGER: [
-    () => import("../pages/Admin/TrainingTracker"),
-    () => import("../pages/Workforce/MyRequests"),
+    "Admin/TrainingTracker",
+    "Workforce/MyRequests",
   ],
   PAYROLL_OFFICER: [
-    () => import("../pages/Payments/PaymentsPage"),
-    () => import("../pages/Workforce/MyRequests"),
+    "Payments/PaymentsPage",
+    "Workforce/MyRequests",
   ],
   SUPER_ASSISTANT: [
-    () => import("../pages/SystemAdmin/UnifiedAssistantDashboard"),
-    () => import("../pages/Communication/Center"),
+    "SystemAdmin/UnifiedAssistantDashboard",
+    "Communication/Center",
   ],
 };
 
 function shouldDeferPrefetch() {
+  if (typeof navigator === "undefined") return true;
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   if (!connection) return false;
   if (connection.saveData) return true;
@@ -126,6 +137,7 @@ function shouldDeferPrefetch() {
 }
 
 function schedule(task) {
+  if (typeof window === "undefined") return;
   if (typeof window.requestIdleCallback === "function") {
     window.requestIdleCallback(task, { timeout: 2500 });
     return;
@@ -138,13 +150,13 @@ export function prefetchRoutesForRole(role) {
   if (!normalizedRole || prefetchedRoles.has(normalizedRole) || shouldDeferPrefetch()) return;
   prefetchedRoles.add(normalizedRole);
 
-  const tasks = [...COMMON_PREFETCHERS, ...(ROLE_PREFETCHERS[normalizedRole] || [])];
-  if (!tasks.length) return;
+  const keys = [...COMMON_PREFETCH_KEYS, ...(ROLE_PREFETCH_KEYS[normalizedRole] || [])];
+  if (!keys.length) return;
 
   schedule(() => {
-    tasks.forEach((load) => {
+    keys.forEach((key) => {
       Promise.resolve()
-        .then(() => load())
+        .then(() => loadPage(key))
         .catch(() => {});
     });
   });
@@ -182,22 +194,22 @@ function groupForPath(pathname) {
   return "";
 }
 
-const GROUP_PREFETCHERS = {
-  doctor: () => import("../pages/Doctor/Dashboard"),
-  patient: () => import("../pages/Patient/Dashboard"),
-  "hospital-admin": () => import("../pages/HospitalAdmin/Dashboard"),
-  "super-admin": () => import("../pages/SuperAdmin/Dashboard"),
-  "system-admin": () => import("../pages/SystemAdmin/Dashboard"),
-  "care-lite": () => import("../pages/CommunityHealthWorker/Dashboard"),
-  "clinical-lite": () => import("../pages/LabTech/Dashboard"),
-  "admin-lite": () => import("../pages/Receptionist/Dashboard"),
-  "ops-lite": () => import("../pages/Reports/Index"),
-  "workflow-lite": () => import("../pages/Payments/PaymentsPage"),
-  "staff-lite": () => import("../pages/Staff/Dashboard"),
-  ai: () => import("../pages/AI/MedicalAssistant"),
-  profile: () => import("../pages/Profile"),
-  notifications: () => import("../pages/Admin/NotificationsPage"),
-  admin: () => import("../pages/Admin/Dashboard"),
+const GROUP_PREFETCH_KEYS = {
+  doctor: "Doctor/Dashboard",
+  patient: "Patient/Dashboard",
+  "hospital-admin": "HospitalAdmin/Dashboard",
+  "super-admin": "SuperAdmin/Dashboard",
+  "system-admin": "SystemAdmin/Dashboard",
+  "care-lite": "CommunityHealthWorker/Dashboard",
+  "clinical-lite": "LabTech/Dashboard",
+  "admin-lite": "Receptionist/Dashboard",
+  "ops-lite": "Reports/Index",
+  "workflow-lite": "Payments/PaymentsPage",
+  "staff-lite": "Staff/Dashboard",
+  ai: "AI/MedicalAssistant",
+  profile: "Profile",
+  notifications: "Admin/NotificationsPage",
+  admin: "Admin/Dashboard",
 };
 
 export function prefetchRouteByPath(path) {
@@ -205,13 +217,13 @@ export function prefetchRouteByPath(path) {
   const group = groupForPath(path);
   if (!group) return;
   if (prefetchedGroups.has(group)) return;
-  const loader = GROUP_PREFETCHERS[group];
-  if (typeof loader !== "function") return;
+  const key = GROUP_PREFETCH_KEYS[group];
+  if (!key) return;
   prefetchedGroups.add(group);
 
   schedule(() => {
     Promise.resolve()
-      .then(() => loader())
+      .then(() => loadPage(key))
       .catch(() => {});
   });
 }
