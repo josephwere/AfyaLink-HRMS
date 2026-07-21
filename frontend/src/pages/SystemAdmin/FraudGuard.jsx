@@ -1,87 +1,34 @@
-import { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import { useEffect } from "react";
+import useClaimsDashboard from "../../hooks/useClaimsDashboard";
 
 export default function FraudGuard() {
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [summary, setSummary] = useState({ totalClaims: 0, reviewClaims: 0, rejectedClaims: 0, openAlerts: 0 });
-  const [alerts, setAlerts] = useState([]);
-  const [claims, setClaims] = useState([]);
-  const [auditOpen, setAuditOpen] = useState(false);
-  const [auditClaim, setAuditClaim] = useState(null);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditMsg, setAuditMsg] = useState("");
-  const [reviewingId, setReviewingId] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const [summaryRes, alertRes, claimRes] = await Promise.all([
-        apiFetch("/api/claims/summary"),
-        apiFetch("/api/claims/alerts?status=OPEN"),
-        apiFetch("/api/claims?status=REVIEW_REQUIRED&limit=25"),
-      ]);
-      setSummary(summaryRes?.totals || { totalClaims: 0, reviewClaims: 0, rejectedClaims: 0, openAlerts: 0 });
-      setAlerts(Array.isArray(alertRes?.items) ? alertRes.items : []);
-      setClaims(Array.isArray(claimRes?.items) ? claimRes.items : []);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load fraud guard data.");
-      setSummary({ totalClaims: 0, reviewClaims: 0, rejectedClaims: 0, openAlerts: 0 });
-      setAlerts([]);
-      setClaims([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    loading,
+    msg,
+    claims,
+    alerts,
+    summary,
+    auditOpen,
+    auditClaim,
+    auditLogs,
+    auditLoading,
+    auditMsg,
+    reviewingId,
+    load,
+    openAudit,
+    closeAudit,
+    reviewClaim,
+  } = useClaimsDashboard();
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+  }, [load]);
 
-  const reviewClaim = async (claimId, decision) => {
-    if (!claimId) return;
+  const handleReview = async (claimId, decision) => {
     const confirmText = decision === "APPROVE" ? "Approve this claim?" : "Reject this claim?";
     if (!window.confirm(confirmText)) return;
     const notes = window.prompt("Optional review notes (leave blank if none):", "") || "";
-    setReviewingId(claimId);
-    setMsg("");
-    try {
-      await apiFetch(`/api/claims/${claimId}/review`, {
-        method: "POST",
-        body: { decision, notes },
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to review claim.");
-    } finally {
-      setReviewingId("");
-    }
-  };
-
-  const openAudit = async (claim) => {
-    if (!claim?._id) return;
-    setAuditOpen(true);
-    setAuditClaim(claim);
-    setAuditLogs([]);
-    setAuditMsg("");
-    setAuditLoading(true);
-    try {
-      const res = await apiFetch(`/api/claims/${claim._id}/audit`);
-      setAuditLogs(Array.isArray(res?.items) ? res.items : []);
-    } catch (err) {
-      setAuditMsg(err?.message || "Failed to load claim audit.");
-    } finally {
-      setAuditLoading(false);
-    }
-  };
-
-  const closeAudit = () => {
-    setAuditOpen(false);
-    setAuditClaim(null);
-    setAuditLogs([]);
-    setAuditMsg("");
+    await reviewClaim(claimId, { decision, notes });
   };
 
   return (
@@ -189,7 +136,7 @@ export default function FraudGuard() {
                           type="button"
                           className="btn-secondary"
                           disabled={reviewingId === claim._id}
-                          onClick={() => reviewClaim(claim._id, "APPROVE")}
+                          onClick={() => handleReview(claim._id, "APPROVE")}
                         >
                           Approve
                         </button>
@@ -197,7 +144,7 @@ export default function FraudGuard() {
                           type="button"
                           className="btn-secondary danger"
                           disabled={reviewingId === claim._id}
-                          onClick={() => reviewClaim(claim._id, "REJECT")}
+                          onClick={() => handleReview(claim._id, "REJECT")}
                         >
                           Reject
                         </button>

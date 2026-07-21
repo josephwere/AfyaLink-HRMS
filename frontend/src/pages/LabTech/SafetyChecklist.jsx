@@ -1,44 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
+import { useLabOps } from "../../hooks/useLabOps";
 
 export default function SafetyChecklist() {
-  const [checks, setChecks] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ area: "", ppe: true, hazard: false, note: "" });
-
-  const loadChecks = async () => {
-    try {
-      const data = await listLabOpsRecords({ kind: "SAFETY_CHECK", limit: 80 });
-      setChecks(Array.isArray(data?.items) ? data.items : []);
-      setTotal(Number(data?.total || 0));
-      setMessage("");
-    } catch (err) {
-      setChecks([]);
-      setTotal(0);
-      setMessage(err?.message || "Unable to load safety checks.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadChecks();
-  }, []);
-
-  const sorted = useMemo(
-    () =>
-      [...checks].sort(
-        (a, b) =>
-          new Date(b.observedAt || b.createdAt).getTime() -
-          new Date(a.observedAt || a.createdAt).getTime()
-      ),
-    [checks]
-  );
+  const { records: checks, sorted, total, loading, busy, message, setMessage, form, setForm, createRecord } = useLabOps({
+    kind: "SAFETY_CHECK",
+    limit: 80,
+    initialForm: { area: "", ppe: true, hazard: false, note: "" },
+  });
 
   const save = async (e) => {
     e.preventDefault();
@@ -47,26 +17,19 @@ export default function SafetyChecklist() {
       return;
     }
 
-    setBusy(true);
-    try {
-      await createLabOpsRecord({
-        kind: "SAFETY_CHECK",
-        title: form.area.trim(),
-        status: form.hazard ? "FOLLOW_UP" : form.ppe ? "COMPLIANT" : "PPE_GAP",
-        note: form.note,
-        details: {
-          ppe: form.ppe,
-          hazard: form.hazard,
-        },
-      });
+    const ok = await createRecord({
+      kind: "SAFETY_CHECK",
+      title: form.area.trim(),
+      status: form.hazard ? "FOLLOW_UP" : form.ppe ? "COMPLIANT" : "PPE_GAP",
+      note: form.note,
+      details: {
+        ppe: form.ppe,
+        hazard: form.hazard,
+      },
+    });
+    if (ok) {
       setForm({ area: "", ppe: true, hazard: false, note: "" });
       setShowForm(false);
-      await loadChecks();
-      setMessage("Safety checklist saved.");
-    } catch (err) {
-      setMessage(err?.message || "Unable to save the safety checklist.");
-    } finally {
-      setBusy(false);
     }
   };
 

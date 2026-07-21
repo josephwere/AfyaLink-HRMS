@@ -1,4 +1,6 @@
 import { normalizeRole } from "../../utils/normalizeRole";
+import { getRuntimeNavigationItems } from "../../services/shared/frontendRuntime";
+import { getStoredUserContextMode } from "../../contexts/UserContextContext";
 
 /**
  * Single source of truth for:
@@ -33,6 +35,11 @@ export const WORKSPACE_HOME_PATH = Object.freeze({
   innovation: "/app/innovation/home/index",
 });
 
+export function getContextualWorkspaceHomePath(mode = "WORK") {
+  if (mode === "MY_HEALTH") return "/app/portal/home/index";
+  return WORKSPACE_HOME_PATH.portal;
+}
+
 // Workspaces visible per effective role. (Auth provider already applies roleOverride.)
 const WORKSPACES_BY_ROLE = Object.freeze({
   SUPER_ADMIN: ["care", "operations", "revenue", "people", "platform", "governance", "innovation", "portal"],
@@ -53,6 +60,10 @@ const WORKSPACES_BY_ROLE = Object.freeze({
   PHARMACIST: ["operations", "care"],
   RECEPTIONIST: ["operations", "revenue", "people"],
   COMMUNITY_HEALTH_WORKER: ["operations", "care"],
+  DRIVER: ["operations"],
+  AMBULANCE_DRIVER: ["operations"],
+  MORTUARY_STAFF: ["operations"],
+  MORTUARY_MANAGER: ["operations"],
 
   HR_MANAGER: ["people", "operations", "platform"],
   PAYROLL_OFFICER: ["revenue", "people"],
@@ -74,6 +85,24 @@ const WORKSPACES_BY_ROLE = Object.freeze({
  * Canonical navigation tree.
  * Keep it small and worklist-first: queues > forms.
  */
+const MY_HEALTH_WORKSPACE_NAV = Object.freeze({
+  portal: [
+    {
+      group: "My Health",
+      items: [
+        { id: "portal-home", label: "Home", path: "/app/portal/home/index", icon: "home" },
+        { id: "portal-discovery", label: "Discover Care", path: "/app/portal/discovery/hospitals", icon: "hospital" },
+        { id: "portal-appointments", label: "My Appointments", path: "/app/portal/appointments/index", icon: "appointments" },
+        { id: "portal-records", label: "Medical Records", path: "/app/portal/records/index", icon: "reports" },
+        { id: "portal-prescriptions", label: "Prescriptions", path: "/app/portal/medications/prescriptions", icon: "pharmacy" },
+        { id: "portal-billing", label: "Payments", path: "/app/portal/billing/index", icon: "payroll" },
+        { id: "portal-insurance", label: "Insurance", path: "/app/portal/insurance/index", icon: "shield" },
+        { id: "portal-support", label: "Telemedicine", path: "/app/portal/support/feedback", icon: "notifications" },
+      ],
+    },
+  ],
+});
+
 export const WORKSPACE_NAV = Object.freeze({
   care: [
     {
@@ -102,6 +131,8 @@ export const WORKSPACE_NAV = Object.freeze({
       group: "Operations",
       items: [
         { id: "ops-home", label: "Home", path: "/app/operations/home/index", icon: "home" },
+        { id: "ops-driver", label: "Driver Ops", path: "/app/operations/driver/home", icon: "car" },
+        { id: "ops-mortuary", label: "Mortuary", path: "/app/operations/mortuary/home", icon: "hospital" },
         { id: "ops-bedboard", label: "Bed Board", path: "/app/operations/bed-board/index", icon: "analytics" },
         { id: "ops-triage", label: "Triage", path: "/app/operations/triage/index", icon: "appointments" },
         { id: "ops-emergency", label: "Emergency Command", path: "/app/operations/emergency/command", icon: "security" },
@@ -191,6 +222,7 @@ export const WORKSPACE_NAV = Object.freeze({
         { id: "gov-claims", label: "Government Claims", path: "/app/governance/claims/index", icon: "reports" },
         { id: "gov-registry-hosp", label: "Hospital Registry", path: "/app/governance/registry/hospitals", icon: "admin" },
         { id: "gov-registry-patient", label: "Patient Identity", path: "/app/governance/registry/patient-identity", icon: "account" },
+        { id: "gov-verification", label: "Hospital Verification", path: "/app/governance/verification/hospitals", icon: "shield" },
       ],
     },
   ],
@@ -202,6 +234,7 @@ export const WORKSPACE_NAV = Object.freeze({
         { id: "portal-appointments", label: "Appointments", path: "/app/portal/appointments/index", icon: "appointments" },
         { id: "portal-records", label: "Medical Records", path: "/app/portal/records/index", icon: "reports" },
         { id: "portal-billing", label: "Billing", path: "/app/portal/billing/index", icon: "payroll" },
+        { id: "portal-family", label: "Family Records", path: "/app/portal/family/records", icon: "account" },
       ],
     },
   ],
@@ -220,14 +253,57 @@ export const WORKSPACE_NAV = Object.freeze({
   ],
 });
 
+function toWorkspaceLabel(id) {
+  return id
+    .split(/[-_\s]+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function workspacesForUser(user) {
   const role = normalizeRole(user?.role || "");
-  const list = WORKSPACES_BY_ROLE[role] || [];
-  return list
-    .map((id) => WORKSPACES.find((w) => w.id === id))
+  const mode = getStoredUserContextMode();
+  const roleWorkspaces = new Set(WORKSPACES_BY_ROLE[role] || []);
+  const domainItems = getRuntimeNavigationItems({ userPermissions: user?.permissions || [] });
+
+  domainItems.forEach((item) => {
+    if (item.workspace) {
+      roleWorkspaces.add(item.workspace);
+    }
+  });
+
+  if (mode === "MY_HEALTH") {
+    roleWorkspaces.clear();
+    roleWorkspaces.add("portal");
+  }
+
+  return Array.from(roleWorkspaces)
+    .map((id) => WORKSPACES.find((w) => w.id === id) || { id, label: toWorkspaceLabel(id), icon: "apps" })
     .filter(Boolean);
 }
 
-export function navForWorkspace(workspaceId) {
-  return WORKSPACE_NAV[workspaceId] || [];
+export function navForWorkspace(workspaceId, user = null) {
+  const mode = getStoredUserContextMode();
+  if (mode === "MY_HEALTH" && workspaceId === "portal") {
+    return MY_HEALTH_WORKSPACE_NAV[workspaceId] || [];
+  }
+
+  const staticNav = WORKSPACE_NAV[workspaceId] || [];
+  const domainItems = getRuntimeNavigationItems({ userPermissions: user?.permissions || [] }).filter((item) => item.workspace === workspaceId);
+
+  if (!domainItems.length) {
+    return staticNav;
+  }
+
+  const domainGroup = {
+    group: "Domains",
+    items: domainItems.map((item) => ({
+      id: `domain-${item.id}`,
+      label: item.label,
+      path: item.route,
+      icon: item.icon,
+    })),
+  };
+
+  return [...staticNav, domainGroup];
 }

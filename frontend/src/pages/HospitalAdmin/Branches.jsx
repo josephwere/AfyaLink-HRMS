@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
-
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 
 export default function Branches() {
-  const [branches, setBranches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
+  const { branches, branchLoading: loading, branchMsg: msg, loadBranches, createBranch } = useHospitalAdminOperations();
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [email, setEmail] = useState("");
@@ -13,50 +10,20 @@ export default function Branches() {
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [branchLicenseRequired, setBranchLicenseRequired] = useState(false);
 
-  async function fetchBranches() {
-    try {
-      const data = await apiFetch("/api/branches");
-      const rows = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.items)
-        ? data.items
-        : Array.isArray(data?.data)
-        ? data.data
-        : [];
-      setBranches(rows);
-    } catch (err) {
-      console.error("Failed to load branches", err);
-      setBranches([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function createBranch(e) {
+  async function handleCreateBranch(e) {
     e.preventDefault();
-    try {
-      await apiFetch("/api/branches", {
-        method: "POST",
-        body: { name, location, email, phone, registrationNumber, branchLicenseRequired },
-      });
-
-      setName("");
-      setLocation("");
-      setEmail("");
-      setPhone("");
-      setRegistrationNumber("");
-      setBranchLicenseRequired(false);
-      setMsg("Branch added under the verified parent hospital.");
-      fetchBranches();
-    } catch (err) {
-      console.error("Failed to create branch", err);
-      setMsg(err?.message || "Failed to create branch");
-    }
+    await createBranch({ name, location, email, phone, registrationNumber, branchLicenseRequired });
+    setName("");
+    setLocation("");
+    setEmail("");
+    setPhone("");
+    setRegistrationNumber("");
+    setBranchLicenseRequired(false);
   }
 
   useEffect(() => {
-    fetchBranches();
-  }, []);
+    void loadBranches();
+  }, [loadBranches]);
 
   if (loading) return <div>Loading branches...</div>;
 
@@ -65,7 +32,7 @@ export default function Branches() {
       <h1 className="page-title">Hospital Branches</h1>
       {msg ? <div className="card p-4 mb-4">{msg}</div> : null}
 
-      <form className="card p-4 mb-4" onSubmit={createBranch}>
+      <form className="card p-4 mb-4" onSubmit={handleCreateBranch}>
         <h2>Add New Branch Under Parent Hospital</h2>
 
         <input

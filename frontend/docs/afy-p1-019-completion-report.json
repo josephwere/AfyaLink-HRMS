@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-07-08T22:37:18.092Z",
+  "scope": [
+    "canonical route coverage",
+    "workspace navigation coverage",
+    "dashboard and action targets",
+    "operational role exposure",
+    "role redirect coverage"
+  ],
+  "coverage": {
+    "canonicalRoutes": 147,
+    "workspaceNavigationPaths": 65,
+    "missingWorkspaceRoutes": [],
+    "roleOptionsCount": 35,
+    "roleOptions": [
+      "AMBULANCE_DRIVER",
+      "BIOMEDICAL_TECHNICIAN",
+      "COMMUNITY_HEALTH_WORKER",
+      "DEVELOPER",
+      "DOCTOR",
+      "DRIVER",
+      "GOVERNMENT_ADMIN",
+      "GOVERNMENT_ANALYST",
+      "GOVERNMENT_AUDITOR",
+      "GOVERNMENT_INSPECTOR",
+      "GOVERNMENT_REGULATOR",
+      "GUEST",
+      "HOSPITAL_ADMIN",
+      "HOSPITAL_ADMIN_ASSISTANT",
+      "HOUSEKEEPING_STAFF",
+      "HR",
+      "HR_MANAGER",
+      "KITCHEN_STAFF",
+      "LAB_TECH",
+      "MAINTENANCE_TECH",
+      "MORTUARY_MANAGER",
+      "MORTUARY_STAFF",
+      "NURSE",
+      "PATIENT",
+      "PAYROLL_OFFICER",
+      "PHARMACIST",
+      "RADIOLOGIST",
+      "RECEPTIONIST",
+      "SECURITY_ADMIN",
+      "SECURITY_OFFICER",
+      "SUPER_ADMIN",
+      "SUPER_ASSISTANT",
+      "SURGEON",
+      "SYSTEM_ADMIN",
+      "THERAPIST"
+    ]
+  },
+  "findings": [
+    {
+      "area": "Driver and mortuary landing pages",
+      "status": "resolved",
+      "evidence": [
+        "/app/operations/driver/home",
+        "/app/operations/mortuary/home"
+      ]
+    },
+    {
+      "area": "Operational roles in registration UI",
+      "status": "resolved",
+      "evidence": [
+        "DRIVER",
+        "AMBULANCE_DRIVER",
+        "MORTUARY_STAFF",
+        "MORTUARY_MANAGER",
+        "MAINTENANCE_TECH",
+        "BIOMEDICAL_TECHNICIAN",
+        "HOUSEKEEPING_STAFF",
+        "KITCHEN_STAFF"
+      ]
+    },
+    {
+      "area": "Role redirect coverage",
+      "status": "resolved",
+      "evidence": [
+        "/app/operations/driver/home",
+        "/app/operations/mortuary/home"
+      ]
+    }
+  ],
+  "dashboardTargets": [],
+  "nextSteps": [
+    "Run the full frontend smoke route suite",
+    "Extend dashboard card audit coverage for remaining operations pages",
+    "Publish the generated report in release notes"
+  ]
+}

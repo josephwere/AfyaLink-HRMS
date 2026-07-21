@@ -1,31 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { getReceptionistDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import useReceptionistDashboard from "../../hooks/useReceptionistDashboard";
 
 export default function ReceptionistDashboard() {
   const navigate = useNavigate();
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getReceptionistDashboard().then(setData).catch(() => setData(null));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { data, transfers, transferError, pendingTransferCount } = useReceptionistDashboard();
 
   return (
     <DashboardHomeShell
@@ -55,13 +38,13 @@ export default function ReceptionistDashboard() {
         items: [
           { label: translateText("Appointments Today"), value: data?.appointmentsToday ?? "—" },
           { label: translateText("Unread Notifications"), value: data?.unreadNotifications ?? "—", tone: Number(data?.unreadNotifications || 0) > 0 ? "warn" : "good" },
-          { label: translateText("Pending transfers"), value: transfers.filter((t) => t.status === "Pending").length, tone: transfers.some((t) => t.status === "Pending") ? "warn" : "good" },
+          { label: translateText("Pending transfers"), value: pendingTransferCount, tone: pendingTransferCount > 0 ? "warn" : "good" },
         ],
       }}
       runway={[
         { id: "reception-runway-booking", title: translateText("Fast hospital booking"), description: translateText("Open the main booking flow and keep patient arrivals moving without delay."), eyebrow: translateText("Booking"), path: "/receptionist/booking-desk", badge: translateText("Live") },
         { id: "reception-runway-messages", title: translateText("Front desk messages"), description: translateText("Check notifications, service updates, and request follow-up in one place."), eyebrow: translateText("Messages"), path: "/notifications", badge: `${data?.unreadNotifications ?? 0}` },
-        { id: "reception-runway-transfers", title: translateText("Transfer continuity"), description: translateText("Review transfer arrivals and handoff status before patients hit the desk."), eyebrow: translateText("Continuity"), path: "/hospital-admin/transfer-command-center", badge: `${transfers.filter((t) => t.status === "Pending").length}` },
+        { id: "reception-runway-transfers", title: translateText("Transfer continuity"), description: translateText("Review transfer arrivals and handoff status before patients hit the desk."), eyebrow: translateText("Continuity"), path: "/hospital-admin/transfer-command-center", badge: `${pendingTransferCount}` },
         { id: "reception-runway-requests", title: translateText("My requests"), description: translateText("Open your leave and staffing requests without leaving the workspace shell."), eyebrow: translateText("Requests"), path: "/workforce/requests", badge: `${data?.myPendingRequests ?? 0}` },
       ]}
       pinnedTools={[
@@ -83,7 +66,7 @@ export default function ReceptionistDashboard() {
           items: [
             { label: translateText("Patients Total"), value: data?.patientsTotal ?? "—" },
             { label: translateText("Unread Notifications"), value: data?.unreadNotifications ?? "—", tone: Number(data?.unreadNotifications || 0) > 0 ? "warn" : "good" },
-            { label: translateText("Pending transfers"), value: transfers.filter((t) => t.status === "Pending").length, tone: transfers.some((t) => t.status === "Pending") ? "warn" : "good" },
+            { label: translateText("Pending transfers"), value: pendingTransferCount, tone: pendingTransferCount > 0 ? "warn" : "good" },
           ],
           actions: [
             { label: translateText("Booking Desk"), path: "/receptionist/booking-desk", variant: "secondary" },
@@ -135,7 +118,7 @@ export default function ReceptionistDashboard() {
               <h3>{translateText("Transfer Continuity")}</h3>
               <p className="muted">{translateText("Recent transfers and handoff status.")}</p>
             </div>
-            <div className="action-pill">{translateText("Pending")}: {transfers.filter((t) => t.status === "Pending").length}</div>
+              <div className="action-pill">{translateText("Pending")}: {pendingTransferCount}</div>
           </div>
           {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>

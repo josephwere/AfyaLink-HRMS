@@ -1,46 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { StatCard } from "../../components/Cards";
-import { listDlqItems, retryDlqItem } from "../../services/dlqApi";
+import { useQueueReplay } from "../../hooks/useQueueReplay";
 
 export default function WebhookRetry() {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const { items, loading, msg, load, summary } = useQueueReplay();
 
-  const load = async () => {
-    setLoading(true);
-    setMsg(null);
-    try {
-      const data = await listDlqItems();
-      const filtered = (Array.isArray(data) ? data : []).filter(
-        (item) => item?.data?.connectorId || item?.data?.payload
-      );
-      setItems(filtered);
-    } catch {
-      setItems([]);
-      setMsg("Failed to load webhook recovery queue.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const summary = useMemo(() => {
-    const uniqueConnectors = new Set(items.map((item) => item?.data?.connectorId).filter(Boolean));
-    const highAttempt = items.filter((item) => Number(item.attemptsMade || 0) >= 3).length;
-    return {
-      uniqueConnectors: uniqueConnectors.size,
-      highAttempt,
-      replayable: items.filter((item) => Number(item.attemptsMade || 0) < 10).length,
-    };
-  }, [items]);
-
-  const connectorLeaders = useMemo(() => {
+  const connectorLeaders = React.useMemo(() => {
     const counts = new Map();
     items.forEach((item) => {
       const key = item?.data?.connectorId || "unknown";

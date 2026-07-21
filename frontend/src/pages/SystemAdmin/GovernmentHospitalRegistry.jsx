@@ -1,85 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  createGovernmentHospitalRegistryEntry,
-  importGovernmentHospitalRegistry,
-  listGovernmentHospitalRegistry,
-} from "../../services/systemAdminApi";
+import { useGovernmentHospitalRegistry } from "../../hooks/useGovernmentHospitalRegistry";
 
 export default function GovernmentHospitalRegistryPage() {
   const [searchParams] = useSearchParams();
-  const [items, setItems] = useState([]);
-  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [bulk, setBulk] = useState("");
-  const [form, setForm] = useState({
-    officialName: "",
-    registrationNumber: "",
-    hospitalType: "PRIVATE",
-    country: "",
-    region: "",
-    city: "",
-    address: "",
-    email: "",
-    phone: "",
-    validUntil: "",
-  });
-
-  const load = async () => {
-    try {
-      const rows = await listGovernmentHospitalRegistry({ q: q || undefined });
-      setItems(rows);
-    } catch {
-      setItems([]);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [q]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-    try {
-      await createGovernmentHospitalRegistryEntry(form);
-      setMsg("Government registry entry saved.");
-      setForm({
-        officialName: "",
-        registrationNumber: "",
-        hospitalType: "PRIVATE",
-        country: "",
-        region: "",
-        city: "",
-        address: "",
-        email: "",
-        phone: "",
-        validUntil: "",
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to save registry entry.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const runImport = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const res = await importGovernmentHospitalRegistry(bulk);
-      setMsg(`Imported ${res?.created?.length || 0} entries. Skipped ${res?.skipped?.length || 0}.`);
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to import registry entries.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    items,
+    q,
+    setQ,
+    msg,
+    highlightedText: hookHighlightedText,
+    loading,
+    bulk,
+    setBulk,
+    form,
+    setForm,
+    submit,
+    runImport,
+  } = useGovernmentHospitalRegistry({ initialQ: searchParams.get("q") || "", highlightText: highlightedText });
 
   return (
     <div className="dashboard">
@@ -145,10 +84,10 @@ export default function GovernmentHospitalRegistryPage() {
             </thead>
             <tbody>
               {items.map((row) => {
-                const matchesHighlight = highlightedText
+                const matchesHighlight = hookHighlightedText
                   && [row.officialName, row.registrationNumber, row.email, row.phone]
                     .filter(Boolean)
-                    .some((value) => String(value).toLowerCase().includes(highlightedText));
+                    .some((value) => String(value).toLowerCase().includes(hookHighlightedText));
                 return (
                 <tr key={row._id} className={matchesHighlight ? "query-highlight-row" : ""}>
                   <td>{row.officialName}</td>

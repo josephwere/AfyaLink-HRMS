@@ -204,6 +204,51 @@ test("doctor can promote consultation draft into appointment and encounter then 
   expect(storedAppointment.metadata.consultationSummary.carePlan).toBe("Hydration and medication");
 });
 
+test("billing handoff can be created without explicit line items", async () => {
+  const appt = await request(app)
+    .post("/api/appointments")
+    .set("Authorization", `Bearer ${doctorToken}`)
+    .send({
+      patient: patientId,
+      hospitalId,
+      scheduledAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      serviceType: "Emergency Follow Up",
+    });
+  expect(appt.status).toBe(201);
+
+  const encounterRes = await request(app)
+    .post("/api/encounters")
+    .set("Authorization", `Bearer ${doctorToken}`)
+    .send({
+      patientId,
+      type: "EMERGENCY",
+      complaint: "Regression billing handoff",
+      appointmentId: appt.body._id,
+    });
+  expect(encounterRes.status).toBe(201);
+
+  const startRes = await request(app)
+    .post(`/api/encounters/${encounterRes.body.encounter._id}/start`)
+    .set("Authorization", `Bearer ${doctorToken}`);
+  expect(startRes.status).toBe(200);
+
+  const closeoutRes = await request(app)
+    .post(`/api/encounters/${encounterRes.body.encounter._id}/closeout-effects`)
+    .set("Authorization", `Bearer ${doctorToken}`)
+    .send({
+      diagnosis: "Regression billing handoff",
+      diagnosisCode: "R99",
+      labTests: [],
+    });
+  expect(closeoutRes.status).toBe(200);
+
+  const handoffRes = await request(app)
+    .post(`/api/encounters/${encounterRes.body.encounter._id}/billing-handoff`)
+    .set("Authorization", `Bearer ${doctorToken}`);
+  expect(handoffRes.status).toBe(200);
+  expect(handoffRes.body.invoice.invoiceNumber).toBeDefined();
+});
+
 test("hospital closeout override can allow visit close without billing handoff", async () => {
   await Hospital.updateOne(
     { _id: hospitalId },

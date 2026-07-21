@@ -1,23 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { listTransfers } from "../../services/transferApi";
+import usePharmacyDashboard from "../../hooks/usePharmacyDashboard";
 
 export default function ControlledDrugs() {
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { transfers, error, loading } = usePharmacyDashboard({ limit: 25 });
 
   return (
     <div className="dashboard">
@@ -44,7 +30,8 @@ export default function ControlledDrugs() {
             </div>
             <div className="action-pill">Pending: {transfers.filter((t) => t.status === "Pending").length}</div>
           </div>
-          {transferError ? <div className="muted">{transferError}</div> : null}
+          {error ? <div className="muted">{error}</div> : null}
+          {loading ? <div className="muted">Loading transfers...</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>

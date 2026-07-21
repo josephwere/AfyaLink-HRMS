@@ -2,6 +2,7 @@
 
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { generateUserId } from "../services/idGenerator.js";
 import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
 
 const { Schema, model } = mongoose;
@@ -41,6 +42,15 @@ const userSchema = new Schema(
       lowercase: true,
       index: true,
       sparse: true,
+    },
+
+    userId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      required: true,
+      default: undefined,
+      index: true,
     },
 
     phone: {
@@ -111,6 +121,10 @@ const userSchema = new Schema(
         "GOVERNMENT_ANALYST",
         "PATIENT",
         "GUEST",
+        "DRIVER",
+        "AMBULANCE_DRIVER",
+        "MORTUARY_STAFF",
+        "MORTUARY_MANAGER",
       ],
       default: "PATIENT",
       index: true,
@@ -119,6 +133,13 @@ const userSchema = new Schema(
     protectedAccount: {
       type: Boolean,
       default: false,
+      index: true,
+    },
+
+    accountType: {
+      type: String,
+      trim: true,
+      default: "",
       index: true,
     },
 
@@ -448,7 +469,11 @@ userSchema.index({ "sessionSecurity.lastRiskLevel": 1, "sessionSecurity.lastLogi
 /* ======================================================
    🔐 AUTO-PROTECT SUPER_ADMIN
 ====================================================== */
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function (next) {
+  if (!this.userId) {
+    this.userId = await generateUserId();
+  }
+
   if (this.role === "SUPER_ADMIN") {
     this.protectedAccount = true;
 
@@ -459,7 +484,51 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-userSchema.pre("validate", function (next) {
+userSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  const update = this.getUpdate() || {};
+  const hasUserId =
+    update.userId !== undefined ||
+    (update.$set && update.$set.userId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.userId !== undefined);
+
+  if (hasUserId) {
+    return next();
+  }
+
+  if (options.upsert) {
+    const nextId = await generateUserId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        userId: nextId,
+      },
+    });
+    return next();
+  }
+
+  try {
+    const existing = await this.model.findOne(this.getQuery()).select("userId").lean();
+    if (existing && !existing.userId) {
+      const nextId = await generateUserId();
+      const nextUpdate = { ...update };
+      if (!nextUpdate.$set) nextUpdate.$set = {};
+      nextUpdate.$set.userId = nextId;
+      this.setUpdate(nextUpdate);
+    }
+  } catch (error) {
+    return next(error);
+  }
+
+  next();
+});
+
+userSchema.pre("validate", async function (next) {
+  if (!this.userId) {
+    this.userId = await generateUserId();
+  }
+
   if (HOSPITAL_SCOPED_ROLES.includes(this.role) && !this.hospital) {
     return next(new Error(`${this.role} must be linked to a hospital`));
   }
@@ -523,6 +592,13 @@ userSchema.pre("findByIdAndDelete", preventSuperAdminDelete);
 /* ======================================================
    🔑 PASSWORD HASH
 ====================================================== */
+userSchema.pre("save", async function (next) {
+  if (!this.userId) {
+    this.userId = await generateUserId();
+  }
+  next();
+});
+
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   if (this.password) {

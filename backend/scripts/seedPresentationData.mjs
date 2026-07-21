@@ -90,6 +90,14 @@ const hospitalAccounts = [
 
 const governmentAccounts = [
   {
+    role: "SYSTEM_ADMIN",
+    name: "System Admin Demo",
+    email: "system.admin@afyalink.demo",
+    employeeId: "AFYA-SA-001",
+    department: "System Operations",
+    title: "System Administrator",
+  },
+  {
     role: "GOVERNMENT_ADMIN",
     name: "Agnes Moraa Government Admin",
     email: "government.admin@afyalink.demo",
@@ -513,7 +521,7 @@ export async function runPresentationSeed({
 
     const createdGovernmentUsers = [];
     for (const [index, account] of governmentAccounts.entries()) {
-      const user = await upsertUser(account, null, index + 100);
+      const user = await upsertUser(account, null, index + 200);
       user.employment = {
         ...(user.employment || {}),
         employeeId: account.employeeId,
@@ -521,7 +529,9 @@ export async function runPresentationSeed({
         status: "ACTIVE",
       };
       await user.save();
-      await syncGovernmentProfile(user, account);
+      if (account.role !== "SYSTEM_ADMIN") {
+        await syncGovernmentProfile(user, account);
+      }
       createdGovernmentUsers.push(user);
     }
 

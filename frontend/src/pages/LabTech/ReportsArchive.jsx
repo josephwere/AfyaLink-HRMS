@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { listLabOpsRecords } from "../../services/labOpsApi";
+import { useLabOps } from "../../hooks/useLabOps";
 
 const EMPTY_ARCHIVE = {
   equipmentLogs: [],
@@ -23,41 +23,22 @@ function exportArchiveSnapshot(snapshot) {
 
 export default function ReportsArchive() {
   const [archive, setArchive] = useState(EMPTY_ARCHIVE);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const equipment = useLabOps({ kind: "EQUIPMENT_LOG", limit: 200 });
+  const sampleTracking = useLabOps({ kind: "SAMPLE_TRACKING", limit: 200 });
+  const qualityControl = useLabOps({ kind: "QUALITY_CONTROL", limit: 200 });
+  const safetyChecks = useLabOps({ kind: "SAFETY_CHECK", limit: 200 });
 
-  useEffect(() => {
-    let active = true;
+  const loading = equipment.loading || sampleTracking.loading || qualityControl.loading || safetyChecks.loading;
+  const message = [equipment.message, sampleTracking.message, qualityControl.message, safetyChecks.message].find(Boolean) || "";
 
-    Promise.all([
-      listLabOpsRecords({ kind: "EQUIPMENT_LOG", limit: 200 }),
-      listLabOpsRecords({ kind: "SAMPLE_TRACKING", limit: 200 }),
-      listLabOpsRecords({ kind: "QUALITY_CONTROL", limit: 200 }),
-      listLabOpsRecords({ kind: "SAFETY_CHECK", limit: 200 }),
-    ])
-      .then(([equipmentLogs, sampleTracking, qualityControl, safetyChecks]) => {
-        if (!active) return;
-        setArchive({
-          equipmentLogs: Array.isArray(equipmentLogs?.items) ? equipmentLogs.items : [],
-          sampleTracking: Array.isArray(sampleTracking?.items) ? sampleTracking.items : [],
-          qualityControl: Array.isArray(qualityControl?.items) ? qualityControl.items : [],
-          safetyChecks: Array.isArray(safetyChecks?.items) ? safetyChecks.items : [],
-        });
-        setMessage("");
-      })
-      .catch((err) => {
-        if (!active) return;
-        setArchive(EMPTY_ARCHIVE);
-        setMessage(err?.message || "Unable to load the archive snapshot.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  useMemo(() => {
+    setArchive({
+      equipmentLogs: equipment.records,
+      sampleTracking: sampleTracking.records,
+      qualityControl: qualityControl.records,
+      safetyChecks: safetyChecks.records,
+    });
+  }, [equipment.records, qualityControl.records, safetyChecks.records, sampleTracking.records]);
 
   const exportPayload = useMemo(
     () => ({

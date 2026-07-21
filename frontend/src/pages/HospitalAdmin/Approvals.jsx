@@ -1,52 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { useAuth } from "../../utils/auth";
-import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
-import {
-  approveLeave,
-  rejectLeave,
-  approveOvertime,
-  rejectOvertime,
-  listPendingQueue,
-  approveShift,
-  rejectShift,
-  getWorkforceQueueInsights,
-  getWorkforceSlaPolicies,
-  updateWorkforceSlaPolicy,
-  getWorkforceAutomationPolicies,
-  getWorkforceAutomationPresets,
-  getWorkforceAutomationPresetHistory,
-  applyWorkforceAutomationPresetAll,
-  upsertWorkforceAutomationPreset,
-  deactivateWorkforceAutomationPreset,
-  reactivateWorkforceAutomationPreset,
-  runWorkforceAutomationSweep,
-  previewWorkforceEscalation,
-  simulateWorkforceAutomation,
-  updateWorkforceAutomationPolicy,
-} from "../../services/workforceApi";
-
-const ALLOWED = new Set([
-  "HOSPITAL_ADMIN",
-  "SUPER_ADMIN",
-  "SYSTEM_ADMIN",
-  "DEVELOPER",
-  "HR_MANAGER",
-  "PAYROLL_OFFICER",
-]);
-const PRESET_LIFECYCLE_ALLOWED = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
-const TRIAGE_PREF_KEY = "approvals_triage_prefs";
-const APPROVALS_CACHE_KEY = "approvals_query_cache_v1";
-const APPROVALS_CACHE_TTL_MS = 15 * 60 * 1000;
-
-function unwrapItems(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.data)) return payload.data;
-  return [];
-}
+import useHospitalAdminApprovals from "../../hooks/useHospitalAdminApprovals";
 
 function isOverdue(item) {
   if (!item?.slaDueAt) return false;

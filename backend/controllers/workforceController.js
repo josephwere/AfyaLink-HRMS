@@ -13,6 +13,7 @@ import {
   WORKFORCE_SLA_DEFAULTS,
 } from "../constants/workforceSLA.js";
 import { logAudit } from "../services/auditService.js";
+import { notifyRolesInHospital, notifyUsers } from "../services/notificationService.js";
 
 function getHospitalId(req) {
   return req.user?.hospital || req.user?.hospitalId;
@@ -94,16 +95,14 @@ async function notifyHospitalAdmins({ hospitalId, title, body, meta, category })
 
   if (!admins.length) return;
 
-  await Notification.insertMany(
-    admins.map((admin) => ({
-      title,
-      body,
-      user: admin._id,
-      hospital: hospitalId,
-      meta,
-      category: category || "SYSTEM",
-    }))
-  );
+  await notifyUsers({
+    users: admins.map((admin) => admin._id),
+    hospital: hospitalId,
+    title,
+    body,
+    meta,
+    category: category || "SYSTEM",
+  });
 }
 
 async function getSlaPolicy(hospitalId, requestType) {
@@ -524,16 +523,14 @@ async function notifyUsersByRole({ hospitalId, role, title, body, meta, category
     .select("_id")
     .lean();
   if (!users.length) return;
-  await Notification.insertMany(
-    users.map((u) => ({
-      title,
-      body,
-      user: u._id,
-      hospital: hospitalId,
-      meta,
-      category: category || "SYSTEM",
-    }))
-  );
+  await notifyUsers({
+    users: users.map((u) => u._id),
+    hospital: hospitalId,
+    title,
+    body,
+    meta,
+    category: category || "SYSTEM",
+  });
 }
 
 function toDays(startDate, endDate) {

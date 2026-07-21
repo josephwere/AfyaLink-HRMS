@@ -1,30 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { getNurseDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import { useNurseDashboard } from "../../hooks/useNurseDashboard";
 
 export default function NurseDashboard() {
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getNurseDashboard().then(setData).catch(() => setData(null));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { data, transfers, transferError } = useNurseDashboard();
 
   return (
     <DashboardHomeShell

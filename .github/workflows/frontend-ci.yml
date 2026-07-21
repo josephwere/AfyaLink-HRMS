@@ -34,8 +34,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Page API usage guard
+        run: npm run check:page-api-usage
+
       - name: Route smoke check
         run: npm run ci:smoke-routes
+
+      - name: Migration matrix report
+        run: npm run generate:page-migration-matrix
+
+      - name: Migration regression check
+        run: npm run check:page-migration-regression
+
+      - name: Upload migration report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-migration-report
+          path: |
+            frontend/docs/page-migration-matrix.md
+            frontend/docs/page-migration-matrix.json
 
       - name: Production build
         run: npm run build

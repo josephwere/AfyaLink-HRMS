@@ -90,6 +90,10 @@ export const audit = async ({
         }
       : { emergencyOverride: false, reviewStatus: null };
 
+    const hospitalId = req.user?.hospital && String(req.user.hospital).match(/^[0-9a-fA-F]{24}$/)
+      ? req.user.hospital
+      : undefined;
+
     await AuditLog.create({
       /* ================= WHO ================= */
       actorId: req.user._id,
@@ -105,7 +109,7 @@ export const audit = async ({
       after,
 
       /* ================= TENANCY ================= */
-      hospital: req.user.hospital,
+      hospital: hospitalId,
 
       /* ================= CONTEXT ================= */
       ip: req.ip,

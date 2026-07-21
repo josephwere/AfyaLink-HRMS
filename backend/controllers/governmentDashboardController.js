@@ -2,8 +2,8 @@ import Claim from "../models/Claim.js";
 import FraudAlert from "../models/FraudAlert.js";
 import Hospital from "../models/Hospital.js";
 import Patient from "../models/Patient.js";
-import Notification from "../models/Notification.js";
 import ComplianceLedger from "../models/ComplianceLedger.js";
+import { notify } from "../services/notificationService.js";
 import ClaimAuditLog from "../models/ClaimAuditLog.js";
 import AuditLog from "../models/AuditLog.js";
 import HealthFund from "../models/HealthFund.js";
@@ -543,11 +543,12 @@ export const createInspection = async (req, res, next) => {
     };
 
     const inspection = await HospitalInspection.create(payload);
-    await Notification.create({
+    await notify({
       user: req.user?._id,
       category: "REGULATORY",
       title: "Inspection scheduled",
       body: "A hospital inspection has been scheduled.",
+      hospital: hospitalId,
       meta: { inspectionId: inspection._id, hospitalId },
     });
 
@@ -627,11 +628,12 @@ export const createEnforcementAction = async (req, res, next) => {
       await HospitalLicense.updateMany({ hospital: hospitalId }, { $set: { status } });
     }
 
-    await Notification.create({
+    await notify({
       user: req.user?._id,
       category: "REGULATORY",
       title: "Enforcement action created",
       body: `Action ${action.actionType} has been issued.`,
+      hospital: hospitalId,
       meta: { enforcementId: action._id, hospitalId },
     });
 

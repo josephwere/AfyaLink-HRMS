@@ -1,28 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import { getRadiologistDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
+import { useRadiologistDashboard } from "../../hooks/useRadiologistDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function RadiologistDashboard() {
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getRadiologistDashboard().then(setData).catch(() => setData(null));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { data, transfers, transferError, pendingTransfers } = useRadiologistDashboard();
 
   return (
     <DashboardHomeShell
@@ -44,6 +27,9 @@ export default function RadiologistDashboard() {
     >
       <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
         {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        <div className="action-pill" style={{ marginBottom: 12 }}>
+          {translateText("Pending")}: {pendingTransfers}
+        </div>
         <div className="table-wrap" style={{ marginTop: 12 }}>
           <table className="doctor-table">
             <thead>

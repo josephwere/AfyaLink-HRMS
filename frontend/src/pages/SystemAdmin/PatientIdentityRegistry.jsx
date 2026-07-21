@@ -1,87 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  createPatientIdentityRegistryEntry,
-  importPatientIdentityRegistry,
-  listPatientIdentityRegistry,
-} from "../../services/systemAdminApi";
+import { usePatientIdentityRegistry } from "../../hooks/usePatientIdentityRegistry";
 
 export default function PatientIdentityRegistryPage() {
   const [searchParams] = useSearchParams();
-  const [items, setItems] = useState([]);
-  const [q, setQ] = useState(() => searchParams.get("q") || "");
-  const [country, setCountry] = useState("");
-  const [status, setStatus] = useState("");
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [bulk, setBulk] = useState("");
   const highlightedText = (searchParams.get("highlight") || searchParams.get("q") || "").toLowerCase();
-  const [form, setForm] = useState({
-    country: "",
-    idType: "NATIONAL_ID",
-    idNumber: "",
-    firstName: "",
-    lastName: "",
-    dob: "",
-    gender: "",
-    status: "ACTIVE",
-  });
-
-  const load = async () => {
-    try {
-      const rows = await listPatientIdentityRegistry({
-        q: q || undefined,
-        country: country || undefined,
-        status: status || undefined,
-      });
-      setItems(rows);
-    } catch {
-      setItems([]);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [q, country, status]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-    try {
-      await createPatientIdentityRegistryEntry(form);
-      setMsg("Patient identity entry saved.");
-      setForm({
-        country: "",
-        idType: "NATIONAL_ID",
-        idNumber: "",
-        firstName: "",
-        lastName: "",
-        dob: "",
-        gender: "",
-        status: "ACTIVE",
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to save identity entry.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const runImport = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const res = await importPatientIdentityRegistry(bulk);
-      setMsg(`Imported ${res?.created?.length || 0} entries. Skipped ${res?.skipped?.length || 0}.`);
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to import identity entries.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    items,
+    q,
+    setQ,
+    country,
+    highlightedText: hookHighlightedText,
+    setCountry,
+    status,
+    setStatus,
+    msg,
+    loading,
+    bulk,
+    setBulk,
+    form,
+    setForm,
+    submit,
+    runImport,
+  } = usePatientIdentityRegistry({ initialQ: searchParams.get("q") || "", highlightText: highlightedText });
 
   return (
     <div className="dashboard">
@@ -156,10 +97,10 @@ export default function PatientIdentityRegistryPage() {
             </thead>
             <tbody>
               {items.map((row) => {
-                const matchesHighlight = highlightedText
+                const matchesHighlight = hookHighlightedText
                   && [row.idNumber, row.firstName, row.lastName, row.country]
                     .filter(Boolean)
-                    .some((value) => String(value).toLowerCase().includes(highlightedText));
+                    .some((value) => String(value).toLowerCase().includes(hookHighlightedText));
                 return (
                 <tr key={row._id} className={matchesHighlight ? "query-highlight-row" : ""}>
                   <td>{row.idNumber}</td>

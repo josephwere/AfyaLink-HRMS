@@ -4,21 +4,7 @@ import { useLocation } from "react-router-dom";
 import PasswordInput from "../../components/PasswordInput";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
-import { createHospital, updateHospital, searchGovernmentHospitals } from "../../services/hospitalApi";
-import {
-  createBranch,
-  listBranches,
-  removeBranch,
-  updateBranch,
-} from "../../services/branchesApi";
-import {
-  listHospitals,
-  listHospitalAdmins,
-  registerHospitalAdmin,
-  registerSystemAdmin,
-  registerDeveloper,
-  updateHospitalAdmin as updateHospitalAdminApi,
-} from "../../services/superAdminApi";
+import { useHospitalsPage } from "../../hooks/useHospitalsPage";
 
 const coerceList = (value) => {
   if (Array.isArray(value)) return value;
@@ -32,6 +18,21 @@ export default function SuperAdminHospitals() {
   const { user } = useAuth();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
   const location = useLocation();
+  const {
+    createHospital,
+    updateHospital,
+    searchGovernmentHospitals,
+    createBranch,
+    listBranches,
+    removeBranch,
+    updateBranch,
+    listHospitals,
+    listHospitalAdmins,
+    registerHospitalAdmin,
+    registerSystemAdmin,
+    registerDeveloper,
+    updateHospitalAdmin: updateHospitalAdminApi,
+  } = useHospitalsPage();
   const [hospitals, setHospitals] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);

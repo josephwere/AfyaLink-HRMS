@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
+import { usePatientHospitals } from "../../hooks/usePatientHospitals";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
@@ -9,12 +9,6 @@ export default function PatientHospitals() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") || "");
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState([]);
-  const [selectedHospitalId, setSelectedHospitalId] = useState(
-    () => localStorage.getItem(SELECTED_HOSPITAL_KEY) || ""
-  );
-
   const savedLocation = (() => {
     try {
       return JSON.parse(localStorage.getItem(PATIENT_LOCATION_KEY) || "{}");
@@ -26,53 +20,8 @@ export default function PatientHospitals() {
   const [lat, setLat] = useState(savedLocation?.lat ?? "");
   const [lng, setLng] = useState(savedLocation?.lng ?? "");
   const [radiusKm, setRadiusKm] = useState(savedLocation?.radiusKm ?? 100);
-  const [msg, setMsg] = useState("");
   const [locating, setLocating] = useState(false);
-
-  const locationReady = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const params = new URLSearchParams();
-      params.set("q", q);
-      params.set("limit", "100");
-      if (locationReady) {
-        params.set("lat", String(lat));
-        params.set("lng", String(lng));
-        params.set("radiusKm", String(radiusKm));
-      }
-      const data = await apiFetch(`/api/hospitals/marketplace?${params.toString()}`);
-      setItems(Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setItems([]);
-      setMsg("Failed to load hospitals");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [q, lat, lng, radiusKm]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      PATIENT_LOCATION_KEY,
-      JSON.stringify({ lat, lng, radiusKm, mode: "manual" })
-    );
-  }, [lat, lng, radiusKm]);
-
-  const selectedHospital = useMemo(
-    () => items.find((h) => String(h._id) === String(selectedHospitalId)) || null,
-    [items, selectedHospitalId]
-  );
-
-  const selectHospital = (id) => {
-    setSelectedHospitalId(id);
-    localStorage.setItem(SELECTED_HOSPITAL_KEY, String(id));
-  };
+  const { items, loading, msg, setMsg, selectedHospitalId, setSelectedHospitalId, selectedHospital, selectHospital } = usePatientHospitals({ q, lat, lng, radiusKm });
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {

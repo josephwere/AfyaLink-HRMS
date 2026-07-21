@@ -2,9 +2,9 @@ import WorkflowAutomationPolicy from "../models/WorkflowAutomationPolicy.js";
 import LeaveRequest from "../models/LeaveRequest.js";
 import OvertimeRequest from "../models/OvertimeRequest.js";
 import ShiftRequest from "../models/ShiftRequest.js";
-import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
+import { notifyUsers } from "../services/notificationService.js";
 
 const FALLBACK_ROLES = new Set([
   "HOSPITAL_ADMIN",
@@ -24,16 +24,14 @@ async function notifyRoleUsers({ hospitalId, role, requestType, count }) {
   const users = await User.find({ hospital: hospitalId, role }).select("_id").lean();
   if (!users.length) return;
 
-  await Notification.insertMany(
-    users.map((user) => ({
-      title: "Approval Escalation Required",
-      body: `${count} ${requestType} requests exceeded L2 approval SLA.`,
-      user: user._id,
-      hospital: hospitalId,
-      category: "WORKFORCE",
-      meta: { type: requestType, escalated: true, count },
-    }))
-  );
+  await notifyUsers({
+    users: users.map((user) => user._id),
+    hospital: hospitalId,
+    title: "Approval Escalation Required",
+    body: `${count} ${requestType} requests exceeded L2 approval SLA.`,
+    category: "WORKFORCE",
+    meta: { type: requestType, escalated: true, count },
+  });
 }
 
 async function processPolicy(policy) {

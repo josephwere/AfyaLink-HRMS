@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { apiFetch } from "../../utils/apiFetch";
+import React from "react";
 import WorkflowTimeline from "../../components/workflow/WorkflowTimeline";
 import WorkflowBadge from "../../components/workflow/WorkflowBadge";
+import useAdminInsuranceActions from "../../hooks/useAdminInsuranceActions";
 
 /**
  * ADMIN INSURANCE ACTIONS
@@ -10,76 +10,22 @@ import WorkflowBadge from "../../components/workflow/WorkflowBadge";
  * 🔁 Workflow authoritative
  */
 export default function AdminInsuranceActions({ encounter }) {
-  const [justification, setJustification] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-
   if (!encounter?.workflow) return null;
-
-  const allowed = encounter.workflow.allowedTransitions || [];
-
-  const canApprove = allowed.includes("INSURANCE_APPROVED");
-  const canReject = allowed.includes("INSURANCE_REJECTED");
-
-  async function approve() {
-    if (!justification.trim()) {
-      setMsg("Justification is required");
-      return;
-    }
-
-    setLoading(true);
-    setMsg("");
-
-    try {
-      await apiFetch("/api/insurance/admin/approve", {
-        method: "POST",
-        body: {
-          encounterId: encounter._id,
-          justification,
-        },
-      });
-
-      setMsg("✅ Insurance approved successfully");
-    } catch (e) {
-      setMsg(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function reject() {
-    if (!justification.trim()) {
-      setMsg("Justification is required");
-      return;
-    }
-
-    setLoading(true);
-    setMsg("");
-
-    try {
-      await apiFetch("/api/insurance/admin/reject", {
-        method: "POST",
-        body: {
-          encounterId: encounter._id,
-          justification,
-        },
-      });
-
-      setMsg("❌ Insurance rejected");
-    } catch (e) {
-      setMsg(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    justification,
+    setJustification,
+    loading,
+    msg,
+    canApprove,
+    canReject,
+    approve,
+    reject,
+  } = useAdminInsuranceActions(encounter);
 
   return (
     <div className="card premium-card">
       <h3>🛡 Insurance Admin Override</h3>
 
-      {/* =========================
-          CURRENT WORKFLOW STATE
-      ========================== */}
       <div style={{ marginBottom: 12 }}>
         <strong>Current Status:</strong>{" "}
         <WorkflowBadge state={encounter.workflow.state} />
@@ -91,9 +37,6 @@ export default function AdminInsuranceActions({ encounter }) {
         </div>
       )}
 
-      {/* =========================
-          JUSTIFICATION
-      ========================== */}
       <textarea
         className="full-width"
         placeholder="Enter justification (required for audit)"
@@ -104,9 +47,6 @@ export default function AdminInsuranceActions({ encounter }) {
         disabled={loading}
       />
 
-      {/* =========================
-          ACTION BUTTONS
-      ========================== */}
       <div className="actions-row gap-12">
         <button
           type="button"
@@ -127,9 +67,6 @@ export default function AdminInsuranceActions({ encounter }) {
         </button>
       </div>
 
-      {/* =========================
-          WORKFLOW CONTEXT (ALWAYS)
-      ========================== */}
       <div style={{ marginTop: 16 }}>
         <WorkflowTimeline encounterId={encounter._id} />
       </div>

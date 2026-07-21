@@ -9,6 +9,7 @@ import { buildMachineKey, hashMachineKey } from "../middleware/machineAuthMiddle
 import { parseHL7Patient, parseHL7ToSegments } from "../services/hl7Parser.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { signProvenance, verifyProvenance } from "../utils/provenance.js";
+import { notify, notifyUsers } from "../services/notificationService.js";
 
 function resolveHospital(req) {
   const role = normalizeRole(req.user?.role);
@@ -98,7 +99,7 @@ async function pushMachineNotification({
       }).lean();
       if (existing) return;
     }
-    await Notification.create({
+    await notify({
       title,
       body,
       hospital,
@@ -179,7 +180,28 @@ async function escalateMachineAlertInternal(source, hospital, req, mode = "MANUA
       },
     }));
 
-  if (docs.length) await Notification.insertMany(docs);
+  if (docs.length) {
+    await notifyUsers({
+      users: recipients.map((u) => u._id),
+      hospital,
+      title: `Escalated machine alert: ${source.title || "Machine issue"}`,
+      body: source.body || "Machine integration issue escalated for urgent review.",
+      category: "SECURITY",
+      read: false,
+      meta: {
+        escalatedFromAlertId: String(source._id),
+        machineId: source?.meta?.machineId || null,
+        machineCode: source?.meta?.code || null,
+        reason: source?.meta?.reason || null,
+        severity,
+        escalationMode: mode,
+        escalationLevel: level,
+        escalationRoles: roleSet,
+        escalationOnCallUsed: onCallUsers.length > 0,
+        escalationReason: reasonText || null,
+      },
+    });
+  }
   await Notification.updateOne(
     { _id: source._id },
     { $set: { "meta.escalated": true, "meta.autoEscalatedAt": new Date() } }

@@ -1,45 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import { useMappingEditor } from '../../hooks/useMappingEditor';
 
 export default function MappingEditor(){
-  const [list,setList]=useState([]);
-  const [form,setForm]=useState({ connector:'', name:'', fields: { hl7: {}, fhir: {} } });
-  const [editing,setEditing]=useState(null);
-
-  useEffect(()=>{ load(); },[]);
-
-  async function load(){
-    const js = await apiFetch('/api/mapping');
-    setList(Array.isArray(js) ? js : Array.isArray(js?.items) ? js.items : []);
-  }
-
-  function setField(type, path, target){
-    setForm(f=>{ const nf = {...f}; nf.fields = {...nf.fields}; nf.fields[type] = {...nf.fields[type]}; nf.fields[type][path]=target; return nf; });
-  }
-
-  async function save(){
-    if(editing){
-      await apiFetch('/api/mapping/' + editing, { method:'PUT', body: form });
-      alert('Updated');
-    } else {
-      await apiFetch('/api/mapping', { method:'POST', body: form });
-      alert('Created');
-    }
-    setForm({ connector:'', name:'', fields: { hl7:{}, fhir:{} } }); setEditing(null); load();
-  }
-
-  async function edit(id){
-    const js = await apiFetch('/api/mapping/' + id);
-    setForm({
-      connector: js?.connector || "",
-      name: js?.name || "",
-      fields: {
-        hl7: js?.fields?.hl7 || {},
-        fhir: js?.fields?.fhir || {},
-      },
-    });
-    setEditing(id);
-  }
+  const { list, form, setForm, editing, setField, save, edit } = useMappingEditor();
 
   return (<div className="dashboard">
     <h2>Mapping Editor</h2>

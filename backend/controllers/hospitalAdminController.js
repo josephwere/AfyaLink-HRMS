@@ -4,6 +4,7 @@ import { recordSettingsRevision } from "../services/settingsRevisionService.js";
 import { persistHospitalCustomizationAssets } from "../services/settingsAssetService.js";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { notifyUsers } from "../services/notificationService.js";
 import SettingsRevision from "../models/SettingsRevision.js";
 
 function resolveHospitalId(req) {
@@ -63,19 +64,17 @@ async function notifyPharmacyCoverageRisk({ hospital, actorId }) {
 
   if (existing) return;
 
-  await Notification.insertMany(
-    recipientIds.map((userId) => ({
-      title: "Pharmacy Coverage Risk",
-      body: "Pharmacy is enabled, but no pharmacist is linked to a registered pharmacy yet.",
-      category: "PHARMACY",
-      user: userId,
-      hospital: hospital._id,
-      meta: {
-        type: "PHARMACY_COVERAGE_RISK",
-        path: "/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist",
-      },
-    }))
-  );
+  await notifyUsers({
+    users: recipientIds,
+    hospital: hospital._id,
+    category: "PHARMACY",
+    title: "Pharmacy Coverage Risk",
+    body: "Pharmacy is enabled, but no pharmacist is linked to a registered pharmacy yet.",
+    meta: {
+      type: "PHARMACY_COVERAGE_RISK",
+      path: "/hospital-admin/staff?missingRegisteredPharmacy=1&q=pharmacist",
+    },
+  });
 }
 
 /* ======================================================

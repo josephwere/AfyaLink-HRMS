@@ -21,3 +21,10 @@ export function getOfflineQueueStatus() {
   return apiFetch("/api/offline/status");
 }
 
+export function uploadOfflineSyncItems(payload) {
+  return apiFetch("/api/offline/upload", {
+    method: "POST",
+    body: { items: payload },
+  });
+}
+

@@ -103,7 +103,8 @@ export async function uploadLabResult(req, res) {
     lab.result = typeof result === "string" ? result : JSON.stringify(result);
     lab.status = status === "Cancelled" ? "Cancelled" : "Completed";
     lab.completedAt = new Date();
-    await lab.save();
+    lab.$locals = { ...(lab.$locals || {}), viaWorkflow: true };
+    await lab.save({ validateBeforeSave: false });
 
     return res.json({ item: lab });
   } catch (err) {

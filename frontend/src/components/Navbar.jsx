@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../utils/auth";
@@ -10,14 +10,17 @@ import { triggerAction } from "../services/actionApi";
 import AppIcon from "./AppIcon";
 import GlobalCallLauncher from "./GlobalCallLauncher";
 import NotificationCenter from "./NotificationCenter";
+import { useUserContext } from "../contexts/UserContextContext";
 
 export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOpen = false }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toggleMode, isMyHealthMode, canUseMyHealthContext } = useUserContext();
+  const [switchingContext, setSwitchingContext] = useState(false);
   const { theme, cycleTheme } = useTheme();
   const { settings } = useSystemSettings();
   const { translateText } = useAppLanguage();
-  const logo = settings?.branding?.logo;
+  const logo = settings?.branding?.logo || "/logo.png";
   const nextThemeLabel = theme === "dark" ? "Light mode" : "Dark mode";
   const role = String(user?.role || "").toUpperCase();
   const canUseUxAudit = ["DEVELOPER", "SYSTEM_ADMIN", "SUPER_ADMIN"].includes(role);
@@ -51,13 +54,33 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
         </button>
 
         <button type="button" className="brand-btn" onClick={() => navigate(homePath)}>
-          {logo ? <span className="brand-logo" style={{ backgroundImage: `url(${logo})` }} /> : "AfyaLink"}
+          {logo ? (
+            <img
+              className="brand-logo"
+              src={logo}
+              alt="AfyaLink"
+              onError={(event) => {
+                event.currentTarget.src = "/logo.png";
+              }}
+            />
+          ) : (
+            "AfyaLink"
+          )}
         </button>
       </div>
 
       <div className="navbar-center" />
 
       <div className="navbar-right">
+        {switchingContext ? (
+          <div className="context-switch-overlay" style={{ position: "fixed", inset: 0, background: "rgba(6, 17, 31, 0.72)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div className="card premium-card" style={{ minWidth: 320, textAlign: "center", padding: 24 }}>
+              <div className="appointment-success-kicker">Context switch</div>
+              <h3 style={{ margin: "8px 0" }}>{isMyHealthMode ? "Switching to Work Mode" : "Switching to My Health"}</h3>
+              <p className="muted" style={{ margin: 0 }}>Preparing your {isMyHealthMode ? "operational workspace" : "personal health profile"}...</p>
+            </div>
+          </div>
+        ) : null}
         {user ? (
           <button
             type="button"
@@ -79,6 +102,29 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
             onClick={onToggleContextRail}
           >
             <AppIcon name="panel" />
+          </button>
+        ) : null}
+
+        {user && canUseMyHealthContext ? (
+          <button
+            type="button"
+            className={`icon-btn ghost${isMyHealthMode ? " active" : ""}`}
+            title={isMyHealthMode ? "Switch to Work Mode" : "Switch to My Health"}
+            aria-label={isMyHealthMode ? "Switch to Work Mode" : "Switch to My Health"}
+            onClick={() => {
+              setSwitchingContext(true);
+              toggleMode();
+              window.setTimeout(() => {
+                if (isMyHealthMode) {
+                  navigate("/app/operations/home/index");
+                } else {
+                  navigate("/app/portal/home/index");
+                }
+                setSwitchingContext(false);
+              }, 350);
+            }}
+          >
+            <AppIcon name={isMyHealthMode ? "doctor" : "heart"} />
           </button>
         ) : null}
 

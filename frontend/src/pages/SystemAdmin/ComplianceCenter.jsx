@@ -1,11 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import {
-  createComplianceLegalHold,
-  getComplianceCenter,
-  releaseComplianceLegalHold,
-} from "../../services/complianceApi";
+import { useComplianceCenter } from "../../hooks/useComplianceCenter";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -16,115 +12,31 @@ function formatDate(value) {
 
 export default function ComplianceCenter() {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [clientMeta, setClientMeta] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [releasingId, setReleasingId] = useState("");
-  const requestRef = useRef(0);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    region: "KE",
-    scopeType: "SYSTEM",
-    scopeRef: "",
-    legalBasis: "",
-    retentionOverrideDays: "",
-    notes: "",
-  });
-
-  const load = useCallback(async ({ preserveData = false } = {}) => {
-    const requestId = requestRef.current + 1;
-    requestRef.current = requestId;
-    setLoading(true);
-    setLoadError("");
-    try {
-      const res = await getComplianceCenter();
-      if (requestRef.current !== requestId) return;
-      setData(res?.payload || null);
-      setClientMeta(res?.clientMeta || null);
-    } catch (err) {
-      if (requestRef.current !== requestId) return;
-      if (!preserveData) setData(null);
-      setLoadError(
-        err?.message ||
-          "We could not load the compliance center yet. Try again in a moment."
-      );
-    } finally {
-      if (requestRef.current === requestId) setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load({ preserveData: false });
-  }, [load]);
-
-  const hasData = Boolean(data);
-  const initialLoading = loading && !hasData;
-  const refreshing = loading && hasData;
+  const {
+    data,
+    loading,
+    loadError,
+    statusMessage,
+    clientMeta,
+    saving,
+    releasingId,
+    form,
+    setForm,
+    load,
+    hasData,
+    initialLoading,
+    refreshing,
+    settings,
+    activeHolds,
+    recentHolds,
+    evidencePacks,
+    summaryCards,
+    createHold,
+    releaseHold,
+  } = useComplianceCenter();
+  const privacyTemplates = Object.entries(settings?.privacyTemplates || {});
 
   const summary = data?.auditSummary || {};
-  const settings = data?.settings || {};
-  const privacyTemplates = Object.entries(settings?.privacyTemplates || {});
-  const activeHolds = data?.activeHolds || [];
-  const recentHolds = data?.recentHolds || [];
-  const evidencePacks = data?.evidencePacks || [];
-
-  const summaryCards = useMemo(
-    () => [
-      { title: "Audit Events (7d)", value: summary.events7d ?? 0, onClick: () => navigate("/admin/audit-logs") },
-      { title: "Export Events (30d)", value: summary.exportEvents30d ?? 0, onClick: () => navigate("/admin/audit-logs?q=export") },
-      { title: "Audit Failures (30d)", value: summary.failures30d ?? 0, onClick: () => navigate("/admin/audit-logs?q=failed") },
-      { title: "Active Legal Holds", value: activeHolds.length, onClick: () => window.scrollTo({ top: 920, behavior: "smooth" }) },
-      { title: "Audit Retention", value: `${settings.auditRetentionDays ?? 365} days`, onClick: () => navigate("/super-admin/settings") },
-      { title: "Clinical Record Retention", value: `${settings.clinicalRecordRetentionYears ?? 7} years`, onClick: () => navigate("/super-admin/settings") },
-    ],
-    [activeHolds.length, navigate, settings.auditRetentionDays, settings.clinicalRecordRetentionYears, summary.events7d, summary.exportEvents30d, summary.failures30d]
-  );
-
-  const createHold = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    setStatusMessage("");
-    try {
-      await createComplianceLegalHold({
-        ...form,
-        retentionOverrideDays: form.retentionOverrideDays === "" ? null : Number(form.retentionOverrideDays),
-      });
-      setForm({
-        title: "",
-        description: "",
-        region: settings.defaultRegion || "KE",
-        scopeType: "SYSTEM",
-        scopeRef: "",
-        legalBasis: "",
-        retentionOverrideDays: "",
-        notes: "",
-      });
-      setStatusMessage("Legal hold created.");
-      await load({ preserveData: true });
-    } catch (err) {
-      setStatusMessage(err?.message || "Failed to create legal hold.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const releaseHold = async (holdId) => {
-    setReleasingId(holdId);
-    setStatusMessage("");
-    try {
-      await releaseComplianceLegalHold(holdId, { notes: "Released from compliance center" });
-      setStatusMessage("Legal hold released.");
-      await load({ preserveData: true });
-    } catch (err) {
-      setStatusMessage(err?.message || "Failed to release legal hold.");
-    } finally {
-      setReleasingId("");
-    }
-  };
 
   return (
     <div className="dashboard premium-shell compliance-center-shell">

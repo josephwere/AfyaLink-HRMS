@@ -1,94 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { apiFetch } from "../utils/apiFetch";
+import React from "react";
+import { useAppointments } from "../hooks/useAppointments";
 
 export default function Appointments() {
-  const [appointments, setAppointments] = useState([]);
-  const [patients, setPatients] = useState([]);
-  const [patientsCursor, setPatientsCursor] = useState(null);
-  const [patientsHasMore, setPatientsHasMore] = useState(false);
-  const [patientsLoadingMore, setPatientsLoadingMore] = useState(false);
-  const [doctors, setDoctors] = useState([]);
-  const [form, setForm] = useState({
-    patient: "",
-    doctor: "",
-    scheduledAt: "",
-    reason: "",
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  async function loadAll() {
-    setLoading(true);
-    try {
-      const [a, p, u] = await Promise.all([
-        apiFetch("/api/appointments"),
-        apiFetch("/api/patients?cursorMode=1&limit=50"),
-        apiFetch("/api/users"),
-      ]);
-
-      setAppointments(Array.isArray(a) ? a : a?.items || []);
-      const patientItems = Array.isArray(p) ? p : p?.items || [];
-      setPatients(patientItems);
-      setPatientsCursor(p?.nextCursor || null);
-      setPatientsHasMore(Boolean(p?.hasMore));
-      setDoctors((u || []).filter((x) => x.role === "DOCTOR"));
-    } catch {
-      setError("Failed to load appointments");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadMorePatients() {
-    if (!patientsCursor || patientsLoadingMore) return;
-    setPatientsLoadingMore(true);
-    try {
-      const data = await apiFetch(
-        `/api/patients?cursorMode=1&limit=50&cursor=${encodeURIComponent(patientsCursor)}`
-      );
-      const patientItems = Array.isArray(data) ? data : data?.items || [];
-      setPatients((prev) => [...prev, ...patientItems]);
-      setPatientsCursor(data?.nextCursor || null);
-      setPatientsHasMore(Boolean(data?.hasMore));
-    } catch {
-      // ignore
-    } finally {
-      setPatientsLoadingMore(false);
-    }
-  }
+  const {
+    appointments,
+    patients,
+    patientsHasMore,
+    patientsLoadingMore,
+    doctors,
+    form,
+    setForm,
+    loading,
+    error,
+    loadMorePatients,
+    createAppointmentEntry,
+    cancelAppointmentEntry,
+  } = useAppointments();
 
   async function createAppointment(e) {
     e.preventDefault();
-    setError("");
-
-    try {
-      await apiFetch("/api/appointments", {
-        method: "POST",
-        body: form,
-      });
-
-      setForm({ patient: "", doctor: "", scheduledAt: "", reason: "" });
-      loadAll();
-    } catch {
-      setError("Failed to create appointment");
-    }
+    await createAppointmentEntry(form);
   }
 
   async function cancelAppointment(id) {
-    if (!confirm("Cancel appointment?")) return;
-
-    try {
-      await apiFetch(`/api/appointments/${id}`, {
-        method: "DELETE",
-      });
-      loadAll();
-    } catch {
-      alert("Cancellation failed");
-    }
+    await cancelAppointmentEntry(id);
   }
 
   return (

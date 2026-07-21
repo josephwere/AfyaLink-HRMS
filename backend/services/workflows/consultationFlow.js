@@ -3,7 +3,9 @@ import LabOrder from "../../models/LabOrder.js";
 import Prescription from "../../models/Prescription.js";
 import Invoice from "../../models/Invoice.js";
 import Encounter from "../../models/Encounter.js";
-import { notify } from "../notificationService.js";
+import { notify, notifyRolesInHospital } from "../notificationService.js";
+import User from "../../models/User.js";
+import Patient from "../../models/Patient.js";
 import { logAudit } from "../auditService.js";
 
 /**
@@ -88,7 +90,21 @@ export async function onConsultationTransition(state, workflow, ctx) {
   await encounter.save();
 
   /* ================= NOTIFY ================= */
-  await notify(patientId, "Consultation completed");
+  // Notify patient
+  await notify({ user: patientId, hospital: hospitalId, title: "Consultation completed", body: "Your consultation has completed.", category: "CLINICAL", meta: { appointmentId } });
+
+  // Notify hospital admins about completed consultation (operational)
+    try {
+      const doctor = doctorId ? await User.findById(doctorId).select("name").lean() : null;
+      const patientDoc = patientId ? await Patient.findById(patientId).select("firstName lastName").lean() : null;
+      const doctorName = doctor?.name || "A clinician";
+      const patientLabel = patientDoc ? `${patientDoc.firstName || ""} ${patientDoc.lastName || ""}`.trim() : "a patient";
+      const title = `${doctorName} completed consultation`;
+      const body = `${doctorName} completed consultation for ${patientLabel}.`;
+      await notifyRolesInHospital({ hospital: hospitalId, roles: ["HOSPITAL_ADMIN"], title, body, category: "OPERATIONAL", meta: { appointmentId, doctorId, patientId } });
+    } catch (err) {
+      console.error("Failed to notify hospital admins on consultation completion:", err);
+    }
 
   /* ================= AUDIT ================= */
   await logAudit({

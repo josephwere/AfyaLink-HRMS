@@ -1,53 +1,10 @@
-import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { apiFetch } from "../utils/apiFetch";
+import { Link } from "react-router-dom";
 import AuthPageShell from "../components/AuthPageShell";
+import { useVerifyEmail } from "../hooks/useVerifyEmail";
 import "./verify.css";
 
 export default function VerifyEmail() {
-  const [params] = useSearchParams();
-  const [status, setStatus] = useState("verifying");
-  const [cooldown, setCooldown] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-
-  const token = params.get("token");
-
-  useEffect(() => {
-    if (!token) {
-      setStatus("invalid");
-      return;
-    }
-
-    apiFetch(`/api/auth/verify-email?token=${token}`)
-      .then(() => setStatus("success"))
-      .catch(() => setStatus("error"));
-  }, [token]);
-
-  // ⏱️ Cooldown timer
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setInterval(() => setCooldown((c) => c - 1), 1000);
-    return () => clearInterval(t);
-  }, [cooldown]);
-
-  const handleResend = async () => {
-    try {
-      setLoading(true);
-      const data = await apiFetch("/api/auth/resend-verification", {
-        method: "POST",
-        body: { email },
-      });
-
-      setCooldown(data.retryAfter || 60);
-      setMessage("Verification email sent. Check your inbox and spam folder.");
-    } catch {
-      setMessage("We could not send a new verification email. Check the address and try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { status, cooldown, loading, email, setEmail, message, token, handleResend } = useVerifyEmail();
 
   return (
     <AuthPageShell>

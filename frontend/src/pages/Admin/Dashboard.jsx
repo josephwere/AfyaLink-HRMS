@@ -1,67 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ActionCard, StatCard } from "../../components/Cards";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import apiFetch from "../../utils/apiFetch";
-import { listSupportTickets } from "../../services/opsApi";
-import { listTransfers } from "../../services/transferApi";
+import { useAdminDashboard } from "../../hooks/useAdminDashboard";
 
 export default function Dashboard() {
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-  const [metrics, setMetrics] = useState({
-    hospitals: 0,
-    staff: 0,
-    supportTickets: 0,
-  });
-  const [metricsError, setMetricsError] = useState("");
-
-  useEffect(() => {
-    listTransfers({ limit: 6, scope: "global" })
-      .then((data) => {
-        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    Promise.all([
-      apiFetch("/api/hospitals?limit=1"),
-      apiFetch("/api/users?limit=1&includeInactive=1"),
-      listSupportTickets({ limit: 1 }),
-    ])
-      .then(([hospitals, users, support]) => {
-        if (!active) return;
-        setMetrics({
-          hospitals: Number(hospitals?.total || 0),
-          staff: Number(users?.total || 0),
-          supportTickets: Number(support?.total ?? support?.count ?? 0),
-        });
-        setMetricsError("");
-      })
-      .catch((err) => {
-        if (!active) return;
-        setMetrics({
-          hospitals: 0,
-          staff: 0,
-          supportTickets: 0,
-        });
-        setMetricsError(err?.message || "Unable to load live operations counts.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const pendingTransfers = transfers.filter((t) => t.status === "Pending").length;
+  const { transfers, transferError, metrics, metricsError, pendingTransfers } = useAdminDashboard();
 
   return (
     <DashboardHomeShell

@@ -1,68 +1,26 @@
-import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React from "react";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 
 export default function StaffTransfers() {
-  const [items, setItems] = useState([]);
-  const [staffRows, setStaffRows] = useState([]);
-  const [hospitals, setHospitals] = useState([]);
-  const [form, setForm] = useState({
-    staffUserId: "",
-    toHospitalId: "",
-    transferLetterRef: "",
-    note: "",
-  });
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    staffTransfers: items,
+    staffTransferUsers: staffRows,
+    staffTransferHospitals: hospitals,
+    transferForm: form,
+    setTransferForm: setForm,
+    transferLoading: loading,
+    transferMsg: msg,
+    createTransfer,
+    actionTransfer,
+  } = useHospitalAdminOperations();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [transfers, users, hs] = await Promise.all([
-        apiFetch("/api/staff-transfers?limit=100"),
-        apiFetch("/api/users?limit=200"),
-        apiFetch("/api/hospitals?limit=1000").catch(() => ({ items: [] })),
-      ]);
-      setItems(Array.isArray(transfers?.items) ? transfers.items : []);
-      const usersItems = Array.isArray(users?.items) ? users.items : Array.isArray(users) ? users : [];
-      setStaffRows(usersItems);
-      setHospitals(Array.isArray(hs?.items) ? hs.items : Array.isArray(hs) ? hs : []);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load transfer data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const createTransfer = async (e) => {
+  const handleCreateTransfer = async (e) => {
     e.preventDefault();
-    setMsg("");
-    try {
-      await apiFetch("/api/staff-transfers", {
-        method: "POST",
-        body: form,
-      });
-      setMsg("Transfer request created");
-      setForm({ staffUserId: "", toHospitalId: "", transferLetterRef: "", note: "" });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to create transfer request");
-    }
+    await createTransfer(e);
   };
 
   const doAction = async (id, action, body = {}) => {
-    try {
-      await apiFetch(`/api/staff-transfers/${id}/${action}`, {
-        method: "PATCH",
-        body,
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || `Failed to ${action}`);
-    }
+    await actionTransfer(id, action, body);
   };
 
   return (
@@ -78,7 +36,7 @@ export default function StaffTransfers() {
 
       <section className="section">
         <h3>Create Transfer Request</h3>
-        <form className="card form-grid" onSubmit={createTransfer}>
+        <form className="card form-grid" onSubmit={handleCreateTransfer}>
           <label className="field">
             <span>Staff member</span>
             <select

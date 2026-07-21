@@ -6,10 +6,12 @@ import SocketProvider from "./utils/socket";
 import { redirectByRole } from "./utils/redirectByRole";
 import { PatientLanguageProvider } from "./utils/patientLanguage.jsx";
 
+import { NavigationProvider, CommandPalette } from "./components/Navigation";
 import FloatingAI from "./components/FloatingAI";
 import RequireRole from "./components/RequireRole";
 import AutoRedirect from "./components/AutoRedirect";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import { RouteGuard } from "./components/RouteGuard";
 import AppShellSkeleton from "./components/AppShellSkeleton";
 import AuthGateFallback from "./components/AuthGateFallback";
 import GlobalProgressBar from "./components/GlobalProgressBar";
@@ -18,7 +20,10 @@ import ActionSuccessGuide from "./components/ActionSuccessGuide";
 import UXAuditMode from "./components/UXAuditMode";
 
 import AppShell from "./app/shell/AppShell";
+import MainLayout from "./layouts/MainLayout";
 import { LEGACY_ROUTE_MAP } from "./app/routing/legacyRouteMap";
+import { createRuntimeRouteElements } from "./app/runtime/appRouteComposer";
+import { isPatientExperienceMode } from "./pages/Patient/appointmentFeatureFlags";
 
 /* =======================
    PUBLIC / AUTH
@@ -192,6 +197,8 @@ const EmergencyCommandDashboard = lazy(() => import("./pages/Operations/Emergenc
 const NeonatalIcuDashboard = lazy(() => import("./pages/Operations/NeonatalIcuDashboard"));
 const DialysisOpsDashboard = lazy(() => import("./pages/Operations/DialysisOpsDashboard"));
 const OncologyDaycareDashboard = lazy(() => import("./pages/Operations/OncologyDaycareDashboard"));
+const DriverHome = lazy(() => import("./pages/Operations/DriverHome"));
+const MortuaryHome = lazy(() => import("./pages/Operations/MortuaryHome"));
 
 /* =======================
    ADMIN
@@ -235,7 +242,9 @@ function RouteLoadingFallback() {
 
 function RootEntry() {
   const { user, loading } = useAuth();
-  if (loading) return <AuthGateFallback title="Loading workspace" detail="Preparing your workspace and routing the right page." />;
+  if (loading && !user) {
+    return <AuthGateFallback title="Loading workspace" detail="Preparing your workspace and routing the right page." />;
+  }
   return <Navigate to={user ? redirectByRole(user) : "/login"} replace />;
 }
 
@@ -263,8 +272,8 @@ const SHARED_NOTIFICATION_ROLES = [
 
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return children;
   if (user) return <Navigate to={redirectByRole(user)} replace />;
+  if (loading) return children;
   return children;
 }
 
@@ -312,19 +321,34 @@ function FloatingAIGate() {
   return <FloatingAI />;
 }
 
+function ProtectedWorkspaceShell() {
+  return (
+    <RouteGuard
+      fallback={<Navigate to="/unauthorized" replace />}
+      loading={<RouteLoadingFallback />}
+    >
+      <AppShell />
+    </RouteGuard>
+  );
+}
+
 /* =====================================================
    APP
 ===================================================== */
 export default function App() {
+  const runtimeRouteElements = createRuntimeRouteElements();
+
   return (
     <SocketProvider>
-      <AppErrorBoundary>
-        <GlobalProgressBar />
-        <RouteProgressEvents />
-        <ActionSuccessGuide />
-        <Suspense fallback={<RouteLoadingFallback />}>
-        <Routes>
-        {/* ============ PUBLIC ROUTES ============ */}
+      <NavigationProvider>
+        <AppErrorBoundary>
+          <CommandPalette />
+          <GlobalProgressBar />
+          <RouteProgressEvents />
+          <ActionSuccessGuide />
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
+              {/* ============ PUBLIC ROUTES ============ */}
         <Route path="/" element={<RootEntry />} />
         <Route
           path="/login"
@@ -366,7 +390,7 @@ export default function App() {
           element={
             <RequireRole>
               <AutoRedirect>
-                <AppShell />
+                <ProtectedWorkspaceShell />
               </AutoRedirect>
             </RequireRole>
           }
@@ -419,6 +443,13 @@ export default function App() {
               </RequireRole>
             }
           />
+          <Route path="/app/governance/claims/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><GovernmentClaimsDashboard /></RequireRole>} />
+          <Route path="/app/governance/registry/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><GovernmentHospitalRegistryPage /></RequireRole>} />
+          <Route path="/app/governance/registry/patient-identity" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><PatientIdentityRegistryPage /></RequireRole>} />
+          <Route path="/app/governance/verification/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><HospitalVerificationReview /></RequireRole>} />
+          <Route path="/app/governance/fraud/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><FraudGuard /></RequireRole>} />
+          <Route path="/app/governance/reports/regulatory" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><RegulatoryReports /></RequireRole>} />
+          <Route path="/app/governance/command/county" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><CountyCommandCenter /></RequireRole>} />
           <Route
             path="/app/innovation/home/index"
             element={
@@ -445,6 +476,8 @@ export default function App() {
           <Route path="/app/care/intelligence/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "DOCTOR", "NURSE"]}><ClinicalIntelligence /></RequireRole>} />
 
           {/* Operations */}
+          <Route path="/app/operations/driver/home" element={<RequireRole roles={["DRIVER", "AMBULANCE_DRIVER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><DriverHome /></RequireRole>} />
+          <Route path="/app/operations/mortuary/home" element={<RequireRole roles={["MORTUARY_STAFF", "MORTUARY_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><MortuaryHome /></RequireRole>} />
           <Route path="/app/operations/bed-board/index" element={<RequireRole roles={["NURSE", "DOCTOR", "SURGEON", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><Beds /></RequireRole>} />
           <Route path="/app/operations/triage/index" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><TriageOpsDashboard /></RequireRole>} />
           <Route path="/app/operations/emergency/command" element={<RequireRole roles={["DOCTOR", "SURGEON", "NURSE", "SECURITY_ADMIN", "SECURITY_OFFICER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><EmergencyCommandDashboard /></RequireRole>} />
@@ -523,6 +556,8 @@ export default function App() {
           <Route path="/app/platform/print/center" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "SECURITY_ADMIN", "HR_MANAGER", "PAYROLL_OFFICER", "DOCTOR", "NURSE", "LAB_TECH", "PHARMACIST"]}><PrintCenter /></RequireRole>} />
           <Route path="/app/platform/audit/logs" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><AuditLogs /></RequireRole>} />
           <Route path="/app/platform/audit/pharmacy-access" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyAccessAudit /></RequireRole>} />
+          <Route path="/app/platform/security/admin/home" element={<RequireRole roles={["SECURITY_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><SecurityAdminDashboard /></RequireRole>} />
+          <Route path="/app/platform/security/officer/home" element={<RequireRole roles={["SECURITY_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><SecurityOfficerDashboard /></RequireRole>} />
           <Route path="/app/platform/security/access-control" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><AccessControl /></RequireRole>} />
           <Route path="/app/platform/security/admin-creation" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN"]}><CreateAdmin /></RequireRole>} />
           <Route path="/app/platform/security/abac" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><AbacPolicies /></RequireRole>} />
@@ -549,16 +584,6 @@ export default function App() {
           <Route path="/app/platform/trust/provenance" element={<RequireRole roles={["DEVELOPER", "SUPER_ADMIN", "SYSTEM_ADMIN"]}><ProvenanceVerify /></RequireRole>} />
           <Route path="/app/platform/data/crdt/patients" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><CRDTPatientEditor /></RequireRole>} />
 
-          {/* Governance */}
-          <Route path="/app/governance/claims/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_REGULATOR", "GOVERNMENT_ADMIN", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><GovernmentClaimsDashboard /></RequireRole>} />
-          <Route path="/app/governance/registry/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalRegistry /></RequireRole>} />
-          <Route path="/app/governance/registry/patient-identity" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><PatientIdentityRegistryPage /></RequireRole>} />
-          <Route path="/app/governance/registry/pharmacies" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><SuperAdminPharmacies /></RequireRole>} />
-          <Route path="/app/governance/reports/regulatory" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><RegulatoryReports /></RequireRole>} />
-          <Route path="/app/governance/command/county" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><CountyCommandCenter /></RequireRole>} />
-          <Route path="/app/governance/verification/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalVerificationReview /></RequireRole>} />
-          <Route path="/app/governance/fraud/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN"]}><FraudGuard /></RequireRole>} />
-
           {/* Innovation */}
           <Route path="/app/innovation/ai/medical" element={<MedicalAssistant />} />
           <Route path="/app/innovation/ai/triage" element={<Triage />} />
@@ -570,6 +595,28 @@ export default function App() {
           <Route path="/app/innovation/interop-marketplace/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><InteropMarketplace /></RequireRole>} />
 
           {/* Patient Portal workspace (mobile-first surface) */}
+          <Route path="/app/portal/home/index" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PortalHome /></PatientLanguageProvider></RequireRole>} />
+          <Route
+            path="/app/portal/appointments/index"
+            element={
+              <RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER", "DOCTOR", "SURGEON", "NURSE", "RADIOLOGIST", "THERAPIST", "LAB_TECH", "PHARMACIST", "RECEPTIONIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "PAYROLL_OFFICER", "SECURITY_ADMIN", "SECURITY_OFFICER", "SYSTEM_ADMIN"]}>
+                <PatientLanguageProvider>
+                  <PatientAppointments />
+                </PatientLanguageProvider>
+              </RequireRole>
+            }
+          />
+          <Route path="/app/portal/records/index" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientMedicalRecords /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/family/records" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientFamilyRecords /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/family/timeline" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientFamilyTimeline /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/medications/prescriptions" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientPrescriptions /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/diagnostics/lab-results" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientLabResults /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/billing/index" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientBilling /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/insurance/index" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientInsurance /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/transfers/index" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientTransfers /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/discovery/hospitals" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientHospitals /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/support/feedback" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientFeedback /></PatientLanguageProvider></RequireRole>} />
+          <Route path="/app/portal/discovery/ads" element={<RequireRole roles={["PATIENT", "GUEST", "SUPER_ADMIN", "DEVELOPER"]}><PatientLanguageProvider><PatientAdsFeed /></PatientLanguageProvider></RequireRole>} />
           <Route
             path="/app/portal"
             element={
@@ -596,18 +643,21 @@ export default function App() {
           </Route>
 
           {/* Legacy URL redirects (old → new). */}
+          {runtimeRouteElements}
+
           {Object.entries(LEGACY_ROUTE_MAP).map(([from, to]) => (
             <Route key={from} path={from} element={<LegacyRedirect to={to} />} />
           ))}
         </Route>
 
-        {/* ============ 404 ============ */}
-        <Route path="*" element={<div>404 — Page not found</div>} />
-        </Routes>
-        </Suspense>
-        <FloatingAIGate />
-        <UXAuditMode />
-      </AppErrorBoundary>
+              {/* ============ 404 ============ */}
+              <Route path="*" element={<div>404 — Page not found</div>} />
+            </Routes>
+          </Suspense>
+          <FloatingAIGate />
+          <UXAuditMode />
+        </AppErrorBoundary>
+      </NavigationProvider>
     </SocketProvider>
   );
 }

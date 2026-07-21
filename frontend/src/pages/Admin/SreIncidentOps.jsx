@@ -1,95 +1,28 @@
-import { useEffect, useState } from "react";
-import {
-  ackSreIncident,
-  createSreIncident,
-  exportSreIncidentsCsv,
-  escalateSreIncident,
-  listSreIncidents,
-  mitigateSreIncident,
-  resolveSreIncident,
-} from "../../services/opsApi";
+import { useSreIncidentOps } from "../../hooks/useSreIncidentOps";
 
 export default function SreIncidentOps() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [busyId, setBusyId] = useState("");
-  const [message, setMessage] = useState("");
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [severity, setSeverity] = useState("");
-
-  const [form, setForm] = useState({
-    severity: "SEV2",
-    summary: "",
-    sourceAlert: "",
-    service: "AfyaLink",
-    runbookUrl: "",
-  });
-
-  const load = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      const data = await listSreIncidents({ q, status, severity, limit: 120 });
-      setItems(Array.isArray(data?.incidents) ? data.incidents : []);
-    } catch (err) {
-      setMessage(err?.message || "Failed to load incidents.");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(load, 250);
-    return () => clearTimeout(timer);
-  }, [q, status, severity]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.summary.trim()) {
-      setMessage("Summary is required.");
-      return;
-    }
-    setBusyId("create");
-    setMessage("");
-    try {
-      await createSreIncident(form);
-      setForm((prev) => ({ ...prev, summary: "", sourceAlert: "" }));
-      await load();
-      setMessage("Incident declared.");
-    } catch (err) {
-      setMessage(err?.message || "Failed to create incident.");
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const runAction = async (id, fn, note) => {
-    setBusyId(id);
-    setMessage("");
-    try {
-      await fn(id, { note });
-      await load();
-    } catch (err) {
-      setMessage(err?.message || "Incident action failed.");
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const exportCsv = async () => {
-    try {
-      await exportSreIncidentsCsv({
-        q: q || undefined,
-        status: status || undefined,
-        severity: severity || undefined,
-        limit: 10000,
-      });
-    } catch (err) {
-      setMessage(err?.message || "Failed to export incidents CSV.");
-    }
-  };
+  const {
+    items,
+    loading,
+    busyId,
+    message,
+    q,
+    setQ,
+    status,
+    setStatus,
+    severity,
+    setSeverity,
+    form,
+    setForm,
+    load,
+    submit,
+    runAction,
+    ackIncident,
+    escalateIncident,
+    mitigateIncident,
+    resolveIncident,
+    exportCsv,
+  } = useSreIncidentOps();
 
   return (
     <div className="dashboard">
@@ -191,10 +124,10 @@ export default function SreIncidentOps() {
                     <td>{item.summary}</td>
                     <td>
                       <div className="form-row">
-                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => runAction(item._id, ackSreIncident, "Acknowledged by operations")}>Ack</button>
-                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => runAction(item._id, escalateSreIncident, "Escalated")}>Escalate</button>
-                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => runAction(item._id, mitigateSreIncident, "Mitigation applied")}>Mitigate</button>
-                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => runAction(item._id, resolveSreIncident, "Resolved")}>Resolve</button>
+                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => ackIncident(item._id)}>Ack</button>
+                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => escalateIncident(item._id)}>Escalate</button>
+                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => mitigateIncident(item._id)}>Mitigate</button>
+                        <button type="button" className="btn" disabled={busyId === item._id} onClick={() => resolveIncident(item._id)}>Resolve</button>
                       </div>
                     </td>
                   </tr>

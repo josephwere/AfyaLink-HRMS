@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React from "react";
 import {
   Cell,
   Line,
@@ -12,8 +12,7 @@ import {
 } from "recharts";
 
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import { downloadApiFile } from "../../lib/api/client";
-import apiFetch from "../../utils/apiFetch";
+import { useTransactionsDashboard } from "../../hooks/useTransactionsDashboard";
 import { formatCurrency, formatDateTime } from "../../utils/locale";
 
 const PROVIDERS = [
@@ -35,78 +34,20 @@ function formatCurrencyKES(value) {
 }
 
 export default function TransactionsDashboard() {
-  const [rows, setRows] = useState([]);
-  const [summary, setSummary] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [filters, setFilters] = useState({
-    provider: "",
-    status: "",
-    min: "",
-    max: "",
-    start: "",
-    end: "",
-    search: "",
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const succeededTotal = useMemo(
-    () => (summary || []).reduce((acc, s) => acc + Number(s?.total || 0), 0),
-    [summary]
-  );
-  const activeFilterCount = useMemo(() => {
-    return Object.entries(filters || {}).filter(([, value]) => String(value || "").trim() !== "").length;
-  }, [filters]);
-
-  const fetchData = useCallback(async (opts = {}) => {
-    const exportCsv = Boolean(opts.exportCsv);
-    const currentFilters = opts.filters || filters;
-    const qs = new URLSearchParams({ ...currentFilters, limit: "500" });
-    if (exportCsv) qs.set("exportCsv", "1");
-    const query = qs.toString();
-
-    if (exportCsv) {
-      await downloadApiFile(`/api/transactions?${query}`, {
-        filename: "transactions.csv",
-        headers: { Accept: "text/csv" },
-      });
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      const [tx, sum, daily] = await Promise.all([
-        apiFetch(`/api/transactions?${query}`),
-        apiFetch("/api/transactions/summary"),
-        apiFetch("/api/analytics/revenue/daily"),
-      ]);
-      setRows(Array.isArray(tx?.data) ? tx.data : Array.isArray(tx) ? tx : []);
-      setSummary(Array.isArray(sum?.data) ? sum.data : Array.isArray(sum) ? sum : []);
-      setChartData(Array.isArray(daily) ? daily : Array.isArray(daily?.items) ? daily.items : []);
-    } catch (err) {
-      setRows([]);
-      setSummary([]);
-      setChartData([]);
-      setError(err?.message || "Failed to load transactions.");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    fetchData().catch(() => {});
-  }, [fetchData]);
-
-  const applyFilters = async () => {
-    await fetchData({ filters });
-  };
-
-  const resetFilters = async () => {
-    const next = { provider: "", status: "", min: "", max: "", start: "", end: "", search: "" };
-    setFilters(next);
-    await fetchData({ filters: next });
-  };
+  const {
+    rows,
+    summary,
+    chartData,
+    filters,
+    setFilter,
+    loading,
+    error,
+    succeededTotal,
+    activeFilterCount,
+    refresh,
+    applyFilters,
+    resetFilters,
+  } = useTransactionsDashboard();
 
   const COLORS = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#64748b"];
 
@@ -117,8 +58,8 @@ export default function TransactionsDashboard() {
       title="Transactions"
       subtitle="Filter, review, chart, and export transaction activity."
       actions={[
-        { label: "Refresh", onClick: () => fetchData(), variant: "secondary" },
-        { label: "Export CSV", onClick: () => fetchData({ exportCsv: true }) },
+        { label: "Refresh", onClick: () => refresh(), variant: "secondary" },
+        { label: "Export CSV", onClick: () => refresh({ exportCsv: true }) },
       ]}
       stats={[
         { label: "Loaded", value: rows.length, note: "Rows in view" },
@@ -139,11 +80,11 @@ export default function TransactionsDashboard() {
           <input
             placeholder="Search reference or patient"
             value={filters.search}
-            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+            onChange={(e) => setFilter("search", e.target.value)}
           />
           <select
             value={filters.provider}
-            onChange={(e) => setFilters((prev) => ({ ...prev, provider: e.target.value }))}
+            onChange={(e) => setFilter("provider", e.target.value)}
           >
             {PROVIDERS.map((opt) => (
               <option key={opt.value || "all"} value={opt.value}>
@@ -153,7 +94,7 @@ export default function TransactionsDashboard() {
           </select>
           <select
             value={filters.status}
-            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+            onChange={(e) => setFilter("status", e.target.value)}
           >
             {STATUSES.map((opt) => (
               <option key={opt.value || "all"} value={opt.value}>
@@ -165,23 +106,23 @@ export default function TransactionsDashboard() {
             type="number"
             placeholder="Min"
             value={filters.min}
-            onChange={(e) => setFilters((prev) => ({ ...prev, min: e.target.value }))}
+            onChange={(e) => setFilter("min", e.target.value)}
           />
           <input
             type="number"
             placeholder="Max"
             value={filters.max}
-            onChange={(e) => setFilters((prev) => ({ ...prev, max: e.target.value }))}
+            onChange={(e) => setFilter("max", e.target.value)}
           />
           <input
             type="date"
             value={filters.start}
-            onChange={(e) => setFilters((prev) => ({ ...prev, start: e.target.value }))}
+            onChange={(e) => setFilter("start", e.target.value)}
           />
           <input
             type="date"
             value={filters.end}
-            onChange={(e) => setFilters((prev) => ({ ...prev, end: e.target.value }))}
+            onChange={(e) => setFilter("end", e.target.value)}
           />
         </div>
       </DashboardSection>

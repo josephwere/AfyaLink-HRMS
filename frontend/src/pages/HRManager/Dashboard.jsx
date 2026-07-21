@@ -1,151 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { StatCard } from "../../components/Cards";
-import { getHRDashboard } from "../../services/dashboardApi";
-import { runBurnoutScore, runCausalImpact } from "../../services/mlApi";
-import { listTrainingTrackers } from "../../services/trainingTrackerApi";
-import { listTransfers } from "../../services/transferApi";
+import { useHRManagerDashboard } from "../../hooks/useHRManagerDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function HRManagerDashboard() {
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [burnout, setBurnout] = useState(null);
-  const [causal, setCausal] = useState(null);
-  const [training, setTraining] = useState({
-    total: 0,
-    notStarted: 0,
-    inProgress: 0,
-    completed: 0,
-    overdueNotStarted: 0,
-    overdueInProgress: 0,
-    completionRate: 0,
-  });
-  const [trend, setTrend] = useState({
-    burnoutScore: [],
-    projectedKpi: [],
-    projectedChange: [],
-    trainingCompletion: [],
-  });
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  const push = (key, value) => {
-    setTrend((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), Number(value || 0)].slice(-12),
-    }));
-  };
-
-  const burnoutStatus = (score) => {
-    const n = Number(score || 0);
-    if (n >= 75) return "risk";
-    if (n >= 45) return "warn";
-    return "good";
-  };
-
-  const changeStatus = (pct) => {
-    const n = Number(pct || 0);
-    if (n < 0) return "risk";
-    if (n < 3) return "warn";
-    return "good";
-  };
-
-  const badgeFromStatus = (s) => (s === "risk" ? "ALERT" : s === "warn" ? "WATCH" : "OK");
-
-  const loadAi = async () => {
-    try {
-      const [b, c] = await Promise.all([
-        runBurnoutScore({
-          hoursPerWeek: 50,
-          nightShifts: 4,
-          consecutiveDays: 6,
-          overtimeHours: 10,
-          leaveBalanceDays: 9,
-          incidentsIn30d: 1,
-        }),
-        runCausalImpact({
-          baseline: 100,
-          interventions: [
-            { name: "Shift rebalance", effectPct: 6, confidence: 0.75 },
-            { name: "Fast-track hiring", effectPct: 8, confidence: 0.65 },
-          ],
-        }),
-      ]);
-      setBurnout(b || null);
-      setCausal(c || null);
-      push("burnoutScore", b?.score || 0);
-      push("projectedKpi", c?.projected || 0);
-      push("projectedChange", c?.changePct || 0);
-    } catch {
-      setBurnout(null);
-      setCausal(null);
-    }
-  };
-
-  useEffect(() => {
-    getHRDashboard().then(setData).catch(() => setData(null));
-    loadAi();
-
-    listTrainingTrackers({ limit: 200 })
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
-        const now = Date.now();
-        const notStarted = rows.filter((r) => r.status === "NOT_STARTED").length;
-        const inProgress = rows.filter((r) => r.status === "IN_PROGRESS").length;
-        const completed = rows.filter((r) => r.status === "COMPLETED").length;
-        const overdueNotStarted = rows.filter(
-          (r) =>
-            r.status === "NOT_STARTED" &&
-            r.createdAt &&
-            now - new Date(r.createdAt).getTime() >= 3 * 24 * 60 * 60 * 1000
-        ).length;
-        const overdueInProgress = rows.filter(
-          (r) =>
-            r.status === "IN_PROGRESS" &&
-            r.updatedAt &&
-            now - new Date(r.updatedAt).getTime() >= 7 * 24 * 60 * 60 * 1000
-        ).length;
-        const total = rows.length;
-        const completionRate = total ? Math.round((completed / total) * 100) : 0;
-
-        setTraining({
-          total,
-          notStarted,
-          inProgress,
-          completed,
-          overdueNotStarted,
-          overdueInProgress,
-          completionRate,
-        });
-        push("trainingCompletion", completionRate);
-      })
-      .catch(() =>
-        setTraining({
-          total: 0,
-          notStarted: 0,
-          inProgress: 0,
-          completed: 0,
-          overdueNotStarted: 0,
-          overdueInProgress: 0,
-          completionRate: 0,
-        })
-      );
-
-    listTransfers({ limit: 8, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-
-    const timer = setInterval(loadAi, 45000);
-    return () => clearInterval(timer);
-  }, []);
+  const {
+    data,
+    burnout,
+    causal,
+    training,
+    trend,
+    transfers,
+    transferError,
+    burnoutStatus,
+    changeStatus,
+    badgeFromStatus,
+  } = useHRManagerDashboard();
 
   return (
     <DashboardHomeShell

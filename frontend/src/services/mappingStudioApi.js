@@ -2,6 +2,8 @@ import apiFetch from "../utils/apiFetch";
 
 export const listMappings = async () => apiFetch("/api/mapping");
 
+export const getMapping = async (id) => apiFetch(`/api/mapping/${id}`);
+
 export const createMapping = async (payload) =>
   apiFetch("/api/mapping", { method: "POST", body: payload });
 

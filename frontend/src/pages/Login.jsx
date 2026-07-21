@@ -1,134 +1,30 @@
 // frontend/src/pages/Login.jsx
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 
 import PasswordInput from "../components/PasswordInput";
 import LegalLinks from "../components/LegalLinks";
-import { redirectByRole } from "../utils/redirectByRole";
-import { useAuth } from "../utils/auth";
-import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
-import { useSystemSettings } from "../utils/systemSettings.jsx";
-import { normalizeAuthUiError, warmAuthRuntime } from "../services/guardedAuthFetch";
+import { useLogin } from "../hooks/useLogin";
 
 export default function Login() {
-  const { login } = useAuth();
-  const { settings } = useSystemSettings();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const { GoogleButton, error: googleError, clearError } = useGoogleAuth();
-
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
-
-  const [submitting, setSubmitting] = useState(false);
-  const [slowAuth, setSlowAuth] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  /* -------------------------
-     Post-register notice
-  -------------------------- */
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get("verify")) {
-      setInfo("Account created. Verify your email from Profile inside the app.");
-    }
-  }, [location.search]);
-
-  /* -------------------------
-     Restore remembered email
-  -------------------------- */
-  useEffect(() => {
-    const saved = localStorage.getItem("remember_email");
-    if (saved) {
-      setIdentifier(saved);
-      setRememberMe(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.body.classList.add("auth-route");
-    return () => document.body.classList.remove("auth-route");
-  }, []);
-
-  useEffect(() => {
-    warmAuthRuntime("auth-entry").catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
-
-  /* -------------------------
-     Email/password login
-  -------------------------- */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setInfo("");
-    setSubmitting(true);
-    setSlowAuth(false);
-    clearError?.();
-    const slowTimer = setTimeout(() => setSlowAuth(true), 2500);
-
-    try {
-      rememberMe
-        ? localStorage.setItem("remember_email", identifier)
-        : localStorage.removeItem("remember_email");
-
-      const result = await login(identifier.trim(), password);
-
-      if (result?.requires2FA) {
-        navigate("/2fa", {
-          state: {
-            userId: result.userId,
-            email: identifier,
-            method: result.method,
-            reason: result.reason,
-          },
-        });
-        return;
-      }
-
-      if (!result?.user) throw new Error("Invalid credentials");
-
-      if (result?.offline) {
-        setInfo("Offline mode: signed in using cached credentials on this device.");
-      }
-
-      if (!result.user.emailVerified && !result.user.phoneVerified) {
-        setInfo("Account not verified. Complete verification in Profile.");
-        navigate("/profile", { replace: true });
-        return;
-      }
-
-      navigate(redirectByRole(result.user), { replace: true });
-    } catch (err) {
-      setError(
-        normalizeAuthUiError(err, {
-          timeoutMessage:
-            "We’re warming AfyaLink sign-in and retrying in the background. Please wait a few seconds and try again.",
-          networkMessage:
-            "AfyaLink sign-in is temporarily unavailable. Please check your connection and try again.",
-          fallback: "Invalid credentials",
-        })
-      );
-    } finally {
-      clearTimeout(slowTimer);
-      setSubmitting(false);
-      setSlowAuth(false);
-    }
-  };
+  const {
+    settings,
+    identifier,
+    setIdentifier,
+    password,
+    setPassword,
+    rememberMe,
+    setRememberMe,
+    error,
+    info,
+    submitting,
+    slowAuth,
+    isOffline,
+    GoogleButton,
+    googleError,
+    clearError,
+    handleSubmit,
+  } = useLogin();
 
   /* -------------------------
      UI

@@ -1,75 +1,7 @@
-import { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import { useSystemAdminMigrations } from "../../hooks/useSystemAdminMigrations";
 
 export default function SystemMigrations() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    sourceName: "",
-    vendor: "",
-    type: "OTHER",
-    mode: "HYBRID",
-    aiEngine: "NEUROEDGE",
-  });
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await apiFetch("/api/migrations?limit=50");
-      setItems(Array.isArray(data?.items) ? data.items : []);
-    } catch (err) {
-      setMsg(err.message || "Failed to load migration projects");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const createProject = async (e) => {
-    e.preventDefault();
-    setMsg("");
-    try {
-      await apiFetch("/api/migrations", {
-        method: "POST",
-        body: {
-          name: form.name,
-          sourceSystem: {
-            name: form.sourceName,
-            vendor: form.vendor,
-            type: form.type,
-            interoperability: ["FHIR", "HL7v2"],
-          },
-          strategy: {
-            mode: form.mode,
-            aiEngine: form.aiEngine,
-            dualWrite: true,
-          },
-        },
-      });
-      setForm((f) => ({ ...f, name: "", sourceName: "", vendor: "" }));
-      setMsg("Migration project created.");
-      await load();
-    } catch (err) {
-      setMsg(err.message || "Failed to create migration project");
-    }
-  };
-
-  const startDryRun = async (id) => {
-    setMsg("");
-    try {
-      await apiFetch(`/api/migrations/${id}/dry-run`, { method: "POST" });
-      setMsg("Dry run started.");
-      await load();
-    } catch (err) {
-      setMsg(err.message || "Failed to start dry run");
-    }
-  };
+  const { items, loading, msg, form, setForm, createProject, startDryRun } = useSystemAdminMigrations();
 
   return (
     <div className="dashboard">

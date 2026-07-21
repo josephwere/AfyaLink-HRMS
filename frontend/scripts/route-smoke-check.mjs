@@ -57,6 +57,7 @@ const localsAllowed = new Set([
   "PublicOnly",
   "AppLayout",
   "PatientSelfServiceRoute",
+  "LegacyRedirect",
 ]);
 for (const n of localsAllowed) importedNames.add(n);
 

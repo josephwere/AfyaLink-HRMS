@@ -1,97 +1,29 @@
-import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  createSupportTicket,
-  exportSupportTicketsCsv,
-  listSupportTickets,
-  updateSupportTicket,
-} from "../../services/opsApi";
+import { useAuth } from "../../utils/auth";
+import { useSupportTickets } from "../../hooks/useSupportTickets";
 
 export default function SupportTickets() {
   const [searchParams] = useSearchParams();
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [busyId, setBusyId] = useState("");
-  const [message, setMessage] = useState("");
-  const [q, setQ] = useState(() => searchParams.get("q") || "");
-  const highlightedTicketId = searchParams.get("ticketId") || "";
-  const [status, setStatus] = useState("");
-  const [priority, setPriority] = useState("");
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    category: "OTHER",
-    priority: "MEDIUM",
-    linkedIncident: "",
-  });
-
-  const load = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      const data = await listSupportTickets({ q, status, priority, limit: 120 });
-      setTickets(Array.isArray(data?.tickets) ? data.tickets : []);
-    } catch (err) {
-      setMessage(err?.message || "Failed to load support tickets.");
-      setTickets([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const t = setTimeout(load, 250);
-    return () => clearTimeout(t);
-  }, [q, status, priority]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.title.trim()) {
-      setMessage("Title is required.");
-      return;
-    }
-    setBusyId("create");
-    setMessage("");
-    try {
-      await createSupportTicket({
-        ...form,
-        linkedIncident: form.linkedIncident || undefined,
-      });
-      setForm((p) => ({ ...p, title: "", description: "", linkedIncident: "" }));
-      await load();
-      setMessage("Support ticket created.");
-    } catch (err) {
-      setMessage(err?.message || "Failed to create support ticket.");
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const updateTicket = async (ticket, payload) => {
-    setBusyId(ticket._id);
-    setMessage("");
-    try {
-      await updateSupportTicket(ticket._id, payload);
-      await load();
-    } catch (err) {
-      setMessage(err?.message || "Failed to update ticket.");
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const exportCsv = async () => {
-    try {
-      await exportSupportTicketsCsv({
-        q: q || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-        limit: 10000,
-      });
-    } catch (err) {
-      setMessage(err?.message || "Failed to export support tickets CSV.");
-    }
-  };
+  const { user } = useAuth();
+  const {
+    tickets,
+    loading,
+    busyId,
+    message,
+    q,
+    setQ,
+    status,
+    setStatus,
+    priority,
+    setPriority,
+    form,
+    setForm,
+    highlightedTicketId,
+    load,
+    submit,
+    updateTicket,
+    exportCsv,
+  } = useSupportTickets({ searchParams, user });
 
   return (
     <div className="dashboard">

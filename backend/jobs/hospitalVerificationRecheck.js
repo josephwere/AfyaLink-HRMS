@@ -1,8 +1,8 @@
 import cron from "node-cron";
 import Hospital from "../models/Hospital.js";
 import Branch from "../models/Branch.js";
-import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { notifyUsers } from "../services/notificationService.js";
 
 async function expireHospitalVerifications() {
   const now = new Date();
@@ -25,19 +25,17 @@ async function expireHospitalVerifications() {
       .lean();
 
     if (admins.length) {
-      await Notification.insertMany(
-        admins.map((row) => ({
-          title: "Hospital Verification Expired",
-          body: `${hospital.name} can no longer operate on AfyaLink until verification is renewed.`,
-          category: "PHARMACY",
-          user: row._id,
-          hospital: hospital._id,
-          meta: {
-            type: "HOSPITAL_VERIFICATION_EXPIRED",
-            path: "/super-admin/hospitals",
-          },
-        }))
-      );
+      await notifyUsers({
+        users: admins.map((row) => row._id),
+        hospital: hospital._id,
+        title: "Hospital Verification Expired",
+        body: `${hospital.name} can no longer operate on AfyaLink until verification is renewed.`,
+        category: "PHARMACY",
+        meta: {
+          type: "HOSPITAL_VERIFICATION_EXPIRED",
+          path: "/super-admin/hospitals",
+        },
+      });
     }
   }
 }

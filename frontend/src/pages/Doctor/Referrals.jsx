@@ -1,109 +1,38 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import EditableSection from "../../components/EditableSection";
 import ContentSkeleton from "../../components/ContentSkeleton";
 import GuidedEmptyState, { TableEmptyState } from "../../components/GuidedEmptyState";
 import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
-import {
-  createPharmacyReferral,
-  listPharmacyReferrals,
-  listRegisteredPharmacies,
-} from "../../services/pharmacyNetworkApi";
+import { useDoctorReferrals } from "../../hooks/useDoctorReferrals";
 
 export default function Referrals() {
   const [searchParams] = useSearchParams();
   const patientId = searchParams.get("patientId") || "";
-  const [patient, setPatient] = useState(null);
-  const [pharmacies, setPharmacies] = useState([]);
-  const [referrals, setReferrals] = useState([]);
-  const [q, setQ] = useState("");
-  const [selectedPharmacyId, setSelectedPharmacyId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [referralSaved, setReferralSaved] = useState(false);
-  const [referralEditing, setReferralEditing] = useState(true);
-  const [form, setForm] = useState({
-    patientName: "",
-    patientPhone: "",
-    reason: "",
-    medicationNotes: "",
-    urgent: false,
-  });
+  const {
+    patient,
+    pharmacies,
+    referrals,
+    q,
+    setQ,
+    selectedPharmacyId,
+    setSelectedPharmacyId,
+    loading,
+    saving,
+    msg,
+    setMsg,
+    referralSaved,
+    referralEditing,
+    setReferralEditing,
+    form,
+    setForm,
+    selectedPharmacy,
+    submit,
+  } = useDoctorReferrals(patientId);
 
-  useEffect(() => {
-    if (!patientId) return;
-    apiFetch(`/api/patients/${patientId}`)
-      .then((res) => {
-        setPatient(res || null);
-        setForm((prev) => ({
-          ...prev,
-          patientName:
-            `${res?.firstName || ""} ${res?.lastName || ""}`.trim() || prev.patientName,
-          patientPhone: res?.contact || prev.patientPhone,
-        }));
-      })
-      .catch(() => setPatient(null));
-  }, [patientId]);
-
-  const loadPharmacies = async () => {
-    setLoading(true);
-    try {
-      const data = await listRegisteredPharmacies({ q, limit: 100 });
-      const items = Array.isArray(data?.items) ? data.items : [];
-      setPharmacies(items);
-      if (!selectedPharmacyId && items.length) setSelectedPharmacyId(String(items[0]._id));
-    } catch (err) {
-      setMsg(err?.message || "Could not load pharmacies.");
-      setPharmacies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadReferrals = async () => {
-    try {
-      const data = await listPharmacyReferrals({ limit: 100 });
-      setReferrals(Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setReferrals([]);
-    }
-  };
-
-  useEffect(() => {
-    loadPharmacies();
-    loadReferrals();
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(loadPharmacies, 250);
-    return () => clearTimeout(timer);
-  }, [q]);
-
-  const selectedPharmacy = useMemo(
-    () => pharmacies.find((item) => String(item._id) === String(selectedPharmacyId)) || null,
-    [pharmacies, selectedPharmacyId]
-  );
-
-  const submit = async () => {
-    if (!selectedPharmacyId || !form.patientName.trim()) {
-      setMsg("Select a pharmacy and patient first.");
-      return;
-    }
-    setSaving(true);
-    setMsg("");
-    try {
-      await createPharmacyReferral({
-        pharmacyId: selectedPharmacyId,
-        patientName: form.patientName,
-        patientPhone: form.patientPhone,
-        reason: form.reason,
-        medicationNotes: form.medicationNotes,
-        urgent: form.urgent,
-      });
-      setReferralSaved(true);
-      setReferralEditing(false);
+  const handleSubmit = async () => {
+    const ok = await submit();
+    if (ok) {
       showActionSuccessGuide({
         title: "Pharmacy Referral Sent",
         message: "The referral is locked and visible in recent pharmacy referrals.",
@@ -121,11 +50,6 @@ export default function Referrals() {
           },
         ],
       });
-      await loadReferrals();
-    } catch (err) {
-      setMsg(err?.message || "Could not create referral.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -152,7 +76,7 @@ export default function Referrals() {
           editLabel="New Referral"
           onEdit={() => setReferralEditing(true)}
           onCancel={() => setReferralEditing(false)}
-          onSave={submit}
+          onSave={handleSubmit}
         >
           <div className="panel-grid">
             <label>Patient</label>

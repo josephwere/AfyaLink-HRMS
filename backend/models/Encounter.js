@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { WORKFLOW } from "../constants/workflowStates.js";
+import { generateEncounterId } from "../services/idGenerator.js";
 
 const EncounterSchema = new mongoose.Schema(
   {
@@ -17,6 +18,13 @@ const EncounterSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hospital",
       required: true,
+      index: true,
+    },
+    encounterId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      immutable: true,
       index: true,
     },
     wardRef: {
@@ -59,7 +67,11 @@ const EncounterSchema = new mongoose.Schema(
    🔐 HARD WORKFLOW ENFORCEMENT (NON-BYPASSABLE)
 ========================================================= */
 
-EncounterSchema.pre("save", function (next) {
+EncounterSchema.pre("save", async function (next) {
+  if (!this.encounterId) {
+    this.encounterId = await generateEncounterId();
+  }
+
   /**
    * Any Encounter mutation MUST originate from workflow engine.
    * workflowEffects MUST set:
@@ -71,6 +83,30 @@ EncounterSchema.pre("save", function (next) {
         "Direct Encounter mutation forbidden. Use workflowService."
       )
     );
+  }
+
+  next();
+});
+
+EncounterSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasEncounterId =
+    update.encounterId !== undefined ||
+    (update.$set && update.$set.encounterId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.encounterId !== undefined);
+
+  if (!hasEncounterId) {
+    const nextId = await generateEncounterId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        encounterId: nextId,
+      },
+    });
   }
 
   next();

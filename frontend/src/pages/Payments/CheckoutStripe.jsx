@@ -1,28 +1,8 @@
 import React from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import apiFetch from '../../utils/apiFetch';
+import { useStripeCheckout } from '../../hooks/useStripeCheckout';
 
 export default function CheckoutStripe(){
-  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE || "");
-  const [status, setStatus] = React.useState("");
-  const start = async () => {
-    try {
-      setStatus("Preparing Stripe checkout...");
-      const js = await apiFetch('/api/payments/stripe/create-intent', {
-        method: 'POST',
-        body: { amount: 1000, currency: 'usd' },
-      });
-      const stripe = await stripePromise;
-      const clientSecret = js?.data?.clientSecret || js?.clientSecret;
-      if (!stripe || !clientSecret) {
-        setStatus("Stripe is not configured correctly.");
-        return;
-      }
-      setStatus("Stripe intent created successfully.");
-    } catch (err) {
-      setStatus(err?.message || "Failed to start Stripe checkout");
-    }
-  };
+  const { status, start } = useStripeCheckout();
   return (
     <div className="dashboard premium-shell">
       <section className="premium-card premium-shell-head">

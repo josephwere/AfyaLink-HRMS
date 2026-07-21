@@ -2,6 +2,7 @@ import Branch from "../models/Branch.js";
 import Hospital from "../models/Hospital.js";
 import GovernmentHospitalRegistry from "../models/GovernmentHospitalRegistry.js";
 import Notification from "../models/Notification.js";
+import { notify } from "../services/notificationService.js";
 
 const PRIVILEGED_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
 
@@ -118,12 +119,12 @@ export const create = async (req, res) => {
       createdBy: req.user?._id,
     });
 
-    await Notification.create({
+    await notify({
+      user: req.user?._id,
+      hospital,
       title: "Branch Registered",
       body: `${branch.name} was added under ${parentHospital.name}.`,
       category: "SYSTEM",
-      hospital,
-      user: req.user?._id,
       meta: {
         type: "BRANCH_REGISTERED",
         branchId: branch._id,

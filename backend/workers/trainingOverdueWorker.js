@@ -126,7 +126,23 @@ export async function runTrainingOverdueSweep() {
       }));
 
     if (docs.length) {
-      await Notification.insertMany(docs);
+      await notifyUsers({
+        users: docs.map((doc) => doc.user),
+        hospital: tracker.hospital || null,
+        title: alert.title,
+        body: alert.body,
+        category: "TRAINING",
+        meta: {
+          trainingTrackerId: String(tracker._id),
+          traineeName: tracker.traineeName,
+          traineeEmail: tracker.traineeEmail || "",
+          traineeRole: tracker.traineeRole,
+          progressPercent: tracker.progressPercent || 0,
+          status: tracker.status,
+          alertType: alert.alertType,
+          path: alert.path,
+        },
+      });
       created += docs.length;
     }
   }

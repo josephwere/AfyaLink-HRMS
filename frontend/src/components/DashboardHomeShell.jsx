@@ -5,6 +5,9 @@ import { useAppLanguage } from "../utils/appLanguage.jsx";
 import { useUiPreferences } from "../utils/uiPreferences";
 import { prefetchRouteByPath } from "../utils/routePrefetch";
 import { canonicalizePath } from "../app/routing/canonicalizePath";
+import dashboardWidgetRegistry, { normalizeDashboardWidget } from "./dashboard/widgets/registry";
+import { DashboardRuntimeProvider, DashboardWidgetHost } from "./dashboard/runtime/DashboardRuntime";
+import { sortDashboardItems } from "../utils/dashboardShellUtils";
 
 function DashboardActionButton({ action }) {
   const navigate = useNavigate();
@@ -192,7 +195,7 @@ function DashboardCardShelf({ storageKey, title, subtitle, items = [], emptyTitl
       .filter((item) => !prefs.hiddenIds.includes(item.id));
     const pinned = ordered.filter((item) => prefs.pinnedIds.includes(item.id));
     const unpinned = ordered.filter((item) => !prefs.pinnedIds.includes(item.id));
-    return [...pinned, ...unpinned];
+    return [...pinned, ...sortDashboardItems(unpinned)];
   }, [normalizedItems, prefs.hiddenIds, prefs.order, prefs.pinnedIds]);
 
   const togglePinned = (id) => {
@@ -313,6 +316,58 @@ function DashboardDailyBrief({ brief }) {
   );
 }
 
+function DashboardSectionBody({ config, translateText, runtime }) {
+  if (!config) return null;
+
+  if (typeof config.render === "function") {
+    return config.render({ translateText });
+  }
+
+  if (config.content !== undefined) {
+    return config.content;
+  }
+
+  if (config.children !== undefined) {
+    return config.children;
+  }
+
+  if (config.widget) {
+    const widgetDefinition = normalizeDashboardWidget(dashboardWidgetRegistry[config.widget]);
+    const widgetClassName = [
+      widgetDefinition?.defaultWidth ? `dashboard-widget-width-${widgetDefinition.defaultWidth}` : "",
+      widgetDefinition?.defaultHeight ? `dashboard-widget-height-${widgetDefinition.defaultHeight}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    if (!widgetDefinition?.component) return null;
+
+    if (widgetDefinition.lazy) {
+      const Loader = typeof widgetDefinition.loader === "function"
+        ? React.lazy(widgetDefinition.loader)
+        : React.lazy(() => Promise.resolve({ default: widgetDefinition.component }));
+      return (
+        <div className={widgetClassName}>
+          <React.Suspense fallback={<div className="muted">Loading widget…</div>}>
+            <Loader {...config.props} translateText={translateText} />
+          </React.Suspense>
+        </div>
+      );
+    }
+
+    const WidgetComponent = widgetDefinition.component;
+    return (
+      <div className={widgetClassName}>
+        <DashboardWidgetHost widgetConfig={config}>
+          {() => <WidgetComponent {...config.props} translateText={translateText} runtime={runtime} />}
+        </DashboardWidgetHost>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function DashboardHomeShell({
   className = "",
   shellKey = "workspace",
@@ -328,14 +383,67 @@ export default function DashboardHomeShell({
   savedViews = [],
   contextCards = [],
   children,
+  sectionConfigs = [],
+  layout = null,
 }) {
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
+  const runtimeConfig = useMemo(() => ({ widgets: Array.isArray(sectionConfigs) ? sectionConfigs : [] }), [sectionConfigs]);
   const hasRail = Array.isArray(contextCards) && contextCards.length > 0;
   const [railOpen, setRailOpen] = useState(false);
   const hasStats = Array.isArray(stats) && stats.length > 0;
+  const sectionConfigMap = useMemo(() => {
+    return (Array.isArray(sectionConfigs) ? sectionConfigs : []).reduce((acc, config) => {
+      if (config?.id) acc[config.id] = config;
+      return acc;
+    }, {});
+  }, [sectionConfigs]);
+  const configuredSections = useMemo(() => {
+    return (Array.isArray(sectionConfigs) ? sectionConfigs : []).map((config, index) => {
+      if (React.isValidElement(config)) return config;
+      const sectionId = config?.id || config?.title || `section-${index}`;
+      return (
+        <DashboardSection
+          key={sectionId}
+          title={config?.title}
+          subtitle={config?.subtitle}
+          actions={Array.isArray(config?.actions) ? config.actions : []}
+          className={config?.className}
+        >
+          <DashboardSectionBody config={config} translateText={translateText} />
+        </DashboardSection>
+      );
+    });
+  }, [sectionConfigs, translateText]);
+
+  const renderedBands = useMemo(() => {
+    if (!layout || typeof layout !== "object") return [];
+    return Object.entries(layout)
+      .filter(([, entries]) => Array.isArray(entries) && entries.length)
+      .map(([bandKey, entries]) => (
+        <div key={bandKey} className={`dashboard-home-band dashboard-home-band-${bandKey}`}>
+          {entries.map((entry, index) => {
+            const config = typeof entry === "string" ? sectionConfigMap[entry] : entry;
+            if (!config) return null;
+            const sectionId = config?.id || `${bandKey}-${index}`;
+            return (
+              <DashboardSection
+                key={sectionId}
+                title={config?.title}
+                subtitle={config?.subtitle}
+                actions={Array.isArray(config?.actions) ? config.actions : []}
+                className={config?.className}
+              >
+                <DashboardSectionBody config={config} translateText={translateText} />
+              </DashboardSection>
+            );
+          })}
+        </div>
+      ));
+  }, [layout, sectionConfigMap, translateText]);
+
   const arrangedChildren = useMemo(() => {
-    const nodes = React.Children.toArray(children);
+    const nodes = [...configuredSections, ...React.Children.toArray(children)];
     if (!nodes.length) return [];
 
     const output = [];
@@ -366,6 +474,7 @@ export default function DashboardHomeShell({
   }, [children]);
 
   return (
+    <DashboardRuntimeProvider config={runtimeConfig} dashboardContext={{ shellKey }}>
     <div className={`dashboard premium-shell dashboard-home-shell ${className}`.trim()}>
       <section className="premium-card dashboard-home-hero">
         <div className="dashboard-home-hero-copy">
@@ -430,32 +539,43 @@ export default function DashboardHomeShell({
             </section>
           ) : null}
 
-          <DashboardDailyBrief brief={brief} />
-          {runway.length > 0 ? (
-            <DashboardCardShelf
-              storageKey={`afyalink_dashboard_shelf_${shellKey}_runway`}
-              title="Action runway"
-              subtitle="Approvals, queues, alerts, and the highest-value next actions for this workspace."
-              items={runway}
-              variant="medium"
-              emptyTitle="No runway items yet."
-              emptyBody="This action runway will populate as soon as this workspace has priority tasks."
-            />
+          {(brief || runway.length > 0 || pinnedTools.length > 0) ? (
+            <div className="dashboard-home-action-band">
+              {brief ? <DashboardDailyBrief brief={brief} /> : null}
+
+              {(runway.length > 0 || pinnedTools.length > 0) ? (
+                <div className="dashboard-home-band-cards">
+                  {runway.length > 0 ? (
+                    <DashboardCardShelf
+                      storageKey={`afyalink_dashboard_shelf_${shellKey}_runway`}
+                      title="Action runway"
+                      subtitle="Approvals, queues, alerts, and the highest-value next actions for this workspace."
+                      items={runway}
+                      variant="medium"
+                      emptyTitle="No runway items yet."
+                      emptyBody="This action runway will populate as soon as this workspace has priority tasks."
+                    />
+                  ) : null}
+
+                  {pinnedTools.length > 0 ? (
+                    <DashboardCardShelf
+                      storageKey={`afyalink_dashboard_shelf_${shellKey}_pinned`}
+                      title="Pinned tools"
+                      subtitle="Keep your most-used tools close and shape the order you prefer."
+                      items={pinnedTools}
+                      variant="compact"
+                      emptyTitle="No pinned tools yet."
+                      emptyBody="Pinned tools from this workspace will appear here."
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
-          {arrangedChildren.length ? arrangedChildren : null}
+          {renderedBands.length ? <div className="dashboard-home-bands">{renderedBands}</div> : null}
 
-          {pinnedTools.length > 0 ? (
-            <DashboardCardShelf
-              storageKey={`afyalink_dashboard_shelf_${shellKey}_pinned`}
-              title="Pinned tools"
-              subtitle="Keep your most-used tools close and shape the order you prefer."
-              items={pinnedTools}
-              variant="compact"
-              emptyTitle="No pinned tools yet."
-              emptyBody="Pinned tools from this workspace will appear here."
-            />
-          ) : null}
+          {arrangedChildren.length ? <div className="dashboard-home-section-band">{arrangedChildren}</div> : null}
 
           {recentItems.length > 0 || savedViews.length > 0 ? (
             <div className="dashboard-home-bottom-grid">
@@ -516,5 +636,6 @@ export default function DashboardHomeShell({
         </div>
       ) : null}
     </div>
+    </DashboardRuntimeProvider>
   );
 }

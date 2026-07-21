@@ -1,22 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { listTransfers } from "../../services/transferApi";
+import React from "react";
+import { useBranchesPage } from "../../hooks/useBranchesPage";
 
 export default function Branches() {
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((data) => {
-        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
+  const { transfers, transferError, pendingTransfers } = useBranchesPage();
 
   return (
     <div className="dashboard">
@@ -34,9 +20,7 @@ export default function Branches() {
               <h3>Transfer Continuity</h3>
               <p className="muted">Recent transfers and handoff status.</p>
             </div>
-            <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
+            <div className="action-pill">Pending: {pendingTransfers}</div>
           </div>
           {transferError ? <div className="muted">{transferError}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>

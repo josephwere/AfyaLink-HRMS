@@ -242,6 +242,8 @@ app.use(
       "X-AfyaLink-View-Role",
       "X-Afya-Strict-Impersonation",
       "X-AfyaLink-Strict-Impersonation",
+      "X-AfyaLink-Context",
+      "X-AfyaLink-Mode",
       "X-Claim-Signature",
       "X-Claim-Key-Id",
     ],
@@ -668,8 +670,20 @@ app.use(
   lazyRouter(() => import("./routes/claimsRoutes.js"), "claimsRoutes")
 );
 app.use(
+  "/api/orders",
+  lazyRouter(() => import("./routes/ordersRoutes.js"), "ordersRoutes")
+);
+app.use(
+  "/api/laboratory",
+  lazyRouter(() => import("./routes/laboratoryRoutes.js"), "laboratoryRoutes")
+);
+app.use(
   "/api/labs",
   lazyRouter(() => import("./routes/labRoutes.js"), "labRoutes")
+);
+app.use(
+  "/api/radiology",
+  lazyRouter(() => import("./routes/radiologyRoutes.js"), "radiologyRoutes")
 );
 app.use(
   "/api/lab-ops",
@@ -678,6 +692,10 @@ app.use(
 app.use(
   "/api/pharmacy",
   lazyRouter(() => import("./routes/pharmacyRoutes.js"), "pharmacyRoutes")
+);
+app.use(
+  "/api/prescriptions",
+  lazyRouter(() => import("./routes/prescriptionRoutes.js"), "prescriptionRoutes")
 );
 app.use(
   "/api/beds",

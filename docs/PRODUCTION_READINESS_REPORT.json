@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-07-09T18:55:34.032Z",
+  "certificationStatus": "not-certified",
+  "summary": {
+    "criticalIssues": 1,
+    "highIssues": 1,
+    "mediumIssues": 2,
+    "lowIssues": 0
+  },
+  "criticalIssues": [
+    "Playwright E2E suite has 16 failing test specs."
+  ],
+  "highIssues": [
+    "Crawl found 68 unreachable, forbidden, or broken pages."
+  ],
+  "mediumIssues": [
+    "Crawl captured 28 console errors.",
+    "Crawl captured 1085 network request failures."
+  ],
+  "lowIssues": [],
+  "evidence": {
+    "totalTests": 18,
+    "failedTests": 16,
+    "routesCrawled": 162,
+    "successfulRoutes": 94
+  }
+}

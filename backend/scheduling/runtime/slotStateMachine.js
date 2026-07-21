@@ -1,0 +1,29 @@
+export const SLOT_STATES = Object.freeze({
+  AVAILABLE: "AVAILABLE",
+  HELD: "HELD",
+  BOOKED: "BOOKED",
+  CHECKED_IN: "CHECKED_IN",
+  ACTIVE: "ACTIVE",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  NO_SHOW: "NO_SHOW",
+  EXPIRED: "EXPIRED",
+  RESCHEDULED: "RESCHEDULED",
+});
+
+export const SLOT_TRANSITIONS = Object.freeze({
+  AVAILABLE: ["HELD", "BOOKED"],
+  HELD: ["BOOKED", "AVAILABLE", "CANCELLED", "EXPIRED"],
+  BOOKED: ["CHECKED_IN", "ACTIVE", "CANCELLED", "NO_SHOW", "RESCHEDULED"],
+  CHECKED_IN: ["ACTIVE", "CANCELLED", "NO_SHOW"],
+  ACTIVE: ["COMPLETED", "CANCELLED", "NO_SHOW"],
+  COMPLETED: [],
+  CANCELLED: [],
+  NO_SHOW: [],
+  EXPIRED: ["AVAILABLE"],
+  RESCHEDULED: ["HELD", "BOOKED"],
+});
+
+export function canTransitionSlot(from, to) {
+  return SLOT_TRANSITIONS[from]?.includes(to) ?? false;
+}

@@ -5,7 +5,21 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "ci:smoke-routes": "node scripts/route-smoke-check.mjs"
+    "test": "vitest --config vitest.config.mjs",
+    "test:run": "vitest run --config vitest.config.mjs",
+    "check:page-api-usage": "node scripts/check-page-api-usage.mjs",
+    "generate:page-migration-matrix": "node scripts/generate-page-migration-matrix.mjs",
+    "check:page-migration-regression": "node scripts/check-page-migration-regression.mjs",
+    "verify": "pnpm run check:page-api-usage && pnpm run generate:page-migration-matrix && pnpm run check:page-migration-regression && pnpm vitest run --config vitest.config.mjs",
+    "ci:smoke-routes": "node scripts/route-smoke-check.mjs",
+    "audit:interactive-surfaces": "node scripts/audit-interactive-surfaces.mjs",
+    "audit:simulate-clicks": "node scripts/simulate-clicks.mjs",
+    "e2e:crawl": "node scripts/e2e-route-crawl.mjs",
+    "e2e:readiness": "node scripts/generate-production-readiness-report.mjs",
+    "e2e:playwright": "node scripts/certify-deployment.mjs",
+    "deployment:certify": "node scripts/deployment-certify.mjs",
+    "certify:rc1": "node scripts/deployment-certify.mjs --rc1",
+    "certify": "pnpm run deployment:certify"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
@@ -19,7 +33,15 @@
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.6.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "vite": "6.4.3"
+    "jsdom": "^22.1.0",
+    "playwright": "^1.61.1",
+    "vite": "6.4.3",
+    "vitest": "^1.5.0"
   }
 }

@@ -1,80 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
 import AIAutofillAuditSummary from "../../components/AIAutofillAuditSummary";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import useClaimsDashboard from "../../hooks/useClaimsDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function ClaimsDashboard() {
   const { translateText } = useAppLanguage();
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [claims, setClaims] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [auditOpen, setAuditOpen] = useState(false);
-  const [auditClaim, setAuditClaim] = useState(null);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditMsg, setAuditMsg] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const [claimRes, alertRes] = await Promise.all([
-        apiFetch("/api/claims?limit=50"),
-        apiFetch("/api/claims/alerts?status=OPEN"),
-      ]);
-      setClaims(Array.isArray(claimRes?.items) ? claimRes.items : []);
-      setAlerts(Array.isArray(alertRes?.items) ? alertRes.items : []);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load claims.");
-      setClaims([]);
-      setAlerts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const stats = useMemo(() => {
-    const rows = Array.isArray(claims) ? claims : [];
-    const openAlerts = Array.isArray(alerts) ? alerts : [];
-    const highRisk = rows.filter((c) => Number(c?.riskScore || 0) >= 75).length;
-    const pending = rows.filter((c) => String(c?.status || "").toUpperCase() === "PENDING").length;
-    return {
-      openAlerts: openAlerts.length,
-      claimsLoaded: rows.length,
-      highRisk,
-      pending,
-    };
-  }, [alerts, claims]);
-
-  const openAudit = async (claim) => {
-    if (!claim?._id) return;
-    setAuditOpen(true);
-    setAuditClaim(claim);
-    setAuditLogs([]);
-    setAuditMsg("");
-    setAuditLoading(true);
-    try {
-      const res = await apiFetch(`/api/claims/${claim._id}/audit`);
-      setAuditLogs(Array.isArray(res?.items) ? res.items : []);
-    } catch (err) {
-      setAuditMsg(err?.message || "Failed to load claim audit.");
-    } finally {
-      setAuditLoading(false);
-    }
-  };
-
-  const closeAudit = () => {
-    setAuditOpen(false);
-    setAuditClaim(null);
-    setAuditLogs([]);
-    setAuditMsg("");
-  };
+  const { loading, msg, claims, alerts, auditOpen, auditClaim, auditLogs, auditLoading, auditMsg, load, openAudit, closeAudit, stats } = useClaimsDashboard();
 
   return (
     <DashboardHomeShell

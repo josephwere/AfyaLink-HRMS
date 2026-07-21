@@ -1,0 +1,19 @@
+{
+  "name": "radiology",
+  "owner": "backend-platform",
+  "version": "1.0.0",
+  "maturity": "Verified",
+  "dependencies": ["encounter"],
+  "states": ["Pending", "Completed", "Cancelled"],
+  "eventsPublished": ["RADIOLOGY_STUDY_CREATED", "RADIOLOGY_STUDY_COMPLETED", "RADIOLOGY_STUDY_CANCELLED"],
+  "eventsConsumed": ["ENCOUNTER_OPENED"],
+  "repositories": ["RadiologyStudy"],
+  "routes": ["POST /api/radiology", "POST /api/radiology/:id/transition"],
+  "controllers": ["radiologyController"],
+  "policies": ["role-based-access"],
+  "apiRoutes": ["POST /api/radiology", "POST /api/radiology/:id/transition"],
+  "databaseCollections": ["RadiologyStudy"],
+  "requiredTests": ["unit", "integration", "api"],
+  "documentation": ["README.md"],
+  "releaseStatus": "Verified"
+}

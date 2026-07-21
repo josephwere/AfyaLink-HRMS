@@ -1,113 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { apiFetch } from "../utils/apiFetch";
+import React from "react";
+import usePatientManagement from "../../hooks/usePatientManagement";
 
 export default function Patients() {
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [selected, setSelected] = useState(null);
-  const [editing, setEditing] = useState(null);
-  const [showVitals, setShowVitals] = useState(false);
-
-  const [patientForm, setPatientForm] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    condition: "",
-  });
-
-  const [vitalsForm, setVitalsForm] = useState({
-    temperature: "",
-    bloodPressure: "",
-    pulse: "",
-  });
-
-  useEffect(() => {
-    loadPatients();
-  }, []);
-
-  const loadPatients = async () => {
-    setLoading(true);
-    setErr("");
-    try {
-      const data = await apiFetch("/api/patients");
-      setPatients(data || []);
-    } catch {
-      setErr("Failed to load patients");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitPatient = async (e) => {
-    e.preventDefault();
-    setErr("");
-
-    try {
-      if (editing) {
-        await apiFetch(`/api/patients/${editing}`, {
-          method: "PUT",
-          body: patientForm,
-        });
-      } else {
-        await apiFetch("/api/patients", {
-          method: "POST",
-          body: patientForm,
-        });
-      }
-
-      setPatientForm({
-        name: "",
-        age: "",
-        gender: "",
-        condition: "",
-      });
-      setEditing(null);
-      loadPatients();
-    } catch {
-      setErr("Error saving patient");
-    }
-  };
-
-  const submitVitals = async (e) => {
-    e.preventDefault();
-    setErr("");
-
-    try {
-      await apiFetch(
-        `/api/patients/${selected._id}/vitals`,
-        {
-          method: "POST",
-          body: vitalsForm,
-        }
-      );
-
-      setVitalsForm({
-        temperature: "",
-        bloodPressure: "",
-        pulse: "",
-      });
-      setShowVitals(false);
-      loadPatients();
-    } catch {
-      setErr("Error saving vitals");
-    }
-  };
-
-  const startEdit = (p) => {
-    setEditing(p._id);
-    setPatientForm({
-      name: p.name || "",
-      age: p.age || "",
-      gender: p.gender || "",
-      condition: p.condition || "",
-    });
-  };
-
-  const viewPatient = (p) => {
-    setSelected(p);
-    setShowVitals(false);
-  };
+  const {
+    patients,
+    loading,
+    err,
+    selected,
+    setSelected,
+    editing,
+    setEditing,
+    showVitals,
+    setShowVitals,
+    patientForm,
+    setPatientForm,
+    vitalsForm,
+    setVitalsForm,
+    loadPatients,
+    submitPatient,
+    submitVitals,
+    startEdit,
+    viewPatient,
+  } = usePatientManagement();
 
   return (
     <div className="premium-card">

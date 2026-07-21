@@ -1,10 +1,10 @@
 import ClinicalDraft from "../models/ClinicalDraft.js";
 import Patient from "../models/Patient.js";
 import Appointment from "../models/Appointment.js";
-import Encounter from "../models/Encounter.js";
 import workflowService from "../services/workflowService.js";
 import { audit } from "../utils/audit.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
+import { clinicalDocumentationRuntime } from "../clinical-docs/runtime/clinicalDocumentationRuntime.js";
 
 const DRAFT_TYPES = new Set(["OPD_CONSULTATION", "DOCTOR_NOTE"]);
 
@@ -86,56 +86,6 @@ function buildPromotedUpdates(type, appointment, payload) {
   };
 }
 
-async function ensureEncounterForAppointment(req, appointment) {
-  let encounter = await Encounter.findOne({
-    appointment: appointment._id,
-    hospital: appointment.hospital,
-  });
-
-  if (encounter) return encounter;
-
-  encounter = new Encounter({
-    patient: appointment.patient,
-    doctor: appointment.doctor || req.user._id,
-    hospital: appointment.hospital,
-    appointment: appointment._id,
-    state: WORKFLOW.CREATED,
-  });
-  encounter.$locals = { ...(encounter.$locals || {}), viaWorkflow: true };
-  await encounter.save();
-  return encounter;
-}
-
-async function applyDraftToEncounter(req, type, appointment, payload) {
-  const encounter = await ensureEncounterForAppointment(req, appointment);
-  const summaryBits = [];
-
-  if (type === "OPD_CONSULTATION") {
-    if (payload.symptoms) summaryBits.push(`Symptoms: ${String(payload.symptoms).trim()}`);
-    if (payload.assessment) summaryBits.push(`Assessment: ${String(payload.assessment).trim()}`);
-    if (payload.treatmentPlan) summaryBits.push(`Treatment: ${String(payload.treatmentPlan).trim()}`);
-    if (payload.followUp) summaryBits.push(`Follow-up: ${String(payload.followUp).trim()}`);
-    encounter.consultationNotes = summaryBits.join("\n") || encounter.consultationNotes || "";
-    if (payload.diagnosis) {
-      encounter.diagnosis = String(payload.diagnosis).trim();
-    }
-    if (encounter.state === WORKFLOW.CREATED) {
-      encounter.state = WORKFLOW.CONSULTING;
-    }
-  } else {
-    const noteParts = [String(payload.summary || "").trim(), String(payload.note || "").trim()].filter(Boolean);
-    if (noteParts.length) {
-      encounter.consultationNotes = noteParts.join("\n\n");
-    }
-    if (encounter.state === WORKFLOW.CREATED) {
-      encounter.state = WORKFLOW.CONSULTING;
-    }
-  }
-
-  encounter.$locals = { ...(encounter.$locals || {}), viaWorkflow: true };
-  await encounter.save();
-  return encounter;
-}
 
 export async function getClinicalDraft(req, res) {
   const { type } = req.params;
@@ -147,12 +97,12 @@ export async function getClinicalDraft(req, res) {
     return res.status(404).json({ message: "Patient not found" });
   }
 
-  const draft = await ClinicalDraft.findOne({
-    hospital: actorHospitalId(req),
-    patient: patient._id,
-    author: req.user._id,
+  const draft = await clinicalDocumentationRuntime.getDraft({
+    hospitalId: actorHospitalId(req),
+    patientId: patient._id,
+    authorId: req.user._id,
     draftType: type,
-  }).lean();
+  });
 
   return res.json({
     item: draft || null,
@@ -171,24 +121,13 @@ export async function saveClinicalDraft(req, res) {
 
   const payload = req.body?.payload && typeof req.body.payload === "object" ? req.body.payload : {};
 
-  const draft = await ClinicalDraft.findOneAndUpdate(
-    {
-      hospital: actorHospitalId(req),
-      patient: patient._id,
-      author: req.user._id,
-      draftType: type,
-    },
-    {
-      $set: {
-        payload,
-        hospital: actorHospitalId(req),
-        patient: patient._id,
-        author: req.user._id,
-        draftType: type,
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  const draft = await clinicalDocumentationRuntime.saveDraft({
+    hospitalId: actorHospitalId(req),
+    patientId: patient._id,
+    authorId: req.user._id,
+    draftType: type,
+    payload,
+  });
 
   await audit({
     req,
@@ -239,7 +178,12 @@ export async function promoteClinicalDraft(req, res) {
     updates,
     actor: req.user,
   });
-  const encounter = await applyDraftToEncounter(req, type, wf.context.appointment, draft.payload || {});
+  const encounter = await clinicalDocumentationRuntime.promoteDraft({
+    appointment: wf.context.appointment,
+    user: req.user,
+    type,
+    payload: draft.payload || {},
+  });
 
   draft.payload = {
     ...(draft.payload || {}),

@@ -14,9 +14,9 @@ export default function AutoRedirect({ children }) {
 
     const correctPath = redirectByRole(user);
 
-    // Only redirect from the root path.
+    // Only redirect from the root path. Preserve any navigation state.
     if (location.pathname === "/") {
-      navigate(correctPath, { replace: true });
+      navigate(correctPath, { replace: true, state: location.state || undefined });
     }
   }, [user, loading, location.pathname, navigate]);
 

@@ -1,0 +1,19 @@
+{
+  "name": "laboratory",
+  "owner": "backend-platform",
+  "version": "1.0.0",
+  "maturity": "Verified",
+  "dependencies": ["encounter"],
+  "states": ["Pending", "Completed", "Cancelled"],
+  "eventsPublished": ["LABORATORY_ORDER_CREATED", "LABORATORY_ORDER_COMPLETED", "LABORATORY_ORDER_CANCELLED"],
+  "eventsConsumed": ["ENCOUNTER_OPENED"],
+  "repositories": ["LabOrder"],
+  "routes": ["POST /api/laboratory", "POST /api/laboratory/:id/transition"],
+  "controllers": ["laboratoryController"],
+  "policies": ["role-based-access"],
+  "apiRoutes": ["POST /api/laboratory", "POST /api/laboratory/:id/transition"],
+  "databaseCollections": ["LabOrder"],
+  "requiredTests": ["unit", "integration", "api"],
+  "documentation": ["README.md"],
+  "releaseStatus": "Verified"
+}

@@ -42,6 +42,10 @@ function firstPaymentAt(financial) {
   return stamps[0] || null;
 }
 
+function paymentDate(financial) {
+  return firstPaymentAt(financial) || new Date(financial?.updatedAt || financial?.createdAt || 0);
+}
+
 function ageBucket(days) {
   if (days <= 7) return "0_7";
   if (days <= 14) return "8_14";
@@ -119,6 +123,16 @@ export async function getRevenueIntelligenceSnapshot({ hospitalId = null } = {})
   const paidFinancials = financials.filter((row) => String(row.status || "").toUpperCase() === "PAID");
   const pendingFinancials = financials.filter((row) => String(row.status || "").toUpperCase() === "PENDING");
   const cancelledFinancials = financials.filter((row) => String(row.status || "").toUpperCase() === "CANCELLED");
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  const revenueToday = paidFinancials
+    .filter((row) => {
+      const paidAt = paymentDate(row);
+      return paidAt && paidAt >= todayStart && paidAt <= todayEnd;
+    })
+    .reduce((sum, row) => sum + Number(row.total || 0), 0);
   const outstandingAmount = pendingFinancials.reduce((sum, row) => sum + Number(row.total || 0), 0);
   const collectedAmount = paidFinancials.reduce((sum, row) => sum + Number(row.total || 0), 0);
   const cancelledAmount = cancelledFinancials.reduce((sum, row) => sum + Number(row.total || 0), 0);
@@ -288,6 +302,7 @@ export async function getRevenueIntelligenceSnapshot({ hospitalId = null } = {})
     },
     config,
     summary: {
+      revenueToday,
       outstandingAmount,
       collectedAmount,
       cancelledAmount,

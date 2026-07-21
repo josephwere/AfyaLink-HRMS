@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import WorkflowTimeline from "../../components/workflow/WorkflowTimeline";
-import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import { normalizeRole } from "../../utils/normalizeRole";
+import { useLabQueue } from "../../hooks/useLabQueue";
 
 export default function LabEncounterQueue() {
   const { user } = useAuth();
@@ -13,40 +13,27 @@ export default function LabEncounterQueue() {
     [role]
   );
 
-  const [encounters, setEncounters] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
+  const { encounters, loading, refresh, completeEncounterLab } = useLabQueue();
+  const [msg, setMsg] = React.useState("");
 
   async function loadLabQueue() {
-    setLoading(true);
     setMsg("");
     try {
-      const data = await apiFetch("/api/encounters?stage=LAB");
-      setEncounters(Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []);
+      await refresh();
     } catch (err) {
-      setEncounters([]);
       setMsg(err?.message || "Failed to load lab queue.");
-    } finally {
-      setLoading(false);
     }
   }
 
   async function completeLab(encounterId) {
     setMsg("");
     try {
-      await apiFetch("/api/labs/complete", {
-        method: "POST",
-        body: { encounterId },
-      });
-      await loadLabQueue();
+      await completeEncounterLab(encounterId);
+      await refresh();
     } catch (err) {
       setMsg(err?.message || "Unable to complete lab.");
     }
   }
-
-  useEffect(() => {
-    loadLabQueue().catch(() => {});
-  }, []);
 
   return (
     <DashboardHomeShell

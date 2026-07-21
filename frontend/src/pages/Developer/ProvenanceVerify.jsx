@@ -1,56 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { listTransfers, verifyTransferProvenance } from "../../services/transferApi";
+import { useProvenanceVerify } from "../../hooks/useProvenanceVerify";
 
 export default function ProvenanceVerify() {
   const navigate = useNavigate();
-  const [transfers, setTransfers] = useState([]);
-  const [transferId, setTransferId] = useState("");
-  const [payload, setPayload] = useState("{}");
-  const [signature, setSignature] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [result, setResult] = useState(null);
-
-  const loadTransfers = async () => {
-    try {
-      const data = await listTransfers({ limit: 50, scope: "global" });
-      const items = Array.isArray(data?.items) ? data.items : [];
-      setTransfers(items);
-      if (!transferId && items[0]?._id) setTransferId(items[0]._id);
-    } catch {
-      setTransfers([]);
-    }
-  };
-
-  useEffect(() => {
-    loadTransfers();
-  }, []);
-
-  const selectedTransfer = useMemo(
-    () => transfers.find((item) => item._id === transferId) || null,
-    [transferId, transfers]
-  );
-
-  const verify = async () => {
-    setLoading(true);
-    setMsg("");
-    setResult(null);
-    try {
-      const parsed = JSON.parse(payload || "{}");
-      const out = await verifyTransferProvenance({
-        transferId,
-        payload: parsed,
-        signature,
-      });
-      setResult(out);
-    } catch (e) {
-      setMsg(e?.message || "Failed to verify provenance");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    transfers,
+    transferId,
+    setTransferId,
+    payload,
+    setPayload,
+    signature,
+    setSignature,
+    loading,
+    msg,
+    result,
+    selectedTransfer,
+    loadTransfers,
+    verify,
+  } = useProvenanceVerify();
 
   return (
     <div className="dashboard developer-console-page">

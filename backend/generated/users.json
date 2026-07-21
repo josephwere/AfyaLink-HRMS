@@ -1,0 +1,552 @@
+[
+  {
+    "email": "james.mwangi.nairobi@test.afyalink.local",
+    "role": "HOSPITAL_ADMIN",
+    "name": "James Mwangi",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.grace.wanjiku.nairobi@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Grace Wanjiku",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.brian.otieno.nairobi@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Brian Otieno",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "mercy.achieng.nairobi@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Mercy Achieng",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "esther.njeri.nairobi@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Esther Njeri",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "lucy.mutiso.nairobi@test.afyalink.local",
+    "role": "RECEPTIONIST",
+    "name": "Lucy Mutiso",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "peter.kiptoo.nairobi@test.afyalink.local",
+    "role": "PHARMACIST",
+    "name": "Peter Kiptoo",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "kelvin.ouma.nairobi@test.afyalink.local",
+    "role": "LAB_TECH",
+    "name": "Kelvin Ouma",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "faith.wambui.nairobi@test.afyalink.local",
+    "role": "HR_MANAGER",
+    "name": "Faith Wambui",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "samuel.kibet.nairobi@test.afyalink.local",
+    "role": "PAYROLL_OFFICER",
+    "name": "Samuel Kibet",
+    "hospitalCode": "NCMC",
+    "hospitalName": "Nairobi Central Medical Centre",
+    "city": "Nairobi",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "alice.njoroge.kiambu@test.afyalink.local",
+    "role": "HOSPITAL_ADMIN",
+    "name": "Alice Njoroge",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.michael.mutua.kiambu@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Michael Mutua",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.jane.kariuki.kiambu@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Jane Kariuki",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "ruth.mwikali.kiambu@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Ruth Mwikali",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "joyce.kamau.kiambu@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Joyce Kamau",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "estella.ndungu.kiambu@test.afyalink.local",
+    "role": "RECEPTIONIST",
+    "name": "Estella Ndungu",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "david.muriithi.kiambu@test.afyalink.local",
+    "role": "PHARMACIST",
+    "name": "David Muriithi",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "peter.wanyama.kiambu@test.afyalink.local",
+    "role": "LAB_TECH",
+    "name": "Peter Wanyama",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "jane.wachira.kiambu@test.afyalink.local",
+    "role": "HR_MANAGER",
+    "name": "Jane Wachira",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dennis.njuguna.kiambu@test.afyalink.local",
+    "role": "PAYROLL_OFFICER",
+    "name": "Dennis Njuguna",
+    "hospitalCode": "KRH",
+    "hospitalName": "Kiambu Regional Hospital",
+    "city": "Kiambu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "joseph.kamande.machakos@test.afyalink.local",
+    "role": "HOSPITAL_ADMIN",
+    "name": "Joseph Kamande",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.cynthia.wakio.machakos@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Cynthia Wakio",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.samuel.mwangi.machakos@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Samuel Mwangi",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "anne.njeri.machakos@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Anne Njeri",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "caroline.wairimu.machakos@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Caroline Wairimu",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "anne.muthoni.machakos@test.afyalink.local",
+    "role": "RECEPTIONIST",
+    "name": "Anne Muthoni",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "kevin.kimani.machakos@test.afyalink.local",
+    "role": "PHARMACIST",
+    "name": "Kevin Kimani",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "nancy.murithi.machakos@test.afyalink.local",
+    "role": "LAB_TECH",
+    "name": "Nancy Murithi",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "grace.kabiru.machakos@test.afyalink.local",
+    "role": "HR_MANAGER",
+    "name": "Grace Kabiru",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "fred.wambua.machakos@test.afyalink.local",
+    "role": "PAYROLL_OFFICER",
+    "name": "Fred Wambua",
+    "hospitalCode": "MCH",
+    "hospitalName": "Machakos Community Hospital",
+    "city": "Machakos",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "stephen.ochieng.kisumu@test.afyalink.local",
+    "role": "HOSPITAL_ADMIN",
+    "name": "Stephen Ochieng",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.lydia.adera.kisumu@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Lydia Adera",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.joseph.odhiambo.kisumu@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Joseph Odhiambo",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "grace.akinyi.kisumu@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Grace Akinyi",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "mercy.atieno.kisumu@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Mercy Atieno",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "martha.ouma.kisumu@test.afyalink.local",
+    "role": "RECEPTIONIST",
+    "name": "Martha Ouma",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "brian.oketch.kisumu@test.afyalink.local",
+    "role": "PHARMACIST",
+    "name": "Brian Oketch",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "daniel.omondi.kisumu@test.afyalink.local",
+    "role": "LAB_TECH",
+    "name": "Daniel Omondi",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "joy.akinyi.kisumu@test.afyalink.local",
+    "role": "HR_MANAGER",
+    "name": "Joy Akinyi",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "eric.otieno.kisumu@test.afyalink.local",
+    "role": "PAYROLL_OFFICER",
+    "name": "Eric Otieno",
+    "hospitalCode": "KLH",
+    "hospitalName": "Kisumu Lakeside Hospital",
+    "city": "Kisumu",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "maria.cheruiyot.eldoret@test.afyalink.local",
+    "role": "HOSPITAL_ADMIN",
+    "name": "Maria Cheruiyot",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.dennis.korir.eldoret@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Dennis Korir",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "dr.jane.ngeno.eldoret@test.afyalink.local",
+    "role": "DOCTOR",
+    "name": "Dr. Jane Ngeno",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "patricia.chepchumba.eldoret@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Patricia Chepchumba",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "ruth.kiptoo.eldoret@test.afyalink.local",
+    "role": "NURSE",
+    "name": "Ruth Kiptoo",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "esther.wanjiru.eldoret@test.afyalink.local",
+    "role": "RECEPTIONIST",
+    "name": "Esther Wanjiru",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "james.koech.eldoret@test.afyalink.local",
+    "role": "PHARMACIST",
+    "name": "James Koech",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "peter.kimutai.eldoret@test.afyalink.local",
+    "role": "LAB_TECH",
+    "name": "Peter Kimutai",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "mercy.jeptoo.eldoret@test.afyalink.local",
+    "role": "HR_MANAGER",
+    "name": "Mercy Jeptoo",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "patrick.kimutai.eldoret@test.afyalink.local",
+    "role": "PAYROLL_OFFICER",
+    "name": "Patrick Kimutai",
+    "hospitalCode": "EHMC",
+    "hospitalName": "Eldoret Highlands Medical Centre",
+    "city": "Eldoret",
+    "county": null,
+    "region": null
+  },
+  {
+    "email": "contact@nairobi.govpharmacy.ke",
+    "role": "PHARMACIST",
+    "name": "Pharmacist Nairobi Government Pharmacy",
+    "pharmacy": "6a46c0a6ea932922e8407df2",
+    "pharmacyName": "Nairobi Government Pharmacy",
+    "pharmacyCity": "Nairobi",
+    "pharmacyRegion": "Nairobi Metropolitan",
+    "pharmacyContactEmail": "contact@nairobi.govpharmacy.ke"
+  },
+  {
+    "email": "contact@kiambu.govpharmacy.ke",
+    "role": "PHARMACIST",
+    "name": "Pharmacist Kiambu Public Pharmacy",
+    "pharmacy": "6a46c0a6ea932922e8407df4",
+    "pharmacyName": "Kiambu Public Pharmacy",
+    "pharmacyCity": "Kiambu",
+    "pharmacyRegion": "Central Kenya",
+    "pharmacyContactEmail": "contact@kiambu.govpharmacy.ke"
+  },
+  {
+    "email": "contact@machakos.govpharmacy.ke",
+    "role": "PHARMACIST",
+    "name": "Pharmacist Machakos Regional Pharmacy",
+    "pharmacy": "6a46c0a6ea932922e8407df6",
+    "pharmacyName": "Machakos Regional Pharmacy",
+    "pharmacyCity": "Machakos",
+    "pharmacyRegion": "Eastern Kenya",
+    "pharmacyContactEmail": "contact@machakos.govpharmacy.ke"
+  },
+  {
+    "email": "contact@kisumu.govpharmacy.ke",
+    "role": "PHARMACIST",
+    "name": "Pharmacist Kisumu Central Government Pharmacy",
+    "pharmacy": "6a46c0a6ea932922e8407df8",
+    "pharmacyName": "Kisumu Central Government Pharmacy",
+    "pharmacyCity": "Kisumu",
+    "pharmacyRegion": "Western Kenya",
+    "pharmacyContactEmail": "contact@kisumu.govpharmacy.ke"
+  },
+  {
+    "email": "contact@eldoret.govpharmacy.ke",
+    "role": "PHARMACIST",
+    "name": "Pharmacist Eldoret Public Pharmacy",
+    "pharmacy": "6a46c0a6ea932922e8407dfa",
+    "pharmacyName": "Eldoret Public Pharmacy",
+    "pharmacyCity": "Eldoret",
+    "pharmacyRegion": "Rift Valley",
+    "pharmacyContactEmail": "contact@eldoret.govpharmacy.ke"
+  }
+]

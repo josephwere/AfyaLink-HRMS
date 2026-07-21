@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
-import {
-  createLeave,
-  createOvertime,
-  createShift,
-  listMyLeave,
-  listMyOvertime,
-  listMyShifts,
-} from "../../services/workforceApi";
+import { useWorkforceMyRequests } from "../../hooks/useWorkforceMyRequests";
 
 const MY_REQUESTS_CACHE_KEY = "my_requests_query_cache_v1";
 const MY_REQUESTS_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -17,6 +10,7 @@ export default function MyRequests() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { listMyLeave, listMyOvertime, listMyShifts, createLeave, createOvertime, createShift } = useWorkforceMyRequests();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [leave, setLeave] = useState([]);

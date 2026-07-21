@@ -1,0 +1,2245 @@
+{
+  "generatedAt": "2026-07-09T09:03:36.799Z",
+  "clickSimulation": [
+    {
+      "id": "deep-link-src/App.jsx-326",
+      "file": "src/App.jsx",
+      "line": 326,
+      "target": "/unauthorized",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/App.jsx-427",
+      "file": "src/App.jsx",
+      "line": 427,
+      "target": "/app/revenue/payments/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-77",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 77,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-85",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 85,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-93",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 93,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-120",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 120,
+      "target": "/app/people/approvals/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-128",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 128,
+      "target": "/app/people/home/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-136",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 136,
+      "target": "/app/people/home/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-147",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 147,
+      "target": "/app/revenue/payments/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-155",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 155,
+      "target": "/app/platform/inbox/notifications",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-163",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 163,
+      "target": "/app/operations/lab/test-queue",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-171",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 171,
+      "target": "/app/operations/lab/test-queue",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-179",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 179,
+      "target": "/app/operations/scheduling/appointments",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-484",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 484,
+      "target": "/step-up",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-539",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 539,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-557",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 557,
+      "target": "/step-up",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-644",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 644,
+      "target": "/step-up",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/AIAutofillAuditSummary.jsx-97",
+      "file": "src/components/AIAutofillAuditSummary.jsx",
+      "line": 97,
+      "target": "/app/platform/ai/autofill-audit",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/AccessDeniedCard.jsx-14",
+      "file": "src/components/AccessDeniedCard.jsx",
+      "line": 14,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/components/AccessDeniedCard.jsx-17",
+      "file": "src/components/AccessDeniedCard.jsx",
+      "line": 17,
+      "target": "/",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-648",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 648,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-657",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 657,
+      "target": "/patient/prescriptions",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/components/FloatingAI.jsx-356",
+      "file": "src/components/FloatingAI.jsx",
+      "line": 356,
+      "target": "/app/innovation/ai/chatbot",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/LegalLinks.jsx-8",
+      "file": "src/components/LegalLinks.jsx",
+      "line": 8,
+      "target": "/terms",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/LegalLinks.jsx-10",
+      "file": "src/components/LegalLinks.jsx",
+      "line": 10,
+      "target": "/privacy",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/components/Navbar.jsx-129",
+      "file": "src/components/Navbar.jsx",
+      "line": 129,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/components/Navigation/Sidebar.jsx-292",
+      "file": "src/components/Navigation/Sidebar.jsx",
+      "line": 292,
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/components/NotificationCenter.jsx-341",
+      "file": "src/components/NotificationCenter.jsx",
+      "line": 341,
+      "target": "/app/platform/inbox/notifications",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/Protected.jsx-25",
+      "file": "src/components/Protected.jsx",
+      "line": 25,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/Protected.jsx-30",
+      "file": "src/components/Protected.jsx",
+      "line": 30,
+      "target": "/unauthorized",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/RequireAuth.jsx-19",
+      "file": "src/components/RequireAuth.jsx",
+      "line": 19,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/RequireFeature.jsx-18",
+      "file": "src/components/RequireFeature.jsx",
+      "line": 18,
+      "target": "/403",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/RequireRole.jsx-21",
+      "file": "src/components/RequireRole.jsx",
+      "line": 21,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/RequireRole.jsx-28",
+      "file": "src/components/RequireRole.jsx",
+      "line": 28,
+      "target": "/unauthorized",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/components/RouteGuard.jsx-78",
+      "file": "src/components/RouteGuard.jsx",
+      "line": 78,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useCommerceConfig.js-114",
+      "file": "src/hooks/useCommerceConfig.js",
+      "line": 114,
+      "target": "/hospital-admin/customization",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/hooks/useLogin.js-93",
+      "file": "src/hooks/useLogin.js",
+      "line": 93,
+      "target": "/2fa",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useLogin.js-112",
+      "file": "src/hooks/useLogin.js",
+      "line": 112,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/hooks/useRegister.js-94",
+      "file": "src/hooks/useRegister.js",
+      "line": 94,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useResetPassword.js-41",
+      "file": "src/hooks/useResetPassword.js",
+      "line": 41,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-98",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 98,
+      "target": "/hospital-admin/financials",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-113",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 113,
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-118",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 118,
+      "target": "/payments/full",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/hooks/useSuperAssistants.js-265",
+      "file": "src/hooks/useSuperAssistants.js",
+      "line": 265,
+      "target": "/app/platform/support/tickets${suffix}",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-77",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 77,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-127",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 127,
+      "target": "/",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-165",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 165,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-607",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 607,
+      "target": "/app/revenue/financials/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-615",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 615,
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-619",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 619,
+      "target": "/app/platform/dev/home",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-37",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 37,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-41",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 41,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-47",
+      "file": "src/pages/Admin/CreateAdmin.jsx",
+      "line": 47,
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-86",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 86,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-87",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 87,
+      "target": "/admin/ai-autofill-audit",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-88",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 88,
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-89",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 89,
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/SuperAssistants.jsx-58",
+      "file": "src/pages/Admin/SuperAssistants.jsx",
+      "line": 58,
+      "target": "/app/platform/ai/unified-assistant",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/SuperAssistants.jsx-59",
+      "file": "src/pages/Admin/SuperAssistants.jsx",
+      "line": 59,
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-33",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 33,
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-34",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 34,
+      "target": "/developer/provenance-verify",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-35",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 35,
+      "target": "/developer/webhook-retry",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Developer/DecisionCockpit.jsx-72",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 72,
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/ProvenanceVerify.jsx-36",
+      "file": "src/pages/Developer/ProvenanceVerify.jsx",
+      "line": 36,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-34",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 34,
+      "target": "/developer/webhook-retry",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-35",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 35,
+      "target": "/developer/decision-cockpit",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-146",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 146,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-147",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 147,
+      "target": "/admin/realtime",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/WebhookRetry.jsx-32",
+      "file": "src/pages/Developer/WebhookRetry.jsx",
+      "line": 32,
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Developer/WebhookRetry.jsx-33",
+      "file": "src/pages/Developer/WebhookRetry.jsx",
+      "line": 33,
+      "target": "/admin/realtime",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-179",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 179,
+      "target": "/doctor/medical-records${a.patient",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-190",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 190,
+      "target": "/doctor/opd${patientKey ",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-213",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 213,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/DoctorSettings.jsx-91",
+      "file": "src/pages/Doctor/DoctorSettings.jsx",
+      "line": 91,
+      "target": "/doctor/schedule",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/LabResults.jsx-39",
+      "file": "src/pages/Doctor/LabResults.jsx",
+      "line": 39,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-13",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 13,
+      "target": "/workforce/requests",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-14",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 14,
+      "target": "/workforce/requests",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-15",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 15,
+      "target": "/workforce/requests",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MedicalRecords.jsx-29",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 29,
+      "target": "/doctor/opd",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MedicalRecords.jsx-32",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 32,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-63",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 63,
+      "target": "/doctor/opd",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-64",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 64,
+      "target": "/doctor/lab-results",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-65",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 65,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-141",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 141,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-142",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 142,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-143",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 143,
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-144",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 144,
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Doctor/MySchedule.jsx-71",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 71,
+      "target": "/doctor/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MySchedule.jsx-147",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 147,
+      "target": "/doctor/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/MySchedule.jsx-149",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 149,
+      "target": "/doctor/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-54",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 54,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-60",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 60,
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-88",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 88,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-89",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 89,
+      "target": "/doctor/lab-results",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-90",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 90,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-91",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 91,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-138",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 138,
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-199",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 199,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-318",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 318,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-318",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 318,
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-325",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 325,
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-325",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 325,
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-332",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 332,
+      "target": "/hospital-admin/pharmacy-referrals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/ReportsNotes.jsx-85",
+      "file": "src/pages/Doctor/ReportsNotes.jsx",
+      "line": 85,
+      "target": "/doctor/opd",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/ReportsNotes.jsx-88",
+      "file": "src/pages/Doctor/ReportsNotes.jsx",
+      "line": 88,
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/Transfers.jsx-19",
+      "file": "src/pages/Doctor/Transfers.jsx",
+      "line": 19,
+      "target": "/doctor/opd",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Doctor/Transfers.jsx-22",
+      "file": "src/pages/Doctor/Transfers.jsx",
+      "line": 22,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/ForgotPassword.jsx-214",
+      "file": "src/pages/ForgotPassword.jsx",
+      "line": 214,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-24",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 24,
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-25",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 25,
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-26",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 26,
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-51",
+      "file": "src/pages/HospitalAdmin/Appointments.jsx",
+      "line": 51,
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-52",
+      "file": "src/pages/HospitalAdmin/Appointments.jsx",
+      "line": 52,
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "file": "src/pages/HospitalAdmin/Approvals.jsx",
+      "line": 949,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "file": "src/pages/HospitalAdmin/Approvals.jsx",
+      "line": 954,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/HospitalAdmin/ConsultationMonitor.jsx-21",
+      "file": "src/pages/HospitalAdmin/ConsultationMonitor.jsx",
+      "line": 21,
+      "target": "/hospital-admin/escalations",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/ConsultationMonitor.jsx-38",
+      "file": "src/pages/HospitalAdmin/ConsultationMonitor.jsx",
+      "line": 38,
+      "target": "/hospital-admin/escalations",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Dashboard.jsx-357",
+      "file": "src/pages/HospitalAdmin/Dashboard.jsx",
+      "line": 357,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Dashboard.jsx-360",
+      "file": "src/pages/HospitalAdmin/Dashboard.jsx",
+      "line": 360,
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/MachineConnectivity.jsx-157",
+      "file": "src/pages/HospitalAdmin/MachineConnectivity.jsx",
+      "line": 157,
+      "target": "/hospital-admin/machine-alerts",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/MachineConnectivity.jsx-397",
+      "file": "src/pages/HospitalAdmin/MachineConnectivity.jsx",
+      "line": 397,
+      "target": "/system-admin/integration-hub",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/TransferCommandCenter.jsx-67",
+      "file": "src/pages/HospitalAdmin/TransferCommandCenter.jsx",
+      "line": 67,
+      "target": "/hospital-admin/staff-transfers",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/TransferCommandCenter.jsx-70",
+      "file": "src/pages/HospitalAdmin/TransferCommandCenter.jsx",
+      "line": 70,
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/ClinicalOrderCopilot.jsx-100",
+      "file": "src/pages/Innovation/ClinicalOrderCopilot.jsx",
+      "line": 100,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/ClinicalOrderCopilot.jsx-176",
+      "file": "src/pages/Innovation/ClinicalOrderCopilot.jsx",
+      "line": 176,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-39",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 39,
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-40",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 40,
+      "target": "/hospital-admin/machine-alerts",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-42",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 42,
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-43",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 43,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-85",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 85,
+      "target": "/hospital-admin/ward-board",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-92",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 92,
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-99",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 99,
+      "target": "/ops/emergency-command",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-106",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 106,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-268",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 268,
+      "target": "/hospital-admin/ward-board",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-299",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 299,
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-341",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 341,
+      "target": "/ops/emergency-command",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-78",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 78,
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-79",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 79,
+      "target": "/lab-tech/archive",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-80",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 80,
+      "target": "/lab-tech/qc",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-81",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 81,
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-88",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 88,
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-89",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 89,
+      "target": "/lab-tech/samples",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-90",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 90,
+      "target": "/lab-tech/qc",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-91",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 91,
+      "target": "/lab-tech/safety",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-140",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 140,
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-143",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 143,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-94",
+      "file": "src/pages/Login.jsx",
+      "line": 94,
+      "target": "/forgot-password",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-112",
+      "file": "src/pages/Login.jsx",
+      "line": 112,
+      "target": "/register",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-117",
+      "file": "src/pages/Login.jsx",
+      "line": 117,
+      "target": "/careers",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-76",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 76,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-93",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 93,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-100",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 100,
+      "target": "/nurse/medication",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-110",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 110,
+      "target": "/nurse/ward-board",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-115",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 115,
+      "target": "/nurse/patients",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-120",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 120,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-153",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 153,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-165",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 165,
+      "target": "/nurse/patients",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-172",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 172,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-181",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 181,
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Nurse/Dashboard.jsx-110",
+      "file": "src/pages/Nurse/Dashboard.jsx",
+      "line": 110,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Nurse/Dashboard.jsx-113",
+      "file": "src/pages/Nurse/Dashboard.jsx",
+      "line": 113,
+      "target": "/nurse/ward-board",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/VitalsEntry.jsx-31",
+      "file": "src/pages/Nurse/VitalsEntry.jsx",
+      "line": 31,
+      "target": "/nurse/patients",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Nurse/VitalsEntry.jsx-41",
+      "file": "src/pages/Nurse/VitalsEntry.jsx",
+      "line": 41,
+      "target": "/analytics",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Patient/AdsFeed.jsx-44",
+      "file": "src/pages/Patient/AdsFeed.jsx",
+      "line": 44,
+      "target": "/register",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Patient/AdsFeed.jsx-45",
+      "file": "src/pages/Patient/AdsFeed.jsx",
+      "line": 45,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-41",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 41,
+      "target": "/payments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-44",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 44,
+      "target": "/patient/family-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-47",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 47,
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-50",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 50,
+      "target": "/reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-53",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 53,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Billing.jsx-70",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 70,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-101",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 101,
+      "target": "/payments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-104",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 104,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-356",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 356,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-359",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 359,
+      "target": "/patient/prescriptions",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-362",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 362,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-367",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 367,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-370",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 370,
+      "target": "/patient/feedback",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-377",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 377,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-380",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 380,
+      "target": "/patient/feedback",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-20",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 20,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-23",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 23,
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-26",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 26,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-29",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 29,
+      "target": "/patient/billing",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-136",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 136,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-145",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 145,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-146",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 146,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-147",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 147,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-148",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 148,
+      "target": "/reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-189",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 189,
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-192",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 192,
+      "target": "/reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-52",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 52,
+      "target": "/patient/family-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-55",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 55,
+      "target": "/patient/billing",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-58",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 58,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Hospitals.jsx-64",
+      "file": "src/pages/Patient/Hospitals.jsx",
+      "line": 64,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Hospitals.jsx-135",
+      "file": "src/pages/Patient/Hospitals.jsx",
+      "line": 135,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-25",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 25,
+      "target": "/patient/hospitals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-28",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 28,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-31",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 31,
+      "target": "/payments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-62",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 62,
+      "target": "/profile",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-109",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 109,
+      "target": "/patient/appointments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-112",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 112,
+      "target": "/payments",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-22",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 22,
+      "target": "/patient/family-records",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-25",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 25,
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-28",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 28,
+      "target": "/reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Pharmacy/Index.jsx-71",
+      "file": "src/pages/Pharmacy/Index.jsx",
+      "line": 71,
+      "target": "/app/operations/pharmacy/reports",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/Pharmacy/InventoryPage.jsx-16",
+      "file": "src/pages/Pharmacy/InventoryPage.jsx",
+      "line": 16,
+      "target": "/inventory",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Profile.jsx-3461",
+      "file": "src/pages/Profile.jsx",
+      "line": 3461,
+      "target": "/privacy",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Profile.jsx-3464",
+      "file": "src/pages/Profile.jsx",
+      "line": 3464,
+      "target": "/terms",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-80",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 80,
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-81",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 81,
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-82",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 82,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-83",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 83,
+      "target": "/workforce/requests",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-92",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 92,
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-103",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 103,
+      "target": "/notifications",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-153",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 153,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-164",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 164,
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-111",
+      "file": "src/pages/Register.jsx",
+      "line": 111,
+      "target": "/terms",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-111",
+      "file": "src/pages/Register.jsx",
+      "line": 111,
+      "target": "/privacy",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-125",
+      "file": "src/pages/Register.jsx",
+      "line": 125,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-130",
+      "file": "src/pages/Register.jsx",
+      "line": 130,
+      "target": "/careers",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SuperAdmin/Dashboard.jsx-135",
+      "file": "src/pages/SuperAdmin/Dashboard.jsx",
+      "line": 135,
+      "target": "/system-admin/county-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SuperAdmin/Dashboard.jsx-138",
+      "file": "src/pages/SuperAdmin/Dashboard.jsx",
+      "line": 138,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/pages/SuperAdmin/SystemSettings.jsx-855",
+      "file": "src/pages/SuperAdmin/SystemSettings.jsx",
+      "line": 855,
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-61",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 61,
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-152",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 152,
+      "target": "/system-admin/regulatory-reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-246",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 246,
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-273",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 273,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-312",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 312,
+      "target": "/system-admin/regulatory-reports",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-43",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 43,
+      "target": "/admin/offline-ops",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-44",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 44,
+      "target": "/admin/training-tracker",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-45",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 45,
+      "target": "/system-admin/integration-control-plane",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/CountyCommandCenter.jsx-103",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 103,
+      "target": "/system-admin/government-hospital-registry",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/CountyCommandCenter.jsx-104",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 104,
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-111",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 111,
+      "target": "/admin/beds",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-123",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 123,
+      "target": "/admin/offline-ops",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-316",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 316,
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-319",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 319,
+      "target": "/system-admin/county-command-center",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-401",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 401,
+      "target": "/step-up",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-274",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 274,
+      "target": "/app/governance/registry/hospitals",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-279",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 279,
+      "target": "/app/governance/registry/patient-identity",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-289",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 289,
+      "target": "/app/governance/registry/hospitals",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-56",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 56,
+      "target": "/system-admin/integration-hub",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-59",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 59,
+      "target": "/admin/realtime",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-62",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 62,
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-122",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 122,
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-124",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 124,
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-125",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 125,
+      "target": "/payments/full",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-210",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 210,
+      "target": "/system-admin/connector-sdk",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-213",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 213,
+      "target": "/admin/realtime",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationHub.jsx-99",
+      "file": "src/pages/SystemAdmin/IntegrationHub.jsx",
+      "line": 99,
+      "target": "/system-admin/integration-control-plane",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/PharmacyAccessAudit.jsx-20",
+      "file": "src/pages/SystemAdmin/PharmacyAccessAudit.jsx",
+      "line": 20,
+      "target": "/hospital-admin/staff",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/PharmacyAccessAudit.jsx-136",
+      "file": "src/pages/SystemAdmin/PharmacyAccessAudit.jsx",
+      "line": 136,
+      "target": "/hospital-admin/staff",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-31",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 31,
+      "target": "/admin/access-control",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-32",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 32,
+      "target": "/admin/access-control",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-33",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 33,
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-34",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 34,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-35",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 35,
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-197",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 197,
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RevenueIntelligence.jsx-223",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 223,
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-262",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 262,
+      "target": "/system-admin/fraud-guard",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-301",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 301,
+      "target": "/hospital-admin/financials",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-338",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 338,
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-380",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 380,
+      "target": "/system-admin/government-claims",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1037",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1037,
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1045",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1045,
+      "target": "/app/platform/support/tickets",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1053",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1053,
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1061",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1061,
+      "target": "/app/governance/claims/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1069",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1069,
+      "target": "/app/platform/dev/home",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1243",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1243,
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1377",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1377,
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1415",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1415,
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/TwoFactor.jsx-107",
+      "file": "src/pages/TwoFactor.jsx",
+      "line": 107,
+      "target": "/forgot-password",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/VerifyEmail.jsx-26",
+      "file": "src/pages/VerifyEmail.jsx",
+      "line": 26,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/pages/VerifySuccess.jsx-26",
+      "file": "src/pages/VerifySuccess.jsx",
+      "line": 26,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "button-src/pages/Workforce/MyRequests.jsx-402",
+      "file": "src/pages/Workforce/MyRequests.jsx",
+      "line": 402,
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "action": "click-target-unresolved"
+    },
+    {
+      "id": "deep-link-src/routes/ProtectedRoute.jsx-27",
+      "file": "src/routes/ProtectedRoute.jsx",
+      "line": 27,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/routes/ProtectedRoute.jsx-34",
+      "file": "src/routes/ProtectedRoute.jsx",
+      "line": 34,
+      "target": "/403",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/utils/RoleGuard.jsx-4",
+      "file": "src/utils/RoleGuard.jsx",
+      "line": 4,
+      "target": "/login",
+      "resolved": true,
+      "action": "click-target-resolved"
+    },
+    {
+      "id": "deep-link-src/utils/RoleGuard.jsx-5",
+      "file": "src/utils/RoleGuard.jsx",
+      "line": 5,
+      "target": "/unauthorized",
+      "resolved": true,
+      "action": "click-target-resolved"
+    }
+  ]
+}

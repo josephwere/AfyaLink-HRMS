@@ -38,9 +38,10 @@ export const cacheSet = async (key, value, ttl = 300) => {
 
   memoryCache.set(key, value);
 
-  setTimeout(() => {
+  const timer = setTimeout(() => {
     memoryCache.delete(key);
   }, ttl * 1000);
+  timer.unref?.();
 };
 
 export const cacheDel = async (pattern) => {

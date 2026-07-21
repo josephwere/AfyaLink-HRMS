@@ -1,25 +1,8 @@
-import React, { useState } from "react";
-import { queryNlpAnalytics } from "../../services/intelligenceApi";
+import React from "react";
+import { useNlpAnalytics } from "../../hooks/useNlpAnalytics";
 
 export default function NlpAnalytics() {
-  const [query, setQuery] = useState("Show pending approvals this week");
-  const [result, setResult] = useState(null);
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const run = async () => {
-    setLoading(true);
-    setMsg("");
-    setResult(null);
-    try {
-      const out = await queryNlpAnalytics(query);
-      setResult(out || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run NLP analytics query");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { query, setQuery, result, msg, loading, run } = useNlpAnalytics();
 
   return (
     <div className="dashboard">

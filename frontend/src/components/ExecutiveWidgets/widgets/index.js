@@ -1,0 +1,12 @@
+export { default as BedOccupancyWidget } from './BedOccupancyWidget';
+export { default as AdmissionsWidget } from './AdmissionsWidget';
+export { default as DischargesWidget } from './DischargesWidget';
+export { default as RevenueWidget } from './RevenueWidget';
+export { default as ClaimsWidget } from './ClaimsWidget';
+export { default as PharmacyAlertsWidget } from './PharmacyAlertsWidget';
+export { default as LaboratoryQueueWidget } from './LaboratoryQueueWidget';
+export { default as RadiologyQueueWidget } from './RadiologyQueueWidget';
+export { default as StaffOnDutyWidget } from './StaffOnDutyWidget';
+export { default as EmergencyOverrideWidget } from './EmergencyOverrideWidget';
+export { default as MachineHealthWidget } from './MachineHealthWidget';
+export { default as AuditSummaryWidget } from './AuditSummaryWidget';

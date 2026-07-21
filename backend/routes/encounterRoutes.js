@@ -7,11 +7,14 @@ import {
   bulkReviewEncounterEscalations,
   bulkResolveEncounterEscalations,
   createEncounterBillingHandoff,
+  createRuntimeEncounter,
+  joinRuntimeEncounter,
   listEncounterEscalations,
   createNurseEscalation,
   closeEncounter,
   listEncounters,
   resolveNurseEscalation,
+  startRuntimeEncounter,
 } from "../controllers/encounterController.js";
 
 const router = express.Router();
@@ -42,6 +45,27 @@ router.post(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR"),
   bulkReviewEncounterEscalations
+);
+
+router.post(
+  "/",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "DOCTOR"),
+  createRuntimeEncounter
+);
+
+router.post(
+  "/:id/join",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "PATIENT"),
+  joinRuntimeEncounter
+);
+
+router.post(
+  "/:id/start",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "DOCTOR"),
+  startRuntimeEncounter
 );
 
 router.get(

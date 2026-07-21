@@ -21,6 +21,7 @@ import {
   resolveFrontendBase,
 } from "../utils/passwordReset.js";
 import { queueBrevoContactSync } from "../services/brevoContacts.js";
+import { generateUserId } from "../services/idGenerator.js";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../utils/authCookies.js";
 import {
   sanitizeCode,
@@ -35,6 +36,8 @@ import {
   revokeAllRefreshSessions,
   revokeRefreshSession,
 } from "../utils/authSessions.js";
+import { serializeUser } from "../utils/serializers.js";
+import normalizeRole from "../utils/normalizeRole.js";
 
 /* ======================================================
    HELPERS
@@ -351,6 +354,8 @@ export const register = async (req, res) => {
       password,
       nationalIdNumber,
       nationalIdCountry,
+      role,
+      accountType,
     } = req.body;
 
     const sanitizedName = sanitizeString(name, { maxLength: 120 });
@@ -358,6 +363,8 @@ export const register = async (req, res) => {
     const normalizedPhone = phone ? sanitizePhone(phone) : "";
     const normalizedNationalId = nationalIdNumber ? sanitizeCode(nationalIdNumber) : "";
     const normalizedNationalIdCountry = nationalIdCountry ? sanitizeCode(nationalIdCountry) : "";
+    const requestedRole = normalizeRole(role || "PATIENT");
+    const normalizedAccountType = accountType ? sanitizeString(accountType, { maxLength: 80 }) : "";
 
     if (!sanitizedName || !password || (!normalizedEmail && !normalizedPhone)) {
       return res
@@ -391,7 +398,8 @@ export const register = async (req, res) => {
       phone: normalizedPhone || undefined,
       password,
       passwordSetAt: new Date(),
-      role: "PATIENT",
+      role: requestedRole || "PATIENT",
+      accountType: normalizedAccountType || undefined,
       emailVerified: false,
       phoneVerified: false,
       verificationDeadline,
@@ -823,6 +831,11 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!user.userId) {
+      user.userId = await generateUserId();
+      await withAuthStepTimeout("USERID_GENERATION", () => user.save(), 2000);
+    }
+
     const policy = await withAuthStepTimeout("RISK_POLICY_LOOKUP", () => getRiskPolicy(), 3000);
     const risk = assessLoginRisk(req, user, policy);
     fireAndForget(persistRiskAssessment(user, risk));
@@ -877,31 +890,35 @@ export const login = async (req, res) => {
         requires2FA: true,
         reason: risk.level === "CRITICAL" ? "RISK_CRITICAL_RESTRICTED" : "RISK_STEP_UP",
         risk: { level: risk.level, score: risk.score, reasons: risk.reasons },
-        userId: user._id,
+        userId: user.userId,
+        id: user._id,
       });
     }
 
     if (user.twoFactorEnabled) {
       const method = user.twoFactorMethod || "OTP";
+      const otp = generateOtp();
+      await setStepUpOtp(user._id, otp);
+      await deliverStepUpCode(user, otp, "ACCOUNT_2FA_DELIVERY");
+
       if (method === "TOTP" && user.twoFactorSecret) {
         return res.json({
           success: true,
           requires2FA: true,
           reason: "ACCOUNT_2FA_TOTP",
           method: "TOTP",
-          userId: user._id,
+          userId: user.userId,
+          id: user._id,
         });
       }
 
-      const otp = generateOtp();
-      await setStepUpOtp(user._id, otp);
-      await deliverStepUpCode(user, otp, "ACCOUNT_2FA_DELIVERY");
       return res.json({
         success: true,
         requires2FA: true,
         reason: "ACCOUNT_2FA",
         method: "OTP",
-        userId: user._id,
+        userId: user.userId,
+        id: user._id,
       });
     }
 
@@ -972,6 +989,7 @@ export const login = async (req, res) => {
       refreshToken,
       user: {
         id: user._id,
+        userId: user.userId,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -979,6 +997,9 @@ export const login = async (req, res) => {
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
         verificationDeadline: user.verificationDeadline,
+        hospital: user.hospital || null,
+        hospitalId: user.hospitalId || user.hospital || null,
+        registeredPharmacy: user.registeredPharmacy || null,
         authProvider: user.authProvider || "local",
         authMethods: Array.isArray(user.authMethods)
           ? user.authMethods
@@ -1000,11 +1021,16 @@ export const login = async (req, res) => {
         code: "AUTH_RUNTIME_TIMEOUT",
       });
     }
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({
+    console.error("LOGIN ERROR:", err?.stack || err);
+    const response = {
       success: false,
       msg: "Login failed",
-    });
+    };
+    if (process.env.NODE_ENV !== "production") {
+      response.error = err?.message;
+      response.stack = err?.stack;
+    }
+    res.status(500).json(response);
   }
 };
 
@@ -1263,7 +1289,7 @@ export const verify2FAOtp = async (req, res) => {
     });
 
     setRefreshTokenCookie(res, refreshToken);
-    res.json({ accessToken, refreshToken, user });
+    res.json({ accessToken, refreshToken, user: serializeUser(user) });
   } catch {
     res.status(500).json({ msg: "2FA verification failed" });
   }

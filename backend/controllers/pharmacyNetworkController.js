@@ -3,8 +3,10 @@ import PharmacyReferral from "../models/PharmacyReferral.js";
 // Register Prescription model so PharmacyReferral.populate("prescription") works in lean/lazy-loaded envs.
 import "../models/Prescription.js";
 import AuditLog from "../models/AuditLog.js";
-import Notification from "../models/Notification.js";
+import Hospital from "../models/Hospital.js";
+import { notify } from "../services/notificationService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
+import { serializePharmacy } from "../utils/serializers.js";
 
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -52,6 +54,42 @@ async function resolveActorPharmacyIds(req) {
   return pharmacies.map((item) => String(item._id));
 }
 
+async function resolveHospitalPharmacy(req) {
+  const hospitalId = req.user?.hospital || req.user?.hospitalId || null;
+  if (!hospitalId) return null;
+
+  const existing = await RegisteredPharmacy.findOne({ hospital: hospitalId, status: "ACTIVE" }).lean();
+  if (existing) return existing;
+
+  const hospital = await Hospital.findById(hospitalId).select("name").lean();
+  const hospitalName = String(hospital?.name || "Hospital Pharmacy").trim() || "Hospital Pharmacy";
+  const licenseNumber = `HOSP-${String(hospitalId).slice(-6).toUpperCase()}`;
+
+  const created = await RegisteredPharmacy.create({
+    name: hospitalName,
+    licenseNumber,
+    governmentRegistryId: `HOSP-${String(hospitalId).slice(-6).toUpperCase()}`,
+    status: "ACTIVE",
+    hospital: hospitalId,
+    contact: { phone: "", email: "" },
+    location: { country: "", region: "", city: "", address: "" },
+    services: ["Dispensing"],
+    createdBy: req.user?._id || null,
+    updatedBy: req.user?._id || null,
+  });
+
+  return created.toObject ? created.toObject() : created;
+}
+
+async function resolveReferralPharmacy(req, pharmacyId) {
+  const normalizedId = String(pharmacyId || "").trim();
+  if (!normalizedId) return null;
+  if (normalizedId === "__hospital__") {
+    return resolveHospitalPharmacy(req);
+  }
+  return RegisteredPharmacy.findById(normalizedId).select("_id status name").lean();
+}
+
 export const listRegisteredPharmacies = async (req, res, next) => {
   try {
     const q = String(req.query.q || "").trim();
@@ -79,8 +117,28 @@ export const listRegisteredPharmacies = async (req, res, next) => {
       .limit(limit)
       .lean();
 
+    const hospitalId = req.user?.hospital || req.user?.hospitalId || null;
+    const hospitalPharmacy = hospitalId ? await resolveHospitalPharmacy(req) : null;
+    const syntheticHospitalOption = hospitalPharmacy
+      ? [{
+          _id: "__hospital__",
+          name: `${String(hospitalPharmacy.name || "Hospital Pharmacy").trim()} (Hospital)`,
+          licenseNumber: hospitalPharmacy.licenseNumber || "",
+          governmentRegistryId: hospitalPharmacy.governmentRegistryId || "",
+          status: hospitalPharmacy.status || "ACTIVE",
+          hospital: hospitalId,
+          isHospitalPharmacy: true,
+          isSynthetic: true,
+          contact: hospitalPharmacy.contact || {},
+          location: hospitalPharmacy.location || {},
+          services: hospitalPharmacy.services || [],
+          createdAt: hospitalPharmacy.createdAt || null,
+          updatedAt: hospitalPharmacy.updatedAt || null,
+        }]
+      : [];
+
     const hasPoint = lat !== null && lng !== null;
-    const items = rows
+    const items = [...syntheticHospitalOption, ...rows]
       .map((row) => {
         const pLat = toNumberOrNull(row?.location?.lat);
         const pLng = toNumberOrNull(row?.location?.lng);
@@ -100,7 +158,8 @@ export const listRegisteredPharmacies = async (req, res, next) => {
         if (a.distanceKm === null) return 1;
         if (b.distanceKm === null) return -1;
         return a.distanceKm - b.distanceKm;
-      });
+      })
+      .map(serializePharmacy);
 
     return res.json({ success: true, items });
   } catch (err) {
@@ -209,7 +268,7 @@ export const createPharmacyReferral = async (req, res, next) => {
       return res.status(422).json({ message: "pharmacyId and patientName are required" });
     }
 
-    const pharmacy = await RegisteredPharmacy.findById(pharmacyId).lean();
+    const pharmacy = await resolveReferralPharmacy(req, pharmacyId);
     if (!pharmacy || pharmacy.status !== "ACTIVE") {
       return res.status(404).json({ message: "Target pharmacy not found or inactive" });
     }
@@ -267,7 +326,7 @@ export const createPharmacyReferral = async (req, res, next) => {
       });
     }
     if (notifications.length) {
-      await Notification.insertMany(notifications);
+      await Promise.all(notifications.map((notification) => notify({ ...notification })));
     }
 
     return res.status(201).json({ success: true, referral: populated });
@@ -393,7 +452,7 @@ export const updatePharmacyReferral = async (req, res, next) => {
       });
     }
     if (notifications.length) {
-      await Notification.insertMany(notifications);
+      await Promise.all(notifications.map((notification) => notify({ ...notification })));
     }
 
     const populated = await PharmacyReferral.findById(referral._id)

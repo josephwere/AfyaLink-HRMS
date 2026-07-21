@@ -1,67 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { downloadApiFile } from "../../lib/api/client";
-import { getTransferConsent, getTransferHandoverPackage, listTransfers } from "../../services/transferApi";
+import { useDoctorTransfers } from "../../hooks/useDoctorTransfers";
 import { formatDateOnly } from "../../utils/locale";
 
 export default function Transfers() {
   const navigate = useNavigate();
   const [status, setStatus] = useState("");
-  const [rows, setRows] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [detail, setDetail] = useState({ consent: null, handover: null });
-  const [loading, setLoading] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await listTransfers({ status, limit: 50, scope: "mine" });
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setRows(items);
-      if (!selectedId && items[0]?._id) setSelectedId(String(items[0]._id));
-    } catch (err) {
-      setError(err?.message || "Failed to load transfers.");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [status]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      setDetail({ consent: null, handover: null });
-      return;
-    }
-    let cancelled = false;
-    const loadDetail = async () => {
-      setDetailLoading(true);
-      try {
-        const [consent, handover] = await Promise.all([
-          getTransferConsent(selectedId).catch(() => null),
-          getTransferHandoverPackage(selectedId).catch(() => null),
-        ]);
-        if (!cancelled) setDetail({ consent, handover });
-      } finally {
-        if (!cancelled) setDetailLoading(false);
-      }
-    };
-    loadDetail();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
-
-  const selected = useMemo(
-    () => rows.find((row) => String(row._id) === String(selectedId)) || null,
-    [rows, selectedId]
-  );
+  const { rows, selectedId, setSelectedId, detail, loading, detailLoading, error, selected, load, downloadTransferBundle } = useDoctorTransfers(status);
 
   return (
     <div className="dashboard doctor-workspace">
@@ -171,9 +116,7 @@ export default function Transfers() {
                   type="button"
                   className="btn-secondary"
                   onClick={() =>
-                    downloadApiFile(`/api/transfers/${selected._id}/fhir`, {
-                      openInNewTab: true,
-                    })
+                    downloadTransferBundle(selected._id, "fhir")
                   }
                 >
                   Open FHIR Bundle
@@ -183,9 +126,7 @@ export default function Transfers() {
                   type="button"
                   className="btn-secondary"
                   onClick={() =>
-                    downloadApiFile(`/api/transfers/${selected._id}/hl7`, {
-                      openInNewTab: true,
-                    })
+                    downloadTransferBundle(selected._id, "hl7")
                   }
                 >
                   Open HL7 Export

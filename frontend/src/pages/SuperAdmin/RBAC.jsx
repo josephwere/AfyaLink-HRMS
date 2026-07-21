@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import { apiFetch } from '../../utils/apiFetch';
+import React from 'react';
 import { ROLES } from '../../constants/roles';
+import { useRBAC } from '../../hooks/useRBAC';
 
 const ROLE_OPTIONS = [
   ROLES.SUPER_ADMIN,
@@ -14,28 +14,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function RBAC(){
-  const [users, setUsers] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [role, setRole] = useState("");
-  const [msg, setMsg] = useState("");
-  useEffect(() => {
-    loadUsers();
-  }, []);
-  const loadUsers = async () => {
-    try {
-      const data = await apiFetch('/api/users');
-      setUsers(Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setUsers([]);
-    }
-  };
-  const changeRole = async ()=> {
-    if(!selected || !role) return;
-    await apiFetch('/api/users/'+selected._id, { method: 'PATCH', body: { role } });
-    setMsg(`Updated ${selected.name || selected.email} to ${role}.`);
-    await loadUsers();
-    setSelected(null);
-  };
+  const { users, selected, setSelected, role, setRole, msg, setMsg, changeRole } = useRBAC();
   return (
     <div className="dashboard premium-shell">
       <section className="premium-card premium-shell-head">

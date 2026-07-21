@@ -7,6 +7,8 @@ import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { HOSPITAL_SCOPED_ROLES, STAFF_ROLES } from "../utils/roleSets.js";
 import { collectPharmacyLinkBackfillPreview } from "../services/pharmacyLinkBackfillService.js";
+import { serializeUser, serializeHospital } from "../utils/serializers.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 const ALL_ASSIGNABLE_ROLES = new Set([
   "SUPER_ADMIN",
@@ -146,7 +148,10 @@ export const createUser = async (req, res, next) => {
 
     res.status(201).json({
       message: "User created successfully",
-      userId: user._id,
+      user: {
+        _id: user._id,
+        userId: user.userId,
+      },
     });
   } catch (err) {
     next(err);
@@ -165,7 +170,7 @@ export const getMe = async (req, res, next) => {
       });
     }
 
-    res.json(req.user);
+    res.json(serializeUser(req.user));
   } catch (err) {
     next(err);
   }
@@ -242,13 +247,13 @@ export const listUsers = async (req, res, next) => {
     }
 
     if (q) {
-      filter.$or = [
+      filter.$or = buildBusinessIdSearchFilter(q, ["userId"], [
         { name: { $regex: q, $options: "i" } },
         { email: { $regex: q, $options: "i" } },
         { phone: { $regex: q, $options: "i" } },
         { nationalIdNumber: { $regex: q, $options: "i" } },
         { role: { $regex: q, $options: "i" } },
-      ];
+      ]).$or;
     }
 
     if (cursor) {
@@ -276,7 +281,7 @@ export const listUsers = async (req, res, next) => {
       const nextCursor = hasMore && last
         ? encodeCursor({ createdAt: last.createdAt, _id: last._id })
         : null;
-      return res.json({ items, nextCursor, hasMore, limit });
+      return res.json({ items: items.map(serializeUser), nextCursor, hasMore, limit });
     }
 
     const [items, total] = await Promise.all([
@@ -289,7 +294,7 @@ export const listUsers = async (req, res, next) => {
       User.countDocuments(filter),
     ]);
 
-    res.json({ items, total, page, limit });
+    res.json({ items: items.map(serializeUser), total, page, limit });
   } catch (err) {
     next(err);
   }

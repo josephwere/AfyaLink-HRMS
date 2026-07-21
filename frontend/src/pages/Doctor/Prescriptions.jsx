@@ -1,13 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import MedicationSelector from "../../components/MedicationSelector";
-import { listAvailableMedicines } from "../../services/pharmacyApi";
-import {
-  createPharmacyReferral,
-  listRegisteredPharmacies,
-} from "../../services/pharmacyNetworkApi";
 import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
+import { useDoctorPrescriptions } from "../../hooks/useDoctorPrescriptions";
 
 function emptyMedication() {
   return {
@@ -27,8 +22,6 @@ function emptyMedication() {
 export default function Prescriptions() {
   const [searchParams] = useSearchParams();
   const patientId = searchParams.get("patientId") || "";
-  const [patient, setPatient] = useState(null);
-  const [appointments, setAppointments] = useState([]);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [medications, setMedications] = useState([emptyMedication()]);
   const [summary, setSummary] = useState("");
@@ -36,11 +29,27 @@ export default function Prescriptions() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [existingPrescription, setExistingPrescription] = useState(null);
-  const [pharmacies, setPharmacies] = useState([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState("");
-  const [referrals, setReferrals] = useState([]);
-  const [medicineCatalog, setMedicineCatalog] = useState([]);
-  const [medicineError, setMedicineError] = useState("");
+  const {
+    patient,
+    appointments,
+    medicineCatalog,
+    medicineError,
+    pharmacies,
+    referrals,
+    loadExistingPrescription,
+    savePrescriptionDraft,
+    sendReferral,
+  } = useDoctorPrescriptions(patientId);
+
+  const availablePharmacies = useMemo(
+    () =>
+      pharmacies.filter((item) => {
+        const status = String(item?.status || "ACTIVE").trim().toUpperCase();
+        return status === "ACTIVE" || status === "";
+      }),
+    [pharmacies]
+  );
 
   const medicineById = useMemo(() => {
     const map = new Map();
@@ -49,56 +58,25 @@ export default function Prescriptions() {
   }, [medicineCatalog]);
 
   useEffect(() => {
-    if (!patientId) return;
-    apiFetch(`/api/patients/${patientId}`)
-      .then((res) => setPatient(res || null))
-      .catch(() => setPatient(null));
-  }, [patientId]);
+    if (!appointments.length) {
+      setSelectedAppointmentId("");
+      return;
+    }
+
+    const currentSelectionStillValid = appointments.some((item) => String(item._id) === String(selectedAppointmentId));
+    if (!selectedAppointmentId || !currentSelectionStillValid) {
+      const nextAppointment = appointments[0];
+      setSelectedAppointmentId(nextAppointment ? String(nextAppointment._id) : "");
+      setSummary(nextAppointment?.metadata?.consultationSummary?.prescriptionSummary || "");
+      setAdvice(nextAppointment?.metadata?.consultationSummary?.carePlan || "");
+    }
+  }, [appointments, selectedAppointmentId]);
 
   useEffect(() => {
-    apiFetch("/api/appointments?limit=50")
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
-        const filtered = patientId
-          ? rows.filter((item) => String(item?.patient?._id || item?.patient) === String(patientId))
-          : rows;
-        setAppointments(filtered);
-        if (!selectedAppointmentId && filtered.length) {
-          setSelectedAppointmentId(String(filtered[0]._id));
-          setSummary(filtered[0]?.metadata?.consultationSummary?.prescriptionSummary || "");
-          setAdvice(filtered[0]?.metadata?.consultationSummary?.carePlan || "");
-        }
-      })
-      .catch(() => setAppointments([]));
-  }, [patientId]);
-
-  useEffect(() => {
-    listAvailableMedicines({ limit: 300, includeOutOfStock: true })
-      .then((res) => {
-        setMedicineCatalog(Array.isArray(res?.items) ? res.items : []);
-        setMedicineError("");
-      })
-      .catch((err) => {
-        setMedicineCatalog([]);
-        setMedicineError(err?.message || "Could not load pharmacy medicines.");
-      });
-  }, []);
-
-  useEffect(() => {
-    listRegisteredPharmacies({ limit: 100 })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setPharmacies(items);
-        if (!selectedPharmacyId && items.length) setSelectedPharmacyId(String(items[0]._id));
-      })
-      .catch(() => setPharmacies([]));
-  }, []);
-
-  useEffect(() => {
-    apiFetch("/api/pharmacy-network/referrals?limit=100")
-      .then((res) => setReferrals(Array.isArray(res?.items) ? res.items : []))
-      .catch(() => setReferrals([]));
-  }, []);
+    if (!selectedPharmacyId && availablePharmacies.length) {
+      setSelectedPharmacyId(String(availablePharmacies[0]._id));
+    }
+  }, [availablePharmacies, selectedPharmacyId]);
 
   const selectedAppointment = useMemo(
     () => appointments.find((item) => String(item._id) === String(selectedAppointmentId)) || null,
@@ -109,9 +87,10 @@ export default function Prescriptions() {
     if (!selectedAppointment) return;
     setSummary(selectedAppointment?.metadata?.consultationSummary?.prescriptionSummary || "");
     setAdvice(selectedAppointment?.metadata?.consultationSummary?.carePlan || "");
-    apiFetch(`/api/pharmacy/prescriptions?appointmentId=${encodeURIComponent(selectedAppointment._id)}`)
-      .then((res) => {
-        const item = Array.isArray(res?.items) ? res.items[0] : null;
+    let cancelled = false;
+    loadExistingPrescription(selectedAppointment._id)
+      .then((item) => {
+        if (cancelled) return;
         setExistingPrescription(item || null);
         if (item?.medications?.length) {
           setMedications(
@@ -132,8 +111,13 @@ export default function Prescriptions() {
         if (item?.summary) setSummary(item.summary);
         if (item?.advice) setAdvice(item.advice);
       })
-      .catch(() => setExistingPrescription(null));
-  }, [selectedAppointmentId]);
+      .catch(() => {
+        if (!cancelled) setExistingPrescription(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAppointment, loadExistingPrescription]);
 
   const patchMedication = (index, patch) => {
     setMedications((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -168,88 +152,67 @@ export default function Prescriptions() {
     setMedications((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
   };
 
-  const saveDraft = async () => {
+  const persistPrescription = async ({ showSuccessGuide = true } = {}) => {
     if (!selectedAppointmentId) {
-      setMsg("Select an appointment first.");
-      return;
+      throw new Error("Select an appointment first.");
     }
+
     setSaving(true);
     setMsg("");
+
     try {
-      const cleanedMeds = medications.filter((item) =>
-        [item.name, item.dosage, item.frequency, item.duration].some((value) => String(value || "").trim())
-      ).map((item) => ({
-        pharmacyItem: item.pharmacyItem || null,
-        name: item.name,
-        sku: item.sku || "",
-        unit: item.unit || "",
-        dosage: item.dosage,
-        frequency: item.frequency,
-        duration: item.duration,
-        requestedQuantity: item.requestedQuantity,
-      }));
-      const payload = {
+      const { created, prescriptionId } = await savePrescriptionDraft({
         appointmentId: selectedAppointmentId,
         patientId,
-        meds: cleanedMeds,
+        medications,
         summary,
         advice,
-      };
-      const existing = existingPrescription?._id
-        ? null
-        : await apiFetch("/api/pharmacy/prescriptions", {
-            method: "POST",
-            body: payload,
-          });
-      await apiFetch(`/api/appointments/${selectedAppointmentId}`, {
-        method: "PATCH",
-        body: {
-          metadata: {
-            ...(selectedAppointment?.metadata || {}),
-            prescriptionDraft: {
-              medications: cleanedMeds,
-              summary,
-              advice,
-              patientId,
-            },
-            prescriptionId: existing?._id || existingPrescription?._id || selectedAppointment?.metadata?.prescriptionId || null,
-            consultationSummary: {
-              ...(selectedAppointment?.metadata?.consultationSummary || {}),
-              prescriptionSummary: summary,
-              carePlan: advice,
-            },
-          },
-        },
+        existingPrescription,
+        selectedAppointment,
       });
-      if (existing) setExistingPrescription(existing);
-      setMsg(existingPrescription ? "Prescription summary updated on the visit record." : "Prescription created and linked to the visit.");
-      showActionSuccessGuide({
-        title: "Prescription Saved Successfully",
-        message: "Patient records have been updated and the prescription plan is ready for pharmacy follow-up.",
-        tips: [
-          "Send the prescription to a registered pharmacy",
-          "Review the appointment summary",
-          "Open patient medical records",
-        ],
-        actions: [
-          { label: "Patient Records", path: `/app/care/records/index?patientId=${encodeURIComponent(patientId)}` },
-          {
-            label: "Ask AI",
-            action: "ai",
-            aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
-            variant: "secondary",
-          },
-          { label: "Appointments", path: "/app/operations/scheduling/appointments", variant: "secondary" },
-        ],
-        aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
-        notificationTitle: "Prescription saved",
-        notificationBody: "Patient prescription was generated and linked to the visit.",
-        notificationCategory: "PRESCRIPTIONS",
-      });
-    } catch (err) {
-      setMsg(err?.message || "Could not save prescription plan.");
+
+      if (created) {
+        setExistingPrescription(created);
+      }
+
+      if (showSuccessGuide) {
+        showActionSuccessGuide({
+          title: "Prescription Saved Successfully",
+          message: "Patient records have been updated and the prescription plan is ready for pharmacy follow-up.",
+          tips: [
+            "Send the prescription to a registered pharmacy",
+            "Review the appointment summary",
+            "Open patient medical records",
+          ],
+          actions: [
+            { label: "Patient Records", path: `/app/care/records/index?patientId=${encodeURIComponent(patientId)}` },
+            {
+              label: "Ask AI",
+              action: "ai",
+              aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
+              variant: "secondary",
+            },
+            { label: "Appointments", path: "/app/operations/scheduling/appointments", variant: "secondary" },
+          ],
+          aiPrompt: `Review this prescription plan and suggest patient-friendly counseling points. Summary: ${summary || "No summary provided"}. Advice: ${advice || "No advice provided"}.`,
+          notificationTitle: "Prescription saved",
+          notificationBody: "Patient prescription was generated and linked to the visit.",
+          notificationCategory: "PRESCRIPTIONS",
+        });
+      }
+
+      return { created, prescriptionId };
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveDraft = async () => {
+    try {
+      const { created } = await persistPrescription({ showSuccessGuide: true });
+      setMsg(created || existingPrescription ? "Prescription summary updated on the visit record." : "Prescription created and linked to the visit.");
+    } catch (err) {
+      setMsg(err?.message || "Could not save prescription plan.");
     }
   };
 
@@ -258,10 +221,18 @@ export default function Prescriptions() {
       setMsg("Select a pharmacy and appointment first.");
       return;
     }
-    const prescriptionId =
-      existingPrescription?._id ||
-      selectedAppointment?.metadata?.prescriptionId ||
-      null;
+
+    let prescriptionId = existingPrescription?._id || selectedAppointment?.metadata?.prescriptionId || null;
+    if (!prescriptionId) {
+      try {
+        const result = await persistPrescription({ showSuccessGuide: false });
+        prescriptionId = result?.prescriptionId || null;
+      } catch (err) {
+        setMsg(err?.message || "Could not save prescription plan before sending it to a pharmacy.");
+        return;
+      }
+    }
+
     if (!prescriptionId) {
       setMsg("Save the prescription plan first before sending it to a pharmacy.");
       return;
@@ -273,7 +244,7 @@ export default function Prescriptions() {
         ? `${patient.firstName || ""} ${patient.lastName || ""}`.trim()
         : "";
     try {
-      await createPharmacyReferral({
+      await sendReferral({
         pharmacyId: selectedPharmacyId,
         prescriptionId,
         patientName,
@@ -290,8 +261,6 @@ export default function Prescriptions() {
         urgent: false,
       });
       setMsg("Prescription referral sent to pharmacy.");
-      const res = await apiFetch("/api/pharmacy-network/referrals?limit=100");
-      setReferrals(Array.isArray(res?.items) ? res.items : []);
     } catch (err) {
       setMsg(err?.message || "Could not send prescription to pharmacy.");
     }
@@ -435,7 +404,7 @@ export default function Prescriptions() {
                 <label style={{ marginTop: 10, display: "block" }}>Target Pharmacy</label>
                 <select value={selectedPharmacyId} onChange={(e) => setSelectedPharmacyId(e.target.value)}>
                   <option value="">Select pharmacy</option>
-                  {pharmacies.map((item) => (
+                  {availablePharmacies.map((item) => (
                     <option key={item._id} value={item._id}>
                       {item.name} {item?.location?.city ? `• ${item.location.city}` : ""}
                     </option>

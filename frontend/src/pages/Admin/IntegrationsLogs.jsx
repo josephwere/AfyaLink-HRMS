@@ -1,21 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import { useIntegrationsLogs } from "../../hooks/useIntegrationsLogs";
 
 export default function IntegrationsLogs(){
-  const [logs,setLogs]=useState([]);
-  useEffect(()=>{ load(); },[]);
-  async function load(){
-    try {
-      const js = await apiFetch('/api/audit?limit=100');
-      setLogs(Array.isArray(js?.data) ? js.data : Array.isArray(js) ? js : []);
-    } catch {
-      setLogs([]);
-    }
-  }
+  const { logs, loading, error } = useIntegrationsLogs();
   return (
     <div className="dashboard">
       <h2>Integration Logs</h2>
       <div className="card">
+        {error ? <p className="muted">{error}</p> : null}
+        {loading ? <p className="muted">Loading...</p> : null}
         <div className="table-wrap">
           <table className="table">
             <thead>

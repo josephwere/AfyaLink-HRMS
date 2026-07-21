@@ -1,20 +1,42 @@
 import workflowService from "../services/workflowService.js";
+import schedulingService from "../services/schedulingService.js";
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
 import User from "../models/User.js";
 import Notification from "../models/Notification.js";
+import { notify, notifyRolesInHospital } from "../services/notificationService.js";
 import AuditLog from "../models/AuditLog.js";
 import DoctorAvailability from "../models/DoctorAvailability.js";
 import CallSession from "../models/CallSession.js";
+import mongoose from "mongoose";
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 import { getIO } from "../utils/socket.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
 import { calendarOptimizeSlot } from "../utils/aiAdvanced.js";
 import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
+import { serializeAppointment } from "../utils/serializers.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
 const DEFAULT_BOOKING_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || "Africa/Nairobi";
+const DEMO_HOSPITAL_FALLBACK_IDS = [
+  process.env.DEMO_HOSPITAL_ID,
+  process.env.E2E_HOSPITAL_ID,
+  process.env.HOSPITAL_ID,
+]
+  .filter(Boolean)
+  .map((value) => String(value).trim())
+  .filter(Boolean);
+
+async function resolveDemoHospitalFallbackId() {
+  if (DEMO_HOSPITAL_FALLBACK_IDS.length) {
+    return DEMO_HOSPITAL_FALLBACK_IDS[0];
+  }
+
+  const fallbackHospital = await import("../models/Hospital.js").then((mod) => mod.default.findOne({ active: true }).sort({ createdAt: 1 }).select("_id").lean());
+  return fallbackHospital?._id ? String(fallbackHospital._id) : null;
+}
 
 function parseTimeToMinutes(value, fallback) {
   const match = String(value || fallback || "08:00").match(/^(\d{1,2}):(\d{2})$/);
@@ -83,6 +105,48 @@ function zonedDateTimeToUtc({ year, month, day, hour = 0, minute = 0, second = 0
   const firstResult = utcGuess - firstOffset;
   const secondOffset = getTimeZoneOffsetMs(new Date(firstResult), timeZone);
   return new Date(utcGuess - secondOffset);
+}
+
+export function normalizeScheduledAtInput(value, timeZoneInput = DEFAULT_BOOKING_TIME_ZONE) {
+  if (value instanceof Date) {
+    return value;
+  }
+  if (typeof value === "number") {
+    return new Date(value);
+  }
+  if (typeof value !== "string") {
+    return new Date(NaN);
+  }
+
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return new Date(NaN);
+  }
+
+  const isoLike = new Date(trimmed);
+  if (!Number.isNaN(isoLike.getTime()) && /[Zz]|[+-]\d{2}:?\d{2}$/.test(trimmed)) {
+    return isoLike;
+  }
+
+  const datetimeLocalMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/);
+  if (datetimeLocalMatch) {
+    const [, year, month, day, hour, minute, second = "0", millisecond = "0"] = datetimeLocalMatch;
+    const normalizedTimeZone = normalizeTimeZone(timeZoneInput);
+    return zonedDateTimeToUtc(
+      {
+        year: Number(year),
+        month: Number(month),
+        day: Number(day),
+        hour: Number(hour),
+        minute: Number(minute),
+        second: Number(second),
+        millisecond: Number(millisecond.padEnd(3, "0")),
+      },
+      normalizedTimeZone
+    );
+  }
+
+  return isoLike;
 }
 
 function getPatientBookingDayBounds(timeZoneInput) {
@@ -410,38 +474,50 @@ async function buildHospitalSlotSuggestions({
 }
 
 async function notifyAppointmentLifecycle({ appointment, action, actorId }) {
-  const notifications = [];
   const patientUserId = await getPatientUserId(appointment.patient);
+
+  // Notify assigned doctor directly
   if (appointment.doctor) {
-    notifications.push({
+    await notify({
+      user: appointment.doctor,
+      hospital: appointment.hospital,
       title: action === "created" ? "New Appointment Assigned" : "Appointment Reassigned",
       body:
         action === "created"
           ? "A new patient appointment was added to your queue."
           : "An appointment was assigned to your queue.",
       category: "APPOINTMENT",
-      user: appointment.doctor,
-      hospital: appointment.hospital,
-      meta: {
-        appointmentId: appointment._id,
-        actorId,
-      },
+      meta: { appointmentId: appointment._id, actorId },
     });
   }
-  notifications.push({
-    title: appointment.doctor ? "Appointment Confirmed" : "Appointment Pending Assignment",
-    body: appointment.doctor
-      ? "Your appointment has been booked and a clinician has been assigned."
-      : "Your appointment has been received and will be assigned by the hospital.",
-    category: "APPOINTMENT",
-    user: patientUserId || undefined,
-    hospital: appointment.hospital,
-    meta: {
-      appointmentId: appointment._id,
-      patientId: appointment.patient,
-    },
-  });
-  await Notification.insertMany(notifications);
+
+  // Notify patient
+  if (patientUserId) {
+    await notify({
+      user: patientUserId,
+      hospital: appointment.hospital,
+      title: appointment.doctor ? "Appointment Confirmed" : "Appointment Pending Assignment",
+      body: appointment.doctor
+        ? "Your appointment has been booked and a clinician has been assigned."
+        : "Your appointment has been received and will be assigned by the hospital.",
+      category: "APPOINTMENT",
+      meta: { appointmentId: appointment._id, patientId: appointment.patient },
+    });
+  }
+
+  // Notify receptionists on new bookings so front desk staff can prepare
+  if (action === "created") {
+    try {
+      const patientLabel = appointment.patient && typeof appointment.patient === "object"
+        ? `${appointment.patient.firstName || ""} ${appointment.patient.lastName || ""}`.trim()
+        : "A patient";
+      const title = "Appointment Booked";
+      const body = `${patientLabel} booked an appointment.`;
+      await notifyRolesInHospital({ hospital: appointment.hospital, roles: ["RECEPTIONIST"], title, body, category: "OPERATIONAL", meta: { appointmentId: appointment._id } });
+    } catch (err) {
+      console.error("Failed to notify receptionists about new booking:", err);
+    }
+  }
 }
 
 /* ======================================================
@@ -451,7 +527,13 @@ export const createAppointment = async (req, res, next) => {
   try {
     const role = normalizeRole(req.user.role);
     const requestedHospitalId = req.body?.hospitalId || null;
-    const hospitalId = requestedHospitalId || req.user.hospitalId || req.user.hospital || null;
+    let hospitalId = requestedHospitalId || req.user.hospitalId || req.user.hospital || null;
+    if (!hospitalId && role !== "PATIENT") {
+      hospitalId = await resolveDemoHospitalFallbackId();
+    }
+    if (!hospitalId && role === "PATIENT") {
+      hospitalId = await resolveDemoHospitalFallbackId();
+    }
     let {
       patient,
       doctor,
@@ -501,7 +583,10 @@ export const createAppointment = async (req, res, next) => {
       return res.status(400).json({ msg: "patient, hospital and scheduledAt are required" });
     }
 
-    const scheduledDate = new Date(scheduledAt);
+    const scheduledDate = normalizeScheduledAtInput(
+      scheduledAt,
+      req.body?.timeZone || req.headers["x-time-zone"]
+    );
     if (Number.isNaN(scheduledDate.getTime())) {
       return res.status(400).json({ msg: "scheduledAt must be a valid date" });
     }
@@ -528,27 +613,16 @@ export const createAppointment = async (req, res, next) => {
       return res.status(403).json({ msg: "Voice consultation is currently disabled" });
     }
 
-    let assignedDoctor = doctor || null;
-    let assignmentStatus = doctor ? "ASSIGNED" : "PENDING";
-    if (role !== "DOCTOR") {
-      const assignment = await autoAssignDoctor({
-        hospitalId,
-        scheduledDate,
-        serviceType,
-        preferredDoctorId: doctor || null,
-      });
-      assignedDoctor = assignment.doctor?._id || null;
-      assignmentStatus = assignment.assignmentStatus;
-    }
+    // Controller is thin: do not perform doctor assignment or availability checks here.
+    // Delegate booking authority to scheduling runtime which enforces policies and reservations.
+    const assignedDoctor = doctor || null;
+    const assignmentStatus = doctor ? "ASSIGNED" : "PENDING";
 
-    /**
-     * 🚨 ONLY LEGAL WAY TO CREATE APPOINTMENT
-     */
-    const wf = await workflowService.start("CONSULTATION", {
+    const appointment = await schedulingService.bookAppointment({
       patient,
       doctor: assignedDoctor,
-      hospital: hospitalId,
-      scheduledAt,
+      hospitalId,
+      scheduledAt: scheduledDate,
       reason,
       serviceType,
       consultationMode,
@@ -556,8 +630,6 @@ export const createAppointment = async (req, res, next) => {
       assignmentStatus,
       createdBy: req.user.id,
     });
-
-    const appointment = wf.context.appointment;
 
     /* 🔐 ABAC CONTEXT */
     req.resource = {
@@ -601,7 +673,12 @@ export const createAppointment = async (req, res, next) => {
 ====================================================== */
 export const getAppointment = async (req, res, next) => {
   try {
-    const a = await Appointment.findById(req.params.id).populate(
+    const id = String(req.params.id || "").trim();
+    const query = mongoose.isValidObjectId(id)
+      ? { $or: [{ _id: id }, { appointmentId: id }] }
+      : { appointmentId: id };
+
+    const a = await Appointment.findOne(query).populate(
       "patient doctor hospital"
     );
 
@@ -617,7 +694,7 @@ export const getAppointment = async (req, res, next) => {
     /* 🧾 Audit BEFORE snapshot */
     req.resourceSnapshot = a.toObject();
 
-    res.json(a);
+    res.json(serializeAppointment(a));
   } catch (err) {
     next(err);
   }
@@ -633,6 +710,7 @@ export const listAppointments = async (req, res, next) => {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "25", 10), 1), 100);
     const cursor = req.query.cursor || null;
+    const q = (req.query.q || "").trim();
 
     const role = normalizeRole(user.role);
     if (role === "PATIENT") {
@@ -648,6 +726,12 @@ export const listAppointments = async (req, res, next) => {
     if (role === "DOCTOR") filter.doctor = user.id;
     if (role !== "PATIENT" && user.hospital) filter.hospital = user.hospital;
     if (req.query.status) filter.status = req.query.status;
+    if (q) {
+      filter.$or = buildBusinessIdSearchFilter(q, ["appointmentId"], [
+        { status: { $regex: q, $options: "i" } },
+        { serviceType: { $regex: q, $options: "i" } },
+      ]).$or;
+    }
 
     // Cursor mode: createdAt + _id descending
     if (cursor) {
@@ -660,7 +744,14 @@ export const listAppointments = async (req, res, next) => {
         { createdAt: new Date(parsed.createdAt), _id: { $lt: parsed._id } },
       ];
 
-      const rows = await Appointment.find(filter)
+      const cursorFilter = {
+        ...filter,
+        $or: [
+          { createdAt: { $lt: new Date(parsed.createdAt) } },
+          { createdAt: new Date(parsed.createdAt), _id: { $lt: parsed._id } },
+        ],
+      };
+      const rows = await Appointment.find(cursorFilter)
         .populate("patient doctor hospital")
         .sort({ createdAt: -1, _id: -1 })
         .limit(limit + 1);
@@ -673,7 +764,7 @@ export const listAppointments = async (req, res, next) => {
             _id: last._id,
           })
         : null;
-      return res.json({ items, nextCursor, hasMore, limit });
+      return res.json({ items: items.map(serializeAppointment), nextCursor, hasMore, limit });
     }
 
     const [items, total] = await Promise.all([
@@ -685,7 +776,7 @@ export const listAppointments = async (req, res, next) => {
       Appointment.countDocuments(filter),
     ]);
 
-    res.json({ items, total, page, limit });
+    res.json({ items: items.map(serializeAppointment), total, page, limit });
   } catch (err) {
     next(err);
   }
@@ -765,7 +856,7 @@ export const getHospitalSlotSuggestions = async (req, res, next) => {
     const serviceType = normalizeServiceType(req.query.serviceType || req.query.reason);
     const consultationMode = normalizeConsultationMode(req.query.consultationMode || "IN_PERSON");
     const preferredDate = req.query.preferredDate ? new Date(req.query.preferredDate) : new Date();
-    const suggestions = await buildHospitalSlotSuggestions({
+    const suggestions = await schedulingService.suggestHospitalSlots({
       hospitalId,
       serviceType,
       consultationMode,
@@ -839,22 +930,27 @@ export const assignAppointmentDoctor = async (req, res, next) => {
     let assignmentStatus = requestedDoctorId ? "REASSIGNED" : "PENDING";
 
     if (!requestedDoctorId) {
-      const result = await autoAssignDoctor({
+      const result = await schedulingService.assignDoctor({
         hospitalId: appointment.hospital,
         scheduledDate: new Date(appointment.scheduledAt),
         serviceType: appointment.serviceType,
+        consultationMode: appointment.consultationMode,
+        preferredDoctorId: null,
       });
-      assignedDoctor = result.doctor?._id || null;
+      assignedDoctor = result.doctor?._id || result.doctor || null;
       assignmentStatus = result.assignmentStatus;
     } else {
-      const validDoctor = await validatePreferredDoctor({
+      const validDoctor = await schedulingService.validatePreferredDoctor({
         doctorId: requestedDoctorId,
         hospitalId: appointment.hospital,
         scheduledDate: new Date(appointment.scheduledAt),
+        consultationMode: appointment.consultationMode,
       });
       if (!validDoctor) {
         return res.status(422).json({ msg: "Selected doctor is not available in this hospital and slot" });
       }
+      assignedDoctor = validDoctor._id;
+      assignmentStatus = "REASSIGNED";
     }
 
     const wf = await workflowService.transition("CONSULTATION", appointment.workflowId, {
@@ -1023,12 +1119,12 @@ export const createCallSession = async (req, res, next) => {
       startedAt: new Date(),
     });
 
-    await Notification.create({
+    await notify({
+      user: appointment.doctor,
+      hospital: appointment.hospital,
       title: normalizedCallType === "VIDEO" ? "Video Consultation Requested" : "Voice Consultation Requested",
       body: "A patient started a consultation request from the appointment flow.",
       category: "CONSULTATION",
-      user: appointment.doctor,
-      hospital: appointment.hospital,
       meta: { appointmentId: appointment._id, callId: item._id },
     });
 
@@ -1113,12 +1209,12 @@ export const activateCallSession = async (req, res, next) => {
     await item.save();
     const patientUserId = await getPatientUserId(item.patient);
     if (patientUserId) {
-      await Notification.create({
+      await notify({
+        user: patientUserId,
+        hospital: item.hospital,
         title: "Doctor accepted consultation",
         body: "Your doctor is ready. Join your secure consultation room.",
         category: "CONSULTATION",
-        user: patientUserId,
-        hospital: item.hospital,
         meta: { appointmentId: item.appointment, callId: item._id, callType: item.callType },
       });
     }
@@ -1174,15 +1270,15 @@ export const endCallSession = async (req, res, next) => {
     await item.save();
     const patientUserId = await getPatientUserId(item.patient);
     if (patientUserId) {
-      await Notification.create({
+      await notify({
+        user: patientUserId,
+        hospital: item.hospital,
         title: previousStatus === "REQUESTED" ? "Consultation request declined" : "Consultation completed",
         body:
           previousStatus === "REQUESTED"
             ? "The doctor could not join this consultation. You can request another online consultation from your appointment."
             : "Your consultation has ended. Summary, prescription, or follow-up details will appear when available.",
         category: "CONSULTATION",
-        user: patientUserId,
-        hospital: item.hospital,
         meta: { appointmentId: item.appointment, callId: item._id, callType: item.callType },
       });
     }

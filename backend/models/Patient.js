@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generatePatientId } from "../services/idGenerator.js";
 
 const { Schema, model } = mongoose;
 
@@ -11,6 +12,14 @@ const patientSchema = new Schema(
     lastName: { type: String, trim: true },
     dob: Date,
     gender: String,
+
+    patientId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      immutable: true,
+      index: true,
+    },
 
     nationalId: { type: String, index: true },
     countryId: { type: String, index: true }, // Country-specific healthcare ID
@@ -130,6 +139,38 @@ patientSchema.index({ hospital: 1, active: 1, createdAt: -1 });
 patientSchema.index({ hospital: 1, lastName: 1, firstName: 1 });
 patientSchema.index({ hospital: 1, nationalId: 1 });
 patientSchema.index({ hospital: 1, wardRef: 1, active: 1 });
+patientSchema.index({ patientId: 1 }, { unique: true, sparse: true });
+
+patientSchema.pre("save", async function (next) {
+  if (!this.patientId) {
+    this.patientId = await generatePatientId();
+  }
+  next();
+});
+
+patientSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasPatientId =
+    update.patientId !== undefined ||
+    (update.$set && update.$set.patientId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.patientId !== undefined);
+
+  if (!hasPatientId) {
+    const nextId = await generatePatientId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        patientId: nextId,
+      },
+    });
+  }
+
+  next();
+});
 patientSchema.index({ hospital: 1, "familyGroup.parentNationalIdNumber": 1, active: 1 });
 
 /* ======================================================

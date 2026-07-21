@@ -1,147 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
-import { useSocket } from "../../utils/socket";
-import {
-  enqueueOfflineAction,
-  listOfflineActions,
-  startOfflineAutoSync,
-} from "../../utils/offlineQueue";
+import { useCommunicationCenter } from "../../hooks/useCommunicationCenter";
 
 export default function CommunicationCenter() {
-  const socket = useSocket();
-  const [channels, setChannels] = useState([]);
-  const [activeChannel, setActiveChannel] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [nextCursor, setNextCursor] = useState(null);
-  const [draft, setDraft] = useState("");
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [pendingOffline, setPendingOffline] = useState(0);
-
-  const current = useMemo(
-    () => channels.find((c) => String(c._id) === String(activeChannel)) || null,
-    [channels, activeChannel]
-  );
-
-  const loadChannels = async () => {
-    try {
-      const data = await apiFetch("/api/communication/channels");
-      const list = Array.isArray(data?.items) ? data.items : [];
-      setChannels(list);
-      if (!activeChannel && list[0]) setActiveChannel(list[0]._id);
-    } catch (err) {
-      setMsg(err.message || "Failed to load channels");
-    }
-  };
-
-  const bootstrapDefaultChannels = async () => {
-    setMsg("");
-    try {
-      await apiFetch("/api/communication/bootstrap", { method: "POST" });
-      await loadChannels();
-      setMsg("Default communication channels created.");
-    } catch (err) {
-      setMsg(err.message || "Failed to bootstrap channels");
-    }
-  };
-
-  const loadMessages = async (channelId, cursor = null, append = false) => {
-    if (!channelId) return;
-    setLoading(true);
-    try {
-      const qs = new URLSearchParams();
-      if (cursor) qs.set("cursor", cursor);
-      qs.set("limit", "30");
-      const data = await apiFetch(`/api/communication/channels/${channelId}/messages?${qs}`);
-      const list = Array.isArray(data?.items) ? data.items : [];
-      setNextCursor(data?.nextCursor || null);
-      setMessages((prev) => (append ? [...prev, ...list] : list));
-    } catch (err) {
-      setMsg(err.message || "Failed to load messages");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const send = async () => {
-    const text = draft.trim();
-    if (!text || !activeChannel) return;
-    setMsg("");
-    try {
-      if (!navigator.onLine) {
-        enqueueOfflineAction({
-          feature: "COMMUNICATION",
-          path: `/api/communication/channels/${activeChannel}/messages`,
-          method: "POST",
-          body: { body: text },
-        });
-        setDraft("");
-        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
-        setMsg("Offline: message queued and will sync automatically.");
-        return;
-      }
-      await apiFetch(`/api/communication/channels/${activeChannel}/messages`, {
-        method: "POST",
-        body: { body: text },
-      });
-      setDraft("");
-      await loadMessages(activeChannel, null, false);
-    } catch (err) {
-      const textMsg = String(err.message || "");
-      if (textMsg.toLowerCase().includes("network")) {
-        enqueueOfflineAction({
-          feature: "COMMUNICATION",
-          path: `/api/communication/channels/${activeChannel}/messages`,
-          method: "POST",
-          body: { body: text },
-        });
-        setDraft("");
-        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
-        setMsg("Network unavailable: message queued for sync.");
-      } else {
-        setMsg(textMsg || "Failed to send message");
-      }
-    }
-  };
-
-  useEffect(() => {
-    loadChannels();
-    setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
-  }, []);
-
-  useEffect(() => {
-    const stop = startOfflineAutoSync(async (item) => {
-      await apiFetch(item.path, {
-        method: item.method,
-        body: item.body,
-        _skipOfflineQueue: true,
-      });
-      if (item.feature === "COMMUNICATION") {
-        setPendingOffline(listOfflineActions().filter((a) => a.feature === "COMMUNICATION").length);
-      }
-    });
-    return stop;
-  }, []);
-
-  useEffect(() => {
-    if (!activeChannel) return;
-    loadMessages(activeChannel);
-  }, [activeChannel]);
-
-  useEffect(() => {
-    if (!socket || !activeChannel) return;
-    socket.emit("communication:join", { channelId: activeChannel });
-    const onMsg = (data) => {
-      if (String(data?.channel) === String(activeChannel)) {
-        setMessages((prev) => [data, ...prev]);
-      }
-    };
-    socket.on("communication:message", onMsg);
-    return () => {
-      socket.emit("communication:leave", { channelId: activeChannel });
-      socket.off("communication:message", onMsg);
-    };
-  }, [socket, activeChannel]);
+  const {
+    channels,
+    activeChannel,
+    setActiveChannel,
+    messages,
+    nextCursor,
+    draft,
+    setDraft,
+    msg,
+    loading,
+    pendingOffline,
+    current,
+    bootstrapDefaultChannels,
+    loadMessages,
+    send,
+  } = useCommunicationCenter();
 
   return (
     <div className="dashboard">

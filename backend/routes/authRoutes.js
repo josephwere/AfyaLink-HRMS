@@ -1,6 +1,7 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
+import { serializeUser } from "../utils/serializers.js";
 
 import {
   register,
@@ -26,6 +27,7 @@ import {
 import { googleLogin } from "../controllers/googleAuthController.js";
 import { refreshToken } from "../controllers/refreshController.js";
 import { authSensitiveLimiter } from "../middleware/trafficGuards.js";
+import { getUserCapabilities, getAllCapabilities } from "../controllers/capabilityController.js";
 
 const router = express.Router();
 
@@ -49,7 +51,7 @@ router.post("/reset-password/phone", authSensitiveLimiter, resetPasswordWithPhon
    CURRENT USER (BOOTSTRAP)
 ========================= */
 router.get("/me", protect, (req, res) => {
-  res.json(req.user);
+  res.json(serializeUser(req.user));
 });
 
 /* =========================
@@ -96,5 +98,11 @@ router.post("/step-up/verify", protect, authSensitiveLimiter, verifyStepUpOtp);
 ========================= */
 router.post("/phone/request-otp", protect, authSensitiveLimiter, requestPhoneOtp);
 router.post("/phone/verify", protect, authSensitiveLimiter, verifyPhoneOtp);
+
+/* =========================
+   CAPABILITIES
+========================= */
+router.get("/capabilities", protect, getUserCapabilities);
+router.get("/capabilities/all", protect, getAllCapabilities);
 
 export default router;

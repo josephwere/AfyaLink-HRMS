@@ -1,66 +1,45 @@
 // frontend/src/pages/HospitalAdmin/Pharmacy.jsx
 import React, { useEffect, useState } from 'react';
-import {
-  listItems,
-  createItem,
-  updateItem,
-  deleteItem,
-  addStock,
-  dispenseStock
-} from '../../services/pharmacyApi';
 import PharmacyForm from '../../components/pharmacy/PharmacyForm';
 import PharmacyTable from '../../components/pharmacy/PharmacyTable';
-import idbPharmacy from '../../services/idbPharmacy';
+import { usePharmacyAdmin } from '../../hooks/usePharmacyAdmin';
+import useOfflinePharmacySync from '../../hooks/useOfflinePharmacySync';
 
 export default function Pharmacy() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [q, setQ] = useState('');
   const [editing, setEditing] = useState(null);
   const [openForm, setOpenForm] = useState(false);
-  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState('');
+  const [page] = useState(1);
 
-  async function fetchItems() {
-    setLoading(true);
-    try {
-      const res = await listItems({ q, page, limit: 25 });
-      setItems(res.items || []);
-      setTotal(res.total || 0);
-      // cache offline
-      idbPharmacy.saveItems(res.items || []);
-    } catch (err) {
-      // fallback to IDB when offline
-      console.error('list error', err);
-      const cached = await idbPharmacy.getAllItems();
-      setItems(cached || []);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data, loading, refresh, createItem, updateItem, deleteItem, addStock, dispenseStock } = usePharmacyAdmin({ q, page, limit: 25 });
+  const syncPending = useOfflinePharmacySync();
+  const items = data?.items || [];
+  const total = data?.total || 0;
 
   useEffect(() => {
-    fetchItems();
-  }, [page, q]);
+    refresh().catch((error) => {
+      console.error('pharmacy refresh error', error);
+    });
+  }, [q, page, refresh]);
 
   useEffect(() => {
     const onOnline = () => {
-      idbPharmacy.syncPending().then(fetchItems).catch(console.error);
+      syncPending({ onSync: () => refresh().catch(console.error), onError: console.error });
     };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
-  }, []);
+  }, [refresh, syncPending]);
 
   const onCreate = async (payload) => {
     try {
-      const it = await createItem(payload);
+      await createItem(payload);
       setOpenForm(false);
-      fetchItems();
+      refresh();
     } catch (e) {
       console.error('create offline', e);
       await idbPharmacy.queueCreate(payload);
       setOpenForm(false);
-      fetchItems();
+      refresh();
     }
   };
 
@@ -68,12 +47,12 @@ export default function Pharmacy() {
     try {
       await updateItem(id, payload);
       setEditing(null);
-      fetchItems();
+      refresh();
     } catch (e) {
       console.error('update offline', e);
       await idbPharmacy.queueUpdate(id, payload);
       setEditing(null);
-      fetchItems();
+      refresh();
     }
   };
 
@@ -99,9 +78,9 @@ export default function Pharmacy() {
         items={items}
         loading={loading}
         onEdit={(it)=>{ setEditing(it); setOpenForm(true); }}
-        onDelete={async (id)=>{ await deleteItem(id); fetchItems(); }}
-        onAddStock={async (id, payload)=>{ await addStock(id, payload); fetchItems(); }}
-        onDispense={async (id, payload)=>{ await dispenseStock(id, payload); fetchItems(); }}
+        onDelete={async (id)=>{ await deleteItem(id); refresh(); }}
+        onAddStock={async (id, payload)=>{ await addStock(id, payload); refresh(); }}
+        onDispense={async (id, payload)=>{ await dispenseStock(id, payload); refresh(); }}
       />
 
       {openForm && (

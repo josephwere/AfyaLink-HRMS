@@ -1,71 +1,10 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React from "react";
 import PasswordInput from "../components/PasswordInput";
 import AuthPageShell from "../components/AuthPageShell";
-import {
-  guardedAuthFetch,
-  normalizeAuthUiError,
-  warmAuthRuntime,
-} from "../services/guardedAuthFetch";
+import { useResetPassword } from "../hooks/useResetPassword";
 
 export default function ResetPassword() {
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
-
-  const token = params.get("token");
-
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  /* ---------------------------------------
-     Guard: missing token
-  ---------------------------------------- */
-  useEffect(() => {
-    if (!token) {
-      setError("Invalid or expired reset link");
-    }
-  }, [token]);
-
-  useEffect(() => {
-    warmAuthRuntime("auth-entry").catch(() => {});
-  }, []);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setMsg("");
-    setLoading(true);
-
-    if (!token) {
-      setError("Invalid or expired reset link");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await guardedAuthFetch("/api/auth/reset-password", {
-        method: "POST",
-        body: { token, password },
-      });
-
-      setMsg("Password reset successful. Redirecting to login...");
-      setTimeout(() => navigate("/login"), 2000);
-    } catch (err) {
-      setError(
-        normalizeAuthUiError(err, {
-          timeoutMessage:
-            "Password reset is taking longer than usual. Please wait a few seconds and try again.",
-          networkMessage:
-            "Password reset is temporarily unavailable. Please check your connection and try again.",
-          fallback: "Reset link expired or invalid",
-        })
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { password, setPassword, error, msg, loading, submit } = useResetPassword();
 
   return (
     <AuthPageShell>

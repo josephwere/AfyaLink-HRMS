@@ -1,23 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import { useLocation } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import { useAuth } from "../../utils/auth";
 import PasswordInput from "../../components/PasswordInput";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 
 export default function RegisterStaff() {
   const { user } = useAuth();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
   const location = useLocation();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "doctor",
-  });
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const { staffForm: form, setStaffForm: setForm, registerStaff, staffSaving: loading, staffMsg: msg } = useHospitalAdminOperations();
 
   React.useEffect(() => {
     const qs = new URLSearchParams(location.search);
@@ -31,6 +24,14 @@ export default function RegisterStaff() {
       "radiologist",
       "therapist",
       "receptionist",
+      "driver",
+      "ambulance_driver",
+      "mortuary_staff",
+      "mortuary_manager",
+      "maintenance_tech",
+      "biomedical_technician",
+      "housekeeping_staff",
+      "kitchen_staff",
       "security_officer",
       "hr_manager",
       "payroll_officer",
@@ -54,20 +55,7 @@ export default function RegisterStaff() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMsg(null);
-    try {
-      const res = await apiFetch("/api/hospital-admin/register-staff", {
-        method: "POST",
-        body: form,
-      });
-      setMsg(res?.msg || "✅ Staff registered");
-      setForm({ name: "", email: "", password: "", role: "doctor" });
-    } catch (err) {
-      setMsg(err?.message || "Failed to register staff");
-    } finally {
-      setLoading(false);
-    }
+    await registerStaff({ ...form });
   };
 
   return (
@@ -97,6 +85,31 @@ export default function RegisterStaff() {
           required
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
+        <select
+          value={form.department || ""}
+          onChange={(e) => setForm({ ...form, department: e.target.value })}
+        >
+          <option value="">Select department</option>
+          <option value="Cardiology">Cardiology</option>
+          <option value="Dermatology">Dermatology</option>
+          <option value="Emergency">Emergency</option>
+          <option value="General Practice">General Practice</option>
+          <option value="ICU">ICU</option>
+          <option value="Laboratory">Laboratory</option>
+          <option value="Oncology">Oncology</option>
+          <option value="Orthopedics">Orthopedics</option>
+          <option value="Pediatrics">Pediatrics</option>
+          <option value="Pharmacy">Pharmacy</option>
+          <option value="Radiology">Radiology</option>
+          <option value="Surgery">Surgery</option>
+          <option value="Administration">Administration</option>
+          <option value="HR">HR</option>
+          <option value="Finance">Finance</option>
+          <option value="Security">Security</option>
+          <option value="IT">IT</option>
+          <option value="Operations">Operations</option>
+          <option value="Other">Other</option>
+        </select>
         <PasswordInput
           label=""
           value={form.password}
@@ -117,6 +130,14 @@ export default function RegisterStaff() {
           <option value="radiologist">Radiologist</option>
           <option value="therapist">Therapist</option>
           <option value="receptionist">Receptionist</option>
+          <option value="driver">Driver</option>
+          <option value="ambulance_driver">Ambulance Driver</option>
+          <option value="mortuary_staff">Mortuary Staff</option>
+          <option value="mortuary_manager">Mortuary Manager</option>
+          <option value="maintenance_tech">Maintenance Tech</option>
+          <option value="biomedical_technician">Biomedical Technician</option>
+          <option value="housekeeping_staff">Housekeeping Staff</option>
+          <option value="kitchen_staff">Kitchen Staff</option>
           <option value="security_officer">Security Officer</option>
           <option value="hr_manager">HR Manager</option>
           <option value="payroll_officer">Payroll Officer</option>

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React, { useMemo } from "react";
 import { useAuth } from "../../utils/auth";
 import { useLocation } from "react-router-dom";
-import { listRegisteredPharmacies } from "../../services/pharmacyNetworkApi";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 
 const HOSPITAL_ADMIN_ROLE_OPTIONS = [
   "HOSPITAL_ADMIN",
@@ -17,6 +16,14 @@ const HOSPITAL_ADMIN_ROLE_OPTIONS = [
   "RADIOLOGIST",
   "THERAPIST",
   "RECEPTIONIST",
+  "DRIVER",
+  "AMBULANCE_DRIVER",
+  "MORTUARY_STAFF",
+  "MORTUARY_MANAGER",
+  "MAINTENANCE_TECH",
+  "BIOMEDICAL_TECHNICIAN",
+  "HOUSEKEEPING_STAFF",
+  "KITCHEN_STAFF",
   "SECURITY_ADMIN",
   "SECURITY_OFFICER",
   "HR_MANAGER",
@@ -40,6 +47,14 @@ const GLOBAL_ROLE_OPTIONS = [
   "RADIOLOGIST",
   "THERAPIST",
   "RECEPTIONIST",
+  "DRIVER",
+  "AMBULANCE_DRIVER",
+  "MORTUARY_STAFF",
+  "MORTUARY_MANAGER",
+  "MAINTENANCE_TECH",
+  "BIOMEDICAL_TECHNICIAN",
+  "HOUSEKEEPING_STAFF",
+  "KITCHEN_STAFF",
   "SECURITY_ADMIN",
   "SECURITY_OFFICER",
   "HR_MANAGER",
@@ -63,6 +78,14 @@ const ROLE_LABELS = {
   RADIOLOGIST: "Radiologist",
   THERAPIST: "Therapist",
   RECEPTIONIST: "Receptionist",
+  DRIVER: "Driver",
+  AMBULANCE_DRIVER: "Ambulance Driver",
+  MORTUARY_STAFF: "Mortuary Staff",
+  MORTUARY_MANAGER: "Mortuary Manager",
+  MAINTENANCE_TECH: "Maintenance Tech",
+  BIOMEDICAL_TECHNICIAN: "Biomedical Technician",
+  HOUSEKEEPING_STAFF: "Housekeeping Staff",
+  KITCHEN_STAFF: "Kitchen Staff",
   SECURITY_ADMIN: "Security Admin",
   SECURITY_OFFICER: "Security Officer",
   HR_MANAGER: "HR Manager",
@@ -83,6 +106,14 @@ const HOSPITAL_SCOPED_ROLES = new Set([
   "RADIOLOGIST",
   "THERAPIST",
   "RECEPTIONIST",
+  "DRIVER",
+  "AMBULANCE_DRIVER",
+  "MORTUARY_STAFF",
+  "MORTUARY_MANAGER",
+  "MAINTENANCE_TECH",
+  "BIOMEDICAL_TECHNICIAN",
+  "HOUSEKEEPING_STAFF",
+  "KITCHEN_STAFF",
   "SECURITY_ADMIN",
   "SECURITY_OFFICER",
   "HR_MANAGER",
@@ -93,13 +124,28 @@ const HOSPITAL_SCOPED_ROLES = new Set([
 export default function StaffManagement() {
   const { user } = useAuth();
   const location = useLocation();
-  const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
-  const [total, setTotal] = useState(0);
+  const {
+    staff,
+    staffLoading: loading,
+    staffMsg: msg,
+    staffPage: page,
+    setStaffPage: setPage,
+    staffTotal: total,
+    staffQuery: q,
+    setStaffQuery: setQ,
+    missingPharmacyOnly,
+    setMissingPharmacyOnly,
+    loadStaff,
+    hospitalOptions,
+    pharmacyOptions,
+    staffSaving,
+    staffForm,
+    setStaffForm,
+    registerStaff,
+    deactivateStaff,
+    demoteStaffToPatient,
+    updateStaffRole,
+  } = useHospitalAdminOperations();
   const normalizedRole = normalizeRole(user?.actualRole || user?.role);
   const isGlobalActor =
     normalizedRole === "SUPER_ADMIN" ||
@@ -107,11 +153,8 @@ export default function StaffManagement() {
     normalizedRole === "DEVELOPER";
   const canChangeRole = normalizedRole !== "HR_MANAGER";
   const roleOptions = isGlobalActor ? GLOBAL_ROLE_OPTIONS : HOSPITAL_ADMIN_ROLE_OPTIONS;
-  const [hospitalOptions, setHospitalOptions] = useState([]);
-  const [hospitalByUser, setHospitalByUser] = useState({});
-  const [pharmacyOptions, setPharmacyOptions] = useState([]);
-  const [pharmacyByUser, setPharmacyByUser] = useState({});
-  const [missingPharmacyOnly, setMissingPharmacyOnly] = useState(false);
+  const [hospitalByUser, setHospitalByUser] = React.useState({});
+  const [pharmacyByUser, setPharmacyByUser] = React.useState({});
 
   if (
     normalizedRole !== "HOSPITAL_ADMIN" &&
@@ -124,69 +167,42 @@ export default function StaffManagement() {
     return <AccessDeniedCard message="Staff management is restricted to authorized hospital and global admin roles." />;
   }
 
-  const load = async () => {
-    setLoading(true);
-    setMsg(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
+  React.useEffect(() => {
+    if (!staff.length) return;
+    setHospitalByUser((prev) => {
+      const next = { ...prev };
+      staff.forEach((u) => {
+        if (!(u._id in next)) {
+          next[u._id] = u.hospital || "";
+        }
       });
-      if (q.trim()) params.set("q", q.trim());
-      if (missingPharmacyOnly) params.set("missingRegisteredPharmacy", "1");
-      const res = await apiFetch(`/api/users?${params.toString()}`);
-      const items = Array.isArray(res)
-        ? res
-        : Array.isArray(res?.items)
-        ? res.items
-        : [];
-      const manageable = items.filter((u) => roleOptions.includes(String(u.role || "").toUpperCase()));
-      setStaff(manageable);
-      setHospitalByUser((prev) => {
-        const next = { ...prev };
-        manageable.forEach((u) => {
-          if (!(u._id in next)) {
-            next[u._id] = u.hospital || "";
-          }
-        });
-        return next;
+      return next;
+    });
+    setPharmacyByUser((prev) => {
+      const next = { ...prev };
+      staff.forEach((u) => {
+        if (!(u._id in next)) {
+          next[u._id] = u.registeredPharmacy || "";
+        }
       });
-      setPharmacyByUser((prev) => {
-        const next = { ...prev };
-        manageable.forEach((u) => {
-          if (!(u._id in next)) {
-            next[u._id] = u.registeredPharmacy || "";
-          }
-        });
-        return next;
-      });
-      setTotal(Number(res?.total || manageable.length));
-    } catch {
-      setMsg("Failed to load staff");
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return next;
+    });
+  }, [staff]);
 
-  useEffect(() => {
-    load();
-  }, [page, missingPharmacyOnly]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     const id = setTimeout(() => {
       setPage(1);
-      load();
+      void loadStaff(1, q.trim(), missingPharmacyOnly);
     }, 300);
     return () => clearTimeout(id);
-  }, [q, missingPharmacyOnly]);
+  }, [q, missingPharmacyOnly, loadStaff]);
 
   const pharmacyNameById = pharmacyOptions.reduce((acc, item) => {
     acc[String(item._id)] = item.name;
     return acc;
   }, {});
 
-  useEffect(() => {
+  React.useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const initialQ = qs.get("q") || "";
     const initialMissingPharmacy = qs.get("missingRegisteredPharmacy") === "1";
@@ -194,43 +210,9 @@ export default function StaffManagement() {
     if (initialMissingPharmacy) setMissingPharmacyOnly(true);
   }, [location.search]);
 
-  useEffect(() => {
-    if (!isGlobalActor) return;
-    let mounted = true;
-    apiFetch("/api/super-admin/hospitals?page=1&limit=1000")
-      .then((res) => {
-        if (!mounted) return;
-        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
-        setHospitalOptions(items);
-      })
-      .catch(() => {
-        if (mounted) setHospitalOptions([]);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [isGlobalActor]);
-
-  useEffect(() => {
-    let mounted = true;
-    listRegisteredPharmacies({ includeInactive: false, limit: 500 })
-      .then((res) => {
-        if (!mounted) return;
-        setPharmacyOptions(Array.isArray(res?.items) ? res.items : []);
-      })
-      .catch(() => {
-        if (mounted) setPharmacyOptions([]);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   const deactivate = async (id) => {
     try {
-      setMsg(null);
-      await apiFetch(`/api/users/${id}`, { method: "PATCH", body: { active: false } });
-      await load();
+      await deactivateStaff(id);
     } catch (err) {
       setMsg(err?.message || "Failed to deactivate staff account");
     }
@@ -238,12 +220,7 @@ export default function StaffManagement() {
 
   const demoteToPatient = async (id) => {
     try {
-      setMsg(null);
-      await apiFetch(`/api/users/${id}/demote-to-patient`, {
-        method: "PATCH",
-        body: { reason: "Removed from hospital staffing roster" },
-      });
-      await load();
+      await demoteStaffToPatient(id);
     } catch (err) {
       setMsg(err?.message || "Failed to demote user to patient");
     }
@@ -251,7 +228,6 @@ export default function StaffManagement() {
 
   const updateRole = async (id, role) => {
     try {
-      setMsg(null);
       const normalizedTargetRole = String(role || "").toUpperCase();
       const selectedHospital = hospitalByUser[id] || "";
       const payload = { role };
@@ -270,8 +246,7 @@ export default function StaffManagement() {
         payload.registeredPharmacy = null;
       }
 
-      await apiFetch(`/api/users/${id}`, { method: "PATCH", body: payload });
-      await load();
+      await updateStaffRole(id, payload);
     } catch (err) {
       setMsg(err?.message || "Failed to update role");
     }
@@ -279,7 +254,6 @@ export default function StaffManagement() {
 
   const saveAccess = async (staffUser) => {
     try {
-      setMsg(null);
       const normalizedTargetRole = String(staffUser?.role || "").toUpperCase();
       const payload = { role: normalizedTargetRole };
       if (isGlobalActor && HOSPITAL_SCOPED_ROLES.has(normalizedTargetRole)) {
@@ -292,9 +266,8 @@ export default function StaffManagement() {
       }
       payload.registeredPharmacy =
         normalizedTargetRole === "PHARMACIST" ? pharmacyByUser[staffUser._id] || null : null;
-      await apiFetch(`/api/users/${staffUser._id}`, { method: "PATCH", body: payload });
+      await updateStaffRole(staffUser._id, payload);
       setMsg("Staff access updated.");
-      await load();
     } catch (err) {
       setMsg(err?.message || "Failed to save staff access.");
     }
@@ -325,7 +298,7 @@ export default function StaffManagement() {
           >
             {missingPharmacyOnly ? "Show All Staff" : "Show Unlinked Pharmacists"}
           </button>
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={() => void loadStaff(1, q.trim(), missingPharmacyOnly)} disabled={loading}>
             Refresh
           </button>
         </div>

@@ -6,6 +6,7 @@ import ShiftRequest from "../models/ShiftRequest.js";
 import LabOrder from "../models/LabOrder.js";
 import Prescription from "../models/Prescription.js";
 import Invoice from "../models/Invoice.js";
+import Claim from "../models/Claim.js";
 import Patient from "../models/Patient.js";
 import User from "../models/User.js";
 import SecurityIncident from "../models/SecurityIncident.js";
@@ -23,6 +24,7 @@ import DiseaseReport from "../models/DiseaseReport.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 import { buildLinkedMinorSummariesForUser, resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
+import { buildExecutiveDashboardSummary } from "../services/executiveDashboardService.js";
 
 const LICENSE_ROLES = [
   "DOCTOR",
@@ -1023,6 +1025,26 @@ export async function securityOfficerDashboard(req, res) {
   } catch (err) {
     console.error("Security officer dashboard error:", err);
     res.status(500).json({ message: "Failed to load security dashboard" });
+  }
+}
+
+export async function executiveDashboard(req, res) {
+  try {
+    const hospital = hospitalFilter(req);
+    const hospitalId = resolveHospitalScope(req);
+    const summary = await buildExecutiveDashboardSummary({
+      hospital,
+      hospitalId,
+      user: req.user,
+    });
+
+    res.json({
+      ...summary,
+      hospitalId,
+    });
+  } catch (err) {
+    console.error("Executive dashboard error:", err);
+    res.status(500).json({ message: "Failed to load executive dashboard" });
   }
 }
 

@@ -1,0 +1,469 @@
+{
+  "summary": {
+    "total": 46,
+    "resolved": 34,
+    "unresolved": 12
+  },
+  "surfaces": [
+    {
+      "id": "deep-link-src/App.jsx-327",
+      "surface": "deep-link",
+      "file": "src/App.jsx",
+      "line": 327,
+      "label": "interactive action",
+      "target": "/unauthorized",
+      "resolved": true,
+      "reason": "matches canonical route /unauthorized"
+    },
+    {
+      "id": "deep-link-src/App.jsx-428",
+      "surface": "deep-link",
+      "file": "src/App.jsx",
+      "line": 428,
+      "label": "interactive action",
+      "target": "/app/revenue/payments/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/revenue/payments/index"
+    },
+    {
+      "id": "deep-link-src/components/AIAutofillAuditSummary.jsx-97",
+      "surface": "deep-link",
+      "file": "src/components/AIAutofillAuditSummary.jsx",
+      "line": 97,
+      "label": "interactive action",
+      "target": "/app/platform/ai/autofill-audit",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/ai/autofill-audit"
+    },
+    {
+      "id": "deep-link-src/components/AccessDeniedCard.jsx-14",
+      "surface": "deep-link",
+      "file": "src/components/AccessDeniedCard.jsx",
+      "line": 14,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/components/AccessDeniedCard.jsx-17",
+      "surface": "deep-link",
+      "file": "src/components/AccessDeniedCard.jsx",
+      "line": 17,
+      "label": "interactive action",
+      "target": "/",
+      "resolved": true,
+      "reason": "matches canonical route /"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-648",
+      "surface": "deep-link",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 648,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-657",
+      "surface": "deep-link",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 657,
+      "label": "interactive action",
+      "target": "/patient/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/components/LegalLinks.jsx-8",
+      "surface": "deep-link",
+      "file": "src/components/LegalLinks.jsx",
+      "line": 8,
+      "label": "interactive action",
+      "target": "/terms",
+      "resolved": true,
+      "reason": "matches canonical route /terms"
+    },
+    {
+      "id": "deep-link-src/components/LegalLinks.jsx-10",
+      "surface": "deep-link",
+      "file": "src/components/LegalLinks.jsx",
+      "line": 10,
+      "label": "interactive action",
+      "target": "/privacy",
+      "resolved": true,
+      "reason": "matches canonical route /privacy"
+    },
+    {
+      "id": "deep-link-src/components/Protected.jsx-25",
+      "surface": "deep-link",
+      "file": "src/components/Protected.jsx",
+      "line": 25,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/components/Protected.jsx-30",
+      "surface": "deep-link",
+      "file": "src/components/Protected.jsx",
+      "line": 30,
+      "label": "interactive action",
+      "target": "/unauthorized",
+      "resolved": true,
+      "reason": "matches canonical route /unauthorized"
+    },
+    {
+      "id": "deep-link-src/components/RequireAuth.jsx-19",
+      "surface": "deep-link",
+      "file": "src/components/RequireAuth.jsx",
+      "line": 19,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/components/RequireFeature.jsx-18",
+      "surface": "deep-link",
+      "file": "src/components/RequireFeature.jsx",
+      "line": 18,
+      "label": "interactive action",
+      "target": "/403",
+      "resolved": true,
+      "reason": "matches canonical route /403"
+    },
+    {
+      "id": "deep-link-src/components/RequireRole.jsx-24",
+      "surface": "deep-link",
+      "file": "src/components/RequireRole.jsx",
+      "line": 24,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/components/RequireRole.jsx-31",
+      "surface": "deep-link",
+      "file": "src/components/RequireRole.jsx",
+      "line": 31,
+      "label": "interactive action",
+      "target": "/unauthorized",
+      "resolved": true,
+      "reason": "matches canonical route /unauthorized"
+    },
+    {
+      "id": "deep-link-src/components/RouteGuard.jsx-78",
+      "surface": "deep-link",
+      "file": "src/components/RouteGuard.jsx",
+      "line": 78,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-47",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/CreateAdmin.jsx",
+      "line": 47,
+      "label": "Manage Super Assistants",
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-86",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 86,
+      "label": "Open Audit Logs",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-87",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 87,
+      "label": "Open AI Autofill Audit",
+      "target": "/admin/ai-autofill-audit",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-88",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 88,
+      "label": "Create Admin",
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-89",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 89,
+      "label": "Super Assistants",
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/SuperAssistants.jsx-58",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/SuperAssistants.jsx",
+      "line": 58,
+      "label": "Unified Workspace",
+      "target": "/app/platform/ai/unified-assistant",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/ai/unified-assistant"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/SuperAssistants.jsx-59",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/SuperAssistants.jsx",
+      "line": 59,
+      "label": "Register Super Assistant",
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Doctor/MySchedule.jsx-71",
+      "surface": "deep-link",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 71,
+      "label": "interactive action",
+      "target": "/doctor/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/ForgotPassword.jsx-214",
+      "surface": "deep-link",
+      "file": "src/pages/ForgotPassword.jsx",
+      "line": 214,
+      "label": "Back to sign in",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/pages/HospitalAdmin/ConsultationMonitor.jsx-21",
+      "surface": "deep-link",
+      "file": "src/pages/HospitalAdmin/ConsultationMonitor.jsx",
+      "line": 21,
+      "label": "interactive action",
+      "target": "/hospital-admin/escalations",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-95",
+      "surface": "deep-link",
+      "file": "src/pages/Login.jsx",
+      "line": 95,
+      "label": "interactive action",
+      "target": "/forgot-password",
+      "resolved": true,
+      "reason": "matches canonical route /forgot-password"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-113",
+      "surface": "deep-link",
+      "file": "src/pages/Login.jsx",
+      "line": 113,
+      "label": "Create account",
+      "target": "/register",
+      "resolved": true,
+      "reason": "matches canonical route /register"
+    },
+    {
+      "id": "deep-link-src/pages/Login.jsx-118",
+      "surface": "deep-link",
+      "file": "src/pages/Login.jsx",
+      "line": 118,
+      "label": "View careers",
+      "target": "/careers",
+      "resolved": true,
+      "reason": "matches canonical route /careers"
+    },
+    {
+      "id": "deep-link-src/pages/Patient/AdsFeed.jsx-44",
+      "surface": "deep-link",
+      "file": "src/pages/Patient/AdsFeed.jsx",
+      "line": 44,
+      "label": "interactive action",
+      "target": "/register",
+      "resolved": true,
+      "reason": "matches canonical route /register"
+    },
+    {
+      "id": "deep-link-src/pages/Patient/AdsFeed.jsx-45",
+      "surface": "deep-link",
+      "file": "src/pages/Patient/AdsFeed.jsx",
+      "line": 45,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/pages/Pharmacy/Index.jsx-71",
+      "surface": "deep-link",
+      "file": "src/pages/Pharmacy/Index.jsx",
+      "line": 71,
+      "label": "interactive action",
+      "target": "/app/operations/pharmacy/reports",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/pharmacy/reports"
+    },
+    {
+      "id": "deep-link-src/pages/Profile.jsx-3461",
+      "surface": "deep-link",
+      "file": "src/pages/Profile.jsx",
+      "line": 3461,
+      "label": "interactive action",
+      "target": "/privacy",
+      "resolved": true,
+      "reason": "matches canonical route /privacy"
+    },
+    {
+      "id": "deep-link-src/pages/Profile.jsx-3464",
+      "surface": "deep-link",
+      "file": "src/pages/Profile.jsx",
+      "line": 3464,
+      "label": "interactive action",
+      "target": "/terms",
+      "resolved": true,
+      "reason": "matches canonical route /terms"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-111",
+      "surface": "deep-link",
+      "file": "src/pages/Register.jsx",
+      "line": 111,
+      "label": "Terms of Service",
+      "target": "/terms",
+      "resolved": true,
+      "reason": "matches canonical route /terms"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-111",
+      "surface": "deep-link",
+      "file": "src/pages/Register.jsx",
+      "line": 111,
+      "label": "Terms of Service",
+      "target": "/privacy",
+      "resolved": true,
+      "reason": "matches canonical route /privacy"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-125",
+      "surface": "deep-link",
+      "file": "src/pages/Register.jsx",
+      "line": 125,
+      "label": "Sign in",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/pages/Register.jsx-130",
+      "surface": "deep-link",
+      "file": "src/pages/Register.jsx",
+      "line": 130,
+      "label": "View careers",
+      "target": "/careers",
+      "resolved": true,
+      "reason": "matches canonical route /careers"
+    },
+    {
+      "id": "deep-link-src/pages/SuperAdmin/SystemSettings.jsx-855",
+      "surface": "deep-link",
+      "file": "src/pages/SuperAdmin/SystemSettings.jsx",
+      "line": 855,
+      "label": "interactive action",
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/TwoFactor.jsx-107",
+      "surface": "deep-link",
+      "file": "src/pages/TwoFactor.jsx",
+      "line": 107,
+      "label": "interactive action",
+      "target": "/forgot-password",
+      "resolved": true,
+      "reason": "matches canonical route /forgot-password"
+    },
+    {
+      "id": "deep-link-src/pages/VerifyEmail.jsx-26",
+      "surface": "deep-link",
+      "file": "src/pages/VerifyEmail.jsx",
+      "line": 26,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/pages/VerifySuccess.jsx-26",
+      "surface": "deep-link",
+      "file": "src/pages/VerifySuccess.jsx",
+      "line": 26,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/routes/ProtectedRoute.jsx-27",
+      "surface": "deep-link",
+      "file": "src/routes/ProtectedRoute.jsx",
+      "line": 27,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/routes/ProtectedRoute.jsx-34",
+      "surface": "deep-link",
+      "file": "src/routes/ProtectedRoute.jsx",
+      "line": 34,
+      "label": "interactive action",
+      "target": "/403",
+      "resolved": true,
+      "reason": "matches canonical route /403"
+    },
+    {
+      "id": "deep-link-src/utils/RoleGuard.jsx-4",
+      "surface": "deep-link",
+      "file": "src/utils/RoleGuard.jsx",
+      "line": 4,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "deep-link-src/utils/RoleGuard.jsx-5",
+      "surface": "deep-link",
+      "file": "src/utils/RoleGuard.jsx",
+      "line": 5,
+      "label": "interactive action",
+      "target": "/unauthorized",
+      "resolved": true,
+      "reason": "matches canonical route /unauthorized"
+    }
+  ]
+}

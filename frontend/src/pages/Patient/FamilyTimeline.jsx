@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { getMyFamilyTimeline } from "../../services/patientApi";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
+import { usePatientTimeline } from "../../hooks/usePatientTimeline";
 
 function formatWhen(value) {
   if (!value) return "No timestamp";
@@ -14,27 +14,8 @@ function formatWhen(value) {
 export default function FamilyTimeline() {
   const navigate = useNavigate();
   const { t } = usePatientLanguage();
-  const [data, setData] = useState({ members: [], items: [] });
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
+  const { data, loading, msg } = usePatientTimeline();
   const [activeMember, setActiveMember] = useState("ALL");
-
-  useEffect(() => {
-    setLoading(true);
-    getMyFamilyTimeline({ limit: 140 })
-      .then((res) => {
-        setData({
-          members: Array.isArray(res?.members) ? res.members : [],
-          items: Array.isArray(res?.items) ? res.items : [],
-        });
-        setMsg("");
-      })
-      .catch((err) => {
-        setData({ members: [], items: [] });
-        setMsg(err?.message || "Failed to load family timeline.");
-      })
-      .finally(() => setLoading(false));
-  }, []);
 
   const filteredItems = useMemo(() => {
     if (activeMember === "ALL") return data.items;

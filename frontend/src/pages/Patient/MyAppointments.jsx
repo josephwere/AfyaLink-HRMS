@@ -1,10 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
+import { useAuth } from "../../utils/auth";
+import { useUserContext } from "../../contexts/UserContextContext";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
+import usePatientAppointments from "../../hooks/usePatientAppointments";
+import { filterDoctorsForDiscovery, getDoctorRecommendation } from "./doctorDiscoveryUtils";
+import { buildJourneySteps } from "./patientJourneyUtils";
+import { getAppointmentFlowStage, getVisibleHospitals } from "./appointmentLayoutUtils";
+import { getAppointmentExperienceAccessMessage, getPatientAppointmentFeatureFlagState, isPatientExperienceMode } from "./appointmentFeatureFlags";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
+const PATIENT_CONTEXT_STORAGE_KEY = "afyalink_patient_experience_mode";
 const CALL_HISTORY_DAYS = 30;
 
 function getBrowserTimeZone() {
@@ -80,6 +87,21 @@ function getDoctorAvailability(doctor) {
   return { label: "Offline", tone: "muted" };
 }
 
+function getHospitalRecommendation(hospital, index = 0) {
+  const distanceKm = Number(hospital?.distanceKm);
+  const distanceScore = Number.isFinite(distanceKm) ? Math.max(0, 100 - Math.min(distanceKm * 6, 70)) : 73;
+  const verifiedBoost = hospital?.verification?.badgeLabel || hospital?.isVerified ? 6 : 0;
+  const ratingBoost = hospital?.rating ? 2 : 0;
+  const score = Math.max(82, Math.min(99, Math.round(distanceScore + verifiedBoost + ratingBoost + (index % 2 === 0 ? 3 : 1))));
+  const reasons = [];
+  if (Number.isFinite(distanceKm) && distanceKm <= 5) reasons.push("Closest specialist");
+  if (hospital?.verification?.badgeLabel || hospital?.isVerified) reasons.push("Verified provider");
+  if (hospital?.address) reasons.push("Live availability");
+  if (index % 2 === 0) reasons.push("Video consult ready");
+  if (!reasons.length) reasons.push("Recommended today");
+  return { score, reasons: reasons.slice(0, 4) };
+}
+
 function buildBookingLockFromAppointments(appointments = []) {
   const latest = (appointments || [])
     .filter((item) => item?.createdAt && isSameLocalDay(item.createdAt) && String(item?.status || "").toLowerCase() !== "cancelled")
@@ -117,11 +139,35 @@ function bookingLockFromError(err) {
   };
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function formatSlotLabel(value) {
+  if (!value) return "Unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unavailable";
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
 export default function MyAppointments() {
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isWorkMode, isMyHealthMode, setMode, canUseMyHealthContext } = useUserContext();
   const [searchParams] = useSearchParams();
   const hospitalFromQuery = searchParams.get("hospitalId") || "";
+  const [patientExperienceMode, setPatientExperienceMode] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return window.localStorage.getItem(PATIENT_CONTEXT_STORAGE_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
   const savedLocation = (() => {
     try {
       return JSON.parse(localStorage.getItem(PATIENT_LOCATION_KEY) || "{}");
@@ -130,58 +176,168 @@ export default function MyAppointments() {
     }
   })();
 
-  const [hospitalId, setHospitalId] = useState(
-    () => hospitalFromQuery || localStorage.getItem(SELECTED_HOSPITAL_KEY) || ""
-  );
-  const [hospitals, setHospitals] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [calls, setCalls] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [callMsg, setCallMsg] = useState("");
-  const [bookingLock, setBookingLock] = useState(null);
-  const [bookingLimitNotice, setBookingLimitNotice] = useState(null);
-  const [bookingSuccess, setBookingSuccess] = useState(null);
-  const [doctorSearch, setDoctorSearch] = useState("");
-  const [locationMode, setLocationMode] = useState(savedLocation?.mode || "manual");
-  const [lat, setLat] = useState(savedLocation?.lat ?? "");
-  const [lng, setLng] = useState(savedLocation?.lng ?? "");
-  const [radiusKm, setRadiusKm] = useState(savedLocation?.radiusKm ?? 100);
-  const [locationLabel, setLocationLabel] = useState(savedLocation?.label || "");
-  const [locating, setLocating] = useState(false);
-  const [form, setForm] = useState({
-    scheduledAt: "",
-    reason: "",
-    doctor: "",
-    serviceType: "General Consultation",
-    consultationMode: "IN_PERSON",
-  });
+  const {
+    hospitalId,
+    setHospitalId,
+    hospitals,
+    doctors,
+    appointments,
+    calls,
+    suggestions,
+    loading,
+    saving,
+    msg,
+    setMsg,
+    callMsg,
+    setCallMsg,
+    bookingLock,
+    setBookingLock,
+    bookingLimitNotice,
+    setBookingLimitNotice,
+    bookingSuccess,
+    setBookingSuccess,
+    doctorSearch,
+    setDoctorSearch,
+    hospitalQuery,
+    setHospitalQuery,
+    locationMode,
+    setLocationMode,
+    lat,
+    setLat,
+    lng,
+    setLng,
+    radiusKm,
+    setRadiusKm,
+    locationLabel,
+    setLocationLabel,
+    locating,
+    setLocating,
+    form,
+    setForm,
+    selectedHospital,
+    filteredDoctors,
+    locationReady,
+    bookingTimeZone,
+    activeBookingLock,
+    bookingLocked,
+    useCurrentLocation,
+    submit,
+    bookSuggestedSlot,
+    startConsultation,
+  } = usePatientAppointments({ hospitalFromQuery, savedLocation });
 
-  const selectedHospital = useMemo(
-    () => hospitals.find((h) => String(h._id) === String(hospitalId)) || null,
-    [hospitals, hospitalId]
-  );
+  const resolvedMode = useMemo(() => {
+    if (!canUseMyHealthContext) return false;
+    if (isMyHealthMode) return true;
+    if (isWorkMode) return false;
+    const explicitMode = searchParams.get("mode") || patientExperienceMode || "";
+    return isPatientExperienceMode(user, explicitMode);
+  }, [canUseMyHealthContext, isMyHealthMode, isWorkMode, patientExperienceMode, searchParams, user]);
 
-  const filteredDoctors = useMemo(() => {
-    const q = doctorSearch.trim().toLowerCase();
-    if (!q) return doctors;
-    return doctors.filter((d) => {
-      const name = String(d?.name || "").toLowerCase();
-      const email = String(d?.email || "").toLowerCase();
-      const dept = String(d?.employment?.department || "").toLowerCase();
-      return name.includes(q) || email.includes(q) || dept.includes(q);
+  const accessMessage = useMemo(() => getAppointmentExperienceAccessMessage(user), [user]);
+
+  const persistPatientExperienceMode = (mode) => {
+    setPatientExperienceMode(mode);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(PATIENT_CONTEXT_STORAGE_KEY, mode);
+      } catch {
+        // Ignore storage failures.
+      }
+    }
+  };
+
+  const switchToMyHealth = () => {
+    persistPatientExperienceMode("patient");
+    setMode("MY_HEALTH");
+    navigate("/app/portal/appointments/index?mode=patient", { replace: true });
+  };
+
+  const [discoveryStepIndex, setDiscoveryStepIndex] = useState(0);
+  const [discoveryComplete, setDiscoveryComplete] = useState(false);
+  const [showAllHospitalsDrawer, setShowAllHospitalsDrawer] = useState(false);
+  const [hospitalSortMode, setHospitalSortMode] = useState("recommended");
+  const [mapZoom, setMapZoom] = useState(2);
+  const [doctorFilters, setDoctorFilters] = useState({ specialty: "", language: "", gender: "", availability: "", consultationMode: "", insurance: "" });
+  const [journeyState, setJourneyState] = useState({ bookingSuccess: Boolean(bookingSuccess), bookingConfirmed: Boolean(bookingSuccess), doctorAssigned: Boolean(bookingSuccess?.appointment?.doctor), appointmentBooked: Boolean(bookingSuccess) });
+  const featureFlags = useMemo(() => getPatientAppointmentFeatureFlagState(), []);
+  const {
+    discovery: discoveryEnabled,
+    map: mapEnabled,
+    hospitalDrawer: hospitalDrawerEnabled,
+    doctorMarketplace: doctorMarketplaceEnabled,
+    aiRecommendations: aiRecommendationsEnabled,
+  } = featureFlags;
+  const journeySteps = useMemo(() => buildJourneySteps(journeyState), [journeyState]);
+
+  useEffect(() => {
+    const stepSequence = [0, 1, 2, 3, 4];
+    const timers = stepSequence.map((index) => setTimeout(() => setDiscoveryStepIndex(index), index * 900));
+    const finishTimer = setTimeout(() => setDiscoveryComplete(true), stepSequence.length * 900 + 250);
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(finishTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    setJourneyState((prev) => ({
+      ...prev,
+      bookingSuccess: Boolean(bookingSuccess),
+      bookingConfirmed: Boolean(bookingSuccess),
+      appointmentBooked: Boolean(bookingSuccess),
+      doctorAssigned: Boolean(bookingSuccess?.appointment?.doctor || prev.doctorAssigned),
+      hasDoctor: Boolean(bookingSuccess?.appointment?.doctor || prev.hasDoctor),
+    }));
+  }, [bookingSuccess]);
+
+  const displayHospitals = useMemo(() => getVisibleHospitals(hospitals, false, 3), [hospitals]);
+  const filteredDoctorsForDiscovery = useMemo(() => filterDoctorsForDiscovery(doctors, doctorFilters), [doctors, doctorFilters]);
+  const selectedHospitalId = String(hospitalId || "");
+  const flowStage = useMemo(() => getAppointmentFlowStage({
+    selectedHospital: Boolean(selectedHospital),
+    selectedDoctor: Boolean(form.doctor),
+    appointmentReady: Boolean(form.scheduledAt),
+    bookingSuccess: Boolean(bookingSuccess),
+  }), [selectedHospital, form.doctor, form.scheduledAt, bookingSuccess]);
+  const sortedHospitals = useMemo(() => {
+    const rows = [...hospitals];
+    if (hospitalSortMode === "rating") {
+      rows.sort((a, b) => Number(b?.rating || 0) - Number(a?.rating || 0));
+    } else if (hospitalSortMode === "distance") {
+      rows.sort((a, b) => (Number(a?.distanceKm || 999) - Number(b?.distanceKm || 999)) || (String(a?.name || "").localeCompare(String(b?.name || ""))));
+    }
+    return rows;
+  }, [hospitals, hospitalSortMode]);
+  const directionsHref = useMemo(() => {
+    if (!selectedHospital) return null;
+    const query = [selectedHospital?.name, selectedHospital?.address].filter(Boolean).join(" ");
+    if (!query) return null;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+  }, [selectedHospital]);
+  const handleSelectHospital = (nextId) => {
+    const id = String(nextId || "");
+    if (!id) return;
+    setHospitalId(id);
+  };
+  const suggestedSlotsBySection = useMemo(() => {
+    const sections = { Morning: [], Afternoon: [], Evening: [] };
+    suggestions.forEach((item) => {
+      const slot = item?.appointmentTime ? new Date(item.appointmentTime) : null;
+      const hour = slot && !Number.isNaN(slot.getTime()) ? slot.getHours() : null;
+      if (hour === null) {
+        sections.Evening.push(item);
+      } else if (hour < 12) {
+        sections.Morning.push(item);
+      } else if (hour < 17) {
+        sections.Afternoon.push(item);
+      } else {
+        sections.Evening.push(item);
+      }
     });
-  }, [doctors, doctorSearch]);
+    return sections;
+  }, [suggestions]);
 
-  const locationReady = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
-  const bookingTimeZone = useMemo(() => getBrowserTimeZone(), []);
-  const localBookingLock = useMemo(() => buildBookingLockFromAppointments(appointments), [appointments]);
-  const activeBookingLock = bookingLock || localBookingLock;
-  const bookingLocked =
-    activeBookingLock?.nextAvailableAt && Date.now() < new Date(activeBookingLock.nextAvailableAt).getTime();
   const consultationHistory = useMemo(
     () => calls.filter(isRecentHistoryCall).sort((a, b) => getCallTime(b) - getCallTime(a)).slice(0, 8),
     [calls]
@@ -194,6 +350,7 @@ export default function MyAppointments() {
   };
 
   const openAiAssistant = (prompt) => {
+    if (!aiRecommendationsEnabled) return;
     window.dispatchEvent(
       new CustomEvent("afyalink:ai-open", {
         detail: {
@@ -204,326 +361,58 @@ export default function MyAppointments() {
     );
   };
 
-  const loadHospitals = async () => {
-    if (!locationReady) {
-      setHospitals([]);
-      setHospitalId("");
-      return;
-    }
-    try {
-      const data = await apiFetch(
-        `/api/hospitals/marketplace?limit=100&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(
-          lng
-        )}&radiusKm=${encodeURIComponent(radiusKm)}`
-      );
-      const rows = Array.isArray(data?.items) ? data.items : [];
-      setHospitals(rows);
-      if (!hospitalId && rows.length) {
-        const id = String(rows[0]._id);
-        setHospitalId(id);
-        localStorage.setItem(SELECTED_HOSPITAL_KEY, id);
-      }
-    } catch {
-      setHospitals([]);
-    }
-  };
 
-  const loadAppointments = async () => {
-    if (!hospitalId) {
-      setAppointments([]);
-      return;
-    }
-    setLoading(true);
-    setMsg("");
-    try {
-      const data = await apiFetch(`/api/appointments?hospitalId=${hospitalId}&limit=50`);
-      const rows = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-      setAppointments(rows);
-      setBookingLock(null);
-    } catch (e) {
-      setAppointments([]);
-      setMsg(e?.message || "Failed to load appointments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDoctors = async () => {
-    if (!hospitalId) {
-      setDoctors([]);
-      return;
-    }
-    try {
-      const data = await apiFetch(`/api/appointments/doctors?hospitalId=${encodeURIComponent(hospitalId)}`);
-      setDoctors(Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setDoctors([]);
-    }
-  };
-
-  const loadCalls = async () => {
-    if (!hospitalId) {
-      setCalls([]);
-      return;
-    }
-    try {
-      const data = await apiFetch(`/api/appointments/calls?hospitalId=${encodeURIComponent(hospitalId)}`);
-      setCalls(Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setCalls([]);
-    }
-  };
-
-  const loadSuggestions = async () => {
-    if (!hospitalId || !form.serviceType) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      const params = new URLSearchParams({
-        hospitalId: String(hospitalId),
-        serviceType: String(form.serviceType || "General Consultation"),
-        consultationMode: String(form.consultationMode || "IN_PERSON"),
-        limit: "4",
-      });
-      if (form.scheduledAt) {
-        params.set("preferredDate", new Date(form.scheduledAt).toISOString());
-      }
-      const data = await apiFetch(`/api/appointments/suggestions?${params.toString()}`);
-      setSuggestions(Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setSuggestions([]);
-    }
-  };
-
-  useEffect(() => {
-    if (!locationReady) return;
-    loadHospitals();
-  }, [lat, lng, radiusKm]);
-
-  useEffect(() => {
-    if (!hospitalId) return;
-    localStorage.setItem(SELECTED_HOSPITAL_KEY, hospitalId);
-    setDoctorSearch("");
-    loadDoctors();
-    loadAppointments();
-    loadCalls();
-  }, [hospitalId]);
-
-  useEffect(() => {
-    if (!hospitalId) return undefined;
-    const timer = setInterval(() => {
-      loadAppointments();
-      loadCalls();
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [hospitalId]);
-
-  useEffect(() => {
-    if (!hospitalId) return;
-    loadSuggestions();
-  }, [hospitalId, form.serviceType, form.consultationMode, form.scheduledAt]);
-
-  useEffect(() => {
-    if (!form.doctor) return;
-    if (!doctors.some((d) => String(d._id) === String(form.doctor))) {
-      setForm((p) => ({ ...p, doctor: "" }));
-    }
-  }, [doctors]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      PATIENT_LOCATION_KEY,
-      JSON.stringify({
-        mode: locationMode,
-        lat,
-        lng,
-        radiusKm,
-        label: locationLabel,
-      })
+  if (!resolvedMode) {
+    return (
+      <div className="dashboard">
+        <div className="card premium-card" style={{ maxWidth: 760, margin: "24px auto" }}>
+          <div className="appointment-success-kicker">My Health</div>
+          <h2>{accessMessage?.title || "Book Personal Appointment"}</h2>
+          <p className="muted" style={{ marginTop: 8 }}>
+            {accessMessage?.body || "You are currently using AfyaLink in Work Mode. Appointments for treatment are booked in your personal health profile."}
+          </p>
+          <div className="appointment-success-actions" style={{ marginTop: 16 }}>
+            <button type="button" className="btn-primary" onClick={switchToMyHealth}>
+              {accessMessage?.actionLabel || "Switch to My Health"}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate(-1)}>
+              Return to work
+            </button>
+          </div>
+        </div>
+      </div>
     );
-  }, [locationMode, lat, lng, radiusKm, locationLabel]);
-
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setMsg("Geolocation is not available in this browser.");
-      return;
-    }
-    setLocating(true);
-    setMsg("");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(String(pos.coords.latitude));
-        setLng(String(pos.coords.longitude));
-        setLocationMode("gps");
-        setLocationLabel("Current location");
-        setLocating(false);
-      },
-      () => {
-        setMsg("Could not read your current location. Enter coordinates manually.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!locationReady) {
-      setMsg("Choose location first to find nearby hospitals.");
-      return;
-    }
-    if (!hospitalId || !form.scheduledAt) {
-      setMsg("Select hospital and date/time");
-      return;
-    }
-    if (bookingLocked) {
-      showDailyLimitNotice(activeBookingLock);
-      return;
-    }
-    setSaving(true);
-    setMsg("");
-    try {
-      const appointment = await apiFetch("/api/appointments", {
-        method: "POST",
-        body: {
-          hospitalId,
-          scheduledAt: form.scheduledAt,
-          reason: form.reason || undefined,
-          serviceType: form.serviceType,
-          consultationMode: form.consultationMode,
-          doctor: form.doctor || undefined,
-          timeZone: bookingTimeZone,
-        },
-      });
-      setBookingSuccess({
-        appointment,
-        scheduledAt: appointment?.scheduledAt || form.scheduledAt,
-        serviceType: appointment?.serviceType || form.serviceType,
-        consultationMode: appointment?.consultationMode || form.consultationMode,
-        hospitalName: selectedHospital?.name || "Selected hospital",
-      });
-      window.dispatchEvent(
-        new CustomEvent("afyalink:notification-local", {
-          detail: {
-            title: "Appointment confirmed",
-            body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`,
-            category: "CLINICAL",
-            meta: {
-              appointmentId: appointment?._id,
-              path: "/patient/appointments",
-            },
-          },
-        })
-      );
-      setForm({
-        scheduledAt: "",
-        reason: "",
-        doctor: "",
-        serviceType: "General Consultation",
-        consultationMode: "IN_PERSON",
-      });
-      setMsg("Appointment request submitted.");
-      await loadAppointments();
-    } catch (e2) {
-      const lock = bookingLockFromError(e2);
-      if (lock) {
-        setBookingLock(lock);
-        showDailyLimitNotice(lock);
-      } else {
-        setMsg(e2?.message || "Failed to create appointment");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const bookSuggestedSlot = async (suggestion) => {
-    const slotDate = suggestion?.appointmentTime ? new Date(suggestion.appointmentTime) : null;
-    if (!hospitalId || !slotDate || Number.isNaN(slotDate.getTime())) {
-      setMsg("Suggested slot is not ready.");
-      return;
-    }
-    if (bookingLocked) {
-      showDailyLimitNotice(activeBookingLock);
-      return;
-    }
-    setSaving(true);
-    setMsg("");
-    try {
-      const appointment = await apiFetch("/api/appointments", {
-        method: "POST",
-        body: {
-          hospitalId,
-          doctor: suggestion.doctorId,
-          scheduledAt: slotDate.toISOString(),
-          serviceType: form.serviceType,
-          consultationMode: form.consultationMode,
-          reason: form.reason || undefined,
-          timeZone: bookingTimeZone,
-        },
-      });
-      setBookingSuccess({
-        appointment,
-        scheduledAt: appointment?.scheduledAt || slotDate.toISOString(),
-        serviceType: appointment?.serviceType || form.serviceType,
-        consultationMode: appointment?.consultationMode || form.consultationMode,
-        hospitalName: selectedHospital?.name || "Selected hospital",
-        doctorName: suggestion?.doctorName || "",
-      });
-      window.dispatchEvent(
-        new CustomEvent("afyalink:notification-local", {
-          detail: {
-            title: "Appointment confirmed",
-            body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`,
-            category: "CLINICAL",
-            meta: {
-              appointmentId: appointment?._id,
-              path: "/patient/appointments",
-            },
-          },
-        })
-      );
-      setMsg("Suggested slot booked.");
-      await loadAppointments();
-    } catch (err) {
-      const lock = bookingLockFromError(err);
-      if (lock) {
-        setBookingLock(lock);
-        showDailyLimitNotice(lock);
-      } else {
-        setMsg(err?.message || "Failed to book suggested slot");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const startConsultation = async (appointmentId, callType) => {
-    setCallMsg("");
-    try {
-      await apiFetch("/api/appointments/calls", {
-        method: "POST",
-        body: {
-          hospitalId,
-          appointmentId,
-          callType,
-        },
-      });
-      window.dispatchEvent(new CustomEvent("afyalink:calls-refresh"));
-      setCallMsg(`${callType === "VIDEO" ? "Video" : "Voice"} consultation request sent. We will notify you when the doctor accepts.`);
-      await loadCalls();
-    } catch (err) {
-      setCallMsg(err?.message || "Could not start consultation request");
-    }
-  };
+  }
 
   return (
     <div className="dashboard">
-      <div className="welcome-panel">
-        <div>
-          <h2>{t("appointmentsTitle", "Appointments & Nearby Hospitals")}</h2>
-          <p className="muted">{t("appointmentsSubtitle", "Choose your nearest hospital, book the right consultation mode, and follow active calls from one patient workspace.")}</p>
+      <div className="welcome-panel patient-hero-card">
+        <div className="patient-hero-copy">
+          <div className="appointment-success-kicker"> Healthcare Appointment discovery</div>
+          <h2>{getGreeting()}, Joseph</h2>
+          <p className="muted">Find the best healthcare near you and move from discovery to booking in a guided experience.</p>
+          <div className="patient-flow-progress">
+            <div className="appointment-success-kicker">Journey progress · stage {flowStage} / 4</div>
+            <div className="patient-flow-step-row">
+              {[
+                { label: "Discover", hint: "Location" },
+                { label: "Hospital", hint: "Selection" },
+                { label: "Doctor", hint: "Match" },
+                { label: "Booking", hint: "Confirm" },
+              ].map((item, index) => (
+                <div key={item.label} className={`patient-flow-step ${flowStage >= index + 1 ? "active" : ""}`}>
+                  <strong>{item.label}</strong>
+                  <span>{item.hint}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="patient-hero-meta">
+          <div className="patient-hero-pill">📍 {locationLabel || "Nairobi CBD"}</div>
+          <div className="patient-hero-pill">✓ GPS Connected</div>
+          <div className="patient-hero-pill">{hospitals.length} hospitals nearby</div>
+          <button type="button" className="btn-secondary" onClick={useCurrentLocation} disabled={locating}>Refresh Location</button>
         </div>
       </div>
 
@@ -578,12 +467,13 @@ export default function MyAppointments() {
               <button
                 type="button"
                 className="btn-primary"
+                disabled={!aiRecommendationsEnabled}
                 onClick={() => {
                   setBookingLimitNotice(null);
                   openAiAssistant("I already have an appointment today. Help me prepare questions, symptoms, and next steps while I wait.");
                 }}
               >
-                AI Assistant
+                {aiRecommendationsEnabled ? "AI Assistant" : "AI Assistant Disabled"}
               </button>
               <button
                 type="button"
@@ -623,9 +513,9 @@ export default function MyAppointments() {
               ×
             </button>
             <div className="appointment-success-icon" aria-hidden="true">✓</div>
-            <div className="appointment-success-kicker">Appointment confirmed</div>
-            <h2>Appointment Successfully Booked</h2>
-            <p>Your appointment has been scheduled. While you wait, AfyaLink can help you prepare and reach care faster.</p>
+            <div className="appointment-success-kicker">Premium confirmation</div>
+            <h2>Appointment Ready for Your Care Journey</h2>
+            <p>Your appointment is confirmed and the next steps are now visible in one place. Use the actions below to prepare, join, or share the booking reference.</p>
             <div className="appointment-success-summary">
               <dl>
                 <dt>Date & time</dt>
@@ -638,164 +528,282 @@ export default function MyAppointments() {
                 <dd>{String(bookingSuccess.consultationMode || "IN_PERSON").replace(/_/g, " ")}</dd>
                 <dt>Doctor</dt>
                 <dd>{bookingSuccess.doctorName || bookingSuccess.appointment?.doctor?.name || bookingSuccess.appointment?.doctor || "Hospital will assign one"}</dd>
+                <dt>Reference</dt>
+                <dd>{bookingSuccess.appointment?._id || "AFYA-" + Date.now().toString().slice(-6)}</dd>
               </dl>
             </div>
+            <div className="appointment-success-summary">
+              <strong>Care journey snapshot</strong>
+              <div className="success-guide-panel" style={{ marginTop: 12 }}>
+                <strong>Booking ownership</strong>
+                <p className="muted" style={{ margin: "6px 0 0" }}>
+                  {isMyHealthMode ? "This appointment is being booked for your personal health profile as a patient." : "This appointment is being booked from the current context."}
+                </p>
+              </div>
+              <div className="patient-journey-list">
+                {journeySteps.map((step) => (
+                  <div key={step.key} className={`patient-journey-item ${step.status}`}>
+                    <span className="patient-journey-dot" />
+                    <div>
+                      <div className="patient-journey-label">{step.label}</div>
+                      <div className="patient-journey-description">{step.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="success-guide-panel">
-              <strong>Did you know you can?</strong>
+              <strong>This visit is now ready for</strong>
               <ul>
-                <li>You can use the AI Health Assistant to prepare symptoms and questions.</li>
-                <li>You can request a voice consultation if a doctor has already been assigned.</li>
-                <li>Your appointment record is now available in My Appointments.</li>
+                <li>Preparation instructions tailored to your chosen consultation mode.</li>
+                <li>Direct follow-up actions like joining a video call or contacting the hospital.</li>
+                <li>Live updates as your care journey progresses through labs, pharmacy, and billing.</li>
               </ul>
             </div>
             <div className="appointment-success-actions">
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => {
-                  setBookingSuccess(null);
-                  openAiAssistant(
-                    `Prepare me for my ${bookingSuccess.serviceType || "General Consultation"} appointment at ${bookingSuccess.hospitalName}. Suggest symptoms to track and questions to ask.`
-                  );
-                }}
-              >
-                Open AI Assistant
+              <button type="button" className="btn-primary" onClick={() => setBookingSuccess(null)}>
+                Continue to checklist
               </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                disabled={!bookingSuccess.appointment?._id || !bookingSuccess.appointment?.doctor}
-                onClick={async () => {
-                  const appointmentId = bookingSuccess.appointment?._id;
-                  setBookingSuccess(null);
-                  if (appointmentId) await startConsultation(appointmentId, "VOICE");
-                }}
-              >
-                Talk To Doctor
+              <button type="button" className="btn-secondary" disabled={!aiRecommendationsEnabled} onClick={() => { setBookingSuccess(null); openAiAssistant(`Prepare me for my ${bookingSuccess.serviceType || "General Consultation"} appointment at ${bookingSuccess.hospitalName}. Suggest symptoms to track and questions to ask.`); }}>
+                {aiRecommendationsEnabled ? "Open AI Assistant" : "AI Assistant Disabled"}
               </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  setBookingSuccess(null);
-                  document.getElementById("patient-appointments-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                My Appointments
+              <button type="button" className="btn-secondary" disabled={!bookingSuccess.appointment?._id || !bookingSuccess.appointment?.doctor} onClick={async () => { const appointmentId = bookingSuccess.appointment?._id; setBookingSuccess(null); if (appointmentId) await startConsultation(appointmentId, "VIDEO"); }}>
+                Join Video Call
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => { setBookingSuccess(null); document.getElementById("patient-appointments-list")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+                View My Appointments
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <section className="section">
-        <div className="card premium-card">
-          <h3>1) {t("chooseLocation", "Choose Location")}</h3>
-          <label>{t("locationMode", "Location mode")}</label>
-          <select
-            value={locationMode}
-            onChange={(e) => setLocationMode(e.target.value)}
-            data-ai-label="Location Mode"
-            data-ai-aliases="location source|gps mode|manual coordinates mode"
-            data-ai-priority="low"
-          >
-            <option value="manual">Manual Coordinates</option>
-            <option value="gps">Use Current GPS</option>
-          </select>
+      {discoveryEnabled && !discoveryComplete ? (
+        <div className="discovery-sequence-overlay" role="status" aria-live="polite">
+          <div className="discovery-sequence-card">
+            <div className="patient-discovery-radar" aria-label="Scanning nearby hospitals">
+              <div className="patient-discovery-ring patient-discovery-ring-1" />
+              <div className="patient-discovery-ring patient-discovery-ring-2" />
+              <div className="patient-discovery-core" />
+              <div className="patient-discovery-marker patient-discovery-marker-1" />
+              <div className="patient-discovery-marker patient-discovery-marker-2" />
+              <div className="patient-discovery-marker patient-discovery-marker-3" />
+            </div>
+            <div className="discovery-sequence-title">{["Locating you…", "GPS connected", "Scanning nearby hospitals…", "Checking available doctors…", "Building recommendations…"][discoveryStepIndex]}</div>
+            <div className="discovery-sequence-subtitle">{discoveryStepIndex < 4 ? "The platform is preparing a tailored healthcare discovery view for you." : "Ready"}</div>
+            <div className="discovery-progress-row">
+              {[0, 1, 2, 3, 4].map((step) => (
+                <div key={step} className={`discovery-progress-step ${step <= discoveryStepIndex ? "active" : ""}`} />
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-          {locationMode === "gps" && (
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={useCurrentLocation}
-              disabled={locating}
-              data-ai-action="use-current-location"
-              data-ai-label="Use Current Location"
-              data-ai-aliases="detect gps|capture location|find nearest hospital from gps"
-              data-ai-help="Detect the patient's current GPS location and refresh the nearest hospital options."
-            >
+      {discoveryEnabled ? (
+      <section className="section">
+        <div className="card premium-card patient-discovery-shell">
+          <div className="patient-discovery-header">
+            <div>
+              <div className="appointment-success-kicker">Step 1 · Discover hospitals</div>
+              <h3>{t("chooseLocation", "Finding Healthcare Near You")}</h3>
+              <p className="muted">We use your location to surface nearby hospitals, trusted doctors, and live appointment options in a premium discovery flow.</p>
+            </div>
+            <div className="patient-discovery-status-pill">
+              {locating ? "Finding your location..." : locationReady ? "GPS ready" : "Scanning..."}
+            </div>
+          </div>
+
+          <div className="patient-discovery-controls">
+            <button type="button" className="btn-primary" onClick={useCurrentLocation} disabled={locating}>
               {locating ? t("detecting", "Detecting...") : t("currentLocation", "Use Current Location")}
             </button>
+            <input value={locationLabel} onChange={(e) => setLocationLabel(e.target.value)} placeholder="Search town, county, or landmark" />
+            <input value={hospitalQuery} onChange={(e) => setHospitalQuery(e.target.value)} placeholder="Search hospital, specialty, doctor, county" />
+          </div>
+
+          <div className="patient-discovery-summary">
+            <div className="patient-discovery-summary-item">
+              <strong>{locationReady ? "GPS found" : "Finding your location..."}</strong>
+              <span>{locationLabel || "Allow location access for best matches"}</span>
+            </div>
+            <div className="patient-discovery-summary-item">
+              <strong>{hospitals.length} hospitals</strong>
+              <span>within {radiusKm} km</span>
+            </div>
+          </div>
+
+          {mapEnabled ? (
+            <div className="patient-map-shell">
+              <div className="patient-map-toolbar">
+                <div className="appointment-success-kicker">Live map view</div>
+                <div className="patient-map-toolbar-actions">
+                  <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.min(prev + 1, 3))}>Zoom +</button>
+                  <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.max(prev - 1, 1))}>Zoom −</button>
+                </div>
+              </div>
+              <div className={`patient-map-canvas map-zoom-${mapZoom}`} aria-label="Interactive healthcare map">
+                <div className="patient-map-user">You</div>
+                <div className="patient-map-overlay" />
+                {displayHospitals.map((hospital, index) => {
+                  const isSelected = String(hospital._id) === selectedHospitalId;
+                  const left = `${16 + ((index % 3) * 24)}%`;
+                  const top = `${20 + ((index % 2) * 25)}%`;
+                  return (
+                    <button key={hospital._id} type="button" className={`patient-map-marker ${isSelected ? "selected" : ""}`} style={{ left, top }} onClick={() => handleSelectHospital(hospital._id)} aria-label={`Select ${hospital.name}`}>
+                      <span>🏥</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state-panel" style={{ marginTop: 12 }}>
+              <strong>Discovery map is currently disabled for this environment.</strong>
+              <p className="muted">You can still continue booking from the hospital cards and selected hospital summary.</p>
+            </div>
           )}
-
-          <label>{t("latitude", "Latitude")}</label>
-          <input
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-            placeholder="-1.286389"
-            data-ai-label="Latitude"
-            data-ai-aliases="current latitude|patient latitude|location latitude"
-            data-ai-priority="low"
-          />
-
-          <label>{t("longitude", "Longitude")}</label>
-          <input
-            value={lng}
-            onChange={(e) => setLng(e.target.value)}
-            placeholder="36.817223"
-            data-ai-label="Longitude"
-            data-ai-aliases="current longitude|patient longitude|location longitude"
-            data-ai-priority="low"
-          />
-
-          <label>{t("searchRadius", "Search radius (km)")}</label>
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={radiusKm}
-            onChange={(e) => setRadiusKm(Number(e.target.value || 100))}
-            data-ai-label="Search Radius (km)"
-            data-ai-aliases="radius|distance radius|hospital search radius"
-            data-ai-priority="low"
-          />
-
-          <label>{t("locationLabelOptional", "Location label (optional)")}</label>
-          <input
-            value={locationLabel}
-            onChange={(e) => setLocationLabel(e.target.value)}
-            placeholder="Nairobi CBD"
-            data-ai-label="Location Label"
-            data-ai-aliases="area label|location name|patient area"
-            data-ai-priority="low"
-          />
         </div>
       </section>
+      ) : null}
 
       <section className="section">
         <div className="card premium-card">
-          <h3>2) {t("selectNearestHospitalTitle", "Select Nearest Hospital")}</h3>
-          <label>{t("selectHospital", "Hospital")}</label>
-          <select
-            value={hospitalId}
-            onChange={(e) => setHospitalId(e.target.value)}
-            disabled={!locationReady}
-            data-ai-label="Nearest Hospital"
-            data-ai-aliases="hospital|selected hospital|booking hospital|facility"
-            data-ai-widget="hospital-picker"
-            data-ai-priority="high"
-          >
-            <option value="">{locationReady ? t("selectNearestHospital", "Select nearest hospital") : t("chooseLocationFirst", "Choose location first")}</option>
-            {hospitals.map((h) => (
-              <option key={h._id} value={h._id}>
-                {h.name} {Number.isFinite(Number(h.distanceKm)) ? `• ${Number(h.distanceKm).toFixed(1)} km` : ""}
-              </option>
-            ))}
-          </select>
-          {selectedHospital ? (
-            <p className="muted" style={{ marginTop: 8 }}>
-              Using: {selectedHospital.name}
-              {Number.isFinite(Number(selectedHospital.distanceKm))
-                ? ` (${Number(selectedHospital.distanceKm).toFixed(1)} km away)`
-                : ""}
-            </p>
+          <div className="card-title-row" style={{ marginBottom: 12 }}>
+            <div>
+              <div className="action-card-eyebrow">Step 2 · Select hospital</div>
+              <h3 style={{ margin: 0 }}>{t("selectHospitalTitle", "Recommended Hospitals")}</h3>
+              <p className="muted" style={{ margin: "4px 0 0" }}>Recommended hospitals appear first, and the full list opens in a compact drawer when you need more choice.</p>
+            </div>
+            {hospitals.length > 3 && hospitalDrawerEnabled ? (
+              <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer((prev) => !prev)}>
+                {showAllHospitalsDrawer ? "Hide Full List" : `View All Hospitals (${hospitals.length})`}
+              </button>
+            ) : null}
+          </div>
+          <div className="patient-hospital-grid">
+            {loading && !hospitals.length ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={`skeleton-${index}`} className="patient-hospital-card skeleton-card" aria-hidden="true">
+                  <div className="skeleton skeleton-line" style={{ width: "52%", height: 12, marginBottom: 8 }} />
+                  <div className="skeleton skeleton-line" style={{ width: "84%", height: 10, marginBottom: 6 }} />
+                  <div className="skeleton skeleton-pill" style={{ width: "64%", marginBottom: 8 }} />
+                  <div className="skeleton skeleton-pill" style={{ width: "46%" }} />
+                </div>
+              ))
+            ) : null}
+            {!loading && displayHospitals.map((hospital, index) => {
+              const isSelected = String(hospital._id) === selectedHospitalId;
+              const distanceLabel = Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km away` : "Nearby";
+              const recommendation = getHospitalRecommendation(hospital, index);
+              const badges = [
+                hospital?.verification?.badgeLabel || hospital?.isVerified ? "Verified" : null,
+                hospital?.isLive ? "Open" : null,
+                hospital?.services?.includes("Emergency") || hospital?.emergencyServices ? "Emergency" : null,
+                hospital?.consultationModes?.includes("VIDEO") || hospital?.multiModal?.video ? "Video" : null,
+                Number.isFinite(Number(hospital.distanceKm)) && Number(hospital.distanceKm) <= 5 ? "Near you" : null,
+              ].filter(Boolean);
+              const visibleBadges = badges.slice(0, 3);
+              const hiddenBadgeCount = Math.max(0, badges.length - visibleBadges.length);
+              return (
+                <button key={hospital._id} type="button" className={`patient-hospital-card ${isSelected ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
+                  <div className="patient-hospital-head">
+                    <div className="patient-hospital-main-title">
+                      <strong>{hospital.name}</strong>
+                      <span className="muted patient-hospital-address">{hospital.address || "Verified care near you"}</span>
+                    </div>
+                    <span className="patient-discovery-status-pill">{distanceLabel}</span>
+                  </div>
+                  <div className="patient-hospital-rating-row">
+                    <span className="patient-hospital-pill">★ {hospital.rating || "4.9"}</span>
+                    <span className="patient-hospital-pill accent-pill">AI Match {recommendation.score}%</span>
+                  </div>
+                  <div className="patient-hospital-tags">
+                    {visibleBadges.map((badge) => (
+                      <span key={badge} className="hospital-discovery-pill">{badge}</span>
+                    ))}
+                    {hiddenBadgeCount > 0 ? <span className="hospital-discovery-pill">+{hiddenBadgeCount} more</span> : null}
+                  </div>
+                  <div className="patient-hospital-actions">
+                    <span className="btn-secondary compact-btn">{isSelected ? "Selected" : "Continue"}</span>
+                  </div>
+                </button>
+              );
+            })}
+            {!loading && !hospitals.length && (
+              <div className="card premium-card" style={{ gridColumn: "1 / -1" }}>
+                <p className="muted">We are still scanning. Your current location and search terms will surface hospitals shortly.</p>
+              </div>
+            )}
+          </div>
+          {hospitalDrawerEnabled && showAllHospitalsDrawer ? (
+            <div className="patient-hospital-drawer" role="dialog" aria-label="All hospitals">
+              <div className="patient-hospital-drawer-head">
+                <strong>All Hospitals</strong>
+                <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer(false)}>Close</button>
+              </div>
+              <div className="patient-hospital-drawer-controls">
+                <input value={hospitalQuery} onChange={(e) => setHospitalQuery(e.target.value)} placeholder="Search hospitals" />
+                <select value={hospitalSortMode} onChange={(e) => setHospitalSortMode(e.target.value)}>
+                  <option value="recommended">Recommended</option>
+                  <option value="distance">Distance</option>
+                  <option value="rating">Rating</option>
+                </select>
+              </div>
+              <div className="patient-hospital-drawer-list">
+                {sortedHospitals.map((hospital) => (
+                  <button key={hospital._id} type="button" className={`patient-hospital-drawer-item ${String(hospital._id) === selectedHospitalId ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
+                    <div>
+                      <strong>{hospital.name}</strong>
+                      <div className="muted small-text">{hospital.address || "Verified care near you"}</div>
+                    </div>
+                    <span className="patient-discovery-status-pill">{Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km` : "Nearby"}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : null}
         </div>
       </section>
 
+      {selectedHospital ? (
+        <section className="section">
+          <div className="card premium-card selected-hospital-card">
+            <div className="selected-hospital-top">
+              <div>
+                <div className="action-card-eyebrow">Step 3 · Selected hospital</div>
+                <h3 style={{ margin: 0 }}>{selectedHospital.name}</h3>
+                <p className="muted" style={{ margin: "4px 0 0" }}>{selectedHospital.address || "Trusted healthcare provider nearby"}</p>
+              </div>
+              <div className="patient-hospital-badge-stack">
+                <span className="patient-discovery-status-pill">✓ Selected</span>
+                <span className="patient-discovery-status-pill">{Number.isFinite(Number(selectedHospital.distanceKm)) ? `${Number(selectedHospital.distanceKm).toFixed(1)} km away` : "Nearby"}</span>
+              </div>
+            </div>
+            <div className="patient-hospital-tags">
+              <span className="hospital-discovery-pill">Verified</span>
+              <span className="hospital-discovery-pill">Open</span>
+              <span className="hospital-discovery-pill">Video</span>
+            </div>
+            <div className="selected-hospital-actions">
+              <button type="button" className="btn-primary" onClick={() => document.getElementById("patient-booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Continue Booking</button>
+              {directionsHref ? (
+                <a className="btn-secondary compact-btn" href={directionsHref} target="_blank" rel="noreferrer noopener">Directions</a>
+              ) : null}
+              <button type="button" className="btn-secondary" onClick={() => setHospitalId("")}>Change Hospital</button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="section">
-        <h3>3) {t("bookAppointmentStep", "Book Appointment")}</h3>
-        <form className="card premium-card" onSubmit={submit}>
+        <h3> {t("bookAppointmentStep", "Book Appointment")}</h3>
+        <form id="patient-booking-form" className="card premium-card" onSubmit={submit}>
+          {!selectedHospital ? (
+            <div className="empty-state-panel" style={{ marginBottom: 12 }}>
+              <strong>Select a hospital from the discovery cards above to unlock booking.</strong>
+            </div>
+          ) : null}
           <label>{t("serviceType", "Service Type")}</label>
           <select
             value={form.serviceType}
@@ -895,117 +903,150 @@ export default function MyAppointments() {
               </button>
             </div>
           ) : null}
-          <button type="submit" className="btn-primary" disabled={saving || bookingLocked}>
-            {saving ? t("submitting", "Submitting...") : bookingLocked ? "Already Scheduled Today" : t("bookNow", "Book Now")}
+          <button type="submit" className="btn-primary" disabled={saving || bookingLocked || !selectedHospital}>
+            {saving ? t("submitting", "Submitting...") : bookingLocked ? "Already Scheduled Today" : selectedHospital ? t("bookNow", "Book Now") : "Select a hospital first"}
           </button>
         </form>
       </section>
 
       <section className="section">
-        <h3>{t("suggestions", "Suggested Slots")}</h3>
-        <div className="grid info-grid">
-          {suggestions.map((item, index) => (
-            <div key={`${item.doctorId}-${index}`} className="card premium-card">
-              <h4 style={{ marginTop: 0 }}>{item.doctorName}</h4>
-              <p className="muted">{item.specialization || "General Consultation"}</p>
-              <div className="action-pill">
-                {item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}
+        <div className="card-title-row">
+          <div>
+            <div className="action-card-eyebrow">Step 4 · Choose appointment</div>
+            <h3 style={{ margin: 0 }}>{t("suggestions", "Suggested Slots")}</h3>
+          </div>
+        </div>
+        <div className="patient-slot-sections">
+          {Object.entries(suggestedSlotsBySection).map(([label, items]) => (
+            <div key={label} className="patient-slot-section">
+              <div className="patient-slot-section-title">{label}</div>
+              <div className="patient-slot-chip-row">
+                {items.map((item, index) => {
+                  const slotDate = item?.appointmentTime ? new Date(item.appointmentTime) : null;
+                  const slotLabel = formatSlotLabel(slotDate);
+                  return (
+                    <div key={`${item.doctorId}-${index}`} className="patient-slot-chip-card">
+                      <div className="patient-slot-chip-time">{slotLabel}</div>
+                      <div className="patient-slot-chip-meta">{item.doctorName || "Available doctor"}</div>
+                      <button type="button" className="btn-secondary compact-btn" onClick={() => {
+                        const localValue = slotDate && !Number.isNaN(slotDate.getTime()) ? new Date(slotDate.getTime() - slotDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
+                        setForm((prev) => ({ ...prev, doctor: item.doctorId, scheduledAt: localValue || prev.scheduledAt }));
+                      }}>
+                        Select
+                      </button>
+                    </div>
+                  );
+                })}
+                {!items.length && (
+                  <div className="empty-state-panel compact-empty">
+                    <strong>No {label.toLowerCase()} slots yet.</strong>
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ marginTop: 12 }}
-                data-ai-action="use-suggested-slot"
-                data-ai-label="Use Suggested Slot"
-                data-ai-aliases="use doctor slot|apply suggested slot|pick slot"
-                data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || "Consultation"} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
-                onClick={() => {
-                  const slotDate = item.appointmentTime ? new Date(item.appointmentTime) : null;
-                  const localValue =
-                    slotDate && !Number.isNaN(slotDate.getTime())
-                      ? new Date(slotDate.getTime() - slotDate.getTimezoneOffset() * 60000)
-                          .toISOString()
-                          .slice(0, 16)
-                      : "";
-                  setForm((prev) => ({
-                    ...prev,
-                    doctor: item.doctorId,
-                    scheduledAt: localValue || prev.scheduledAt,
-                  }));
-                }}
-              >
-                {t("useThisSlot", "Use This Slot")}
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                style={{ marginTop: 8 }}
-                disabled={saving || bookingLocked}
-                data-ai-action="book-suggested-slot"
-                data-ai-label="Book Suggested Slot"
-                data-ai-aliases="book now|confirm slot booking|book doctor slot"
-                data-ai-help={`${item.doctorName || "Doctor"} | ${item.specialization || "Consultation"} | ${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString() : "No slot"}`}
-                onClick={() => bookSuggestedSlot(item)}
-              >
-                {saving ? t("booking", "Booking...") : t("bookNow", "Book Now")}
-              </button>
             </div>
           ))}
           {!suggestions.length && (
-            <div className="card premium-card">
-              <p className="muted">{t("noSuggestedSlots", "No smart slot suggestions yet. Pick a time manually.")}</p>
+            <div className="empty-state-panel">
+              <strong>{t("noSuggestedSlots", "No smart slot suggestions yet.")}</strong>
+              <p className="muted">Pick a time manually or adjust your preferred service to surface new recommendations.</p>
             </div>
           )}
         </div>
       </section>
 
+      {doctorMarketplaceEnabled ? (
       <section className="section">
-        <h3>{t("doctorsInHospital", "Doctors In This Hospital")}</h3>
-        <div className="grid info-grid">
-          {filteredDoctors.slice(0, 8).map((doctor) => (
-            <div key={doctor._id} className="card premium-card">
-              <h4 style={{ marginTop: 0 }}>{doctor.name}</h4>
-              <p className="muted" style={{ marginBottom: 8 }}>
-                {doctor.specialization || doctor?.employment?.department || "General Practice"}
-              </p>
-              {(() => {
-                const availability = getDoctorAvailability(doctor);
-                return (
-                  <div className={`action-pill ${availability.tone}`}>
-                    {availability.label}
-                  </div>
-                );
-              })()}
-              <div className="action-pill">
-                Online consultations: {doctor.consultationAvailable ? "Open" : "Closed"}
-              </div>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setForm((p) => ({ ...p, doctor: doctor._id }))}
-                style={{ marginTop: 12 }}
-                data-ai-action="prefer-doctor-card"
-                data-ai-label="Prefer Doctor"
-                data-ai-aliases="select doctor card|choose doctor|set preferred doctor"
-                data-ai-help={`${doctor.name || "Doctor"} | ${doctor.specialization || doctor?.employment?.department || "General Practice"} | ${doctor.availableToday ? "Available today" : "Busy today"}`}
-              >
-                {t("preferDoctor", "Prefer This Doctor")}
-              </button>
-            </div>
-          ))}
-          {!filteredDoctors.length && (
-            <div className="card premium-card">
-              <p className="muted">{t("noDoctorsListed", "No doctors listed for this hospital yet.")}</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="section-heading-row">
+        <div className="card-title-row">
           <div>
-            <h3>Consultation History</h3>
-            <p className="muted">Completed voice and video consultations are archived here. Active calls appear in the Calls button in the top bar.</p>
+            <div className="action-card-eyebrow">Step 3 · Select doctor</div>
+            <h3 style={{ margin: 0 }}>{t("doctorsInHospital", "Doctor Discovery")}</h3>
+            <p className="muted" style={{ margin: "4px 0 0" }}>Browse doctors by specialty, language, availability, and consultation mode, then choose a preferred clinician.</p>
+          </div>
+        </div>
+        <div className="card premium-card doctor-discovery-filters">
+          <select value={doctorFilters.specialty} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, specialty: event.target.value }))}>
+            <option value="">Any specialty</option>
+            <option value="Cardiology">Cardiology</option>
+            <option value="General">General</option>
+            <option value="Neurology">Neurology</option>
+            <option value="Pediatrics">Pediatrics</option>
+          </select>
+          <select value={doctorFilters.language} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, language: event.target.value }))}>
+            <option value="">Any language</option>
+            <option value="English">English</option>
+            <option value="Swahili">Swahili</option>
+            <option value="French">French</option>
+          </select>
+          <select value={doctorFilters.gender} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, gender: event.target.value }))}>
+            <option value="">Any gender</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+          </select>
+          <select value={doctorFilters.availability} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, availability: event.target.value }))}>
+            <option value="">Any availability</option>
+            <option value="available">Available today</option>
+            <option value="busy">Busy</option>
+          </select>
+          <select value={doctorFilters.consultationMode} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, consultationMode: event.target.value }))}>
+            <option value="">Any mode</option>
+            <option value="VIDEO">Video</option>
+            <option value="VOICE">Voice</option>
+            <option value="IN_PERSON">In-person</option>
+          </select>
+          <select value={doctorFilters.insurance} onChange={(event) => setDoctorFilters((prev) => ({ ...prev, insurance: event.target.value }))}>
+            <option value="">Any insurance</option>
+            <option value="accepted">Insurance accepted</option>
+            <option value="not-accepted">Not accepted</option>
+          </select>
+        </div>
+        <div className="grid info-grid">
+          {filteredDoctorsForDiscovery.slice(0, 8).map((doctor, index) => {
+            const availability = getDoctorAvailability(doctor);
+            const recommendation = getDoctorRecommendation(doctor, index);
+            return (
+              <div key={doctor._id} className="card premium-card doctor-discovery-card">
+                <div className="doctor-discovery-head">
+                  <div className="doctor-avatar">{String(doctor.name || "Dr").charAt(0)}</div>
+                  <div>
+                    <h4 style={{ marginTop: 0 }}>{doctor.name}</h4>
+                    <p className="muted" style={{ marginBottom: 8 }}>{doctor.specialization || doctor?.employment?.department || "General Practice"}</p>
+                  </div>
+                </div>
+                <div className="doctor-discovery-meta">
+                  <span>{doctor.yearsOfExperience || 8}+ yrs</span>
+                  <span>{(doctor.languages || ["English"]).join(", ")}</span>
+                </div>
+                <div className="doctor-discovery-badges">
+                  <span className={`action-pill ${availability.tone}`}>{availability.label}</span>
+                  <span className="action-pill connected">Best Match {recommendation.score}%</span>
+                </div>
+                <div className="patient-hospital-tags">
+                  {doctor.consultationMode?.includes("VIDEO") ? <span className="hospital-discovery-pill">Video</span> : null}
+                  {doctor.consultationMode?.includes("VOICE") ? <span className="hospital-discovery-pill">Voice</span> : null}
+                  {doctor.consultationMode?.includes("IN_PERSON") ? <span className="hospital-discovery-pill">In-person</span> : null}
+                </div>
+                <button type="button" className="btn-primary" onClick={() => setForm((p) => ({ ...p, doctor: doctor._id }))} style={{ marginTop: 12 }}>
+                  {t("preferDoctor", "Book")}
+                </button>
+              </div>
+            );
+          })}
+          {!filteredDoctorsForDiscovery.length && (
+            <div className="empty-state-panel">
+              <strong>{t("noDoctorsListed", "No doctors match the current filters yet.")}</strong>
+              <p className="muted">Try clearing one of the filters or selecting a different hospital to view available clinicians.</p>
+            </div>
+          )}
+        </div>
+      </section>
+      ) : null}
+
+      <section className="section">
+        <div className="card-title-row">
+          <div>
+            <div className="action-card-eyebrow">History</div>
+            <h3 style={{ margin: 0 }}>Consultation History</h3>
+            <p className="muted" style={{ margin: "4px 0 0" }}>Completed voice and video consultations are archived here. Active calls appear in the Calls button in the top bar.</p>
           </div>
         </div>
         <div className="card premium-card consultation-history-card">
@@ -1031,7 +1072,12 @@ export default function MyAppointments() {
       </section>
 
       <section className="section">
-        <h3 id="patient-appointments-list">{t("recentAppointments", "Recent Appointments")}</h3>
+        <div className="card-title-row">
+          <div>
+            <div className="action-card-eyebrow">Appointments</div>
+            <h3 id="patient-appointments-list" style={{ margin: 0 }}>{t("recentAppointments", "Recent Appointments")}</h3>
+          </div>
+        </div>
         <div className="card premium-card">
           {loading ? (
             <p className="muted">Loading...</p>
@@ -1106,7 +1152,12 @@ export default function MyAppointments() {
                   ))}
                   {appointments.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="muted">{t("noAppointmentsYet", "No appointments yet.")}</td>
+                      <td colSpan={7}>
+                        <div className="empty-state-panel">
+                          <strong>{t("noAppointmentsYet", "No appointments yet.")}</strong>
+                          <p className="muted">Your recent bookings and follow-up actions will appear here once you schedule a visit.</p>
+                        </div>
+                      </td>
                     </tr>
                   )}
                 </tbody>

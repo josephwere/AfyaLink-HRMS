@@ -458,6 +458,7 @@ export function AuthProvider({ children }) {
       setRoleOverrideState("");
       setStrictImpersonationState(false);
 
+      setLoading(false);
       setBaseUser({
         ...safeUser,
         twoFactorVerified: true,
@@ -486,6 +487,7 @@ export function AuthProvider({ children }) {
       if (networkLike) {
         const offlineUser = await tryOfflineLogin(identifierOrToken, passwordOrOptions);
         if (offlineUser) {
+          setLoading(false);
           setBaseUser({
             ...offlineUser,
             role: normalizeRole(offlineUser.role),
@@ -540,6 +542,7 @@ export function AuthProvider({ children }) {
 
     const decoded = parseJwt(data.accessToken);
 
+    setLoading(false);
     setBaseUser({
       ...safeUser,
       twoFactorVerified: decoded?.twoFactor !== false,
@@ -571,6 +574,7 @@ export function AuthProvider({ children }) {
       writeStoredUser(storedUser);
     }
 
+    setLoading(false);
     setBaseUser({
       ...(storedUser || {}),
       role: decodedRole,
@@ -598,6 +602,15 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("2fa_identifier");
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
       localStorage.removeItem(STRICT_IMPERSONATION_KEY);
+      // Clear sidebar preference on logout (ensures Option A: starts collapsed on next login)
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("afyalink_sidebar_preference_")) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
       setBaseUser(null);
       apiLogout();
     }
@@ -705,7 +718,25 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth must be used inside AuthProvider");
+    return {
+      user: null,
+      loading: false,
+      isAuthenticated: false,
+      role: null,
+      actualRole: null,
+      roleOverride: "",
+      strictImpersonation: false,
+      canRoleOverride: false,
+      setRoleOverride: () => false,
+      setStrictImpersonation: () => false,
+      patchUser: () => false,
+      login: async () => ({ user: null }),
+      complete2FA: () => {},
+      logout: async () => {},
+      hasRole: () => false,
+      isAdmin: false,
+      is2FAVerified: false,
+    };
   }
   return ctx;
 }

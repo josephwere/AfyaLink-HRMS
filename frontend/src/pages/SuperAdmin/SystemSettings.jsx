@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
-import {
-  getAssetDeliveryHealth,
-  getEmailDeliveryHealth,
-  getSystemSettings,
-  getSystemSettingsHistory,
-  restoreSystemSettingsRevision,
-  updateSystemSettings,
-} from "../../services/systemSettingsApi";
+import { useSystemSettingsPage } from "../../hooks/useSystemSettingsPage";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
 import { normalizeRole } from "../../utils/normalizeRole";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
@@ -104,6 +97,14 @@ function shapeSettingsForm(defaults, data) {
 export default function SystemSettings() {
   const { user } = useAuth();
   const actorRole = normalizeRole(user?.actualRole || user?.role);
+  const {
+    getSystemSettings,
+    getSystemSettingsHistory,
+    restoreSystemSettingsRevision,
+    getEmailDeliveryHealth,
+    getAssetDeliveryHealth,
+    updateSystemSettings,
+  } = useSystemSettingsPage();
   const { settings, setSettings, lastSyncedAt, pushConnected } = useSystemSettings();
   const [form, setForm] = useState({
     branding: {

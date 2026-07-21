@@ -12,6 +12,7 @@ import GeoLog from "../models/GeoLog.js";
 import CommunityHealthWorkerProfile from "../models/CommunityHealthWorkerProfile.js";
 import Notification from "../models/Notification.js";
 import CommunicationChannel from "../models/CommunicationChannel.js";
+import { notify } from "../services/notificationService.js";
 
 function role(req) {
   return String(req.user?.actualRole || req.user?.role || "").toUpperCase();
@@ -38,7 +39,7 @@ async function notifyOpsForCHW(req, title, body, meta = {}) {
   if (!hospital) return;
   const channel = await CommunicationChannel.findOne({ hospital, key: "chw_hospital_operations", active: true }).lean();
   if (!channel) return;
-  await Notification.create({
+  await notify({
     hospital,
     title,
     body,

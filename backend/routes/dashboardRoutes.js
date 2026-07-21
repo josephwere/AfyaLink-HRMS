@@ -5,6 +5,7 @@ import { cacheJsonResponse } from "../middleware/responseCache.js";
 import {
   doctorDashboard,
   nurseDashboard,
+  executiveDashboard,
   hrDashboard,
   payrollDashboard,
   staffDashboard,
@@ -37,6 +38,7 @@ const standardDashboardCache = cacheJsonResponse({ ttlSeconds: 15 });
 const summaryDashboardCache = cacheJsonResponse({ ttlSeconds: 20 });
 const staticDashboardCache = cacheJsonResponse({ ttlSeconds: 300 });
 
+router.get("/executive", protect, summaryDashboardCache, requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"), executiveDashboard);
 router.get("/doctor", protect, standardDashboardCache, requireRole("DOCTOR"), doctorDashboard);
 router.get("/nurse", protect, standardDashboardCache, requireRole("NURSE"), nurseDashboard);
 router.get("/hr", protect, standardDashboardCache, requireRole("HR_MANAGER"), hrDashboard);

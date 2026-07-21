@@ -1,32 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
-import { listMyReports } from "../../services/reportsApi";
 import { StatCard } from "../../components/Cards";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
+import { useEncounter } from "../../hooks/useEncounter";
+import usePatientBillingReports from "../../hooks/usePatientBillingReports";
 
 export default function PatientBilling() {
   const navigate = useNavigate();
   const { t } = usePatientLanguage();
-  const [encounters, setEncounters] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [msg, setMsg] = useState("");
+  const { data: encounterData, loading: encounterLoading, error: encounterError } = useEncounter("");
+  const { data: reportsData, loading: reportsLoading, error: reportsError } = usePatientBillingReports();
 
-  useEffect(() => {
-    Promise.all([
-      apiFetch("/api/encounters?limit=50"),
-      listMyReports({ cursorMode: true, limit: 10 }),
-    ])
-      .then(([encounterRows, reportRows]) => {
-        setEncounters(Array.isArray(encounterRows) ? encounterRows : []);
-        setReports(Array.isArray(reportRows?.items) ? reportRows.items : Array.isArray(reportRows) ? reportRows : []);
-      })
-      .catch((err) => {
-        setEncounters([]);
-        setReports([]);
-        setMsg(err?.message || "Failed to load billing and linked report data.");
-      });
-  }, []);
+  const encounters = Array.isArray(encounterData) ? encounterData : [];
+  const reports = Array.isArray(reportsData?.items) ? reportsData.items : Array.isArray(reportsData) ? reportsData : [];
+  const msg = encounterError?.message || reportsError?.message || "";
+  const loading = encounterLoading || reportsLoading;
 
   const invoiceRows = useMemo(
     () => encounters.filter((row) => row?.billing?.invoiceNumber),

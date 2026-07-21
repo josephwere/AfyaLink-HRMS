@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Financial from "../models/Financial.js";
 import Claim from "../models/Claim.js";
 import Hospital from "../models/Hospital.js";
@@ -13,6 +14,7 @@ import { appendClaimAudit } from "../services/claimAuditService.js";
 import { decrypt, encrypt } from "../services/cryptoService.js";
 import { getRevenueIntelligenceSnapshot } from "../services/revenueIntelligenceService.js";
 import { stableStringify, signPayload } from "../utils/claimSignature.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 function resolveHospital(req) {
   const role = normalizeRole(req.user?.role || "");
@@ -92,10 +94,13 @@ export const recordPayment = async (req, res, next) => {
     const hospital = resolveHospital(req);
     if (!hospital) return res.status(400).json({ message: "Hospital context required" });
 
-    const { id } = req.params;
+    const id = String(req.params.id || "").trim();
     const { amount, method, reference } = req.body;
+    const invoiceQuery = mongoose.isValidObjectId(id)
+      ? { $or: [{ _id: id }, { invoiceId: id }] }
+      : { invoiceId: id };
 
-    const f = await Financial.findOne({ _id: id, hospital });
+    const f = await Financial.findOne({ ...invoiceQuery, hospital });
     if (!f) return res.status(404).json({ message: "Invoice not found" });
 
     f.metadata = f.metadata || {};
@@ -382,10 +387,10 @@ export const listInvoices = async (req, res, next) => {
     const filter = { hospital };
     if (status) filter.status = status;
     if (q) {
-      filter.$or = [
+      filter.$or = buildBusinessIdSearchFilter(q, ["invoiceId"], [
         { invoiceNumber: { $regex: q, $options: "i" } },
         { "insuranceClaim.claimId": { $regex: q, $options: "i" } },
-      ];
+      ]).$or;
     }
 
     const [items, total] = await Promise.all([

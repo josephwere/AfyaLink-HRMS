@@ -5,10 +5,12 @@ import FraudAlert from "../models/FraudAlert.js";
 import ClaimAuditLog from "../models/ClaimAuditLog.js";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import mongoose from "mongoose";
 import { appendClaimAudit } from "../services/claimAuditService.js";
 import { evaluateClaim } from "../services/claimFraudEngine.js";
 import { decrypt } from "../services/cryptoService.js";
 import { stableStringify, verifySignature } from "../utils/claimSignature.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 function resolveHospitalId(req) {
   return req.user?.hospitalId || req.user?.hospital || req.body?.hospitalId || null;
@@ -168,15 +170,14 @@ export const submitClaim = async (req, res, next) => {
           .select("_id")
           .lean();
         if (governmentUsers.length) {
-          await Notification.insertMany(
-            governmentUsers.map((u) => ({
-              user: u._id,
-              category: "REGULATORY",
-              title: "High-risk claim detected",
-              body: `${hospital.name} submitted a high-risk claim for ${patient.firstName} ${patient.lastName}.`,
-              meta: { claimId: claim._id, alertId: alert._id, severity },
-            }))
-          );
+          await notifyUsers({
+            users: governmentUsers,
+            hospital: hospitalId,
+            category: "REGULATORY",
+            title: "High-risk claim detected",
+            body: `${hospital.name} submitted a high-risk claim for ${patient.firstName} ${patient.lastName}.`,
+            meta: { claimId: claim._id, alertId: alert._id, severity },
+          });
         }
       }
     }
@@ -208,9 +209,16 @@ export const listClaims = async (req, res, next) => {
     } else if (req.query.hospitalId) {
       filter.hospital = req.query.hospitalId;
     }
+    const q = String(req.query.q || "").trim();
     if (req.query.status) filter.status = String(req.query.status).toUpperCase();
     if (req.query.provider) filter["provider.code"] = String(req.query.provider).toUpperCase();
     if (req.query.patientId) filter.patient = req.query.patientId;
+    if (q) {
+      filter.$or = buildBusinessIdSearchFilter(q, ["claimId"], [
+        { status: { $regex: q, $options: "i" } },
+        { "provider.code": { $regex: q, $options: "i" } },
+      ]).$or;
+    }
 
     const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
     const items = await Claim.find(filter)
@@ -226,7 +234,12 @@ export const listClaims = async (req, res, next) => {
 
 export const getClaim = async (req, res, next) => {
   try {
-    const claim = await Claim.findById(req.params.id)
+    const id = String(req.params.id || "").trim();
+    const query = mongoose.isValidObjectId(id)
+      ? { $or: [{ _id: id }, { claimId: id }] }
+      : { claimId: id };
+
+    const claim = await Claim.findOne(query)
       .populate("hospital", "name code")
       .populate("patient", "firstName lastName gender nationalId")
       .populate("submittedBy", "name email role");
@@ -718,11 +731,12 @@ export const assignClaimAudit = async (req, res, next) => {
     });
 
     if (assigneeId) {
-      await Notification.create({
+      await notify({
         user: assigneeId,
         category: "REGULATORY",
         title: "Claim assigned for audit",
         body: "A claim has been assigned to you for manual audit.",
+        hospital: hospitalId,
         meta: { claimId: claim._id, alertId: alert._id },
       });
     }

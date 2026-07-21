@@ -1,164 +1,37 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  listMappings,
-  createMapping,
-  updateMapping,
-  deleteMapping,
-  listMappingTemplates,
-  previewMapping,
-  signMappingPayload,
-  verifyMappingPayload,
-} from "../../services/mappingStudioApi";
-
-const DEFAULT_FORM = {
-  messageType: "ORM^O01",
-  sourceSystem: "LIS",
-  targetSystem: "EMR",
-  mappingJson: JSON.stringify(
-    {
-      "PID-5": "patient.name",
-      "PID-7": "patient.dateOfBirth",
-      "OBR-4": "order.testCode",
-    },
-    null,
-    2
-  ),
-};
+import React from "react";
+import { useMappingStudio } from "../../hooks/useMappingStudio";
 
 export default function MappingStudio() {
-  const [mappings, setMappings] = useState([]);
-  const [templates, setTemplates] = useState([]);
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [editingId, setEditingId] = useState(null);
-  const [format, setFormat] = useState("HL7");
-  const [previewPayload, setPreviewPayload] = useState(
-    "MSH|^~\\&|LIS|HOSP|EMR|HOSP|20260220||ORM^O01|123|P|2.3\nPID|1||P001||Jane Doe||1988-02-02\nOBR|1|||CBC^Panel"
-  );
-  const [selectedMappingId, setSelectedMappingId] = useState("");
-  const [previewResult, setPreviewResult] = useState(null);
-  const [signatureInput, setSignatureInput] = useState("");
-  const [verifyInput, setVerifyInput] = useState("");
-  const [verifyResult, setVerifyResult] = useState(null);
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const parsedMapping = useMemo(() => {
-    try {
-      return JSON.parse(form.mappingJson || "{}");
-    } catch {
-      return null;
-    }
-  }, [form.mappingJson]);
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const [rows, tpls] = await Promise.all([listMappings(), listMappingTemplates()]);
-      setMappings(Array.isArray(rows) ? rows : []);
-      setTemplates(Array.isArray(tpls?.templates) ? tpls.templates : []);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load mapping studio");
-      setMappings([]);
-      setTemplates([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const save = async () => {
-    setMsg("");
-    if (!parsedMapping) {
-      setMsg("Mapping JSON is invalid.");
-      return;
-    }
-    try {
-      const payload = {
-        messageType: form.messageType,
-        sourceSystem: form.sourceSystem,
-        targetSystem: form.targetSystem,
-        mapping: parsedMapping,
-      };
-      if (editingId) {
-        await updateMapping(editingId, payload);
-        setMsg("Mapping updated.");
-      } else {
-        await createMapping(payload);
-        setMsg("Mapping created.");
-      }
-      setForm(DEFAULT_FORM);
-      setEditingId(null);
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to save mapping");
-    }
-  };
-
-  const edit = (row) => {
-    setEditingId(row._id);
-    setForm({
-      messageType: row.messageType || "",
-      sourceSystem: row.sourceSystem || "",
-      targetSystem: row.targetSystem || "",
-      mappingJson: JSON.stringify(row.mapping || {}, null, 2),
-    });
-  };
-
-  const remove = async (id) => {
-    setMsg("");
-    try {
-      await deleteMapping(id);
-      setMsg("Mapping deleted.");
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to delete mapping");
-    }
-  };
-
-  const runPreview = async () => {
-    setMsg("");
-    setPreviewResult(null);
-    try {
-      const payload = {
-        format,
-        payload: format === "FHIR" ? JSON.parse(previewPayload || "{}") : previewPayload,
-        ...(selectedMappingId ? { mappingId: selectedMappingId } : { mapping: parsedMapping || {} }),
-      };
-      const out = await previewMapping(payload);
-      setPreviewResult(out || null);
-      if (out?.provenance?.signature) setVerifyInput(out.provenance.signature);
-    } catch (e) {
-      setMsg(e?.message || "Preview failed");
-    }
-  };
-
-  const runSign = async () => {
-    setMsg("");
-    try {
-      const payloadObj = JSON.parse(signatureInput || "{}");
-      const out = await signMappingPayload({ payload: payloadObj, context: { module: "mapping_studio_ui" } });
-      setVerifyInput(out?.signature?.signature || "");
-      setMsg("Payload signed.");
-    } catch (e) {
-      setMsg(e?.message || "Sign failed");
-    }
-  };
-
-  const runVerify = async () => {
-    setMsg("");
-    setVerifyResult(null);
-    try {
-      const payloadObj = JSON.parse(signatureInput || "{}");
-      const out = await verifyMappingPayload({ payload: payloadObj, signature: verifyInput });
-      setVerifyResult(out?.verification || null);
-    } catch (e) {
-      setMsg(e?.message || "Verify failed");
-    }
-  };
+  const {
+    mappings,
+    templates,
+    form,
+    setForm,
+    editingId,
+    format,
+    setFormat,
+    previewPayload,
+    setPreviewPayload,
+    selectedMappingId,
+    setSelectedMappingId,
+    previewResult,
+    signatureInput,
+    setSignatureInput,
+    verifyInput,
+    setVerifyInput,
+    verifyResult,
+    msg,
+    loading,
+    parsedMapping,
+    load,
+    resetForm,
+    save,
+    edit,
+    remove,
+    runPreview,
+    runSign,
+    runVerify,
+  } = useMappingStudio();
 
   return (
     <div className="dashboard">
@@ -168,7 +41,7 @@ export default function MappingStudio() {
           <p className="muted">Create mappings, preview transformations, and verify signed provenance.</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={() => void load()} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -197,8 +70,8 @@ export default function MappingStudio() {
             <textarea rows={10} value={form.mappingJson} onChange={(e) => setForm((p) => ({ ...p, mappingJson: e.target.value }))} />
           </label>
           <div className="welcome-actions mt-10">
-            <button type="button" className="btn-primary" onClick={save}>{editingId ? "Update Mapping" : "Save Mapping"}</button>
-            <button type="button" className="btn-secondary" onClick={() => { setForm(DEFAULT_FORM); setEditingId(null); }}>Reset</button>
+            <button type="button" className="btn-primary" onClick={() => void save()}>{editingId ? "Update Mapping" : "Save Mapping"}</button>
+            <button type="button" className="btn-secondary" onClick={resetForm}>Reset</button>
           </div>
         </div>
       </section>
@@ -231,7 +104,7 @@ export default function MappingStudio() {
             <textarea rows={8} value={previewPayload} onChange={(e) => setPreviewPayload(e.target.value)} />
           </label>
           <div className="welcome-actions mt-10">
-            <button type="button" className="btn-primary" onClick={runPreview}>Preview Transform</button>
+            <button type="button" className="btn-primary" onClick={() => void runPreview()}>Preview Transform</button>
           </div>
           {previewResult && (
             <details style={{ marginTop: 10 }} open>
@@ -254,8 +127,8 @@ export default function MappingStudio() {
             <input value={verifyInput} onChange={(e) => setVerifyInput(e.target.value)} />
           </label>
           <div className="welcome-actions mt-10">
-            <button type="button" className="btn-secondary" onClick={runSign}>Sign Payload</button>
-            <button type="button" className="btn-secondary" onClick={runVerify}>Verify Signature</button>
+            <button type="button" className="btn-secondary" onClick={() => void runSign()}>Sign Payload</button>
+            <button type="button" className="btn-secondary" onClick={() => void runVerify()}>Verify Signature</button>
           </div>
           {verifyResult && (
             <div className="card" style={{ marginTop: 10 }}>
@@ -285,7 +158,7 @@ export default function MappingStudio() {
                   <td>{m.targetSystem}</td>
                   <td>
                     <button type="button" className="btn-secondary" onClick={() => edit(m)}>Edit</button>
-                    <button type="button" className="btn-danger" onClick={() => remove(m._id)}>Delete</button>
+                    <button type="button" className="btn-danger" onClick={() => void remove(m._id)}>Delete</button>
                   </td>
                 </tr>
               ))}

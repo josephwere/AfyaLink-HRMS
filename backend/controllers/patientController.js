@@ -1,10 +1,12 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 import Patient from "../models/Patient.js";
 import Hospital from "../models/Hospital.js";
 import User from "../models/User.js";
 // Register Report model so populate("medicalRecords") works in environments that don't eagerly load all models.
 import "../models/Report.js";
 import FamilyAnchorApproval from "../models/FamilyAnchorApproval.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 import { denyAudit } from "../middleware/denyAudit.js";
 import { audit } from "../utils/audit.js";
 import { encodeCursor, decodeCursor } from "../utils/cursor.js";
@@ -848,11 +850,11 @@ export const listPatients = async (req, res, next) => {
 
     const filter = { hospital: hospitalId, active: true };
     if (q) {
-      filter.$or = [
+      filter.$or = buildBusinessIdSearchFilter(q, ["patientId"], [
         { firstName: new RegExp(q, "i") },
         { lastName: new RegExp(q, "i") },
         { nationalId: new RegExp(q, "i") },
-      ];
+      ]).$or;
     }
 
     if (cursorMode) {
@@ -904,12 +906,16 @@ export const listPatients = async (req, res, next) => {
  */
 export const getPatient = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || "").trim();
+    const query = { active: true };
 
-    const patient = await Patient.findOne({
-      _id: id,
-      active: true, // 🔒 SOFT-DELETE FILTER
-    }).populate("hospital primaryDoctor medicalRecords");
+    if (mongoose.isValidObjectId(id)) {
+      query.$or = [{ _id: id }, { patientId: id }];
+    } else {
+      query.patientId = id;
+    }
+
+    const patient = await Patient.findOne(query).populate("hospital primaryDoctor medicalRecords");
 
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });
@@ -962,15 +968,19 @@ export const searchPatients = async (req, res, next) => {
       return res.status(400).json({ message: "Hospital is required" });
     }
 
-    const patients = await Patient.find({
+    const searchQuery = {
       hospital: hospitalId, // 🔐 tenant scoped
       active: true, // 🔒 SOFT-DELETE FILTER
-      $or: [
+    };
+    if (q) {
+      searchQuery.$or = buildBusinessIdSearchFilter(q, ["patientId"], [
         { firstName: new RegExp(q, "i") },
         { lastName: new RegExp(q, "i") },
         { nationalId: new RegExp(q, "i") },
-      ],
-    })
+      ]).$or;
+    }
+
+    const patients = await Patient.find(searchQuery)
       .limit(50)
       .select("-__v");
 

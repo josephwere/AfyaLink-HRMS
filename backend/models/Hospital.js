@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
+import { generateHospitalId } from "../services/idGenerator.js";
 
 const hospitalSchema = new mongoose.Schema(
   {
     /* ================= CORE ================= */
     name: { type: String, required: true },
     code: { type: String, unique: true, index: true },
+    hospitalId: { type: String, unique: true, immutable: true, sparse: true, index: true },
     address: { type: String, trim: true, default: "" },
     contact: { type: String, trim: true, default: "" },
     type: {
@@ -323,7 +325,11 @@ hospitalSchema.index({ "verification.status": 1, active: 1, createdAt: -1 });
    - Applies on plan change
    - NEVER overwrites manual admin overrides
 ====================================================== */
-hospitalSchema.pre("save", function (next) {
+hospitalSchema.pre("save", async function (next) {
+  if (!this.hospitalId) {
+    this.hospitalId = await generateHospitalId();
+  }
+
   if (!this.isNew && !this.isModified("plan")) return next();
 
   const planDefaults = {
@@ -428,6 +434,30 @@ hospitalSchema.pre("save", function (next) {
     ...defaults.limits,
     ...this.limits,
   };
+
+  next();
+});
+
+hospitalSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasHospitalId =
+    update.hospitalId !== undefined ||
+    (update.$set && update.$set.hospitalId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.hospitalId !== undefined);
+
+  if (!hasHospitalId) {
+    const nextId = await generateHospitalId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        hospitalId: nextId,
+      },
+    });
+  }
 
   next();
 });

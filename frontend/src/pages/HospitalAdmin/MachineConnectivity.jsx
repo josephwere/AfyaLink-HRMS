@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchApi } from "../../lib/api/client";
-import apiFetch from "../../utils/apiFetch";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 import { formatDateTime } from "../../utils/locale";
 
 const emptyDevice = {
@@ -41,35 +40,45 @@ function parseJsonSafe(text) {
 
 export default function MachineConnectivity() {
   const navigate = useNavigate();
-  const [devices, setDevices] = useState([]);
-  const [overview, setOverview] = useState(null);
-  const [auditRows, setAuditRows] = useState([]);
-  const [auditTotal, setAuditTotal] = useState(0);
-  const [auditPage, setAuditPage] = useState(1);
-  const [auditFilters, setAuditFilters] = useState({
-    machineId: "",
-    action: "ALL",
-    from: "",
-    to: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [newKey, setNewKey] = useState("");
-  const [deviceForm, setDeviceForm] = useState(emptyDevice);
-  const [selectedDeviceId, setSelectedDeviceId] = useState("");
-  const [testForm, setTestForm] = useState(emptyLabTest);
-  const [testing, setTesting] = useState(false);
-  const [hl7Input, setHl7Input] = useState(defaultHl7Sample);
-  const [hl7Output, setHl7Output] = useState(null);
-  const [dicomForm, setDicomForm] = useState({
-    studyUid: "",
-    modality: "CT",
-    patientId: "",
-    accessionNumber: "",
-    aet: "AFYALINK-PACS",
-  });
-  const [dicomOutput, setDicomOutput] = useState(null);
+  const {
+    devices,
+    overview,
+    auditRows,
+    auditTotal,
+    auditPage,
+    setAuditPage,
+    auditFilters,
+    setAuditFilters,
+    deviceLoading: loading,
+    deviceMsg: msg,
+    savingDevice: saving,
+    newKey,
+    deviceForm,
+    setDeviceForm,
+    selectedDeviceId,
+    setSelectedDeviceId,
+    testForm,
+    setTestForm,
+    testing,
+    hl7Input,
+    setHl7Input,
+    hl7Output,
+    setHl7Output,
+    dicomForm,
+    setDicomForm,
+    dicomOutput,
+    setDicomOutput,
+    loadDevices,
+    loadOverview,
+    loadAudit,
+    registerDevice,
+    rotateKey,
+    updateStatus,
+    testHeartbeat,
+    testLabIngest,
+    runHl7ParseTest,
+    runDicomStubTest,
+  } = useHospitalAdminOperations();
   const registerSectionRef = useRef(null);
   const devicesSectionRef = useRef(null);
   const testsSectionRef = useRef(null);
@@ -85,222 +94,50 @@ export default function MachineConnectivity() {
     [devices, selectedDeviceId]
   );
 
-  const loadDevices = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const data = await apiFetch("/api/machine-connectivity/devices");
-      const rows = Array.isArray(data?.items) ? data.items : [];
-      setDevices(rows);
-      if (!selectedDeviceId && rows.length) setSelectedDeviceId(rows[0]._id);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load machine devices");
-      setDevices([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadOverview = async () => {
-    try {
-      const data = await apiFetch("/api/machine-connectivity/overview");
-      setOverview(data || null);
-    } catch {
-      setOverview(null);
-    }
-  };
-
-  const loadAudit = async (page = auditPage) => {
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: "20",
-      });
-      if (auditFilters.machineId) params.set("machineId", auditFilters.machineId);
-      if (auditFilters.action && auditFilters.action !== "ALL") params.set("action", auditFilters.action);
-      if (auditFilters.from) params.set("from", auditFilters.from);
-      if (auditFilters.to) params.set("to", auditFilters.to);
-      const data = await apiFetch(`/api/machine-connectivity/audit?${params.toString()}`);
-      setAuditRows(Array.isArray(data?.items) ? data.items : []);
-      setAuditTotal(Number(data?.total || 0));
-      setAuditPage(Number(data?.page || page));
-    } catch {
-      setAuditRows([]);
-      setAuditTotal(0);
-    }
-  };
-
   useEffect(() => {
-    loadDevices();
-    loadOverview();
-    loadAudit(1);
-    const t = setInterval(loadDevices, 30000);
+    void loadDevices();
+    void loadOverview();
+    void loadAudit(1);
+    const t = setInterval(() => { void loadDevices(); }, 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [loadDevices, loadOverview, loadAudit]);
 
   useEffect(() => {
-    loadAudit(1);
-  }, [auditFilters.machineId, auditFilters.action, auditFilters.from, auditFilters.to]);
+    void loadAudit(1);
+  }, [auditFilters.machineId, auditFilters.action, auditFilters.from, auditFilters.to, loadAudit]);
 
-  const registerDevice = async (e) => {
+  const handleRegisterDevice = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setMsg("");
-    setNewKey("");
-    try {
-      const payload = {
-        ...deviceForm,
-        code: String(deviceForm.code || "").trim().toUpperCase(),
-      };
-      const data = await apiFetch("/api/machine-connectivity/devices", {
-        method: "POST",
-        body: payload,
-      });
-      setNewKey(data?.machineKey || "");
-      setDeviceForm(emptyDevice);
-      await loadDevices();
-      setMsg("Machine registered successfully.");
-    } catch (e2) {
-      setMsg(e2?.message || "Failed to register machine");
-    } finally {
-      setSaving(false);
-    }
+    const payload = {
+      ...deviceForm,
+      code: String(deviceForm.code || "").trim().toUpperCase(),
+    };
+    await registerDevice(payload);
   };
 
-  const rotateKey = async (deviceId) => {
-    setSaving(true);
-    setMsg("");
-    setNewKey("");
-    try {
-      const data = await apiFetch(`/api/machine-connectivity/devices/${deviceId}/rotate-key`, {
-        method: "POST",
-      });
-      setNewKey(data?.machineKey || "");
-      setMsg("Machine key rotated. Store the new key securely.");
-    } catch (e) {
-      setMsg(e?.message || "Failed to rotate machine key");
-    } finally {
-      setSaving(false);
-    }
+  const handleRotateKey = async (deviceId) => {
+    await rotateKey(deviceId);
   };
 
-  const updateStatus = async (deviceId, status) => {
-    try {
-      await apiFetch(`/api/machine-connectivity/devices/${deviceId}`, {
-        method: "PATCH",
-        body: { status },
-      });
-      await loadDevices();
-    } catch (e) {
-      setMsg(e?.message || "Failed to update machine status");
-    }
+  const handleUpdateStatus = async (deviceId, status) => {
+    await updateStatus(deviceId, status);
   };
 
-  const machinePost = async (path, machineKey, body = {}) => {
-    return fetchApi(path, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "x-machine-key": machineKey,
-      },
-      body,
-    });
+  const handleTestHeartbeat = async () => {
+    await testHeartbeat();
   };
 
-  const testHeartbeat = async () => {
-    if (!testForm.machineKey.trim()) {
-      setMsg("Enter machine key first.");
-      return;
-    }
-    setTesting(true);
-    setMsg("");
-    try {
-      const data = await machinePost(
-        "/api/machine-connectivity/heartbeat",
-        testForm.machineKey.trim(),
-        {}
-      );
-      setMsg(`Heartbeat OK: ${data?.status || "ONLINE"} @ ${data?.serverTime || "-"}`);
-      await loadDevices();
-    } catch (e) {
-      setMsg(e?.message || "Heartbeat test failed");
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const testLabIngest = async (e) => {
+  const handleTestLabIngest = async (e) => {
     e.preventDefault();
-    if (!testForm.machineKey.trim() || !testForm.labOrderId.trim()) {
-      setMsg("Machine key and Lab Order ID are required.");
-      return;
-    }
-    const parsed = parseJsonSafe(testForm.resultJson);
-    if (!parsed.ok) {
-      setMsg("Result JSON is invalid.");
-      return;
-    }
-    setTesting(true);
-    setMsg("");
-    try {
-      const data = await machinePost(
-        "/api/machine-connectivity/lab-results",
-        testForm.machineKey.trim(),
-        {
-          labOrderId: testForm.labOrderId.trim(),
-          testName: testForm.testName.trim() || undefined,
-          patientId: testForm.patientId.trim() || undefined,
-          externalResultId: testForm.externalResultId.trim() || undefined,
-          resultStatus: "completed",
-          result: parsed.value,
-        }
-      );
-      setMsg(
-        `Lab ingestion OK: order ${data?.labOrderId || "-"} marked ${data?.status || "Completed"}`
-      );
-      await loadDevices();
-    } catch (e2) {
-      setMsg(e2?.message || "Lab ingestion test failed");
-    } finally {
-      setTesting(false);
-    }
+    await testLabIngest(e);
   };
 
-  const runHl7ParseTest = async () => {
-    setTesting(true);
-    setMsg("");
-    try {
-      const data = await apiFetch("/api/machine-connectivity/test/hl7-parse", {
-        method: "POST",
-        body: { hl7: hl7Input },
-      });
-      setHl7Output(data);
-      setMsg("HL7 parse test succeeded.");
-    } catch (e) {
-      setMsg(e?.message || "HL7 parse test failed");
-      setHl7Output(null);
-    } finally {
-      setTesting(false);
-    }
+  const handleHl7ParseTest = async () => {
+    await runHl7ParseTest();
   };
 
-  const runDicomStubTest = async () => {
-    setTesting(true);
-    setMsg("");
-    try {
-      const data = await apiFetch("/api/machine-connectivity/test/dicom-stub", {
-        method: "POST",
-        body: dicomForm,
-      });
-      setDicomOutput(data);
-      setMsg("DICOM stub test succeeded.");
-    } catch (e) {
-      setMsg(e?.message || "DICOM stub test failed");
-      setDicomOutput(null);
-    } finally {
-      setTesting(false);
-    }
+  const handleDicomStubTest = async () => {
+    await runDicomStubTest();
   };
 
   return (
@@ -314,7 +151,7 @@ export default function MachineConnectivity() {
           </p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={loadDevices} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={() => void loadDevices()} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh Devices"}
           </button>
           <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/machine-alerts")}>
@@ -333,7 +170,7 @@ export default function MachineConnectivity() {
 
       <section className="section" ref={registerSectionRef}>
         <h3>Register Machine Device</h3>
-        <form className="card form" onSubmit={registerDevice}>
+        <form className="card form" onSubmit={handleRegisterDevice}>
           <input
             placeholder="Machine Name (e.g. Cobas 6000)"
             value={deviceForm.name}
@@ -447,13 +284,13 @@ export default function MachineConnectivity() {
                         <button type="button" className="btn-secondary" onClick={() => setSelectedDeviceId(d._id)}>
                           Select
                         </button>
-                        <button type="button" className="btn-secondary" disabled={saving} onClick={() => rotateKey(d._id)}>
+                        <button type="button" className="btn-secondary" disabled={saving} onClick={() => handleRotateKey(d._id)}>
                           Rotate Key
                         </button>
-                        <button type="button" className="btn-secondary" onClick={() => updateStatus(d._id, "MAINTENANCE")}>
+                        <button type="button" className="btn-secondary" onClick={() => handleUpdateStatus(d._id, "MAINTENANCE")}>
                           Maintenance
                         </button>
-                        <button type="button" className="btn-secondary" onClick={() => updateStatus(d._id, "ONLINE")}>
+                        <button type="button" className="btn-secondary" onClick={() => handleUpdateStatus(d._id, "ONLINE")}>
                           Online
                         </button>
                       </div>
@@ -506,14 +343,14 @@ export default function MachineConnectivity() {
 
       <section className="section" ref={testsSectionRef}>
         <h3>Connectivity Tests</h3>
-        <form className="card form" onSubmit={testLabIngest}>
+        <form className="card form" onSubmit={handleTestLabIngest}>
           <input
             placeholder="Machine Key (from register/rotate output)"
             value={testForm.machineKey}
             onChange={(e) => setTestForm((p) => ({ ...p, machineKey: e.target.value }))}
           />
           <div className="row-actions">
-            <button type="button" className="btn-secondary" onClick={testHeartbeat} disabled={testing}>
+            <button type="button" className="btn-secondary" onClick={handleTestHeartbeat} disabled={testing}>
               {testing ? "Testing..." : "Test Heartbeat"}
             </button>
           </div>
@@ -591,7 +428,7 @@ export default function MachineConnectivity() {
               onChange={(e) => setHl7Input(e.target.value)}
               placeholder="Paste HL7 ORU/ADT payload"
             />
-            <button type="button" className="btn-secondary" onClick={runHl7ParseTest} disabled={testing}>
+            <button type="button" className="btn-secondary" onClick={handleHl7ParseTest} disabled={testing}>
               Parse HL7 Test
             </button>
             {hl7Output && (
@@ -633,7 +470,7 @@ export default function MachineConnectivity() {
               value={dicomForm.aet}
               onChange={(e) => setDicomForm((p) => ({ ...p, aet: e.target.value }))}
             />
-            <button type="button" className="btn-secondary" onClick={runDicomStubTest} disabled={testing}>
+            <button type="button" className="btn-secondary" onClick={handleDicomStubTest} disabled={testing}>
               Run DICOM Stub
             </button>
             {dicomOutput && (

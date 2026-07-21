@@ -1,0 +1,1587 @@
+{
+  "presentationHospital": {
+    "name": "AfyaLink Demo Medical Center",
+    "code": "AFYA-DEMO-001",
+    "registrationNumber": "MOH-AFYA-DEMO-001",
+    "type": "PRIVATE",
+    "county": "Nairobi",
+    "city": "Nairobi",
+    "address": "Demo Road, Nairobi",
+    "latitude": -1.286389,
+    "longitude": 36.817223,
+    "visible": true
+  },
+  "presentationUsers": [
+    {
+      "role": "COMMUNITY_HEALTH_WORKER",
+      "name": "Mercy Atieno Community Health Worker",
+      "email": "community.health.worker@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "DOCTOR",
+      "name": "Dr Amina Otieno",
+      "email": "doctor@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "GOVERNMENT_ADMIN",
+      "name": "Agnes Moraa Government Admin",
+      "email": "government.admin@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "GOVERNMENT_ANALYST",
+      "name": "Naomi Akinyi Analyst",
+      "email": "government.analyst@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "GOVERNMENT_AUDITOR",
+      "name": "Beatrice Nyambura Auditor",
+      "email": "government.auditor@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "GOVERNMENT_INSPECTOR",
+      "name": "Patrick Langat Inspector",
+      "email": "government.inspector@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "GOVERNMENT_REGULATOR",
+      "name": "Isaac Koech Regulator",
+      "email": "government.regulator@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "HOSPITAL_ADMIN",
+      "name": "Mary Wanjiku Hospital Admin",
+      "email": "hospital.admin@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "HOSPITAL_ADMIN_ASSISTANT",
+      "name": "Peter Kariuki Admin Assistant",
+      "email": "hospital.admin.assistant@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "HR_MANAGER",
+      "name": "Eunice Muthoni HR Manager",
+      "email": "hr.manager@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "LAB_TECH",
+      "name": "Kevin Ochieng Lab Tech",
+      "email": "lab.tech@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "NURSE",
+      "name": "Grace Njeri Nurse",
+      "email": "nurse@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "PATIENT",
+      "name": "John Barasa Patient",
+      "email": "patient.demo@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "PAYROLL_OFFICER",
+      "name": "Daniel Kimani Payroll Officer",
+      "email": "payroll.officer@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "PHARMACIST",
+      "name": "Faith Wambui Pharmacist",
+      "email": "pharmacist@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "RADIOLOGIST",
+      "name": "Dr Sarah Chebet Radiologist",
+      "email": "radiologist@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "RECEPTIONIST",
+      "name": "Janet Moraa Receptionist",
+      "email": "receptionist@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "SECURITY_ADMIN",
+      "name": "Victor Onyango Security Admin",
+      "email": "security.admin@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "SECURITY_OFFICER",
+      "name": "Samuel Kiptoo Security Officer",
+      "email": "security.officer@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "SURGEON",
+      "name": "Dr Brian Mwangi",
+      "email": "surgeon@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    },
+    {
+      "role": "THERAPIST",
+      "name": "Lucy Achieng Therapist",
+      "email": "therapist@afyalink.demo",
+      "active": true,
+      "emailVerified": true,
+      "phoneVerified": true
+    }
+  ],
+  "devHospitals": [
+    {
+      "_id": "6a46b1c2ea932922e8407b14",
+      "name": "Eldoret Highlands Medical Centre",
+      "code": "EHMC",
+      "county": null,
+      "city": null,
+      "address": "Eldoret Town, Eldoret 30100, Kenya",
+      "latitude": null,
+      "longitude": null,
+      "type": "PRIVATE",
+      "verification": "VERIFIED",
+      "active": true,
+      "publicVisible": false
+    },
+    {
+      "_id": "6a46b1c0ea932922e8407ad2",
+      "name": "Kiambu Regional Hospital",
+      "code": "KRH",
+      "county": null,
+      "city": null,
+      "address": "Kiambu Town, Kiambu 00900, Kenya",
+      "latitude": null,
+      "longitude": null,
+      "type": "PUBLIC",
+      "verification": "VERIFIED",
+      "active": true,
+      "publicVisible": false
+    },
+    {
+      "_id": "6a46b1c1ea932922e8407afe",
+      "name": "Kisumu Lakeside Hospital",
+      "code": "KLH",
+      "county": null,
+      "city": null,
+      "address": "Kisumu Central District, Kisumu 40100, Kenya",
+      "latitude": null,
+      "longitude": null,
+      "type": "PRIVATE",
+      "verification": "VERIFIED",
+      "active": true,
+      "publicVisible": false
+    },
+    {
+      "_id": "6a46b1c0ea932922e8407ae8",
+      "name": "Machakos Community Hospital",
+      "code": "MCH",
+      "county": null,
+      "city": null,
+      "address": "Machakos Town, Machakos 90100, Kenya",
+      "latitude": null,
+      "longitude": null,
+      "type": "PUBLIC",
+      "verification": "VERIFIED",
+      "active": true,
+      "publicVisible": false
+    },
+    {
+      "_id": "6a46b1bfea932922e8407aa9",
+      "name": "Nairobi Central Medical Centre",
+      "code": "NCMC",
+      "county": null,
+      "city": null,
+      "address": "Nairobi Central District, Nairobi 00100, Kenya",
+      "latitude": null,
+      "longitude": null,
+      "type": "PRIVATE",
+      "verification": "VERIFIED",
+      "active": true,
+      "publicVisible": false
+    }
+  ],
+  "usersByHospital": {
+    "6a3c5f256891eaf54c0514e9": [
+      {
+        "name": "Mercy Atieno Community Health Worker",
+        "email": "community.health.worker@afyalink.demo",
+        "role": "COMMUNITY_HEALTH_WORKER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr Amina Otieno",
+        "email": "doctor@afyalink.demo",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mary Wanjiku Hospital Admin",
+        "email": "hospital.admin@afyalink.demo",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kariuki Admin Assistant",
+        "email": "hospital.admin.assistant@afyalink.demo",
+        "role": "HOSPITAL_ADMIN_ASSISTANT",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Eunice Muthoni HR Manager",
+        "email": "hr.manager@afyalink.demo",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kevin Ochieng Lab Tech",
+        "email": "lab.tech@afyalink.demo",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Grace Njeri Nurse",
+        "email": "nurse@afyalink.demo",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Daniel Kimani Payroll Officer",
+        "email": "payroll.officer@afyalink.demo",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui Pharmacist",
+        "email": "pharmacist@afyalink.demo",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr Sarah Chebet Radiologist",
+        "email": "radiologist@afyalink.demo",
+        "role": "RADIOLOGIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Janet Moraa Receptionist",
+        "email": "receptionist@afyalink.demo",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Victor Onyango Security Admin",
+        "email": "security.admin@afyalink.demo",
+        "role": "SECURITY_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kiptoo Security Officer",
+        "email": "security.officer@afyalink.demo",
+        "role": "SECURITY_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr Brian Mwangi",
+        "email": "surgeon@afyalink.demo",
+        "role": "SURGEON",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Achieng Therapist",
+        "email": "therapist@afyalink.demo",
+        "role": "THERAPIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ],
+    "6a46b1bfea932922e8407aa9": [
+      {
+        "name": "DOCTOR 1",
+        "email": "doctor1.nairobi@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "DOCTOR 2",
+        "email": "doctor2.nairobi@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Brian Otieno",
+        "email": "dr.brian.otieno.nairobi@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Grace Wanjiku",
+        "email": "dr.grace.wanjiku.nairobi@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HOSPITAL ADMIN",
+        "email": "admin.nairobi@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Mwangi",
+        "email": "james.mwangi.nairobi@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui",
+        "email": "faith.wambui.nairobi@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HR MANAGER",
+        "email": "hr.nairobi@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kelvin Ouma",
+        "email": "kelvin.ouma.nairobi@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "LAB TECH",
+        "email": "labtech.nairobi@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Njeri",
+        "email": "esther.njeri.nairobi@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Achieng",
+        "email": "mercy.achieng.nairobi@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 1",
+        "email": "nurse1.nairobi@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 2",
+        "email": "nurse2.nairobi@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PAYROLL OFFICER",
+        "email": "accountant.nairobi@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kibet",
+        "email": "samuel.kibet.nairobi@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PHARMACIST",
+        "email": "pharmacist.nairobi@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kiptoo",
+        "email": "peter.kiptoo.nairobi@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Mutiso",
+        "email": "lucy.mutiso.nairobi@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "RECEPTIONIST",
+        "email": "reception.nairobi@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ],
+    "6a46b1c0ea932922e8407ad2": [
+      {
+        "name": "DOCTOR 1",
+        "email": "doctor1.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "DOCTOR 2",
+        "email": "doctor2.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Brian Otieno",
+        "email": "dr.brian.otieno.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Grace Wanjiku",
+        "email": "dr.grace.wanjiku.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Jane Kariuki",
+        "email": "dr.jane.kariuki.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Michael Mutua",
+        "email": "dr.michael.mutua.kiambu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Alice Njoroge",
+        "email": "alice.njoroge.kiambu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HOSPITAL ADMIN",
+        "email": "admin.kiambu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Mwangi",
+        "email": "james.mwangi.kiambu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui",
+        "email": "faith.wambui.kiambu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HR MANAGER",
+        "email": "hr.kiambu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Jane Wachira",
+        "email": "jane.wachira.kiambu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kelvin Ouma",
+        "email": "kelvin.ouma.kiambu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "LAB TECH",
+        "email": "labtech.kiambu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Wanyama",
+        "email": "peter.wanyama.kiambu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Njeri",
+        "email": "esther.njeri.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Joyce Kamau",
+        "email": "joyce.kamau.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Achieng",
+        "email": "mercy.achieng.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 1",
+        "email": "nurse1.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 2",
+        "email": "nurse2.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Ruth Mwikali",
+        "email": "ruth.mwikali.kiambu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dennis Njuguna",
+        "email": "dennis.njuguna.kiambu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PAYROLL OFFICER",
+        "email": "accountant.kiambu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kibet",
+        "email": "samuel.kibet.kiambu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "David Muriithi",
+        "email": "david.muriithi.kiambu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PHARMACIST",
+        "email": "pharmacist.kiambu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kiptoo",
+        "email": "peter.kiptoo.kiambu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Estella Ndungu",
+        "email": "estella.ndungu.kiambu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Mutiso",
+        "email": "lucy.mutiso.kiambu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "RECEPTIONIST",
+        "email": "reception.kiambu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ],
+    "6a46b1c0ea932922e8407ae8": [
+      {
+        "name": "DOCTOR 1",
+        "email": "doctor1.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "DOCTOR 2",
+        "email": "doctor2.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Brian Otieno",
+        "email": "dr.brian.otieno.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Cynthia Wakio",
+        "email": "dr.cynthia.wakio.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Grace Wanjiku",
+        "email": "dr.grace.wanjiku.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Samuel Mwangi",
+        "email": "dr.samuel.mwangi.machakos@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HOSPITAL ADMIN",
+        "email": "admin.machakos@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Mwangi",
+        "email": "james.mwangi.machakos@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Joseph Kamande",
+        "email": "joseph.kamande.machakos@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui",
+        "email": "faith.wambui.machakos@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Grace Kabiru",
+        "email": "grace.kabiru.machakos@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HR MANAGER",
+        "email": "hr.machakos@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kelvin Ouma",
+        "email": "kelvin.ouma.machakos@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "LAB TECH",
+        "email": "labtech.machakos@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Nancy Murithi",
+        "email": "nancy.murithi.machakos@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Anne Njeri",
+        "email": "anne.njeri.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Caroline Wairimu",
+        "email": "caroline.wairimu.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Njeri",
+        "email": "esther.njeri.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Achieng",
+        "email": "mercy.achieng.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 1",
+        "email": "nurse1.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 2",
+        "email": "nurse2.machakos@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Fred Wambua",
+        "email": "fred.wambua.machakos@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PAYROLL OFFICER",
+        "email": "accountant.machakos@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kibet",
+        "email": "samuel.kibet.machakos@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kevin Kimani",
+        "email": "kevin.kimani.machakos@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PHARMACIST",
+        "email": "pharmacist.machakos@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kiptoo",
+        "email": "peter.kiptoo.machakos@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Anne Muthoni",
+        "email": "anne.muthoni.machakos@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Mutiso",
+        "email": "lucy.mutiso.machakos@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "RECEPTIONIST",
+        "email": "reception.machakos@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ],
+    "6a46b1c1ea932922e8407afe": [
+      {
+        "name": "DOCTOR 1",
+        "email": "doctor1.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "DOCTOR 2",
+        "email": "doctor2.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Brian Otieno",
+        "email": "dr.brian.otieno.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Grace Wanjiku",
+        "email": "dr.grace.wanjiku.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Joseph Odhiambo",
+        "email": "dr.joseph.odhiambo.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Lydia Adera",
+        "email": "dr.lydia.adera.kisumu@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HOSPITAL ADMIN",
+        "email": "admin.kisumu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Mwangi",
+        "email": "james.mwangi.kisumu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Stephen Ochieng",
+        "email": "stephen.ochieng.kisumu@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui",
+        "email": "faith.wambui.kisumu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HR MANAGER",
+        "email": "hr.kisumu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Joy Akinyi",
+        "email": "joy.akinyi.kisumu@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Daniel Omondi",
+        "email": "daniel.omondi.kisumu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kelvin Ouma",
+        "email": "kelvin.ouma.kisumu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "LAB TECH",
+        "email": "labtech.kisumu@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Njeri",
+        "email": "esther.njeri.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Grace Akinyi",
+        "email": "grace.akinyi.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Achieng",
+        "email": "mercy.achieng.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Atieno",
+        "email": "mercy.atieno.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 1",
+        "email": "nurse1.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 2",
+        "email": "nurse2.kisumu@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Eric Otieno",
+        "email": "eric.otieno.kisumu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PAYROLL OFFICER",
+        "email": "accountant.kisumu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kibet",
+        "email": "samuel.kibet.kisumu@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Brian Oketch",
+        "email": "brian.oketch.kisumu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PHARMACIST",
+        "email": "pharmacist.kisumu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kiptoo",
+        "email": "peter.kiptoo.kisumu@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Mutiso",
+        "email": "lucy.mutiso.kisumu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Martha Ouma",
+        "email": "martha.ouma.kisumu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "RECEPTIONIST",
+        "email": "reception.kisumu@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ],
+    "6a46b1c2ea932922e8407b14": [
+      {
+        "name": "DOCTOR 1",
+        "email": "doctor1.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "DOCTOR 2",
+        "email": "doctor2.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Brian Otieno",
+        "email": "dr.brian.otieno.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Dennis Korir",
+        "email": "dr.dennis.korir.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Grace Wanjiku",
+        "email": "dr.grace.wanjiku.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Dr. Jane Ngeno",
+        "email": "dr.jane.ngeno.eldoret@test.afyalink.local",
+        "role": "DOCTOR",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HOSPITAL ADMIN",
+        "email": "admin.eldoret@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Mwangi",
+        "email": "james.mwangi.eldoret@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Maria Cheruiyot",
+        "email": "maria.cheruiyot.eldoret@test.afyalink.local",
+        "role": "HOSPITAL_ADMIN",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Faith Wambui",
+        "email": "faith.wambui.eldoret@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "HR MANAGER",
+        "email": "hr.eldoret@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Jeptoo",
+        "email": "mercy.jeptoo.eldoret@test.afyalink.local",
+        "role": "HR_MANAGER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Kelvin Ouma",
+        "email": "kelvin.ouma.eldoret@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "LAB TECH",
+        "email": "labtech.eldoret@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kimutai",
+        "email": "peter.kimutai.eldoret@test.afyalink.local",
+        "role": "LAB_TECH",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Njeri",
+        "email": "esther.njeri.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Mercy Achieng",
+        "email": "mercy.achieng.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 1",
+        "email": "nurse1.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "NURSE 2",
+        "email": "nurse2.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Patricia Chepchumba",
+        "email": "patricia.chepchumba.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Ruth Kiptoo",
+        "email": "ruth.kiptoo.eldoret@test.afyalink.local",
+        "role": "NURSE",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PAYROLL OFFICER",
+        "email": "accountant.eldoret@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Patrick Kimutai",
+        "email": "patrick.kimutai.eldoret@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Samuel Kibet",
+        "email": "samuel.kibet.eldoret@test.afyalink.local",
+        "role": "PAYROLL_OFFICER",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "James Koech",
+        "email": "james.koech.eldoret@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "PHARMACIST",
+        "email": "pharmacist.eldoret@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Peter Kiptoo",
+        "email": "peter.kiptoo.eldoret@test.afyalink.local",
+        "role": "PHARMACIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Esther Wanjiru",
+        "email": "esther.wanjiru.eldoret@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "Lucy Mutiso",
+        "email": "lucy.mutiso.eldoret@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      },
+      {
+        "name": "RECEPTIONIST",
+        "email": "reception.eldoret@test.afyalink.local",
+        "role": "RECEPTIONIST",
+        "active": true,
+        "emailVerified": true,
+        "phoneVerified": true
+      }
+    ]
+  },
+  "pharmacies": [
+    {
+      "name": "Eldoret Public Pharmacy",
+      "code": "GOV-PHARM-005",
+      "verified": true,
+      "external": true,
+      "hospital": null,
+      "latitude": 0.5167,
+      "longitude": 35.2833,
+      "county": "Rift Valley",
+      "city": "Eldoret",
+      "address": "County Medical Centre, Eldoret 30100, Kenya",
+      "email": "contact@eldoret.govpharmacy.ke",
+      "phone": "+254 53 5005000",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Kiambu Public Pharmacy",
+      "code": "GOV-PHARM-002",
+      "verified": true,
+      "external": true,
+      "hospital": null,
+      "latitude": -1.1667,
+      "longitude": 36.8333,
+      "county": "Central Kenya",
+      "city": "Kiambu",
+      "address": "County Health Complex, Kiambu 00900, Kenya",
+      "email": "contact@kiambu.govpharmacy.ke",
+      "phone": "+254 20 5002000",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Kisumu Central Government Pharmacy",
+      "code": "GOV-PHARM-004",
+      "verified": true,
+      "external": true,
+      "hospital": null,
+      "latitude": -0.0917,
+      "longitude": 34.768,
+      "county": "Western Kenya",
+      "city": "Kisumu",
+      "address": "Health Services Hub, Kisumu 40100, Kenya",
+      "email": "contact@kisumu.govpharmacy.ke",
+      "phone": "+254 57 5004000",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Machakos Regional Pharmacy",
+      "code": "GOV-PHARM-003",
+      "verified": true,
+      "external": true,
+      "hospital": null,
+      "latitude": -1.5167,
+      "longitude": 37.2667,
+      "county": "Eastern Kenya",
+      "city": "Machakos",
+      "address": "Regional Health Centre, Machakos 90100, Kenya",
+      "email": "contact@machakos.govpharmacy.ke",
+      "phone": "+254 45 5003000",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Nairobi Government Pharmacy",
+      "code": "GOV-PHARM-001",
+      "verified": true,
+      "external": true,
+      "hospital": null,
+      "latitude": -1.2833,
+      "longitude": 36.8167,
+      "county": "Nairobi Metropolitan",
+      "city": "Nairobi",
+      "address": "Government Health Plaza, Nairobi 00100, Kenya",
+      "email": "contact@nairobi.govpharmacy.ke",
+      "phone": "+254 20 5001000",
+      "status": "ACTIVE"
+    }
+  ]
+}

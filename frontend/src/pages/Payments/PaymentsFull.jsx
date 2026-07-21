@@ -1,23 +1,8 @@
-import React, { useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React from "react";
+import { usePaymentsFull } from "../../hooks/usePaymentsFull";
 
 export default function PaymentsPageFull() {
-  const [amount, setAmount] = useState(100);
-  const [busy, setBusy] = useState("");
-  const [result, setResult] = useState("");
-
-  async function runAction(kind, request) {
-    setBusy(kind);
-    setResult("");
-    try {
-      const payload = await request();
-      setResult(JSON.stringify(payload, null, 2));
-    } catch (err) {
-      setResult(err?.message || "Payment request failed.");
-    } finally {
-      setBusy("");
-    }
-  }
+  const { amount, setAmount, busy, result, runStripePayment, runMpesaPayment } = usePaymentsFull();
 
   return (
     <div className="dashboard premium-shell payments-shell">
@@ -71,14 +56,7 @@ export default function PaymentsPageFull() {
               type="button"
               className="premium-method-card recommended"
               disabled={busy === "stripe"}
-              onClick={() =>
-                runAction("stripe", async () =>
-                  apiFetch("/api/payments/stripe/create-intent", {
-                    method: "POST",
-                    body: { amount: Number(amount) },
-                  })
-                )
-              }
+              onClick={() => runStripePayment()}
             >
               <div className="premium-method-card__top">
                 <span className="premium-method-card__emoji">💳</span>
@@ -93,17 +71,7 @@ export default function PaymentsPageFull() {
               type="button"
               className="premium-method-card"
               disabled={busy === "mpesa"}
-              onClick={() =>
-                runAction("mpesa", async () =>
-                  apiFetch("/api/payments/mpesa/stk", {
-                    method: "POST",
-                    body: {
-                      amount: Number(amount),
-                      phone: "2547XXXXXXXX",
-                    },
-                  })
-                )
-              }
+              onClick={() => runMpesaPayment()}
             >
               <div className="premium-method-card__top">
                 <span className="premium-method-card__emoji">📱</span>

@@ -9,6 +9,9 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { encrypt } from "../services/cryptoService.js";
+import { serializeHospital } from "../utils/serializers.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
+import { notify } from "../services/notificationService.js";
 
 const HOSPITAL_DOC_FIELDS = [
   "registrationCertificate",
@@ -63,6 +66,14 @@ const buildHospitalVerificationSummary = (hospital) => ({
   suspiciousSignals: hospital?.verification?.suspiciousSignals || [],
   registryHospital: hospital?.verification?.registryHospital || null,
 });
+
+function isDemoHospitalCandidate(hospital) {
+  const name = String(hospital?.name || "").trim().toLowerCase();
+  const code = String(hospital?.code || "").trim().toUpperCase();
+  const address = String(hospital?.address || "").trim().toLowerCase();
+  const knownDemoMarkers = ["nairobi central medical centre", "kiambu regional hospital", "machakos community hospital", "kisumu lakeside hospital", "eldoret highlands medical centre", "demo hospital", "test hospital"];
+  return knownDemoMarkers.some((marker) => name.includes(marker) || address.includes(marker) || code.includes(marker.toUpperCase().replace(/\s+/g, "")));
+}
 
 async function ensureUploadRoot() {
   await fs.mkdir(hospitalUploadsRoot, { recursive: true });
@@ -331,8 +342,8 @@ export const createHospital = async (req, res, next) => {
     });
 
     if (req.user?._id) {
-      await Notification.insertMany([
-        {
+      await Promise.all([
+        notify({
           title: "Hospital Registration Submitted",
           body:
             verificationStatus === "VERIFIED"
@@ -346,8 +357,8 @@ export const createHospital = async (req, res, next) => {
             status: verificationStatus,
             registrationNumber: normalizedRegistrationNumber,
           },
-        },
-        {
+        }),
+        notify({
           title: "Free Trial Started",
           body: `${hospital.name} has started a 3-month free trial. Premium features are active now.`,
           user: req.user._id,
@@ -357,7 +368,7 @@ export const createHospital = async (req, res, next) => {
             type: "TRIAL_STARTED",
             trialEndsAt: hospital.subscription?.trialEndsAt,
           },
-        },
+        }),
       ]);
     }
 
@@ -429,22 +440,27 @@ export const listHospitals = async (req, res, next) => {
     const q = (req.query.q || "").trim();
     const active = req.query.active;
     const verified = req.query.verified;
+    const status = String(req.query.status || "").trim().toUpperCase();
     const withoutAdmin = coerceBoolean(req.query.withoutAdmin);
 
     const filter = {};
     if (q) {
-      filter.$or = [
+      filter.$or = buildBusinessIdSearchFilter(q, ["hospitalId"], [
         { name: { $regex: q, $options: "i" } },
         { code: { $regex: q, $options: "i" } },
         { contact: { $regex: q, $options: "i" } },
         { "verification.registrationNumber": { $regex: q, $options: "i" } },
-      ];
+      ]).$or;
     }
     if (active === "true") filter.active = true;
     if (active === "false") filter.active = false;
+    // Support `verified` boolean param and legacy `status=VERIFIED` used by some clients
     if (verified === "true") filter["verification.status"] = "VERIFIED";
     if (verified === "false") {
       filter["verification.status"] = { $ne: "VERIFIED" };
+    }
+    if (status === "VERIFIED") {
+      filter["verification.status"] = "VERIFIED";
     }
     if (withoutAdmin) {
       filter.$and = [...(filter.$and || []), { $or: [{ admins: { $exists: false } }, { admins: { $size: 0 } }] }];
@@ -466,7 +482,7 @@ export const listHospitals = async (req, res, next) => {
       const paid = status === "ACTIVE";
       const trialExpired = trialEndsAt ? now > trialEndsAt : false;
       const premiumPaused = Boolean(h?.subscription?.premiumPaused) || (trialExpired && !paid);
-      return {
+      const base = {
         ...h,
         verificationSummary: buildHospitalVerificationSummary(h),
         subscriptionState: {
@@ -479,6 +495,7 @@ export const listHospitals = async (req, res, next) => {
             : 0,
         },
       };
+      return serializeHospital(base);
     });
 
     res.json({ items, total, page, limit });
@@ -805,9 +822,18 @@ export const listMarketplaceHospitals = async (req, res, next) => {
 
     const filter = {
       active: true,
-      "verification.status": "VERIFIED",
-      "verification.publicVisible": true,
     };
+    const isDemoMode = String(req.query.demo || "true").toLowerCase() !== "false";
+    if (!isDemoMode) {
+      filter["verification.status"] = "VERIFIED";
+      filter["verification.publicVisible"] = true;
+    } else {
+      filter.$or = [
+        { "verification.status": "VERIFIED" },
+        { "verification.publicVisible": true },
+        { $expr: { $in: [{ $toLower: "$name" }, ["nairobi central medical centre", "kiambu regional hospital", "machakos community hospital", "kisumu lakeside hospital", "eldoret highlands medical centre", "demo hospital", "test hospital"]] } },
+      ];
+    }
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
@@ -821,7 +847,7 @@ export const listMarketplaceHospitals = async (req, res, next) => {
     const enableDistanceSort = lat !== null && lng !== null;
 
     const rows = await Hospital.find(filter)
-        .select("name code address contact type insuranceProviders patientPaymentMethods subscription location verification")
+        .select("name code address contact type insuranceProviders patientPaymentMethods subscription location verification features customization")
       .sort(enableDistanceSort ? { createdAt: -1 } : { name: 1 })
       .lean();
 
@@ -840,6 +866,18 @@ export const listMarketplaceHospitals = async (req, res, next) => {
           enableDistanceSort && hLat !== null && hLng !== null
             ? haversineKm(lat, lng, hLat, hLng)
             : null;
+
+        const consultationModes = [
+          h?.features?.realtime ? "VIDEO" : "IN_PERSON",
+          h?.features?.ai ? "VOICE" : null,
+        ].filter(Boolean);
+        const specialties = [
+          h?.customization?.clinical?.specialties?.[0] || "General Care",
+          h?.customization?.clinical?.specialties?.[1] || "Diagnostics",
+        ].filter(Boolean);
+        const liveQueueLength = Math.max(0, (Number(h?.customization?.clinical?.queueLength) || 0));
+        const liveWaitingTime = Math.max(0, Number(h?.customization?.clinical?.averageWaitMinutes) || 12 + (distanceKm ? Math.round(distanceKm * 2) : 0));
+        const liveAvailability = h?.features?.realtime ? "LIVE" : "STANDARD";
 
         return {
           _id: h._id,
@@ -863,6 +901,20 @@ export const listMarketplaceHospitals = async (req, res, next) => {
           },
           insuranceProviders: (h.insuranceProviders || []).filter((i) => i?.enabled !== false),
           patientPaymentMethods: (h.patientPaymentMethods || []).filter((m) => m?.enabled !== false),
+          waitingTime: liveWaitingTime,
+          queueLength: liveQueueLength,
+          queueLabel: liveQueueLength ? `${liveQueueLength} patients ahead` : "Open now",
+          consultationModes,
+          specialties,
+          rating: Number(h?.customization?.branding?.rating || 4.8).toFixed(1),
+          availability: liveAvailability,
+          liveStatus: premiumPaused ? "PAUSED" : liveAvailability,
+          services: [
+            h?.features?.lab ? "Lab" : null,
+            h?.features?.pharmacy ? "Pharmacy" : null,
+            h?.features?.payments ? "Billing" : null,
+            h?.features?.ai ? "AI Assist" : null,
+          ].filter(Boolean),
         };
       })
       .filter((row) => {

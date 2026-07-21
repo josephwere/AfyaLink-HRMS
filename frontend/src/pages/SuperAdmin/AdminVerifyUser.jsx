@@ -1,20 +1,7 @@
-import { useState } from "react";
-import { apiFetch } from "../../utils/apiFetch";
+import { useAdminVerifyUser } from "../../hooks/useAdminVerifyUser";
 
 export default function AdminVerifyUser() {
-  const [userId, setUserId] = useState("");
-  const [msg, setMsg] = useState("");
-
-  const handleVerify = async () => {
-    try {
-      await apiFetch(`/api/auth/admin/verify-user/${userId}`, {
-        method: "POST",
-      });
-      setMsg("✅ User verified successfully");
-    } catch (err) {
-      setMsg(err.message);
-    }
-  };
+  const { userId, setUserId, msg, handleVerify } = useAdminVerifyUser();
 
   return (
     <div className="dashboard premium-shell">

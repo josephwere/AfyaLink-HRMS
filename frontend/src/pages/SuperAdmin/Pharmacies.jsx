@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  createRegisteredPharmacy,
-  listRegisteredPharmacies,
-  updateRegisteredPharmacy,
-} from "../../services/pharmacyNetworkApi";
+import { usePharmaciesPage } from "../../hooks/usePharmaciesPage";
 
 const EMPTY_FORM = {
   name: "",
@@ -21,6 +17,7 @@ const EMPTY_FORM = {
 };
 
 export default function SuperAdminPharmacies() {
+  const { listRegisteredPharmacies, createRegisteredPharmacy, updateRegisteredPharmacy } = usePharmaciesPage();
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

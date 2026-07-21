@@ -10,6 +10,7 @@ import { buildLinkedMinorSummariesForUser } from '../services/familyMonitoringSe
 let teardown;
 let doctorToken;
 let parentToken;
+let superAdminToken;
 let hospitalId;
 let parentUserId;
 
@@ -44,6 +45,13 @@ beforeAll(async () => {
     nationalIdCountry: "KE",
     phone: "+254700000001",
   });
+  const superAdmin = await User.create({
+    name: "Super Admin Test",
+    email: "super-admin@afya.test",
+    password: "Super123!",
+    role: "SUPER_ADMIN",
+    active: true,
+  });
   parentUserId = parent._id;
   doctorToken = jwt.sign(
     { id: String(user._id), twoFactorVerified: true },
@@ -51,6 +59,10 @@ beforeAll(async () => {
   );
   parentToken = jwt.sign(
     { id: String(parent._id), twoFactorVerified: true },
+    process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+  );
+  superAdminToken = jwt.sign(
+    { id: String(superAdmin._id), twoFactorVerified: true },
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
   );
 });
@@ -70,6 +82,17 @@ describe('Patients CRUD', ()=>{
     const r = await request(app).get(`/api/patients/${patientId}`).set('Authorization', `Bearer ${doctorToken}`);
     expect(r.status).toBe(200);
     expect(r.body._id).toBe(patientId);
+  });
+
+  test('super admin can create a patient when scoped to a hospital', async () => {
+    const r = await request(app)
+      .post('/api/patients')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .set('X-Hospital', String(hospitalId))
+      .send({ firstName: 'Super', lastName: 'Admin', nationalId: 'P1234' });
+
+    expect(r.status).toBe(201);
+    expect(r.body.patient?._id).toBeDefined();
   });
 
   test('parent can self-register a minor under their own account', async () => {

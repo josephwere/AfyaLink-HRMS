@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { getCountyCommandCenterSummary } from "../../services/systemAdminApi";
+import { useCountyCommandCenter } from "../../hooks/useCountyCommandCenter";
 
 function regionRisk(row) {
   const pressure = Number(row.pendingTransfers || 0) + Number(row.offlineQueue || 0);
@@ -12,53 +12,25 @@ function regionRisk(row) {
 
 export default function CountyCommandCenter() {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [clientMeta, setClientMeta] = useState(null);
-  const [region, setRegion] = useState("");
+  const {
+    data,
+    loading,
+    error,
+    clientMeta,
+    region,
+    setRegion,
+    load,
+    regions,
+    regionOptions,
+    hasData,
+    initialLoading,
+    refreshing,
+  } = useCountyCommandCenter();
   const regionalSectionRef = useRef(null);
-  const requestRef = useRef(0);
 
   const scrollToSection = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  const load = useCallback(
-    async (selectedRegion = region, { preserveData = false } = {}) => {
-      const requestId = requestRef.current + 1;
-      requestRef.current = requestId;
-      setLoading(true);
-      setError("");
-      try {
-        const res = await getCountyCommandCenterSummary({ region: selectedRegion });
-        if (requestRef.current !== requestId) return;
-        setData(res?.payload || null);
-        setClientMeta(res?.clientMeta || null);
-      } catch (err) {
-        if (requestRef.current !== requestId) return;
-        setError(err?.message || "Failed to load county command center");
-        if (!preserveData) setData(null);
-      } finally {
-        if (requestRef.current === requestId) setLoading(false);
-      }
-    },
-    [region]
-  );
-
-  useEffect(() => {
-    load("", { preserveData: false });
-  }, [load]);
-
-  const hasData = Boolean(data);
-  const initialLoading = loading && !hasData;
-  const refreshing = loading && hasData;
-
-  const regions = Array.isArray(data?.regions) ? data.regions : [];
-  const regionOptions = useMemo(() => {
-    if (Array.isArray(data?.allRegions) && data.allRegions.length) return data.allRegions;
-    return regions.map((row) => row.region);
-  }, [data, regions]);
 
   return (
     <div className="dashboard">

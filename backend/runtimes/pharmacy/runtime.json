@@ -1,0 +1,29 @@
+{
+  "name": "pharmacy",
+  "owner": "backend-platform",
+  "version": "0.1.0",
+  "maturity": "In Progress",
+  "dependencies": [],
+  "states": [
+    "Pending",
+    "Completed",
+    "Cancelled"
+  ],
+  "eventsPublished": [],
+  "eventsConsumed": [],
+  "repositories": [],
+  "routes": [],
+  "controllers": [],
+  "policies": [],
+  "apiRoutes": [],
+  "databaseCollections": [],
+  "requiredTests": [
+    "unit",
+    "integration",
+    "api"
+  ],
+  "documentation": [
+    "README.md"
+  ],
+  "releaseStatus": "In Progress"
+}

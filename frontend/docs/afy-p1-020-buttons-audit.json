@@ -1,0 +1,1539 @@
+{
+  "summary": {
+    "total": 153,
+    "resolved": 29,
+    "unresolved": 124
+  },
+  "surfaces": [
+    {
+      "id": "button-src/app/shell/AppShell.jsx-80",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 80,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-88",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 88,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-96",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 96,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-123",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 123,
+      "label": "interactive action",
+      "target": "/app/people/approvals/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/people/approvals/index"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-131",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 131,
+      "label": "interactive action",
+      "target": "/app/people/home/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/people/home/index"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-139",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 139,
+      "label": "interactive action",
+      "target": "/app/people/home/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/people/home/index"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-150",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 150,
+      "label": "interactive action",
+      "target": "/app/revenue/payments/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/revenue/payments/index"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-158",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 158,
+      "label": "interactive action",
+      "target": "/app/platform/inbox/notifications",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/inbox/notifications"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-166",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 166,
+      "label": "interactive action",
+      "target": "/app/operations/lab/test-queue",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/lab/test-queue"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-174",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 174,
+      "label": "interactive action",
+      "target": "/app/operations/lab/test-queue",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/lab/test-queue"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-182",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 182,
+      "label": "interactive action",
+      "target": "/app/operations/scheduling/appointments",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/scheduling/appointments"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-488",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 488,
+      "label": "interactive action",
+      "target": "/step-up",
+      "resolved": true,
+      "reason": "matches canonical route /step-up"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-543",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 543,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-561",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 561,
+      "label": "interactive action",
+      "target": "/step-up",
+      "resolved": true,
+      "reason": "matches canonical route /step-up"
+    },
+    {
+      "id": "button-src/app/shell/AppShell.jsx-653",
+      "surface": "button",
+      "file": "src/app/shell/AppShell.jsx",
+      "line": 653,
+      "label": "interactive action",
+      "target": "/step-up",
+      "resolved": true,
+      "reason": "matches canonical route /step-up"
+    },
+    {
+      "id": "button-src/components/FloatingAI.jsx-356",
+      "surface": "button",
+      "file": "src/components/FloatingAI.jsx",
+      "line": 356,
+      "label": "interactive action",
+      "target": "/app/innovation/ai/chatbot",
+      "resolved": true,
+      "reason": "matches canonical route /app/innovation/ai/chatbot"
+    },
+    {
+      "id": "button-src/components/Navbar.jsx-119",
+      "surface": "button",
+      "file": "src/components/Navbar.jsx",
+      "line": 119,
+      "label": "interactive action",
+      "target": "/app/operations/home/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/home/index"
+    },
+    {
+      "id": "button-src/components/Navbar.jsx-121",
+      "surface": "button",
+      "file": "src/components/Navbar.jsx",
+      "line": 121,
+      "label": "interactive action",
+      "target": "/app/portal/home/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/portal/home/index"
+    },
+    {
+      "id": "button-src/components/Navbar.jsx-164",
+      "surface": "button",
+      "file": "src/components/Navbar.jsx",
+      "line": 164,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/components/Navigation/Sidebar.jsx-292",
+      "surface": "button",
+      "file": "src/components/Navigation/Sidebar.jsx",
+      "line": 292,
+      "label": "interactive action",
+      "target": "/app/platform/account/profile",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/account/profile"
+    },
+    {
+      "id": "button-src/components/NotificationCenter.jsx-341",
+      "surface": "button",
+      "file": "src/components/NotificationCenter.jsx",
+      "line": 341,
+      "label": "interactive action",
+      "target": "/app/platform/inbox/notifications",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/inbox/notifications"
+    },
+    {
+      "id": "button-src/hooks/useCommerceConfig.js-114",
+      "surface": "button",
+      "file": "src/hooks/useCommerceConfig.js",
+      "line": 114,
+      "label": "interactive action",
+      "target": "/hospital-admin/customization",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useLogin.js-91",
+      "surface": "button",
+      "file": "src/hooks/useLogin.js",
+      "line": 91,
+      "label": "interactive action",
+      "target": "/2fa",
+      "resolved": true,
+      "reason": "matches canonical route /2fa"
+    },
+    {
+      "id": "button-src/hooks/useRegister.js-94",
+      "surface": "button",
+      "file": "src/hooks/useRegister.js",
+      "line": 94,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "button-src/hooks/useResetPassword.js-41",
+      "surface": "button",
+      "file": "src/hooks/useResetPassword.js",
+      "line": 41,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-98",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 98,
+      "label": "interactive action",
+      "target": "/hospital-admin/financials",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-113",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 113,
+      "label": "interactive action",
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-118",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 118,
+      "label": "interactive action",
+      "target": "/payments/full",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useSuperAssistants.js-265",
+      "surface": "button",
+      "file": "src/hooks/useSuperAssistants.js",
+      "line": 265,
+      "label": "interactive action",
+      "target": "/app/platform/support/tickets${suffix}",
+      "resolved": true,
+      "reason": "matches parent route /app/platform/support/tickets${suffix}"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-77",
+      "surface": "button",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 77,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-127",
+      "surface": "button",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 127,
+      "label": "interactive action",
+      "target": "/",
+      "resolved": true,
+      "reason": "matches canonical route /"
+    },
+    {
+      "id": "button-src/hooks/useTwoFactor.js-165",
+      "surface": "button",
+      "file": "src/hooks/useTwoFactor.js",
+      "line": 165,
+      "label": "interactive action",
+      "target": "/login",
+      "resolved": true,
+      "reason": "matches canonical route /login"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-37",
+      "surface": "button",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 37,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-41",
+      "surface": "button",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 41,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-33",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 33,
+      "label": "Open Queue Replay",
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-34",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 34,
+      "label": "Provenance Verify",
+      "target": "/developer/provenance-verify",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-35",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 35,
+      "label": "Webhook Recovery",
+      "target": "/developer/webhook-retry",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/ProvenanceVerify.jsx-36",
+      "surface": "button",
+      "file": "src/pages/Developer/ProvenanceVerify.jsx",
+      "line": 36,
+      "label": "Transfer Command Center",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-34",
+      "surface": "button",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 34,
+      "label": "Open Webhook Recovery",
+      "target": "/developer/webhook-retry",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-35",
+      "surface": "button",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 35,
+      "label": "Open Decision Cockpit",
+      "target": "/developer/decision-cockpit",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-146",
+      "surface": "button",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 146,
+      "label": "Audit Logs",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/QueueReplay.jsx-147",
+      "surface": "button",
+      "file": "src/pages/Developer/QueueReplay.jsx",
+      "line": 147,
+      "label": "Integration Monitor",
+      "target": "/admin/realtime",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/WebhookRetry.jsx-32",
+      "surface": "button",
+      "file": "src/pages/Developer/WebhookRetry.jsx",
+      "line": 32,
+      "label": "Queue Replay",
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/WebhookRetry.jsx-33",
+      "surface": "button",
+      "file": "src/pages/Developer/WebhookRetry.jsx",
+      "line": 33,
+      "label": "Integration Monitor",
+      "target": "/admin/realtime",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/DoctorSettings.jsx-91",
+      "surface": "button",
+      "file": "src/pages/Doctor/DoctorSettings.jsx",
+      "line": 91,
+      "label": "interactive action",
+      "target": "/doctor/schedule",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/LabResults.jsx-39",
+      "surface": "button",
+      "file": "src/pages/Doctor/LabResults.jsx",
+      "line": 39,
+      "label": "interactive action",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-13",
+      "surface": "button",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 13,
+      "label": "interactive action",
+      "target": "/workforce/requests",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-14",
+      "surface": "button",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 14,
+      "label": "interactive action",
+      "target": "/workforce/requests",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/LeaveRequests.jsx-15",
+      "surface": "button",
+      "file": "src/pages/Doctor/LeaveRequests.jsx",
+      "line": 15,
+      "label": "interactive action",
+      "target": "/workforce/requests",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MedicalRecords.jsx-29",
+      "surface": "button",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 29,
+      "label": "interactive action",
+      "target": "/doctor/opd",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MedicalRecords.jsx-32",
+      "surface": "button",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 32,
+      "label": "interactive action",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-141",
+      "surface": "button",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 141,
+      "label": "Open Record",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-142",
+      "surface": "button",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 142,
+      "label": "Add Note",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-143",
+      "surface": "button",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 143,
+      "label": "Prescribe",
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MyPatients.jsx-144",
+      "surface": "button",
+      "file": "src/pages/Doctor/MyPatients.jsx",
+      "line": 144,
+      "label": "Refer",
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MySchedule.jsx-147",
+      "surface": "button",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 147,
+      "label": "interactive action",
+      "target": "/doctor/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/MySchedule.jsx-149",
+      "surface": "button",
+      "file": "src/pages/Doctor/MySchedule.jsx",
+      "line": 149,
+      "label": "interactive action",
+      "target": "/doctor/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-54",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 54,
+      "label": "interactive action",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-60",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 60,
+      "label": "interactive action",
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-138",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 138,
+      "label": "interactive action",
+      "target": "/doctor/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-199",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 199,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-318",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 318,
+      "label": "interactive action",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-318",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 318,
+      "label": "interactive action",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-325",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 325,
+      "label": "interactive action",
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-325",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 325,
+      "label": "interactive action",
+      "target": "/doctor/referrals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/OPDWorkspace.jsx-332",
+      "surface": "button",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 332,
+      "label": "interactive action",
+      "target": "/hospital-admin/pharmacy-referrals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/ReportsNotes.jsx-85",
+      "surface": "button",
+      "file": "src/pages/Doctor/ReportsNotes.jsx",
+      "line": 85,
+      "label": "interactive action",
+      "target": "/doctor/opd",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/ReportsNotes.jsx-88",
+      "surface": "button",
+      "file": "src/pages/Doctor/ReportsNotes.jsx",
+      "line": 88,
+      "label": "interactive action",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/Transfers.jsx-19",
+      "surface": "button",
+      "file": "src/pages/Doctor/Transfers.jsx",
+      "line": 19,
+      "label": "interactive action",
+      "target": "/doctor/opd",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Doctor/Transfers.jsx-22",
+      "surface": "button",
+      "file": "src/pages/Doctor/Transfers.jsx",
+      "line": 22,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "surface": "button",
+      "file": "src/pages/HospitalAdmin/Approvals.jsx",
+      "line": 949,
+      "label": "interactive action",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "surface": "button",
+      "file": "src/pages/HospitalAdmin/Approvals.jsx",
+      "line": 954,
+      "label": "interactive action",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/MachineConnectivity.jsx-157",
+      "surface": "button",
+      "file": "src/pages/HospitalAdmin/MachineConnectivity.jsx",
+      "line": 157,
+      "label": "interactive action",
+      "target": "/hospital-admin/machine-alerts",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/TransferCommandCenter.jsx-67",
+      "surface": "button",
+      "file": "src/pages/HospitalAdmin/TransferCommandCenter.jsx",
+      "line": 67,
+      "label": "interactive action",
+      "target": "/hospital-admin/staff-transfers",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/HospitalAdmin/TransferCommandCenter.jsx-70",
+      "surface": "button",
+      "file": "src/pages/HospitalAdmin/TransferCommandCenter.jsx",
+      "line": 70,
+      "label": "interactive action",
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/ClinicalOrderCopilot.jsx-100",
+      "surface": "button",
+      "file": "src/pages/Innovation/ClinicalOrderCopilot.jsx",
+      "line": 100,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/ClinicalOrderCopilot.jsx-176",
+      "surface": "button",
+      "file": "src/pages/Innovation/ClinicalOrderCopilot.jsx",
+      "line": 176,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-39",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 39,
+      "label": "interactive action",
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-40",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 40,
+      "label": "interactive action",
+      "target": "/hospital-admin/machine-alerts",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-42",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 42,
+      "label": "interactive action",
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-43",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 43,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-85",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 85,
+      "label": "interactive action",
+      "target": "/hospital-admin/ward-board",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-92",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 92,
+      "label": "interactive action",
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-99",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 99,
+      "label": "interactive action",
+      "target": "/ops/emergency-command",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-106",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 106,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-268",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 268,
+      "label": "Open ward board",
+      "target": "/hospital-admin/ward-board",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-299",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 299,
+      "label": "Device console",
+      "target": "/hospital-admin/machine-connectivity",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Innovation/DigitalHospitalTwin.jsx-341",
+      "surface": "button",
+      "file": "src/pages/Innovation/DigitalHospitalTwin.jsx",
+      "line": 341,
+      "label": "Emergency view",
+      "target": "/ops/emergency-command",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-76",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 76,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-93",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 93,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-100",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 100,
+      "label": "interactive action",
+      "target": "/nurse/medication",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-110",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 110,
+      "label": "interactive action",
+      "target": "/nurse/ward-board",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-115",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 115,
+      "label": "interactive action",
+      "target": "/nurse/patients",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-120",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 120,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-153",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 153,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-165",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 165,
+      "label": "interactive action",
+      "target": "/nurse/patients",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-172",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 172,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/AssignedPatients.jsx-181",
+      "surface": "button",
+      "file": "src/pages/Nurse/AssignedPatients.jsx",
+      "line": 181,
+      "label": "interactive action",
+      "target": "/nurse/vitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/VitalsEntry.jsx-31",
+      "surface": "button",
+      "file": "src/pages/Nurse/VitalsEntry.jsx",
+      "line": 31,
+      "label": "interactive action",
+      "target": "/nurse/patients",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Nurse/VitalsEntry.jsx-41",
+      "surface": "button",
+      "file": "src/pages/Nurse/VitalsEntry.jsx",
+      "line": 41,
+      "label": "Trend View",
+      "target": "/analytics",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-41",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 41,
+      "label": "interactive action",
+      "target": "/payments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-44",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 44,
+      "label": "interactive action",
+      "target": "/patient/family-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-47",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 47,
+      "label": "interactive action",
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-50",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 50,
+      "label": "interactive action",
+      "target": "/reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-53",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 53,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-101",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 101,
+      "label": "interactive action",
+      "target": "/payments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Billing.jsx-104",
+      "surface": "button",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 104,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-20",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 20,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-23",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 23,
+      "label": "interactive action",
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-26",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 26,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-29",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 29,
+      "label": "interactive action",
+      "target": "/patient/billing",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-136",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 136,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-189",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 189,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyRecords.jsx-192",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 192,
+      "label": "interactive action",
+      "target": "/reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-52",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 52,
+      "label": "interactive action",
+      "target": "/patient/family-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-55",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 55,
+      "label": "interactive action",
+      "target": "/patient/billing",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/FamilyTimeline.jsx-58",
+      "surface": "button",
+      "file": "src/pages/Patient/FamilyTimeline.jsx",
+      "line": 58,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Hospitals.jsx-64",
+      "surface": "button",
+      "file": "src/pages/Patient/Hospitals.jsx",
+      "line": 64,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Hospitals.jsx-135",
+      "surface": "button",
+      "file": "src/pages/Patient/Hospitals.jsx",
+      "line": 135,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-25",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 25,
+      "label": "interactive action",
+      "target": "/patient/hospitals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-28",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 28,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-31",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 31,
+      "label": "interactive action",
+      "target": "/payments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-62",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 62,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-109",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 109,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/Insurance.jsx-112",
+      "surface": "button",
+      "file": "src/pages/Patient/Insurance.jsx",
+      "line": 112,
+      "label": "interactive action",
+      "target": "/payments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-22",
+      "surface": "button",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 22,
+      "label": "interactive action",
+      "target": "/patient/family-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-25",
+      "surface": "button",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 25,
+      "label": "interactive action",
+      "target": "/patient/family-timeline",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/MedicalRecords.jsx-28",
+      "surface": "button",
+      "file": "src/pages/Patient/MedicalRecords.jsx",
+      "line": 28,
+      "label": "interactive action",
+      "target": "/reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Patient/MyAppointments.jsx-253",
+      "surface": "button",
+      "file": "src/pages/Patient/MyAppointments.jsx",
+      "line": 253,
+      "label": "interactive action",
+      "target": "/app/portal/appointments/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/portal/appointments/index"
+    },
+    {
+      "id": "button-src/pages/Pharmacy/InventoryPage.jsx-16",
+      "surface": "button",
+      "file": "src/pages/Pharmacy/InventoryPage.jsx",
+      "line": 16,
+      "label": "interactive action",
+      "target": "/inventory",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-61",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 61,
+      "label": "Policy settings",
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-152",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 152,
+      "label": "Regulatory reports",
+      "target": "/system-admin/regulatory-reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-246",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 246,
+      "label": "Edit templates",
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-273",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 273,
+      "label": "Audit logs",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/ComplianceCenter.jsx-312",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/ComplianceCenter.jsx",
+      "line": 312,
+      "label": "Open reports",
+      "target": "/system-admin/regulatory-reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-43",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 43,
+      "label": "Offline Ops",
+      "target": "/admin/offline-ops",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-44",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 44,
+      "label": "Training Tracker",
+      "target": "/admin/training-tracker",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-45",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 45,
+      "label": "Integration Control Plane",
+      "target": "/system-admin/integration-control-plane",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-111",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 111,
+      "label": "interactive action",
+      "target": "/admin/beds",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/CountyCommandCenter.jsx-123",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 123,
+      "label": "interactive action",
+      "target": "/admin/offline-ops",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-56",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 56,
+      "label": "interactive action",
+      "target": "/system-admin/integration-hub",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-59",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 59,
+      "label": "interactive action",
+      "target": "/admin/realtime",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-62",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 62,
+      "label": "interactive action",
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-210",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 210,
+      "label": "interactive action",
+      "target": "/system-admin/connector-sdk",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/IntegrationControlPlane.jsx-213",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 213,
+      "label": "interactive action",
+      "target": "/admin/realtime",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/PharmacyAccessAudit.jsx-20",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/PharmacyAccessAudit.jsx",
+      "line": 20,
+      "label": "interactive action",
+      "target": "/hospital-admin/staff",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/PharmacyAccessAudit.jsx-136",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/PharmacyAccessAudit.jsx",
+      "line": 136,
+      "label": "interactive action",
+      "target": "/hospital-admin/staff",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-197",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 197,
+      "label": "Revenue policy",
+      "target": "/super-admin/settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-262",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 262,
+      "label": "Fraud guard",
+      "target": "/system-admin/fraud-guard",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-301",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 301,
+      "label": "Financials",
+      "target": "/hospital-admin/financials",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-338",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 338,
+      "label": "Open claims",
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/SystemAdmin/RevenueIntelligence.jsx-380",
+      "surface": "button",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 380,
+      "label": "Government claims",
+      "target": "/system-admin/government-claims",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Workforce/MyRequests.jsx-402",
+      "surface": "button",
+      "file": "src/pages/Workforce/MyRequests.jsx",
+      "line": 402,
+      "label": "interactive action",
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    }
+  ]
+}

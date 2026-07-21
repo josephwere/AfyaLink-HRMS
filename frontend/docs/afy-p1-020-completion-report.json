@@ -1,0 +1,221 @@
+{
+  "generatedAt": "2026-07-21T11:01:05.637Z",
+  "validationCommands": [
+    "npm run audit:interactive-surfaces",
+    "npm run audit:simulate-clicks"
+  ],
+  "summary": {
+    "generatedAt": "2026-07-21T11:01:05.563Z",
+    "total": 282,
+    "resolved": 78,
+    "unresolved": 204,
+    "bySurface": {
+      "deep-link": 46,
+      "button": 153,
+      "dashboard-card": 83
+    },
+    "canonicalRoutes": 162
+  },
+  "unresolved": [
+    {
+      "id": "deep-link-src/components/AccessDeniedCard.jsx-14",
+      "surface": "deep-link",
+      "file": "src/components/AccessDeniedCard.jsx",
+      "line": 14,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-648",
+      "surface": "deep-link",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 648,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/components/ConsultationRoom.jsx-657",
+      "surface": "deep-link",
+      "file": "src/components/ConsultationRoom.jsx",
+      "line": 657,
+      "label": "interactive action",
+      "target": "/patient/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useCommerceConfig.js-114",
+      "surface": "button",
+      "file": "src/hooks/useCommerceConfig.js",
+      "line": 114,
+      "label": "interactive action",
+      "target": "/hospital-admin/customization",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-98",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 98,
+      "label": "interactive action",
+      "target": "/hospital-admin/financials",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-113",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 113,
+      "label": "interactive action",
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/hooks/useRevenueIntelligence.js-118",
+      "surface": "button",
+      "file": "src/hooks/useRevenueIntelligence.js",
+      "line": 118,
+      "label": "interactive action",
+      "target": "/payments/full",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-37",
+      "surface": "button",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 37,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Admin/AccessControl.jsx-41",
+      "surface": "button",
+      "file": "src/pages/Admin/AccessControl.jsx",
+      "line": 41,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-47",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/CreateAdmin.jsx",
+      "line": 47,
+      "label": "Manage Super Assistants",
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-86",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 86,
+      "label": "Open Audit Logs",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-87",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 87,
+      "label": "Open AI Autofill Audit",
+      "target": "/admin/ai-autofill-audit",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-88",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 88,
+      "label": "Create Admin",
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/Dashboard.jsx-89",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/Dashboard.jsx",
+      "line": 89,
+      "label": "Super Assistants",
+      "target": "/admin/super-assistants",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "deep-link-src/pages/Admin/SuperAssistants.jsx-59",
+      "surface": "deep-link",
+      "file": "src/pages/Admin/SuperAssistants.jsx",
+      "line": 59,
+      "label": "Register Super Assistant",
+      "target": "/admin/create-admin",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-33",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 33,
+      "label": "Open Queue Replay",
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-34",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 34,
+      "label": "Provenance Verify",
+      "target": "/developer/provenance-verify",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/DecisionCockpit.jsx-35",
+      "surface": "button",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 35,
+      "label": "Webhook Recovery",
+      "target": "/developer/webhook-retry",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Developer/DecisionCockpit.jsx-72",
+      "surface": "dashboard-card",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 72,
+      "label": "DLQ Failed",
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Developer/ProvenanceVerify.jsx-36",
+      "surface": "button",
+      "file": "src/pages/Developer/ProvenanceVerify.jsx",
+      "line": 36,
+      "label": "Transfer Command Center",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    }
+  ]
+}

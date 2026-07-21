@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Nairobi Central Medical Centre",
+    "code": "NCMC",
+    "id": "6a46b1bfea932922e8407aa9",
+    "userCount": 10,
+    "city": "Nairobi",
+    "county": "Nairobi",
+    "region": "Nairobi Metropolitan"
+  },
+  {
+    "name": "Kiambu Regional Hospital",
+    "code": "KRH",
+    "id": "6a46b1c0ea932922e8407ad2",
+    "userCount": 10,
+    "city": "Kiambu",
+    "county": "Kiambu",
+    "region": "Central Kenya"
+  },
+  {
+    "name": "Machakos Community Hospital",
+    "code": "MCH",
+    "id": "6a46b1c0ea932922e8407ae8",
+    "userCount": 10,
+    "city": "Machakos",
+    "county": "Machakos",
+    "region": "Eastern Kenya"
+  },
+  {
+    "name": "Kisumu Lakeside Hospital",
+    "code": "KLH",
+    "id": "6a46b1c1ea932922e8407afe",
+    "userCount": 10,
+    "city": "Kisumu",
+    "county": "Kisumu",
+    "region": "Western Kenya"
+  },
+  {
+    "name": "Eldoret Highlands Medical Centre",
+    "code": "EHMC",
+    "id": "6a46b1c2ea932922e8407b14",
+    "userCount": 10,
+    "city": "Eldoret",
+    "county": "Uasin Gishu",
+    "region": "Rift Valley"
+  }
+]

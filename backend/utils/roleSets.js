@@ -14,6 +14,10 @@ export const HOSPITAL_SCOPED_ROLES = Object.freeze([
   "HR_MANAGER",
   "PAYROLL_OFFICER",
   "COMMUNITY_HEALTH_WORKER",
+  "DRIVER",
+  "AMBULANCE_DRIVER",
+  "MORTUARY_STAFF",
+  "MORTUARY_MANAGER",
 ]);
 
 export const STAFF_ROLES = Object.freeze(

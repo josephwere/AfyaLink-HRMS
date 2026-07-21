@@ -1,52 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { getOfflineMetricsSnapshot, refreshOfflineMetricsSnapshot } from "../../utils/offlineQueue";
-import { getOfflineOpsMetrics, getOfflineQueueStatus } from "../../services/offlineOpsApi";
+import React, { useState } from "react";
+import { useOfflineOps } from "../../hooks/useOfflineOps";
 
 export default function OfflineOps() {
-  const filtersRef = useRef(null);
-  const moduleTableRef = useRef(null);
-  const clientSignalsRef = useRef(null);
-  const [loading, setLoading] = useState(false);
   const [hours, setHours] = useState(72);
   const [q, setQ] = useState("");
-  const [server, setServer] = useState(null);
-  const [queueStatus, setQueueStatus] = useState(null);
-  const [local, setLocal] = useState(() => getOfflineMetricsSnapshot());
-  const [err, setErr] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setErr("");
-    try {
-      const [metrics, status] = await Promise.all([
-        getOfflineOpsMetrics({ hours, q, limit: 150 }),
-        getOfflineQueueStatus().catch(() => null),
-      ]);
-      setServer(metrics || null);
-      setQueueStatus(status || null);
-      setLocal(refreshOfflineMetricsSnapshot());
-    } catch (e) {
-      setErr(String(e?.message || "Failed to load offline metrics"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  useEffect(() => {
-    const onUpdate = (ev) => setLocal(ev?.detail || getOfflineMetricsSnapshot());
-    window.addEventListener("afyalink:offline-metrics-updated", onUpdate);
-    const timer = setInterval(load, 30000);
-    return () => {
-      window.removeEventListener("afyalink:offline-metrics-updated", onUpdate);
-      clearInterval(timer);
-    };
-  }, [hours, q]);
-
-  const moduleRows = useMemo(() => server?.byModule || [], [server]);
+  const {
+    filtersRef,
+    moduleTableRef,
+    clientSignalsRef,
+    loading,
+    server,
+    queueStatus,
+    local,
+    err,
+    load,
+    moduleRows,
+  } = useOfflineOps({ hours, q });
 
   return (
     <div className="dashboard">

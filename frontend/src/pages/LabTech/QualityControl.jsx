@@ -1,44 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
+import { useLabOps } from "../../hooks/useLabOps";
 
 export default function QualityControl() {
-  const [runs, setRuns] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ testKit: "", outcome: "PASS", note: "" });
-
-  const loadRuns = async () => {
-    try {
-      const data = await listLabOpsRecords({ kind: "QUALITY_CONTROL", limit: 80 });
-      setRuns(Array.isArray(data?.items) ? data.items : []);
-      setTotal(Number(data?.total || 0));
-      setMessage("");
-    } catch (err) {
-      setRuns([]);
-      setTotal(0);
-      setMessage(err?.message || "Unable to load quality control runs.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadRuns();
-  }, []);
-
-  const sorted = useMemo(
-    () =>
-      [...runs].sort(
-        (a, b) =>
-          new Date(b.observedAt || b.createdAt).getTime() -
-          new Date(a.observedAt || a.createdAt).getTime()
-      ),
-    [runs]
-  );
+  const { records: runs, sorted, total, loading, busy, message, setMessage, form, setForm, createRecord } = useLabOps({
+    kind: "QUALITY_CONTROL",
+    limit: 80,
+    initialForm: { testKit: "", outcome: "PASS", note: "" },
+  });
 
   const save = async (e) => {
     e.preventDefault();
@@ -47,22 +17,15 @@ export default function QualityControl() {
       return;
     }
 
-    setBusy(true);
-    try {
-      await createLabOpsRecord({
-        kind: "QUALITY_CONTROL",
-        title: form.testKit.trim(),
-        status: form.outcome,
-        note: form.note,
-      });
+    const ok = await createRecord({
+      kind: "QUALITY_CONTROL",
+      title: form.testKit.trim(),
+      status: form.outcome,
+      note: form.note,
+    });
+    if (ok) {
       setForm({ testKit: "", outcome: "PASS", note: "" });
       setShowForm(false);
-      await loadRuns();
-      setMessage("Quality control run saved.");
-    } catch (err) {
-      setMessage(err?.message || "Unable to save the quality control run.");
-    } finally {
-      setBusy(false);
     }
   };
 

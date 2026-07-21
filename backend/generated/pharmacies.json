@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Nairobi Government Pharmacy",
+    "licenseNumber": "GOV-PHARM-001",
+    "id": "6a46c0a6ea932922e8407df2",
+    "city": "Nairobi",
+    "region": "Nairobi Metropolitan",
+    "contactEmail": "contact@nairobi.govpharmacy.ke"
+  },
+  {
+    "name": "Kiambu Public Pharmacy",
+    "licenseNumber": "GOV-PHARM-002",
+    "id": "6a46c0a6ea932922e8407df4",
+    "city": "Kiambu",
+    "region": "Central Kenya",
+    "contactEmail": "contact@kiambu.govpharmacy.ke"
+  },
+  {
+    "name": "Machakos Regional Pharmacy",
+    "licenseNumber": "GOV-PHARM-003",
+    "id": "6a46c0a6ea932922e8407df6",
+    "city": "Machakos",
+    "region": "Eastern Kenya",
+    "contactEmail": "contact@machakos.govpharmacy.ke"
+  },
+  {
+    "name": "Kisumu Central Government Pharmacy",
+    "licenseNumber": "GOV-PHARM-004",
+    "id": "6a46c0a6ea932922e8407df8",
+    "city": "Kisumu",
+    "region": "Western Kenya",
+    "contactEmail": "contact@kisumu.govpharmacy.ke"
+  },
+  {
+    "name": "Eldoret Public Pharmacy",
+    "licenseNumber": "GOV-PHARM-005",
+    "id": "6a46c0a6ea932922e8407dfa",
+    "city": "Eldoret",
+    "region": "Rift Valley",
+    "contactEmail": "contact@eldoret.govpharmacy.ke"
+  }
+]

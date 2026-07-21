@@ -1,105 +1,26 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  listMyTransfers,
-  patientGrantTransferConsent,
-  patientRevokeTransferConsent,
-} from "../../services/transferApi";
-
-const CONSENT_SCOPES = ["demographics", "encounters", "labs", "prescriptions", "reports"];
-const DEFAULT_SCOPES = ["demographics", "encounters", "labs", "prescriptions"];
+import React from "react";
+import { usePatientTransfers } from "../../hooks/usePatientTransfers";
 
 export default function Transfers() {
-  const [rows, setRows] = useState([]);
-  const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
-  const [selectedId, setSelectedId] = useState("");
-  const [consentDraft, setConsentDraft] = useState({ scopes: DEFAULT_SCOPES, expiresInDays: 30 });
-  const [busy, setBusy] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await listMyTransfers({ status, limit: 50 });
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setRows(items);
-      if (!selectedId && items[0]?._id) setSelectedId(String(items[0]._id));
-    } catch (err) {
-      setError(err?.message || "Failed to load transfers.");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [status]);
-
-  const selected = useMemo(
-    () => rows.find((row) => String(row._id) === String(selectedId)) || null,
-    [rows, selectedId]
-  );
-
-  useEffect(() => {
-    if (!selected?.consent) return;
-    const scopes = Array.isArray(selected.consent.scopes) && selected.consent.scopes.length
-      ? selected.consent.scopes
-      : DEFAULT_SCOPES;
-    const expiresAt = selected.consent.expiresAt ? new Date(selected.consent.expiresAt) : null;
-    const expiresInDays = expiresAt ? Math.max(1, Math.round((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 30;
-    setConsentDraft({ scopes, expiresInDays });
-  }, [selected?.consent?.updatedAt]);
-
-  const toggleScope = (scope, value) => {
-    setConsentDraft((prev) => {
-      const set = new Set(prev.scopes || []);
-      if (value) set.add(scope);
-      else set.delete(scope);
-      return { ...prev, scopes: Array.from(set) };
-    });
-  };
-
-  const grantConsent = async () => {
-    if (!selected) return;
-    setMsg("");
-    setError("");
-    setBusy("grant");
-    try {
-      const expiresIn = Number(consentDraft.expiresInDays || 0);
-      const expiresAt = expiresIn > 0
-        ? new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000).toISOString()
-        : undefined;
-      await patientGrantTransferConsent(selected._id, {
-        scopes: consentDraft.scopes,
-        expiresAt,
-      });
-      setMsg("Consent granted.");
-      await load();
-    } catch (err) {
-      setError(err?.message || "Failed to grant consent.");
-    } finally {
-      setBusy("");
-    }
-  };
-
-  const revokeConsent = async () => {
-    if (!selected) return;
-    setMsg("");
-    setError("");
-    setBusy("revoke");
-    try {
-      await patientRevokeTransferConsent(selected._id);
-      setMsg("Consent revoked.");
-      await load();
-    } catch (err) {
-      setError(err?.message || "Failed to revoke consent.");
-    } finally {
-      setBusy("");
-    }
-  };
+  const {
+    rows,
+    status,
+    setStatus,
+    loading,
+    msg,
+    error,
+    selectedId,
+    setSelectedId,
+    consentDraft,
+    setConsentDraft,
+    busy,
+    selected,
+    CONSENT_SCOPES,
+    load,
+    toggleScope,
+    grantConsent,
+    revokeConsent,
+  } = usePatientTransfers();
 
   return (
     <div className="dashboard">

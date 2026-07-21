@@ -1,41 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
-import { listPharmacyReferrals } from "../../services/pharmacyNetworkApi";
+import React from "react";
 import ContentSkeleton from "../../components/ContentSkeleton";
 import GuidedEmptyState from "../../components/GuidedEmptyState";
+import { usePatientPrescriptions } from "../../hooks/usePatientPrescriptions";
 
 export default function PatientPrescriptions() {
-  const [items, setItems] = useState([]);
-  const [referrals, setReferrals] = useState([]);
-  const [filter, setFilter] = useState("ALL");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const res = await apiFetch("/api/pharmacy/prescriptions");
-      setItems(Array.isArray(res?.items) ? res.items : []);
-      const referralRes = await listPharmacyReferrals({ limit: 50 });
-      setReferrals(Array.isArray(referralRes?.items) ? referralRes.items : []);
-    } catch (err) {
-      setItems([]);
-      setReferrals([]);
-      setMsg(err?.message || "Could not load prescriptions.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const visible = useMemo(() => {
-    if (filter === "ALL") return items;
-    return items.filter((item) => String(item.status) === filter);
-  }, [items, filter]);
+  const { referrals, filter, setFilter, loading, msg, visible, load } = usePatientPrescriptions();
 
   const openAiAssistant = (prompt) => {
     window.dispatchEvent(

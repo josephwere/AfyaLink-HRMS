@@ -1,56 +1,28 @@
-import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
-import {
-  listNotificationsFiltered,
-  markAllNotificationsRead,
-  markNotificationRead,
-  markNotificationUnread,
-} from "../../services/notificationsApi";
+import { useNotificationsPage } from "../../hooks/useNotificationsPage";
 
 export default function Page() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const role = String(user?.actualRole || user?.role || "").toUpperCase();
-  const canTrainingOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
-  const canMachineOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
-  const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
-  const canPharmacyOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "PHARMACIST"].includes(role);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const queryFilters = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return {
-      category: params.get("category") || "ALL",
-      read: params.get("read") || "ALL",
-    };
-  }, [location.search]);
-  const [category, setCategory] = useState(queryFilters.category);
-  const [read, setRead] = useState(queryFilters.read);
-  const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    setCategory(queryFilters.category);
-    setRead(queryFilters.read);
-  }, [queryFilters]);
-
-  useEffect(() => {
-    setLoading(true);
-    const readParam =
-      read === "ALL" ? undefined : read === "READ" ? "true" : "false";
-    listNotificationsFiltered({ category, read: readParam })
-      .then((data) => {
-        if (Array.isArray(data)) setItems(data);
-        else if (Array.isArray(data?.items)) setItems(data.items);
-        else setItems([]);
-      })
-      .catch(() => {
-        setItems([]);
-        setMsg("Failed to load notifications");
-      })
-      .finally(() => setLoading(false));
-  }, [category, read]);
+  const {
+    navigate: navigateTo,
+    canTrainingOps,
+    canMachineOps,
+    canSlaOps,
+    canPharmacyOps,
+    items,
+    loading,
+    category,
+    setCategory,
+    read,
+    setRead,
+    msg,
+    setMsg,
+    markAllRead,
+    toggleNotification,
+  } = useNotificationsPage({ user, location, navigate });
 
   return (
     <div className="dashboard">
@@ -64,7 +36,7 @@ export default function Page() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => navigate("/admin/training-tracker?overdue=1")}
+              onClick={() => navigateTo("/admin/training-tracker?overdue=1")}
             >
               Open Overdue Tracker
             </button>
@@ -73,7 +45,7 @@ export default function Page() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => navigate("/hospital-admin/machine-alerts")}
+              onClick={() => navigateTo("/hospital-admin/machine-alerts")}
             >
               Open Machine Alerts
             </button>
@@ -82,7 +54,7 @@ export default function Page() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => navigate("/hospital-admin/approvals?view=breached#pending")}
+              onClick={() => navigateTo("/hospital-admin/approvals?view=breached#pending")}
             >
               Open SLA Breaches
             </button>
@@ -104,19 +76,7 @@ export default function Page() {
             <option value="UNREAD">Unread</option>
             <option value="READ">Read</option>
           </select>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={async () => {
-              try {
-                await markAllNotificationsRead();
-                setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-                setMsg("All notifications marked as read.");
-              } catch (e) {
-                setMsg(e?.message || "Failed to mark notifications as read");
-              }
-            }}
-          >
+          <button type="button" className="btn-secondary" onClick={markAllRead}>
             Mark all read
           </button>
         </div>
@@ -212,7 +172,7 @@ export default function Page() {
                         <button
                           type="button"
                           className="btn-secondary"
-                          onClick={() => navigate(String(n.meta.path))}
+                          onClick={() => navigateTo(String(n.meta.path))}
                         >
                           Open
                         </button>
@@ -220,27 +180,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-secondary"
-                        onClick={async () => {
-                          try {
-                            if (n.read) {
-                              await markNotificationUnread(n._id);
-                              setItems((prev) =>
-                                prev.map((item) =>
-                                  item._id === n._id ? { ...item, read: false } : item
-                                )
-                              );
-                            } else {
-                              await markNotificationRead(n._id);
-                              setItems((prev) =>
-                                prev.map((item) =>
-                                  item._id === n._id ? { ...item, read: true } : item
-                                )
-                              );
-                            }
-                          } catch (e) {
-                            setMsg(e?.message || "Failed to update notification");
-                          }
-                        }}
+                        onClick={() => toggleNotification(n)}
                       >
                         {n.read ? "Mark unread" : "Mark read"}
                       </button>

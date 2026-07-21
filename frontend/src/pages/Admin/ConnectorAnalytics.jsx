@@ -1,24 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import { apiFetch } from '../../utils/apiFetch';
+import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useConnectorAnalytics } from '../../hooks/useConnectorAnalytics';
 
 export default function ConnectorAnalytics(){
-  const [data,setData]=useState([]);
-
-  useEffect(()=>{ load(); },[]);
-  async function load(){
-    try {
-      const js = await apiFetch('/api/connectors/analytics/list');
-      setData(Array.isArray(js) ? js : Array.isArray(js?.items) ? js.items : []);
-    } catch {
-      setData([]);
-    }
-  }
-
-  const summary = {
-    connectors: data.length,
-    healthy: data.filter((item) => Number(item?.lastSync || 0) > 0).length,
-  };
+  const { data, summary } = useConnectorAnalytics();
 
   return (
     <div className="dashboard premium-shell">

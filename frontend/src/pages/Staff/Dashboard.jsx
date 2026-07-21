@@ -1,35 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import { useAuth } from "../../utils/auth";
-import { getStaffDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
+import { useStaffDashboard } from "../../hooks/useStaffDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function StaffDashboard() {
-  const { user } = useAuth();
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getStaffDashboard().then(setData).catch(() => setData(null));
-  }, []);
-
-  useEffect(() => {
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((resp) => {
-        const items = Array.isArray(resp?.items) ? resp.items : Array.isArray(resp) ? resp : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
-
-  const role = useMemo(() => String(user?.role || "").toUpperCase(), [user?.role]);
+  const { data, transfers, transferError, role } = useStaffDashboard();
 
   const roleTitle =
     role === "RADIOLOGIST"
@@ -56,6 +32,51 @@ export default function StaffDashboard() {
       ? "/app/operations/front-desk/booking-desk"
       : "/app/people/requests/index";
 
+  const sectionConfigs = useMemo(
+    () => [
+      {
+        id: "role-workspace",
+        title: translateText("Role Workspace"),
+        subtitle: translateText("Common tools and surfaces for this role."),
+        widget: "list",
+        props: {
+          items: rolePanels.map((panel) => translateText(panel)),
+        },
+      },
+      {
+        id: "transfer-continuity",
+        title: translateText("Transfer Continuity"),
+        subtitle: translateText("Recent transfers and handoff status."),
+        widget: "table",
+        props: {
+          columns: [
+            { key: "patient", label: translateText("Patient") },
+            { key: "route", label: translateText("Route") },
+            { key: "status", label: translateText("Status") },
+          ],
+          rows: transfers.map((t) => ({
+            key: t._id,
+            cells: [
+              `${t?.patient?.firstName || ""} ${t?.patient?.lastName || ""}`.trim(),
+              `${t?.fromHospital?.name || t?.fromHospital?.code || "—"} → ${t?.toHospital?.name || t?.toHospital?.code || "—"}`,
+              translateText(t.status),
+            ],
+          })),
+          emptyMessage: transferError || translateText("No transfers yet."),
+        },
+      },
+    ],
+    [rolePanels, transferError, transfers, translateText]
+  );
+
+  const layout = useMemo(
+    () => ({
+      primary: ["role-workspace"],
+      secondary: ["transfer-continuity"],
+    }),
+    []
+  );
+
   return (
     <DashboardHomeShell
       shellKey={`staff_${role || "workspace"}`}
@@ -73,51 +94,9 @@ export default function StaffDashboard() {
         { label: translateText("Unread Notifications"), value: data?.notificationsUnread ?? "—", path: "/app/platform/inbox/notifications" },
         { label: translateText("Appointments Today"), value: data?.appointmentsToday ?? "—", path: roleWorkspacePath },
       ]}
-    >
-      <DashboardSection title={translateText("Role Workspace")} subtitle={translateText("Common tools and surfaces for this role.")}>
-        <ul className="muted" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.8 }}>
-          {rolePanels.map((p) => (
-            <li key={p}>{translateText(p)}</li>
-          ))}
-        </ul>
-      </DashboardSection>
-
-      <DashboardSection title={translateText("Transfer Continuity")} subtitle={translateText("Recent transfers and handoff status.")}>
-        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
-        <div className="table-wrap" style={{ marginTop: 12 }}>
-          <table className="doctor-table">
-            <thead>
-              <tr>
-                <th>{translateText("Patient")}</th>
-                <th>{translateText("Route")}</th>
-                <th>{translateText("Status")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfers.map((t) => (
-                <tr key={t._id}>
-                  <td>
-                    {t?.patient?.firstName || ""} {t?.patient?.lastName || ""}
-                  </td>
-                  <td>
-                    {t?.fromHospital?.name || t?.fromHospital?.code || "—"} →{" "}
-                    {t?.toHospital?.name || t?.toHospital?.code || "—"}
-                  </td>
-                  <td>{translateText(t.status)}</td>
-                </tr>
-              ))}
-              {transfers.length === 0 ? (
-                <tr>
-                  <td colSpan="3" className="muted">
-                    {translateText("No transfers yet.")}
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </DashboardSection>
-    </DashboardHomeShell>
+      sectionConfigs={sectionConfigs}
+      layout={layout}
+    />
   );
 }
 

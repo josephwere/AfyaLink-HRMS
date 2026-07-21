@@ -1,16 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
+import { useDoctorLabResults } from "../../hooks/useDoctorLabResults";
 
 export default function LabResults() {
   const navigate = useNavigate();
-  const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    apiFetch("/api/labs", { method: "GET" })
-      .then((d) => setRows(Array.isArray(d?.items) ? d.items : Array.isArray(d) ? d : []))
-      .catch(() => setRows([]));
-  }, []);
+  const { rows } = useDoctorLabResults();
 
   return (
     <div className="dashboard doctor-workspace">

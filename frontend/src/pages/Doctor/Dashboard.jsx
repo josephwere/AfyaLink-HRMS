@@ -1,86 +1,24 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
-import { getDoctorDashboard } from "../../services/dashboardApi";
-import apiFetch from "../../utils/apiFetch";
-import { listTransfers } from "../../services/transferApi";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
-import { guardedConsoleFetch } from "../../services/guardedConsoleFetch";
+import { useDoctorDashboard } from "../../hooks/useDoctorDashboard";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { translateText } = useAppLanguage();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [encounterByPatient, setEncounterByPatient] = useState({});
-  const [alerts, setAlerts] = useState([]);
+  const {
+    dashboard: data,
+    appointments,
+    encounterByPatient,
+    alerts,
+    transfers,
+    transferStats,
+    resolveEscalation,
+  } = useDoctorDashboard();
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
-  const [transfers, setTransfers] = useState([]);
-
-  useEffect(() => {
-    const loadEncounterSnapshots = async (appointmentRows) => {
-      const patientIds = [...new Set(
-        (Array.isArray(appointmentRows) ? appointmentRows : [])
-          .map((item) => String(item?.patient?._id || item?.patient || ""))
-          .filter(Boolean)
-      )];
-      if (!patientIds.length) {
-        setEncounterByPatient({});
-        return;
-      }
-      const pairs = await Promise.all(
-        patientIds.map(async (patientId) => {
-          try {
-            const rows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
-            const items = Array.isArray(rows) ? rows : [];
-            return [patientId, items[0] || null];
-          } catch {
-            return [patientId, null];
-          }
-        })
-      );
-      setEncounterByPatient(Object.fromEntries(pairs));
-    };
-
-    getDoctorDashboard()
-      .then((res) => setData(res))
-      .catch(() => setData(null));
-
-    guardedConsoleFetch("/api/appointments?limit=8&cursorMode=1", {
-      warmupKey: "doctor-dashboard-appointments",
-    })
-      .then((result) => {
-        const res = result?.payload || {};
-        const rows = Array.isArray(res?.items) ? res.items : [];
-        setAppointments(rows);
-        loadEncounterSnapshots(rows);
-      })
-      .catch(() => {
-        setAppointments([]);
-        setEncounterByPatient({});
-      });
-
-    guardedConsoleFetch("/api/notifications?limit=8", {
-      warmupKey: "doctor-dashboard-notifications",
-    })
-      .then((result) => {
-        const res = result?.payload || {};
-        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
-        setAlerts(items.slice(0, 8));
-      })
-      .catch(() => setAlerts([]));
-
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-      })
-      .catch(() => {
-        setTransfers([]);
-      });
-  }, []);
 
   const firstMissingRequirement = (encounter) => {
     const items = Array.isArray(encounter?.closeout?.missingRequirements)
@@ -97,25 +35,18 @@ export default function Dashboard() {
       : "";
     return missing ? `Pending: ${missing}` : translateText("Requirements pending");
   };
+
   const escalationLabel = (encounter) => {
     if (!encounter?.escalationSummary?.count || encounter?.escalationSummary?.openCount === 0) return "";
     return encounter.escalationSummary.unreadMine > 0 ? translateText("Nurse escalation") : translateText("Escalation open");
   };
 
-  const transferStats = useMemo(() => {
-    const pending = transfers.filter((t) => t.status === "Pending").length;
-    const approved = transfers.filter((t) => t.status === "Approved").length;
-    const completed = transfers.filter((t) => t.status === "Completed").length;
-    return { pending, approved, completed, total: transfers.length };
-  }, [transfers]);
-
-  const resolveEscalation = async (encounter, patientKey) => {
+  const handleResolveEscalation = async (encounter, patientKey) => {
     if (!encounter?._id) return;
     try {
       setResolvingEncounterId(String(encounter._id));
-      await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
-        method: "POST",
-        body: { note: "Clinician acknowledged dashboard escalation and resumed closeout workflow." },
+      await resolveEscalation(encounter._id, {
+        note: "Clinician acknowledged dashboard escalation and resumed closeout workflow.",
       });
       navigate(
         `/doctor/opd${patientKey ? `?patientId=${encodeURIComponent(patientKey)}${firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""}` : ""}`
@@ -234,7 +165,7 @@ export default function Dashboard() {
                                 <button
                                   type="button"
                                   className="action-pill warning"
-                                  onClick={() => resolveEscalation(encounter, patientKey)}
+                                  onClick={() => handleResolveEscalation(encounter, patientKey)}
                                 >
                                   {resolvingEncounterId === String(encounter._id) ? "Resolving..." : escalationLabel(encounter)}
                                 </button>

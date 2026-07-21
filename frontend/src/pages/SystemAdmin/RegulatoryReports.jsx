@@ -1,27 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { getRegulatoryAutoReport } from "../../services/intelligenceApi";
 import { StatCard } from "../../components/Cards";
+import { useRegulatoryReports } from "../../hooks/useRegulatoryReports";
 
 export default function RegulatoryReports() {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const run = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const out = await getRegulatoryAutoReport();
-      setData(out?.report || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to generate regulatory auto report");
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, msg, loading, run } = useRegulatoryReports();
 
   return (
     <div className="dashboard">

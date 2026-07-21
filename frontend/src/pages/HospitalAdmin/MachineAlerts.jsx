@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StatCard } from "../../components/Cards";
-import { downloadApiFile } from "../../lib/api/client";
-import apiFetch from "../../utils/apiFetch";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 import { formatDateTime } from "../../utils/locale";
 
 const PAGE_SIZE = 20;
@@ -29,97 +28,59 @@ function ageMinutes(ts) {
 }
 
 export default function MachineAlerts() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [actionBusyId, setActionBusyId] = useState("");
-  const [msg, setMsg] = useState("");
-  const [bulkReason, setBulkReason] = useState("");
-  const [reasonById, setReasonById] = useState({});
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
-    read: "ALL",
-    severity: "ALL",
-  });
-  const [autoEscalation, setAutoEscalation] = useState({
-    highAfterMinutes: 0,
-    mediumAfterMinutes: 0,
-    dedupCooldownMinutes: 0,
-    l1Roles: [],
-    l2Roles: [],
-    requireReasonForHighSeverityActions: false,
-  });
-  const [policyDraft, setPolicyDraft] = useState({
-    highAfterMinutes: 15,
-    mediumAfterMinutes: 60,
-    dedupCooldownMinutes: 10,
-    l1RolesText: "HOSPITAL_ADMIN,DEVELOPER",
-    l2RolesText: "SYSTEM_ADMIN,SUPER_ADMIN,DEVELOPER",
-    onCallPrimaryUserIds: [],
-    onCallSecondaryUserIds: [],
-    requireReasonForHighSeverityActions: false,
-  });
-  const [staffOptions, setStaffOptions] = useState([]);
-  const [timelineLoading, setTimelineLoading] = useState(false);
-  const [timelineData, setTimelineData] = useState(null);
-  const [manifestLoading, setManifestLoading] = useState(false);
-  const [manifestData, setManifestData] = useState(null);
-  const [manifestVerifyLoading, setManifestVerifyLoading] = useState(false);
-  const [manifestVerifyResult, setManifestVerifyResult] = useState(null);
+  const {
+    alerts: items,
+    alertsLoading: loading,
+    alertsMsg: msg,
+    setAlertsMsg,
+    alertsPage: page,
+    setAlertsPage: setPage,
+    alertsTotal: total,
+    alertFilters: filters,
+    setAlertFilters: setFilters,
+    actionBusyId,
+    setActionBusyId,
+    bulkReason,
+    setBulkReason,
+    reasonById,
+    setReasonById,
+    autoEscalation,
+    policyDraft,
+    setPolicyDraft,
+    staffOptions,
+    timelineData,
+    timelineLoading,
+    manifestData,
+    manifestLoading,
+    manifestVerifyResult,
+    manifestVerifyLoading,
+    loadAlerts,
+    acknowledgeAlert,
+    escalateAlert,
+    acknowledgeVisibleAlerts,
+    savePolicy,
+    openTimeline,
+    downloadTimelineCsv,
+    downloadTimelinePdf,
+    loadEvidenceManifest,
+    downloadEvidenceBundle,
+    verifyManifest,
+  } = useHospitalAdminOperations();
   const alertsSectionRef = useRef(null);
 
   const load = useCallback(
     async (nextPage = page) => {
-      setLoading(true);
-      setMsg("");
-      try {
-        const params = new URLSearchParams({
-          page: String(nextPage),
-          limit: String(PAGE_SIZE),
-        });
-        if (filters.read === "READ") params.set("read", "true");
-        if (filters.read === "UNREAD") params.set("read", "false");
-        if (filters.severity !== "ALL") params.set("severity", filters.severity);
-        const data = await apiFetch(`/api/machine-connectivity/alerts?${params.toString()}`);
-        setItems(Array.isArray(data?.items) ? data.items : []);
-        setTotal(Number(data?.total || 0));
-        setPage(Number(data?.page || nextPage));
-        const p = data?.autoEscalation || { highAfterMinutes: 0, mediumAfterMinutes: 0 };
-        setAutoEscalation(p);
-        setPolicyDraft({
-          highAfterMinutes: Number(p.highAfterMinutes || 0),
-          mediumAfterMinutes: Number(p.mediumAfterMinutes || 0),
-          dedupCooldownMinutes: Number(p.dedupCooldownMinutes || 0),
-          l1RolesText: Array.isArray(p.l1Roles) ? p.l1Roles.join(",") : "HOSPITAL_ADMIN,DEVELOPER",
-          l2RolesText: Array.isArray(p.l2Roles) ? p.l2Roles.join(",") : "SYSTEM_ADMIN,SUPER_ADMIN,DEVELOPER",
-          onCallPrimaryUserIds: Array.isArray(p.onCallPrimaryUserIds) ? p.onCallPrimaryUserIds.map(String) : [],
-          onCallSecondaryUserIds: Array.isArray(p.onCallSecondaryUserIds) ? p.onCallSecondaryUserIds.map(String) : [],
-          requireReasonForHighSeverityActions: Boolean(p.requireReasonForHighSeverityActions),
-        });
-      } catch (e) {
-        setMsg(e?.message || "Failed to load machine alerts");
-        setItems([]);
-        setTotal(0);
-      } finally {
-        setLoading(false);
-      }
+      await loadAlerts(nextPage);
     },
-    [filters.read, filters.severity, page]
+    [loadAlerts, page]
   );
 
   useEffect(() => {
-    load(1);
-  }, [filters.read, filters.severity]);
-
-  useEffect(() => {
-    apiFetch("/api/hospital-admin/staff")
-      .then((rows) => setStaffOptions(Array.isArray(rows) ? rows : []))
-      .catch(() => setStaffOptions([]));
-  }, []);
+    void load(1);
+  }, [filters.read, filters.severity, load]);
 
   const acknowledge = async (id) => {
     setActionBusyId(id);
-    setMsg("");
     try {
       const row = items.find((x) => x._id === id);
       const reason = String(reasonById[id] || "").trim();
@@ -128,17 +89,10 @@ export default function MachineAlerts() {
         String(row?.severity || "").toUpperCase() === "HIGH" &&
         !reason
       ) {
-        setMsg("Reason is required to acknowledge high severity alerts.");
         return;
       }
-      await apiFetch(`/api/machine-connectivity/alerts/${id}/ack`, {
-        method: "PATCH",
-        body: { reason },
-      });
-      setItems((prev) => prev.map((x) => (x._id === id ? { ...x, read: true } : x)));
+      await acknowledgeAlert(id);
       setReasonById((prev) => ({ ...prev, [id]: "" }));
-    } catch (e) {
-      setMsg(e?.message || "Failed to acknowledge alert");
     } finally {
       setActionBusyId("");
     }
@@ -146,7 +100,6 @@ export default function MachineAlerts() {
 
   const escalate = async (id) => {
     setActionBusyId(id);
-    setMsg("");
     try {
       const row = items.find((x) => x._id === id);
       const reason = String(reasonById[id] || "").trim();
@@ -155,22 +108,10 @@ export default function MachineAlerts() {
         String(row?.severity || "").toUpperCase() === "HIGH" &&
         !reason
       ) {
-        setMsg("Reason is required to escalate high severity alerts.");
         return;
       }
-      const data = await apiFetch(`/api/machine-connectivity/alerts/${id}/escalate`, {
-        method: "POST",
-        body: { reason },
-      });
-      setItems((prev) =>
-        prev.map((x) =>
-          x._id === id ? { ...x, meta: { ...(x.meta || {}), escalated: true } } : x
-        )
-      );
-      setMsg(`Alert escalated to ${Number(data?.recipients || 0)} recipients.`);
+      await escalateAlert(id);
       setReasonById((prev) => ({ ...prev, [id]: "" }));
-    } catch (e) {
-      setMsg(e?.message || "Failed to escalate alert");
     } finally {
       setActionBusyId("");
     }
@@ -178,163 +119,46 @@ export default function MachineAlerts() {
 
   const acknowledgeVisible = async () => {
     setActionBusyId("bulk");
-    setMsg("");
     try {
-      const ids = items.filter((x) => !x.read).map((x) => x._id);
-      if (!ids.length) {
-        setMsg("No unread alerts on this page.");
-        return;
-      }
-      const hasHighUnread = items.some(
-        (x) => !x.read && String(x.severity || "").toUpperCase() === "HIGH"
-      );
-      const reason = String(bulkReason || "").trim();
-      if (autoEscalation.requireReasonForHighSeverityActions && hasHighUnread && !reason) {
-        setMsg("Reason is required for bulk acknowledgement when high severity alerts are included.");
-        return;
-      }
-      const data = await apiFetch("/api/machine-connectivity/alerts/ack-bulk", {
-        method: "PATCH",
-        body: { ids, reason },
-      });
-      setItems((prev) => prev.map((x) => ({ ...x, read: true })));
-      setMsg(`Acknowledged ${Number(data?.modified || 0)} alert(s).`);
+      await acknowledgeVisibleAlerts();
       setBulkReason("");
-    } catch (e) {
-      setMsg(e?.message || "Failed to acknowledge visible alerts");
     } finally {
       setActionBusyId("");
     }
   };
 
-  const savePolicy = async (e) => {
+  const handleSavePolicy = async (e) => {
     e.preventDefault();
     setActionBusyId("policy");
-    setMsg("");
     try {
-      const payload = {
-        highAfterMinutes: Number(policyDraft.highAfterMinutes),
-        mediumAfterMinutes: Number(policyDraft.mediumAfterMinutes),
-        dedupCooldownMinutes: Number(policyDraft.dedupCooldownMinutes),
-        l1Roles: String(policyDraft.l1RolesText || "")
-          .split(",")
-          .map((x) => x.trim().toUpperCase())
-          .filter(Boolean),
-        l2Roles: String(policyDraft.l2RolesText || "")
-          .split(",")
-          .map((x) => x.trim().toUpperCase())
-          .filter(Boolean),
-        onCallPrimaryUserIds: policyDraft.onCallPrimaryUserIds || [],
-        onCallSecondaryUserIds: policyDraft.onCallSecondaryUserIds || [],
-        requireReasonForHighSeverityActions: Boolean(policyDraft.requireReasonForHighSeverityActions),
-      };
-      const data = await apiFetch("/api/machine-connectivity/alerts/policy", {
-        method: "PUT",
-        body: payload,
-      });
-      const p = data?.policy || payload;
-      setAutoEscalation(p);
-      setPolicyDraft({
-        highAfterMinutes: Number(p.highAfterMinutes || 0),
-        mediumAfterMinutes: Number(p.mediumAfterMinutes || 0),
-        dedupCooldownMinutes: Number(p.dedupCooldownMinutes || 0),
-        l1RolesText: Array.isArray(p.l1Roles) ? p.l1Roles.join(",") : "",
-        l2RolesText: Array.isArray(p.l2Roles) ? p.l2Roles.join(",") : "",
-        onCallPrimaryUserIds: Array.isArray(p.onCallPrimaryUserIds) ? p.onCallPrimaryUserIds.map(String) : [],
-        onCallSecondaryUserIds: Array.isArray(p.onCallSecondaryUserIds) ? p.onCallSecondaryUserIds.map(String) : [],
-        requireReasonForHighSeverityActions: Boolean(p.requireReasonForHighSeverityActions),
-      });
-      setMsg("Escalation policy updated.");
-    } catch (e2) {
-      setMsg(e2?.message || "Failed to update escalation policy");
+      await savePolicy(e);
     } finally {
       setActionBusyId("");
     }
   };
 
-  const openTimeline = async (id) => {
-    setTimelineLoading(true);
-    setMsg("");
-    try {
-      const data = await apiFetch(`/api/machine-connectivity/alerts/${id}/timeline`);
-      setTimelineData(data || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load alert timeline");
-      setTimelineData(null);
-    } finally {
-      setTimelineLoading(false);
-    }
+  const handleOpenTimeline = async (id) => {
+    await openTimeline(id);
   };
 
-  const downloadTimelineCsv = async (alertId) => {
-    try {
-      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/timeline.csv`, {
-        filename: `machine-alert-${alertId}-timeline.csv`,
-        headers: { Accept: "text/csv" },
-      });
-    } catch (e) {
-      setMsg(e?.message || "Failed to export timeline CSV");
-    }
+  const handleDownloadTimelineCsv = async (alertId) => {
+    await downloadTimelineCsv(alertId);
   };
 
-  const downloadTimelinePdf = async (alertId) => {
-    try {
-      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/timeline.pdf`, {
-        filename: `machine-alert-${alertId}-timeline.pdf`,
-        headers: { Accept: "application/pdf" },
-      });
-    } catch (e) {
-      setMsg(e?.message || "Failed to export timeline PDF");
-    }
+  const handleDownloadTimelinePdf = async (alertId) => {
+    await downloadTimelinePdf(alertId);
   };
 
-  const loadEvidenceManifest = async (alertId) => {
-    setManifestLoading(true);
-    setManifestVerifyResult(null);
-    setMsg("");
-    try {
-      const data = await apiFetch(`/api/machine-connectivity/alerts/${alertId}/evidence-manifest`);
-      setManifestData(data || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load evidence manifest");
-      setManifestData(null);
-    } finally {
-      setManifestLoading(false);
-    }
+  const handleLoadEvidenceManifest = async (alertId) => {
+    await loadEvidenceManifest(alertId);
   };
 
-  const downloadEvidenceBundle = async (alertId) => {
-    try {
-      await downloadApiFile(`/api/machine-connectivity/alerts/${alertId}/evidence-bundle`, {
-        filename: `machine-alert-${alertId}-evidence-bundle.json`,
-        headers: { Accept: "application/json" },
-      });
-    } catch (e) {
-      setMsg(e?.message || "Failed to download evidence bundle");
-    }
+  const handleDownloadEvidenceBundle = async (alertId) => {
+    await downloadEvidenceBundle(alertId);
   };
 
-  const verifyManifest = async () => {
-    setManifestVerifyLoading(true);
-    setManifestVerifyResult(null);
-    setMsg("");
-    try {
-      const payload = manifestData?.payload || null;
-      const signature = manifestData?.signature || null;
-      if (!payload || !signature) {
-        setMsg("Manifest payload/signature not available.");
-        return;
-      }
-      const data = await apiFetch("/api/machine-connectivity/alerts/verify-manifest", {
-        method: "POST",
-        body: { payload, signature },
-      });
-      setManifestVerifyResult(data || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to verify evidence manifest");
-    } finally {
-      setManifestVerifyLoading(false);
-    }
+  const handleVerifyManifest = async () => {
+    await verifyManifest();
   };
 
   const stats = useMemo(() => {
@@ -366,11 +190,11 @@ export default function MachineAlerts() {
     }
     const escalated = items.find((row) => Boolean(row?.meta?.escalated));
     if (escalated?._id) {
-      openTimeline(escalated._id);
+      handleOpenTimeline(escalated._id);
       focusAlerts();
       return;
     }
-    setMsg("No escalated alerts are available on the current page.");
+    setAlertsMsg("No escalated alerts are available on the current page.");
     focusAlerts();
   };
 
@@ -441,7 +265,7 @@ export default function MachineAlerts() {
 
       <section className="section" ref={alertsSectionRef}>
         <h3>Escalation Policy</h3>
-        <form className="card form" onSubmit={savePolicy}>
+        <form className="card form" onSubmit={handleSavePolicy}>
           <div className="form-grid cols-3">
             <div>
               <label>High Severity Auto-Escalate (minutes)</label>
@@ -650,7 +474,7 @@ export default function MachineAlerts() {
                         type="button"
                         className="btn-secondary"
                         disabled={timelineLoading}
-                        onClick={() => openTimeline(row._id)}
+                        onClick={() => handleOpenTimeline(row._id)}
                       >
                         Timeline
                       </button>
@@ -658,7 +482,7 @@ export default function MachineAlerts() {
                         type="button"
                         className="btn-secondary"
                         disabled={manifestLoading}
-                        onClick={() => loadEvidenceManifest(row._id)}
+                        onClick={() => handleLoadEvidenceManifest(row._id)}
                       >
                         Evidence
                       </button>
@@ -708,7 +532,7 @@ export default function MachineAlerts() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => downloadTimelineCsv(timelineData?.alert?._id)}
+                    onClick={() => handleDownloadTimelineCsv(timelineData?.alert?._id)}
                     disabled={!timelineData?.alert?._id}
                   >
                     Export CSV
@@ -716,7 +540,7 @@ export default function MachineAlerts() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => downloadTimelinePdf(timelineData?.alert?._id)}
+                    onClick={() => handleDownloadTimelinePdf(timelineData?.alert?._id)}
                     disabled={!timelineData?.alert?._id}
                   >
                     Export PDF
@@ -766,7 +590,7 @@ export default function MachineAlerts() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={verifyManifest}
+                    onClick={handleVerifyManifest}
                     disabled={manifestVerifyLoading || !manifestData?.payload || !manifestData?.signature}
                   >
                     {manifestVerifyLoading ? "Verifying..." : "Verify Signature"}
@@ -774,7 +598,7 @@ export default function MachineAlerts() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => downloadEvidenceBundle(manifestData?.payload?.alertId)}
+                    onClick={() => handleDownloadEvidenceBundle(manifestData?.payload?.alertId)}
                     disabled={!manifestData?.payload?.alertId}
                   >
                     Download Bundle

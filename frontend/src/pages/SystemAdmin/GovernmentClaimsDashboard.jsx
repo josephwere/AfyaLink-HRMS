@@ -13,8 +13,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import apiFetch from "../../utils/apiFetch";
 import DashboardHomeShell from "../../components/DashboardHomeShell";
+import useGovernmentClaimsDashboard from "../../hooks/useGovernmentClaimsDashboard";
 
 const emptyOverview = {
   summary: {
@@ -105,57 +105,53 @@ export default function GovernmentClaimsDashboard() {
   });
   const [alertFilters, setAlertFilters] = useState({ status: "", severity: "" });
 
-  const [overview, setOverview] = useState(emptyOverview);
-  const [claims, setClaims] = useState([]);
-  const [fraudAlerts, setFraudAlerts] = useState([]);
-  const [hospitals, setHospitals] = useState([]);
-  const [inspections, setInspections] = useState([]);
-  const [enforcements, setEnforcements] = useState([]);
-  const [healthFunds, setHealthFunds] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const dashboardFilters = useMemo(() => ({ ...filters, ...claimsFilters }), [filters, claimsFilters]);
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [missingApi, setMissingApi] = useState(false);
-  const [apiStatus, setApiStatus] = useState({
-    state: "unknown",
-    detail: "",
-    lastChecked: null,
-    lastSuccessAt: null,
-  });
-  const loadInFlightRef = useRef(false);
-
-  const [auditOpen, setAuditOpen] = useState(false);
-  const [auditClaim, setAuditClaim] = useState(null);
-  const [auditTrail, setAuditTrail] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-
-  const [patientQuery, setPatientQuery] = useState("");
-  const [patientHistory, setPatientHistory] = useState(null);
-  const [patientLoading, setPatientLoading] = useState(false);
-
-  const [inspectionForm, setInspectionForm] = useState({
-    hospitalId: "",
-    scheduledAt: "",
-    type: "ROUTINE",
-    notes: "",
-  });
-  const [enforcementForm, setEnforcementForm] = useState({
-    hospitalId: "",
-    actionType: "WARNING",
-    amount: "",
-    currency: "KES",
-    notes: "",
-  });
-  const [fundForm, setFundForm] = useState({
-    code: "",
-    name: "",
-    country: "",
-    currency: "KES",
-    status: "ACTIVE",
-    apiStatus: "UNKNOWN",
-  });
+  const {
+    overview,
+    claims,
+    fraudAlerts,
+    hospitals,
+    inspections,
+    enforcements,
+    healthFunds,
+    auditLogs,
+    notifications,
+    loading,
+    msg,
+    missingApi,
+    apiStatus,
+    auditOpen,
+    auditClaim,
+    auditTrail,
+    auditLoading,
+    patientQuery,
+    setPatientQuery,
+    patientHistory,
+    patientLoading,
+    inspectionForm,
+    setInspectionForm,
+    enforcementForm,
+    setEnforcementForm,
+    fundForm,
+    setFundForm,
+    loadAll,
+    loadClaims,
+    loadFraudAlerts,
+    loadOverview,
+    openAudit,
+    closeAudit,
+    reviewClaim,
+    requestVerification,
+    assignAudit,
+    runPatientSearch,
+    createInspection,
+    updateInspectionStatus,
+    createEnforcement,
+    updateEnforcementStatus,
+    createHealthFund,
+    updateHealthFund,
+  } = useGovernmentClaimsDashboard(dashboardFilters, alertFilters);
   const highlightedClaimId = searchParams.get("claimId") || "";
   const autoOpenedClaimRef = useRef("");
   const claimsSectionRef = useRef(null);
@@ -164,227 +160,6 @@ export default function GovernmentClaimsDashboard() {
 
   const scrollToSection = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const loadOverview = async () => {
-    const qs = buildQuery(filters);
-    try {
-      const res = await apiFetch(`/api/government/overview${qs ? `?${qs}` : ""}`);
-      setOverview({ ...emptyOverview, ...(res || {}) });
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        try {
-          const fallback = await apiFetch(`/api/claims/government/overview${qs ? `?${qs}` : ""}`);
-          setOverview({ ...emptyOverview, ...(fallback || {}) });
-          setMissingApi(true);
-          return fallback;
-        } catch (fallbackErr) {
-          if (fallbackErr?.status === 404) setMissingApi(true);
-        }
-      }
-      throw err;
-    }
-  };
-
-  const loadClaims = async (overrides = {}) => {
-    const qs = buildQuery({ ...filters, ...claimsFilters, ...overrides });
-    try {
-      const res = await apiFetch(`/api/government/claims${qs ? `?${qs}` : ""}`);
-      setClaims(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setClaims([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadFraudAlerts = async (overrides = {}) => {
-    const qs = buildQuery({ hospitalId: filters.hospitalId, ...alertFilters, ...overrides });
-    try {
-      const res = await apiFetch(`/api/claims/alerts${qs ? `?${qs}` : ""}`);
-      setFraudAlerts(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setFraudAlerts([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadHospitals = async () => {
-    const qs = buildQuery({ country: filters.country });
-    try {
-      const res = await apiFetch(`/api/government/hospitals${qs ? `?${qs}` : ""}`);
-      setHospitals(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setHospitals([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadInspections = async () => {
-    const qs = buildQuery({ country: filters.country, hospitalId: filters.hospitalId });
-    try {
-      const res = await apiFetch(`/api/government/inspections${qs ? `?${qs}` : ""}`);
-      setInspections(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setInspections([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadEnforcements = async () => {
-    const qs = buildQuery({ country: filters.country, hospitalId: filters.hospitalId });
-    try {
-      const res = await apiFetch(`/api/government/enforcement${qs ? `?${qs}` : ""}`);
-      setEnforcements(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setEnforcements([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadHealthFunds = async () => {
-    const qs = buildQuery({ country: filters.country });
-    try {
-      const res = await apiFetch(`/api/government/health-funds${qs ? `?${qs}` : ""}`);
-      setHealthFunds(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setHealthFunds([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadAuditLogs = async () => {
-    try {
-      const res = await apiFetch("/api/government/audit-logs?limit=200");
-      setAuditLogs(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setAuditLogs([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadNotifications = async () => {
-    try {
-      const res = await apiFetch("/api/government/notifications");
-      setNotifications(Array.isArray(res?.items) ? res.items : []);
-      return res;
-    } catch (err) {
-      if (err?.status === 404) {
-        setMissingApi(true);
-        setNotifications([]);
-        return null;
-      }
-      throw err;
-    }
-  };
-
-  const loadAll = async (options = {}) => {
-    if (loadInFlightRef.current) return;
-    loadInFlightRef.current = true;
-    const silent = Boolean(options.silent);
-    if (!silent) setLoading(true);
-    setMsg("");
-    setMissingApi(false);
-    setApiStatus((prev) => ({ ...prev, state: "checking" }));
-    try {
-      const results = await Promise.allSettled([
-        loadOverview(),
-        loadClaims(),
-        loadFraudAlerts(),
-        loadHospitals(),
-        loadInspections(),
-        loadEnforcements(),
-        loadHealthFunds(),
-        loadAuditLogs(),
-        loadNotifications(),
-      ]);
-
-      const fatal = results.find((row) => row.status === "rejected" && row.reason?.status !== 404);
-      if (fatal) {
-        setMsg(fatal.reason?.message || "Failed to load government dashboard.");
-      }
-
-      const failures = results.filter((row) => row.status === "rejected");
-      const missing = failures.filter((row) => row.reason?.status === 404);
-      const network = failures.filter((row) => {
-        if (row.reason?.status && row.reason.status !== 0) return row.reason.status >= 500;
-        const message = String(row.reason?.message || "").toLowerCase();
-        return message.includes("network") || message.includes("fetch failed") || message.includes("timeout");
-      });
-
-      if (failures.length === 0) {
-        const now = new Date().toISOString();
-        setApiStatus({
-          state: "ok",
-          detail: "All government endpoints healthy.",
-          lastChecked: now,
-          lastSuccessAt: now,
-        });
-      } else if (network.length > 0 || failures.some((row) => row.reason?.status && row.reason.status !== 404)) {
-        const now = new Date().toISOString();
-        setApiStatus((prev) => ({
-          ...prev,
-          state: "risk",
-          detail: "Government endpoints unreachable. Check connection and refresh.",
-          lastChecked: now,
-        }));
-      } else {
-        const now = new Date().toISOString();
-        setApiStatus((prev) => ({
-          ...prev,
-          state: "warn",
-          detail: "Government endpoints are not available in this environment yet. Refresh after updates.",
-          lastChecked: now,
-        }));
-      }
-    } catch (err) {
-      setMsg(err?.message || "Failed to load government dashboard.");
-      const now = new Date().toISOString();
-      setApiStatus((prev) => ({
-        ...prev,
-        state: "risk",
-        detail: "Government endpoints unreachable. Check connection and refresh.",
-        lastChecked: now,
-      }));
-    } finally {
-      if (!silent) setLoading(false);
-      loadInFlightRef.current = false;
-    }
   };
 
   const openClaimsSlice = (status = "") => {
@@ -400,18 +175,16 @@ export default function GovernmentClaimsDashboard() {
   };
 
   useEffect(() => {
-    loadAll();
-  }, []);
+    void loadAll();
+  }, [loadAll]);
 
   useEffect(() => {
     if (!highlightedClaimId || !claims.length || autoOpenedClaimRef.current === highlightedClaimId) return;
     const matched = claims.some((claim) => String(claim._id) === String(highlightedClaimId));
     if (!matched) return;
     autoOpenedClaimRef.current = highlightedClaimId;
-    openAudit(highlightedClaimId);
-  }, [claims, highlightedClaimId]);
-
-  // Auto-refresh disabled by request: manual refresh only.
+    void openAudit(highlightedClaimId);
+  }, [claims, highlightedClaimId, openAudit]);
 
   useEffect(() => {
     if (hospitals.length && !inspectionForm.hospitalId) {
@@ -420,187 +193,7 @@ export default function GovernmentClaimsDashboard() {
     if (hospitals.length && !enforcementForm.hospitalId) {
       setEnforcementForm((prev) => ({ ...prev, hospitalId: hospitals[0].id || hospitals[0]._id || "" }));
     }
-  }, [hospitals]);
-
-  const openAudit = async (claimId) => {
-    if (!claimId) return;
-    setAuditOpen(true);
-    setAuditClaim(claimId);
-    setAuditTrail([]);
-    setAuditLoading(true);
-    try {
-      const res = await apiFetch(`/api/claims/${claimId}/audit`);
-      setAuditTrail(Array.isArray(res?.items) ? res.items : []);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load audit trail.");
-    } finally {
-      setAuditLoading(false);
-    }
-  };
-
-  const closeAudit = () => {
-    setAuditOpen(false);
-    setAuditClaim(null);
-    setAuditTrail([]);
-  };
-
-  const reviewClaim = async (claimId, decision) => {
-    if (!claimId) return;
-    const confirmText = decision === "APPROVE" ? "Approve this claim?" : "Reject this claim?";
-    if (!window.confirm(confirmText)) return;
-    const notes = window.prompt("Optional review notes:", "") || "";
-    try {
-      await apiFetch(`/api/claims/${claimId}/review`, {
-        method: "POST",
-        body: { decision, notes },
-      });
-      await loadAll();
-    } catch (err) {
-      setMsg(err?.message || "Failed to review claim.");
-    }
-  };
-
-  const requestVerification = async (claimId) => {
-    if (!claimId) return;
-    if (!window.confirm("Request additional verification for this claim?")) return;
-    const notes = window.prompt("Verification request notes:", "") || "";
-    try {
-      await apiFetch(`/api/claims/${claimId}/request-verification`, {
-        method: "POST",
-        body: { notes },
-      });
-      await loadAll();
-    } catch (err) {
-      setMsg(err?.message || "Failed to request verification.");
-    }
-  };
-
-  const assignAudit = async (claimId) => {
-    if (!claimId) return;
-    const role = (window.prompt("Assign to role (default GOVERNMENT_AUDITOR):", "GOVERNMENT_AUDITOR") || "GOVERNMENT_AUDITOR").trim();
-    const assigneeId = (window.prompt("Assign to specific user ID (optional):", "") || "").trim();
-    try {
-      await apiFetch(`/api/claims/${claimId}/assign`, {
-        method: "POST",
-        body: { role, assigneeId: assigneeId || null },
-      });
-      await loadFraudAlerts();
-    } catch (err) {
-      setMsg(err?.message || "Failed to assign audit.");
-    }
-  };
-
-  const runPatientSearch = async () => {
-    if (!patientQuery.trim()) return;
-    setPatientLoading(true);
-    setPatientHistory(null);
-    try {
-      const res = await apiFetch(`/api/claims/government/patient-history?q=${encodeURIComponent(patientQuery.trim())}`);
-      setPatientHistory(res || null);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load patient claims history.");
-    } finally {
-      setPatientLoading(false);
-    }
-  };
-
-  const createInspection = async () => {
-    if (!inspectionForm.hospitalId) return;
-    try {
-      await apiFetch("/api/government/inspections", {
-        method: "POST",
-        body: {
-          hospitalId: inspectionForm.hospitalId,
-          scheduledAt: inspectionForm.scheduledAt || new Date().toISOString(),
-          type: inspectionForm.type,
-          notes: inspectionForm.notes,
-        },
-      });
-      setInspectionForm((prev) => ({ ...prev, scheduledAt: "", notes: "" }));
-      await loadInspections();
-      await loadOverview();
-    } catch (err) {
-      setMsg(err?.message || "Failed to schedule inspection.");
-    }
-  };
-
-  const updateInspectionStatus = async (id, status) => {
-    if (!id) return;
-    try {
-      await apiFetch(`/api/government/inspections/${id}`, {
-        method: "PATCH",
-        body: { status },
-      });
-      await loadInspections();
-      await loadOverview();
-    } catch (err) {
-      setMsg(err?.message || "Failed to update inspection.");
-    }
-  };
-
-  const createEnforcement = async () => {
-    if (!enforcementForm.hospitalId) return;
-    try {
-      await apiFetch("/api/government/enforcement", {
-        method: "POST",
-        body: {
-          hospitalId: enforcementForm.hospitalId,
-          actionType: enforcementForm.actionType,
-          amount: enforcementForm.amount ? Number(enforcementForm.amount) : 0,
-          currency: enforcementForm.currency,
-          notes: enforcementForm.notes,
-        },
-      });
-      setEnforcementForm((prev) => ({ ...prev, amount: "", notes: "" }));
-      await loadEnforcements();
-      await loadOverview();
-    } catch (err) {
-      setMsg(err?.message || "Failed to create enforcement action.");
-    }
-  };
-
-  const updateEnforcementStatus = async (id, status) => {
-    if (!id) return;
-    try {
-      await apiFetch(`/api/government/enforcement/${id}`, {
-        method: "PATCH",
-        body: { status, resolved: status === "RESOLVED" },
-      });
-      await loadEnforcements();
-      await loadOverview();
-    } catch (err) {
-      setMsg(err?.message || "Failed to update enforcement action.");
-    }
-  };
-
-  const createHealthFund = async () => {
-    if (!fundForm.code || !fundForm.name || !fundForm.country) {
-      setMsg("Health fund code, name, and country are required.");
-      return;
-    }
-    try {
-      await apiFetch("/api/government/health-funds", {
-        method: "POST",
-        body: fundForm,
-      });
-      setFundForm({ code: "", name: "", country: "", currency: "KES", status: "ACTIVE", apiStatus: "UNKNOWN" });
-      await loadHealthFunds();
-    } catch (err) {
-      setMsg(err?.message || "Failed to create health fund.");
-    }
-  };
-
-  const updateHealthFund = async (id, payload) => {
-    try {
-      await apiFetch(`/api/government/health-funds/${id}`, {
-        method: "PATCH",
-        body: payload,
-      });
-      await loadHealthFunds();
-    } catch (err) {
-      setMsg(err?.message || "Failed to update health fund.");
-    }
-  };
+  }, [hospitals, inspectionForm.hospitalId, enforcementForm.hospitalId, setInspectionForm, setEnforcementForm]);
 
   const downloadCsv = (filename, rows) => {
     if (!rows.length) return;

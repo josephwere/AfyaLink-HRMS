@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../../utils/apiFetch";
+import { useHospitalFeatures } from "../../hooks/useHospitalFeatures";
 
 const FEATURE_LIST = [
   "ai",
@@ -13,38 +13,7 @@ const FEATURE_LIST = [
 ];
 
 export default function HospitalFeatures({ hospitalId }) {
-  const [hospital, setHospital] = useState(null);
-  const [features, setFeatures] = useState({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch(`/api/hospitals/${hospitalId}/features`)
-      .then((data) => {
-        setHospital(data.name);
-        setFeatures(data.features || {});
-        setLoading(false);
-      })
-      .catch(() => {
-        setHospital(null);
-        setFeatures({});
-        setLoading(false);
-      });
-  }, [hospitalId]);
-
-  const toggleFeature = (key) => {
-    setFeatures((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const save = async () => {
-    await apiFetch(`/api/hospitals/${hospitalId}/features`, {
-      method: "PUT",
-      body: { features },
-    });
-    alert("Features updated");
-  };
+  const { hospital, features, loading, toggleFeature, save } = useHospitalFeatures(hospitalId);
 
   if (loading) return <p>Loading...</p>;
 

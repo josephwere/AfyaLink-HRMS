@@ -1,7 +1,8 @@
 import Notification from '../models/Notification.js';
+import { notify } from '../services/notificationService.js';
 export const createNotification = async (req, res, next) => {
   try {
-    const n = await Notification.create(req.body);
+    const n = await notify({ ...req.body, hospital: req.body?.hospital || req.user?.hospital || null });
     res.json(n);
   } catch (err) { next(err); }
 };

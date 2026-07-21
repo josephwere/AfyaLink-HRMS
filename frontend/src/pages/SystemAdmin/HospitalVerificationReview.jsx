@@ -1,45 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { downloadApiFile } from "../../lib/api/client";
-import { getHospitalVerificationReviewQueue, reviewHospitalVerification } from "../../services/systemAdminApi";
+import React from "react";
+import { useHospitalVerificationReview } from "../../hooks/useHospitalVerificationReview";
 
 export default function HospitalVerificationReview() {
-  const [queue, setQueue] = useState({ hospitals: [], branches: [] });
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
-  const [notes, setNotes] = useState({});
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await getHospitalVerificationReviewQueue();
-      setQueue({
-        hospitals: Array.isArray(data?.hospitals) ? data.hospitals : [],
-        branches: Array.isArray(data?.branches) ? data.branches : [],
-      });
-    } catch {
-      setQueue({ hospitals: [], branches: [] });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const decide = async (id, decision) => {
-    setMsg("");
-    try {
-      await reviewHospitalVerification(id, {
-        decision,
-        reviewNotes: notes[id] || "",
-      });
-      setMsg(`Hospital ${decision === "APPROVE" ? "approved" : "rejected"}.`);
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to review hospital.");
-    }
-  };
+  const { queue, loading, msg, notes, setNotes, load, decide, openDocument } = useHospitalVerificationReview();
 
   return (
     <div className="dashboard">
@@ -73,12 +36,7 @@ export default function HospitalVerificationReview() {
                         key={docKey}
                         className="btn-secondary"
                         type="button"
-                        onClick={() =>
-                          downloadApiFile(
-                            `/api/system-admin/hospital-verification/${row._id}/documents/${docKey}`,
-                            { openInNewTab: true }
-                          )
-                        }
+                        onClick={() => downloadHospitalVerificationDocument(row._id, docKey)}
                       >
                         Open {docKey}
                       </button>

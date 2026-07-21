@@ -1,4 +1,5 @@
 import apiFetch from "../utils/apiFetch";
+import { downloadApiFile } from "../lib/api/client";
 import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 export const getSystemAdminMetrics = async () => {
@@ -227,4 +228,25 @@ export const reviewHospitalVerification = async (id, payload) => {
     method: "PATCH",
     body: payload,
   });
+};
+
+export const downloadHospitalVerificationDocument = async (id, docKey) => {
+  return downloadApiFile(`/api/system-admin/hospital-verification/${id}/documents/${docKey}`, {
+    openInNewTab: true,
+  });
+};
+
+export const listMigrationProjects = async () => {
+  return apiFetch("/api/migrations?limit=50");
+};
+
+export const createMigrationProject = async (payload) => {
+  return apiFetch("/api/migrations", {
+    method: "POST",
+    body: payload,
+  });
+};
+
+export const startMigrationDryRun = async (id) => {
+  return apiFetch(`/api/migrations/${id}/dry-run`, { method: "POST" });
 };

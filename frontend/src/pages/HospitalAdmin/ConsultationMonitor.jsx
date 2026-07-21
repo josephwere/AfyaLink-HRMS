@@ -1,72 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import { StatCard } from "../../components/Cards";
-import { getHospitalAdminDashboard } from "../../services/dashboardApi";
+import { useConsultationMonitor } from "../../hooks/useConsultationMonitor";
 
 export default function ConsultationMonitor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [calls, setCalls] = useState([]);
-  const [escalations, setEscalations] = useState([]);
-  const [filter, setFilter] = useState(() => searchParams.get("status") || "ALL");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
   const highlightedCallId = searchParams.get("callId") || "";
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const [data, dashboard] = await Promise.all([
-        apiFetch("/api/appointments/calls"),
-        getHospitalAdminDashboard(),
-      ]);
-      setCalls(Array.isArray(data?.items) ? data.items : []);
-      setEscalations(Array.isArray(dashboard?.escalationSummary?.items) ? dashboard.escalationSummary.items : []);
-    } catch (err) {
-      setMsg(err?.message || "Could not load consultation monitor.");
-      setCalls([]);
-      setEscalations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    const timer = setInterval(load, 15000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const visibleCalls = useMemo(() => {
-    if (filter === "ALL") return calls;
-    return calls.filter((call) => String(call.status) === filter);
-  }, [calls, filter]);
-
-  const summary = useMemo(
-    () => ({
-      requested: calls.filter((call) => call.status === "REQUESTED").length,
-      active: calls.filter((call) => call.status === "ACTIVE").length,
-      ended: calls.filter((call) => call.status === "ENDED").length,
-      blocked: calls.filter((call) => call.status === "TERMINATED" || call.isBlocked).length,
-      wardEscalations: escalations.filter((item) => !item.resolvedAt).length,
-    }),
-    [calls, escalations]
-  );
-
-  const blockCall = async (callId) => {
-    try {
-      await apiFetch(`/api/appointments/calls/${callId}/block`, {
-        method: "PATCH",
-        body: { reason: "Blocked from consultation monitor" },
-      });
-      setMsg("Call blocked.");
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Could not block call.");
-    }
-  };
+  const initialStatus = searchParams.get("status") || "ALL";
+  const { filter, setFilter, loading, msg, visibleCalls, summary, blockCall, load } = useConsultationMonitor({ statusFilter: initialStatus });
 
   return (
     <div className="dashboard">
@@ -79,7 +21,7 @@ export default function ConsultationMonitor() {
           <Link className="btn-secondary" to="/hospital-admin/escalations">
             Open Escalation Queue
           </Link>
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+          <button type="button" className="btn-secondary" onClick={() => void load()} disabled={loading}>
             {loading ? "Loading..." : "Refresh"}
           </button>
         </div>
@@ -181,7 +123,7 @@ export default function ConsultationMonitor() {
                           type="button"
                           className="btn-secondary"
                           disabled={call.status === "TERMINATED" || call.isBlocked}
-                          onClick={() => blockCall(call._id)}
+                          onClick={() => void blockCall(call._id)}
                         >
                           Block
                         </button>

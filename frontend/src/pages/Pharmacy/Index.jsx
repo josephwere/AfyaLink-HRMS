@@ -1,42 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import apiFetch from "../../utils/apiFetch";
-import { listTransfers } from "../../services/transferApi";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
+import usePharmacyDashboard from "../../hooks/usePharmacyDashboard";
 
 export default function PharmacyDashboard() {
   const { translateText } = useAppLanguage();
-  const [items, setItems] = useState([]);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    apiFetch("/api/pharmacy?limit=25")
-      .then((res) => setItems(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []))
-      .catch(() => setItems([]));
-    apiFetch("/api/pharmacy/prescriptions")
-      .then((res) => setPrescriptions(Array.isArray(res?.items) ? res.items : []))
-      .catch(() => setPrescriptions([]));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((data) => {
-        const itemsList = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-        setTransfers(itemsList);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
-
-  const lowStock = items.filter((i) => Number(i?.qty || 0) <= Number(i?.minStock || 0)).length;
-  const pendingPrescriptions = prescriptions.filter((item) => item.status === "CREATED").length;
-  const dispensedToday = prescriptions.filter((item) => item.status === "DISPENSED").length;
-  const pendingTransfers = transfers.filter(
-    (t) => String(t?.status || "").toUpperCase() === "PENDING"
-  ).length;
+  const { items, prescriptions, transfers, error, loading, lowStock, pendingPrescriptions, dispensedToday, pendingTransfers } = usePharmacyDashboard({ limit: 25 });
 
   return (
     <DashboardHomeShell
@@ -109,7 +79,8 @@ export default function PharmacyDashboard() {
         <div className="action-pill" style={{ marginBottom: 12 }}>
           {translateText("Pending")}: {pendingTransfers}
         </div>
-        {transferError ? <div className="muted">{translateText(transferError)}</div> : null}
+        {error ? <div className="muted">{translateText(error)}</div> : null}
+        {loading ? <div className="muted">{translateText("Loading pharmacy overview...")}</div> : null}
         <div className="table-wrap">
           <table className="doctor-table">
             <thead>

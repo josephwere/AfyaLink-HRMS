@@ -7,6 +7,8 @@ import {
 } from "../../utils/browserSession";
 import { assertSecureApiBase, resolveApiBase } from "../../utils/networkBase";
 
+export { exportRichTextDocument } from "../../utils/fileExport";
+
 export const AUTH_EXPIRED_EVENT = "afyalink:auth-expired";
 
 const isDev =
@@ -92,11 +94,24 @@ function buildRoleHeaders(headers = {}) {
   return nextHeaders;
 }
 
+function buildContextHeaders(headers = {}) {
+  const nextHeaders = { ...headers };
+  try {
+    const contextMode = localStorage.getItem("afyalink_user_context_mode");
+    if (contextMode) {
+      nextHeaders["X-AfyaLink-Context"] = contextMode;
+    }
+  } catch {
+    // ignore unavailable storage
+  }
+  return nextHeaders;
+}
+
 export function buildApiHeaders(
   headers = {},
   { includeAuth = true, path = "" } = {}
 ) {
-  const nextHeaders = buildRoleHeaders(cloneHeaders(headers));
+  const nextHeaders = buildContextHeaders(buildRoleHeaders(cloneHeaders(headers)));
   if (!("Accept" in nextHeaders)) {
     nextHeaders.Accept = "application/json";
   }

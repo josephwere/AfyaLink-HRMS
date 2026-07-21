@@ -1,319 +1,36 @@
-import React, { useEffect, useState } from "react";
-import {
-  listAbacPolicies,
-  createAbacPolicy,
-  updateAbacPolicy,
-  deleteAbacPolicy,
-  simulateAbacPolicy,
-  listAbacTestCases,
-  createAbacTestCase,
-  deleteAbacTestCase,
-  runAbacTestCase,
-  runAllAbacTestCases,
-} from "../../services/systemAdminApi";
-
-const EMPTY = {
-  domain: "INTEROP",
-  resource: "transfer_export",
-  action: "read",
-  effect: "ALLOW",
-  roles: "DOCTOR,HOSPITAL_ADMIN,SYSTEM_ADMIN,SUPER_ADMIN,DEVELOPER",
-  priority: 100,
-  active: true,
-  requireActiveConsent: true,
-  requireSameHospitalOrPrivileged: true,
-  requiredScopes: "",
-};
-
-const keyOf = (row) =>
-  `${String(row.domain || "").toUpperCase()}::${String(row.resource || "").toLowerCase()}::${String(
-    row.action || ""
-  ).toLowerCase()}::${String(row.effect || "ALLOW").toUpperCase()}::${Number(row.priority || 100)}`;
+import React from "react";
+import { useAbacPolicies } from "../../hooks/useAbacPolicies";
 
 export default function AbacPolicies() {
-  const [items, setItems] = useState([]);
-  const [form, setForm] = useState(EMPTY);
-  const [editingId, setEditingId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [simForm, setSimForm] = useState({
-    domain: "INTEROP",
-    resource: "transfer_export",
-    action: "read",
-    role: "DOCTOR",
-    sameHospital: false,
-    hasActiveConsent: false,
-    sourceHospitalBypass: false,
-    allowedScopes: "",
-  });
-  const [simResult, setSimResult] = useState(null);
-  const [simulating, setSimulating] = useState(false);
-  const [testCases, setTestCases] = useState([]);
-  const [runningAllTests, setRunningAllTests] = useState(false);
-  const [runSummary, setRunSummary] = useState(null);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [out, tests] = await Promise.all([listAbacPolicies(), listAbacTestCases()]);
-      setItems(Array.isArray(out) ? out : []);
-      setTestCases(Array.isArray(tests) ? tests : []);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load ABAC policies");
-      setItems([]);
-      setTestCases([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const toPayload = () => ({
-    domain: form.domain,
-    resource: form.resource,
-    action: form.action,
-    effect: form.effect,
-    roles: String(form.roles || "")
-      .split(",")
-      .map((v) => v.trim().toUpperCase())
-      .filter(Boolean),
-    priority: Number(form.priority || 100),
-    active: Boolean(form.active),
-    conditions: {
-      requireActiveConsent: Boolean(form.requireActiveConsent),
-      requireSameHospitalOrPrivileged: Boolean(form.requireSameHospitalOrPrivileged),
-      requiredScopes: String(form.requiredScopes || "")
-        .split(",")
-        .map((v) => v.trim().toLowerCase())
-        .filter(Boolean),
-    },
-  });
-
-  const save = async () => {
-    setMsg("");
-    try {
-      const payload = toPayload();
-      if (editingId) {
-        await updateAbacPolicy(editingId, payload);
-        setMsg("ABAC policy updated");
-      } else {
-        await createAbacPolicy(payload);
-        setMsg("ABAC policy created");
-      }
-      setForm(EMPTY);
-      setEditingId(null);
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to save ABAC policy");
-    }
-  };
-
-  const edit = (row) => {
-    setEditingId(row._id);
-    setForm({
-      domain: row.domain || "",
-      resource: row.resource || "",
-      action: row.action || "",
-      effect: row.effect || "ALLOW",
-      roles: Array.isArray(row.roles) ? row.roles.join(",") : "",
-      priority: row.priority ?? 100,
-      active: row.active !== false,
-      requireActiveConsent: row.conditions?.requireActiveConsent === true,
-      requireSameHospitalOrPrivileged:
-        row.conditions?.requireSameHospitalOrPrivileged === true,
-      requiredScopes: Array.isArray(row.conditions?.requiredScopes)
-        ? row.conditions.requiredScopes.join(",")
-        : "",
-    });
-  };
-
-  const remove = async (id) => {
-    try {
-      await deleteAbacPolicy(id);
-      setMsg("ABAC policy deleted");
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to delete ABAC policy");
-    }
-  };
-
-  const exportJson = () => {
-    const safeRows = items.map((row) => ({
-      domain: row.domain,
-      resource: row.resource,
-      action: row.action,
-      effect: row.effect,
-      roles: row.roles || [],
-      priority: row.priority ?? 100,
-      active: row.active !== false,
-      conditions: row.conditions || {},
-    }));
-    const blob = new Blob([JSON.stringify(safeRows, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "abac-policies.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importJson = async (file) => {
-    if (!file) return;
-    setImporting(true);
-    setMsg("");
-    try {
-      const text = await file.text();
-      const rows = JSON.parse(text);
-      if (!Array.isArray(rows)) throw new Error("JSON must be an array of policies");
-
-      const existing = await listAbacPolicies();
-      const byKey = new Map(existing.map((r) => [keyOf(r), r]));
-      let created = 0;
-      let updated = 0;
-
-      for (const row of rows) {
-        const payload = {
-          domain: String(row.domain || "").toUpperCase(),
-          resource: String(row.resource || "").toLowerCase(),
-          action: String(row.action || "").toLowerCase(),
-          effect: String(row.effect || "ALLOW").toUpperCase(),
-          roles: Array.isArray(row.roles)
-            ? row.roles.map((r) => String(r || "").toUpperCase()).filter(Boolean)
-            : [],
-          priority: Number(row.priority || 100),
-          active: row.active !== false,
-          conditions: {
-            requireActiveConsent: row?.conditions?.requireActiveConsent === true,
-            requireSameHospitalOrPrivileged:
-              row?.conditions?.requireSameHospitalOrPrivileged === true,
-            requiredScopes: Array.isArray(row?.conditions?.requiredScopes)
-              ? row.conditions.requiredScopes.map((v) => String(v || "").toLowerCase()).filter(Boolean)
-              : [],
-          },
-        };
-        const existingRow = byKey.get(keyOf(payload));
-        if (existingRow?._id) {
-          await updateAbacPolicy(existingRow._id, payload);
-          updated += 1;
-        } else {
-          await createAbacPolicy(payload);
-          created += 1;
-        }
-      }
-
-      setMsg(`Import complete: ${created} created, ${updated} updated.`);
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to import ABAC policies");
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const runSimulation = async () => {
-    setSimulating(true);
-    setSimResult(null);
-    setMsg("");
-    try {
-      const payload = {
-        domain: simForm.domain,
-        resource: simForm.resource,
-        action: simForm.action,
-        role: simForm.role,
-        sameHospital: simForm.sameHospital,
-        hasActiveConsent: simForm.hasActiveConsent,
-        sourceHospitalBypass: simForm.sourceHospitalBypass,
-        allowedScopes: String(simForm.allowedScopes || "")
-          .split(",")
-          .map((v) => v.trim().toLowerCase())
-          .filter(Boolean),
-      };
-      const out = await simulateAbacPolicy(payload);
-      setSimResult(out);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run ABAC simulation");
-    } finally {
-      setSimulating(false);
-    }
-  };
-
-  const saveSimulationAsTestCase = async () => {
-    setMsg("");
-    try {
-      const payload = {
-        name: `${simForm.domain}/${simForm.resource}/${simForm.action}/${simForm.role}`,
-        input: {
-          domain: simForm.domain,
-          resource: simForm.resource,
-          action: simForm.action,
-          role: simForm.role,
-          sameHospital: simForm.sameHospital,
-          hasActiveConsent: simForm.hasActiveConsent,
-          sourceHospitalBypass: simForm.sourceHospitalBypass,
-          allowedScopes: String(simForm.allowedScopes || "")
-            .split(",")
-            .map((v) => v.trim().toLowerCase())
-            .filter(Boolean),
-        },
-        expected: simResult?.decision
-          ? {
-              allowed: simResult.decision.allowed,
-              reason: simResult.decision.reason || "",
-            }
-          : { allowed: null, reason: "" },
-        active: true,
-      };
-      await createAbacTestCase(payload);
-      setMsg("Simulation saved as ABAC test case.");
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to save test case");
-    }
-  };
-
-  const runOneTest = async (id) => {
-    try {
-      const out = await runAbacTestCase(id);
-      setMsg(
-        `Test ${out?.name || id}: ${out?.passed ? "PASSED" : "FAILED"} (${out?.decision?.reason || "n/a"})`
-      );
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to run test case");
-    }
-  };
-
-  const runAllTests = async () => {
-    setRunningAllTests(true);
-    setRunSummary(null);
-    setMsg("");
-    try {
-      const out = await runAllAbacTestCases();
-      setRunSummary(out?.totals || null);
-      setMsg(
-        `ABAC test run complete: ${out?.totals?.passed || 0} passed, ${out?.totals?.failed || 0} failed.`
-      );
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to run all test cases");
-    } finally {
-      setRunningAllTests(false);
-    }
-  };
-
-  const removeTest = async (id) => {
-    try {
-      await deleteAbacTestCase(id);
-      setMsg("Test case deleted.");
-      await load();
-    } catch (e) {
-      setMsg(e?.message || "Failed to delete test case");
-    }
-  };
+  const {
+    items,
+    form,
+    setForm,
+    editingId,
+    loading,
+    msg,
+    setMsg,
+    importing,
+    simForm,
+    setSimForm,
+    simResult,
+    simulating,
+    testCases,
+    runningAllTests,
+    runSummary,
+    load,
+    save,
+    resetForm,
+    edit,
+    remove,
+    exportJson,
+    importJson,
+    runSimulation,
+    saveSimulationAsTestCase,
+    runOneTest,
+    runAllTests,
+    removeTest,
+  } = useAbacPolicies();
 
   return (
     <div className="dashboard">
@@ -365,7 +82,7 @@ export default function AbacPolicies() {
           </div>
           <div className="welcome-actions mt-10">
             <button type="button" className="btn-primary" onClick={save}>{editingId ? "Update Policy" : "Create Policy"}</button>
-            <button type="button" className="btn-secondary" onClick={() => { setForm(EMPTY); setEditingId(null); }}>Reset</button>
+            <button type="button" className="btn-secondary" onClick={resetForm}>Reset</button>
           </div>
         </div>
       </section>

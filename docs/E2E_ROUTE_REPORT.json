@@ -1,0 +1,2654 @@
+{
+  "generatedAt": "2026-07-09T19:01:30.781Z",
+  "summary": {
+    "totalRoutes": 162,
+    "successfulRoutes": 81,
+    "failedRoutes": 81,
+    "consoleErrors": 28,
+    "pageErrors": 16,
+    "networkFailures": 1034
+  },
+  "routes": [
+    {
+      "route": "/",
+      "status": "ok",
+      "durationMs": 3143,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/hooks/useUnifiedAssistantDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSecurityAdminDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSecurityOfficerDashboard.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/2fa",
+      "status": "ok",
+      "durationMs": 2895,
+      "consoleErrors": [
+        "The above error occurred in the <TwoFactor> component:\n\n    at TwoFactor (http://127.0.0.1:5173/src/pages/TwoFactor.jsx:23:7)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: TypeError: Cannot destructure property 'settings' of 'useTwoFactor(...)' as it is null.\n    at TwoFactor (http://127.0.0.1:5173/src/pages/TwoFactor.jsx:10:5)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at TwoFactor (http://127.0.0.1:5173/src/pages…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "Cannot destructure property 'settings' of 'useTwoFactor(...)' as it is null.",
+        "Cannot destructure property 'settings' of 'useTwoFactor(...)' as it is null."
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/developer/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/403",
+      "status": "forbidden",
+      "durationMs": 2355,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app",
+      "status": "ok",
+      "durationMs": 2829,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/diagnostics/lab-results",
+      "status": "ok",
+      "durationMs": 2794,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/super-admin (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?missingRegisteredPharmacy=1&page=1&limit=500 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=10&scope=global (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/developer/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/encounters/inpatient",
+      "status": "ok",
+      "durationMs": 3163,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/pages/Innovation/InteropMarketplace.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Doctor/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Profile.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Staff/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/DigitalHospitalTwin.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Admin/SuperAssistants.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Reports/Index.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/RevenueIntelligence.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/ClinicalOrderCopilot.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Receptionist/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Patient/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/CommunityHealthWorker/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/LabTech/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/ComplianceCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SuperAdmin/SystemSettings.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/encounters/opd",
+      "status": "ok",
+      "durationMs": 2685,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/encounters/surgery",
+      "status": "ok",
+      "durationMs": 1786,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=100&scope=facility (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionPlanner.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardTelemetry.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/escalations/index",
+      "status": "ok",
+      "durationMs": 3085,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/home/index",
+      "status": "ok",
+      "durationMs": 2693,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardTelemetry.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/encounters/escalations?status=OPEN&sort=NEWEST&page=1&pageSize=25 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionPlanner.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/intelligence/index",
+      "status": "ok",
+      "durationMs": 3219,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications?limit=8 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/doctor (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=6&scope=facility (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/appointments?limit=8&cursorMode=1 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/medication/administration",
+      "status": "ok",
+      "durationMs": 2899,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionPlanner.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardTelemetry.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/medications/prescriptions",
+      "status": "ok",
+      "durationMs": 2282,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/nurse (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/notes/index",
+      "status": "ok",
+      "durationMs": 2170,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/pharmacies?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/referrals?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/appointments?limit=50 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy/available-medicines?q=&limit=300&includeOutOfStock=true (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/patients/index",
+      "status": "ok",
+      "durationMs": 2108,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionPlanner.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardTelemetry.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/records/index",
+      "status": "ok",
+      "durationMs": 2297,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/patients?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/referrals/index",
+      "status": "ok",
+      "durationMs": 2163,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/appointments?limit=50&cursorMode=1 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/transfers/index",
+      "status": "ok",
+      "durationMs": 1737,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/pharmacies?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/referrals?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/care/vitals/entry",
+      "status": "ok",
+      "durationMs": 2984,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=50&scope=mine (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/claims/index",
+      "status": "ok",
+      "durationMs": 4213,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/command/county",
+      "status": "ok",
+      "durationMs": 3210,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/government/health-funds (net::ERR_ABORTED)",
+        "http://localhost:5000/api/government/audit-logs?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/government/enforcement (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/government/notifications (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/fraud/index",
+      "status": "ok",
+      "durationMs": 2863,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-admin/county-command-center (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/home/index",
+      "status": "ok",
+      "durationMs": 3134,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/claims?limit=50 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/claims/alerts?status=OPEN (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/registry/hospitals",
+      "status": "ok",
+      "durationMs": 2094,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-admin/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/developer/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/developer/trust-status (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/registry/patient-identity",
+      "status": "ok",
+      "durationMs": 2726,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-admin/government-hospitals (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/reports/regulatory",
+      "status": "ok",
+      "durationMs": 3529,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/governance/verification/hospitals",
+      "status": "ok",
+      "durationMs": 2730,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/ai/chatbot",
+      "status": "ok",
+      "durationMs": 3818,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/DownloadMenu.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/DigitalHospitalTwin.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReportsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/RevenueIntelligence.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/countryDialCodes.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useProfile.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Receptionist/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/LanguageSwitcher.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-admin/hospital-verification/review-queue (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/CommunityHealthWorker/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Admin/SuperAssistants.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/auth/useGoogleAuth.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/CountryPhoneInput.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SuperAdmin/SystemSettings.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Doctor/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/ComplianceCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/ClinicalOrderCopilot.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Patient/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/InteropMarketplace.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/roleViewOptions.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/LabTech/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/EditableSection.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Staff/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/ai/extract",
+      "status": "ok",
+      "durationMs": 3639,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/ai/medical",
+      "status": "ok",
+      "durationMs": 2999,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/platformInnovationApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/profileApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/reportsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/systemSettingsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReceptionistDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/opsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/unifiedAssistantApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/ai/triage",
+      "status": "ok",
+      "durationMs": 2173,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/ai/voice",
+      "status": "ok",
+      "durationMs": 2717,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/copilot/clinical-order",
+      "status": "ok",
+      "durationMs": 2936,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/digital-twin/index",
+      "status": "ok",
+      "durationMs": 3386,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/home/index",
+      "status": "ok",
+      "durationMs": 2118,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/innovation/interop-marketplace/index",
+      "status": "ok",
+      "durationMs": 1890,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/bed-board/index",
+      "status": "ok",
+      "durationMs": 1814,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/platform-innovation/interop-marketplace (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/consultations/monitor",
+      "status": "ok",
+      "durationMs": 2323,
+      "consoleErrors": [
+        "The above error occurred in the <ConsultationMonitor> component:\n\n    at ConsultationMonitor (http://127.0.0.1:5173/src/pages/HospitalAdmin/ConsultationMonitor.jsx:9:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: ReferenceError: escalations is not defined\n    at ConsultationMonitor (http://127.0.0.1:5173/src/pages/HospitalAdmin/ConsultationMonitor.jsx:171:9)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at ConsultationMonitor (http://127.0.0.1:5173…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "escalations is not defined",
+        "escalations is not defined"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/super-admin/hospitals?limit=200&active=true (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/devices/alerts",
+      "status": "ok",
+      "durationMs": 1912,
+      "consoleErrors": [],
+      "pageErrors": [
+        "loadAlerts is not a function",
+        "loadAlerts is not a function"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/devices/connectivity",
+      "status": "ok",
+      "durationMs": 2915,
+      "consoleErrors": [
+        "The above error occurred in the <MachineConnectivity> component:\n\n    at MachineConnectivity (http://127.0.0.1:5173/src/pages/HospitalAdmin/MachineConnectivity.jsx:39:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: TypeError: loadDevices is not a function\n    at http://127.0.0.1:5173/src/pages/HospitalAdmin/MachineConnectivity.jsx:92:10\n    at commitHookEffectListMount (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:16963:34)\n    at commitPassiveMountOnFiber (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18206:19)\n    at commitPassiveMountEffects_complete (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18179:17)\n    at commitPassiveMountEffects_begin (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18169:15)\n    at commitPassiveMountEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18159:11)\n    at flushPassiveEffectsImpl (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19543:11)\n    at flushPassiveEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19500:22)\n    at http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19381:17\n    at workLoop (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:197:42) {componentStack: \n    at MachineConnectivity (http://127.0.0.1:5173…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}",
+        "The above error occurred in the <MachineConnectivity> component:\n\n    at MachineConnectivity (http://127.0.0.1:5173/src/pages/HospitalAdmin/MachineConnectivity.jsx:39:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: TypeError: loadDevices is not a function\n    at http://127.0.0.1:5173/src/pages/HospitalAdmin/MachineConnectivity.jsx:92:10\n    at commitHookEffectListMount (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:16963:34)\n    at invokePassiveEffectMountInDEV (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18374:19)\n    at invokeEffectsInDev (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19754:19)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19739:15)\n    at flushPassiveEffectsImpl (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19556:13)\n    at flushPassiveEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19500:22)\n    at http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19381:17\n    at workLoop (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:197:42)\n    at flushWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:176:22) {componentStack: \n    at MachineConnectivity (http://127.0.0.1:5173…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [
+        "loadDevices is not a function",
+        "loadDevices is not a function"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/hospitals?limit=1000 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/alerts?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospital-admin/config (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/audit?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospital-admin/staff (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/super-admin/hospitals?page=1&limit=1000 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/devices (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/staff-transfers?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/driver/home",
+      "status": "ok",
+      "durationMs": 2184,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/machine-connectivity/audit?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/staff-transfers?limit=100 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/alerts?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospital-admin/config (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/emergency/command",
+      "status": "ok",
+      "durationMs": 1608,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/escalations/index",
+      "status": "ok",
+      "durationMs": 2025,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/emergency-command (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/front-desk/booking-desk",
+      "status": "ok",
+      "durationMs": 2435,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/encounters/escalations?status=OPEN&sort=NEWEST&page=1&pageSize=25 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/home/index",
+      "status": "ok",
+      "durationMs": 2724,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/appointments/suggestions?serviceType=General+Consultation&consultationMode=IN_PERSON&limit=5 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/incidents/index",
+      "status": "ok",
+      "durationMs": 3284,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/hospital-admin (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/executive (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/devices (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=8&scope=facility (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/training/tracker?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ml/staffing/forecast (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ml/staffing/forecast (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/inventory/index",
+      "status": "ok",
+      "durationMs": 2934,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/socket.io/?EIO=4&transport=polling&t=vfx4txnc&sid=bmGg-vozBnl_1yD0AAOx (net::ERR_ABORTED)",
+        "http://localhost:5000/socket.io/?EIO=4&transport=polling&t=vfx41rlk&sid=dujsvNVLkqntchAhAAOw (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/archive",
+      "status": "ok",
+      "durationMs": 3689,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/profileApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/reportsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/systemSettingsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/opsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReceptionistDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useStaffDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/unifiedAssistantApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=6&scope=facility (net::ERR_ABORTED)",
+        "http://localhost:5000/api/inventory/list?q=&page=1&limit=25 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/platformInnovationApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/encounter-queue",
+      "status": "ok",
+      "durationMs": 3661,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=SAFETY_CHECK&limit=200 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/opsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=SAMPLE_TRACKING&limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=QUALITY_CONTROL&limit=200 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=EQUIPMENT_LOG&limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/unifiedAssistantApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/platformInnovationApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/equipment",
+      "status": "ok",
+      "durationMs": 3440,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/hooks/useSystemSettingsPage.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Receptionist/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useUnifiedAssistantDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSuperAssistants.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReportsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/CountryPhoneInput.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/usePatientDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/auth/useGoogleAuth.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useProfile.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useLabTechDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/encounters?stage=LAB&limit=25 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useCommunityHealthWorkerDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/LanguageSwitcher.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useComplianceCenter.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useStaffDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useHospitalAdminDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/EditableSection.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/CommandCenterShell.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/roleViewOptions.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/DownloadMenu.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useRevenueIntelligence.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useDoctorDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/countryDialCodes.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useInnovationSnapshot.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/qc",
+      "status": "ok",
+      "durationMs": 2059,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/safety",
+      "status": "ok",
+      "durationMs": 2791,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/auth/useGoogleAuth.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useStaffDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useInnovationSnapshot.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/CommandCenterShell.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/DownloadMenu.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/LanguageSwitcher.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=QUALITY_CONTROL&limit=80 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useCommunityHealthWorkerDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/EditableSection.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useLabTechDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSystemSettingsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReportsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useUnifiedAssistantDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/usePatientDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useDoctorDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useRevenueIntelligence.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReceptionistDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSuperAssistants.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/roleViewOptions.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useProfile.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/CountryPhoneInput.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/countryDialCodes.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useHospitalAdminDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useComplianceCenter.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/samples",
+      "status": "ok",
+      "durationMs": 2777,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/lab-ops?kind=SAFETY_CHECK&limit=80 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/countryDialCodes.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/opsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/platformInnovationApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/utils/roleViewOptions.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useProfile.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useDoctorDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useCommunityHealthWorkerDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useLabTechDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/usePatientDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/unifiedAssistantApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/EditableSection.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/systemSettingsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/reportsApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReceptionistDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useHospitalAdminDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useStaffDashboard.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/lab/test-queue",
+      "status": "ok",
+      "durationMs": 4625,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/lab-ops?kind=SAMPLE_TRACKING&limit=80 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/mortuary/home",
+      "status": "ok",
+      "durationMs": 4913,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/pages/Admin/NotificationsPage.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/CommunityHealthWorker/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/RevenueIntelligence.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Profile.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Reports/Index.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SuperAdmin/SystemSettings.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/ComplianceCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Doctor/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/LabTech/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Receptionist/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Staff/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Patient/Dashboard.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/ClinicalOrderCopilot.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/InteropMarketplace.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Innovation/DigitalHospitalTwin.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/Admin/SuperAssistants.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/controlled",
+      "status": "ok",
+      "durationMs": 3882,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/expiry",
+      "status": "ok",
+      "durationMs": 2107,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy?q=undefined&page=1&limit=25 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/inventory",
+      "status": "ok",
+      "durationMs": 2050,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/pharmacy?q=undefined&page=1&limit=25 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/prescription-queue",
+      "status": "ok",
+      "durationMs": 1967,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy/available-medicines?q=&limit=100&includeOutOfStock=true (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/referrals",
+      "status": "ok",
+      "durationMs": 1868,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/referrals?limit=50 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/dashboardApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/reports",
+      "status": "ok",
+      "durationMs": 1705,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/pharmacies?radiusKm=25&limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/referrals?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/pharmacy/suppliers",
+      "status": "ok",
+      "durationMs": 1666,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy?q=undefined&page=1&limit=25 (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/scheduling/analytics",
+      "status": "ok",
+      "durationMs": 1628,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/scheduling/appointments",
+      "status": "ok",
+      "durationMs": 1879,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/analytics/consultations/activity (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/analytics/appointments/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/analytics/appointments/heatmap (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/scheduling/my-schedule",
+      "status": "ok",
+      "durationMs": 1919,
+      "consoleErrors": [
+        "The above error occurred in the <MySchedule> component:\n\n    at MySchedule (http://127.0.0.1:5173/src/pages/Doctor/MySchedule.jsx:9:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: ReferenceError: completedTodayCalls is not defined\n    at MySchedule (http://127.0.0.1:5173/src/pages/Doctor/MySchedule.jsx:547:58)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at MySchedule (http://127.0.0.1:5173/src/page…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "completedTodayCalls is not defined",
+        "completedTodayCalls is not defined"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/appointments/ops/queue (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/transfers/command",
+      "status": "ok",
+      "durationMs": 2611,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": null
+    },
+    {
+      "route": "/app/operations/triage/index",
+      "status": "ok",
+      "durationMs": 1739,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/hooks/useUnifiedAssistantDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/usePatientDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReportsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSystemSettingsPage.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useInnovationSnapshot.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/patients?limit=100 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useNotificationsPage.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/profileApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useDoctorDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers/command-center/overview?limit=50 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useLabTechDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useCommunityHealthWorkerDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/pages/HospitalAdmin/CommandCenterShell.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useReceptionistDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/index.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useRevenueIntelligence.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useSuperAssistants.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useHospitalAdminDashboard.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useStaffDashboard.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/hooks/useComplianceCenter.js (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/dialysis",
+      "status": "ok",
+      "durationMs": 2540,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/triage (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/icu",
+      "status": "ok",
+      "durationMs": 1692,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/socket.io/?EIO=4&transport=polling&t=vh5wjlk1&sid=nYq-BCd0FWHDE466AAQ0 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/dialysis (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/socket.io/?EIO=4&transport=polling&t=vh5ze36q&sid=qKr1I5baiZpUvzl6AAQ2 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/imaging",
+      "status": "ok",
+      "durationMs": 1592,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionContext.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/icu (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDependencyGraph.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRequestCoordinator.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/neonatal-icu",
+      "status": "ok",
+      "durationMs": 2007,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/imaging (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/index.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveWidgets.css (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/oncology-daycare",
+      "status": "ok",
+      "durationMs": 1730,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/neonatal-icu (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/operations/units/theatre",
+      "status": "ok",
+      "durationMs": 1945,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/oncology-daycare (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/approvals/index",
+      "status": "ok",
+      "durationMs": 2218,
+      "consoleErrors": [
+        "The above error occurred in the <Approvals> component:\n\n    at Approvals (http://127.0.0.1:5173/src/pages/HospitalAdmin/Approvals.jsx:14:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: ReferenceError: useAuth is not defined\n    at Approvals (http://127.0.0.1:5173/src/pages/HospitalAdmin/Approvals.jsx:14:20)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at Approvals (http://127.0.0.1:5173/src/pages…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "useAuth is not defined",
+        "useAuth is not defined"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardExecutionPlanner.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardEventBus.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardTelemetry.mjs (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/ops/theatre (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/home/index",
+      "status": "ok",
+      "durationMs": 1576,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/performance/index",
+      "status": "ok",
+      "durationMs": 1615,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/staff (net::ERR_ABORTED)",
+        "http://localhost:5000/api/transfers?limit=6&scope=facility (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/recruitment/ads",
+      "status": "ok",
+      "durationMs": 1957,
+      "consoleErrors": [
+        "The above error occurred in the <RecruitmentAds> component:\n\n    at RecruitmentAds (http://127.0.0.1:5173/src/pages/HospitalAdmin/RecruitmentAds.jsx:41:7)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: ReferenceError: submit is not defined\n    at RecruitmentAds (http://127.0.0.1:5173/src/pages/HospitalAdmin/RecruitmentAds.jsx:478:87)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at RecruitmentAds (http://127.0.0.1:5173/src/…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "submit is not defined",
+        "submit is not defined"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/requests/index",
+      "status": "ok",
+      "durationMs": 2004,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/requests/leave",
+      "status": "ok",
+      "durationMs": 2509,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/workforce/leave/my?limit=25&cursorMode=1 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/workforce/overtime/my?limit=25&cursorMode=1 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/workforce/shifts/my?limit=25&cursorMode=1 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/schedule/shift",
+      "status": "ok",
+      "durationMs": 1705,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://127.0.0.1:5173/src/services/unifiedAssistantApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RevenueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/revenueIntelligenceApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AdmissionsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/pharmacyNetworkApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/StaffOnDutyWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/platformInnovationApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/BedOccupancyWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/DischargesWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/PharmacyAlertsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/chwApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgetRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/ClaimsWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/EmergencyOverrideWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/MachineHealthWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/ExecutiveCommandCenter.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/WidgetHost.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardScheduler.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardDataRegistry.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/mlApi.js (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardAggregationEngine.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/services/complianceApi.js (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardCacheManager.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/RadiologyQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/dashboardRuntime.mjs (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/LaboratoryQueueWidget.jsx (net::ERR_ABORTED)",
+        "http://127.0.0.1:5173/src/components/ExecutiveWidgets/widgets/AuditSummaryWidget.jsx (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/staff/index",
+      "status": "ok",
+      "durationMs": 2105,
+      "consoleErrors": [
+        "The above error occurred in the <StaffManagement> component:\n\n    at StaffManagement (http://127.0.0.1:5173/src/pages/HospitalAdmin/StaffManagement.jsx:125:20)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4528:26)\n    at main\n    at div\n    at AppShell (http://127.0.0.1:5173/src/app/shell/AppShell.jsx:192:20)\n    at RouteGuard (http://127.0.0.1:5173/src/components/RouteGuard.jsx:8:3)\n    at ProtectedWorkspaceShell\n    at AutoRedirect (http://127.0.0.1:5173/src/components/AutoRedirect.jsx:6:40)\n    at RequireRole (http://127.0.0.1:5173/src/components/RequireRole.jsx:7:39)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4122:5)\n    at Routes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4592:5)\n    at Suspense\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at NavigationProvider (http://127.0.0.1:5173/src/contexts/NavigationContext.jsx:34:38)\n    at SocketProvider (http://127.0.0.1:5173/src/utils/socket.jsx:12:42)\n    at App\n    at AppErrorBoundary (http://127.0.0.1:5173/src/components/AppErrorBoundary.jsx:9:5)\n    at AIContextProvider (http://127.0.0.1:5173/src/context/AIContextProvider.jsx:63:37)\n    at AppLanguageProvider (http://127.0.0.1:5173/src/utils/appLanguage.jsx:181:39)\n    at AuthProvider (http://127.0.0.1:5173/src/utils/auth.jsx:127:32)\n    at SystemSettingsProvider (http://127.0.0.1:5173/src/utils/systemSettings.jsx:164:42)\n    at ThemeProvider (http://127.0.0.1:5173/src/utils/theme.jsx:57:33)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:4535:15)\n    at BrowserRouter (http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=9360256b:5273:5)\n    at GoogleOAuthProvider (http://127.0.0.1:5173/node_modules/.vite/deps/@react-oauth_google.js?v=9360256b:42:32)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.",
+        "App runtime error: ReferenceError: limit is not defined\n    at StaffManagement (http://127.0.0.1:5173/src/pages/HospitalAdmin/StaffManagement.jsx:653:43)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14630:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:14881:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:15966:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-J3QAP64D.js?v=9360256b:18786:28) {componentStack: \n    at StaffManagement (http://127.0.0.1:5173/src…ite/deps/@react-oauth_google.js?v=9360256b:42:32)}"
+      ],
+      "pageErrors": [
+        "limit is not defined",
+        "limit is not defined"
+      ],
+      "networkFailures": [
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)",
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/dashboard/nurse (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/staff/register",
+      "status": "ok",
+      "durationMs": 1775,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+      ],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/system-settings (net::ERR_ABORTED)",
+        "http://localhost:5000/api/ai/assistant/context (net::ERR_ABORTED)"
+      ],
+      "error": null
+    },
+    {
+      "route": "/app/people/staff/transfers",
+      "status": "error",
+      "durationMs": 724,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [
+        "http://localhost:5000/api/machine-connectivity/alerts?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/capabilities (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospital-admin/config (net::ERR_ABORTED)",
+        "http://localhost:5000/api/super-admin/hospitals?page=1&limit=1000 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/pharmacy-network/pharmacies?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/devices (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospital-admin/staff (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?page=1&limit=20 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/hospitals?limit=1000 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/users?limit=200 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/auth/me (net::ERR_ABORTED)",
+        "http://localhost:5000/api/offline/metrics (net::ERR_ABORTED)",
+        "http://localhost:5000/api/profile (net::ERR_ABORTED)",
+        "http://localhost:5000/api/machine-connectivity/overview (net::ERR_ABORTED)",
+        "http://localhost:5000/api/notifications/list?limit=40 (net::ERR_ABORTED)",
+        "http://localhost:5000/api/staff-transfers?limit=100 (net::ERR_ABORTED)"
+      ],
+      "error": "page.waitForTimeout: Test timeout of 180000ms exceeded."
+    },
+    {
+      "route": "/app/people/training/cme",
+      "status": "error",
+      "durationMs": 15,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/people/training/playbook",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/people/training/tracker",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/account/clinician-settings",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/account/profile",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/admin/home",
+      "status": "error",
+      "durationMs": 727,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/ai/autofill-audit",
+      "status": "error",
+      "durationMs": 12,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/ai/extraction-history",
+      "status": "error",
+      "durationMs": 3,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/ai/nlp-analytics",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/ai/super-assistants",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/ai/unified-assistant",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/analytics/hospital-kpis",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/analytics/index",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/audit/logs",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/audit/pharmacy-access",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/compliance/center",
+      "status": "error",
+      "durationMs": 3,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/data/crdt/patients",
+      "status": "error",
+      "durationMs": 5,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/dev/home",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/facility/customization",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/home/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/inbox/communication",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/inbox/notifications",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/connector-sdk",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/control-plane",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/hub",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/mapping-studio",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/realtime",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/integrations/webhook-retry",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/migrations/index",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/offline/ops",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/print/center",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/queues/replay",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/reports/index",
+      "status": "error",
+      "durationMs": 2,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/rollout/launch-readiness",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/rollout/pilot-onboarding",
+      "status": "error",
+      "durationMs": 2,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/security/abac",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/security/access-control",
+      "status": "error",
+      "durationMs": 3,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/security/admin-creation",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/security/admin/home",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/security/officer/home",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/settings/system",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/sre/incidents",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/support/tickets",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/trust/decision-cockpit",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/platform/trust/provenance",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/appointments/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/billing/index",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/diagnostics/lab-results",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/discovery/ads",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/discovery/hospitals",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/family/records",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/family/timeline",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/home/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/insurance/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/medications/prescriptions",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/records/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/support/feedback",
+      "status": "error",
+      "durationMs": 2,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/portal/transfers/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/claims/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/claims/rules",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/commerce/config",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/financials/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/home/index",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/intelligence/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/payments/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/payments/settings",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/app/revenue/transactions/index",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/careers",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/forgot-password",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/login",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/privacy",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/register",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/reset-password",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/step-up",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/terms",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/unauthorized",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/verify-email",
+      "status": "error",
+      "durationMs": 1,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "/verify-success",
+      "status": "error",
+      "durationMs": 0,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "networkFailures": [],
+      "error": "page.goto: Target page, context or browser has been closed"
+    }
+  ]
+}

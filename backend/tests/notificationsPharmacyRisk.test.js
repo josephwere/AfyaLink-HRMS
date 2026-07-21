@@ -5,6 +5,7 @@ import setup from "./setupTestEnv.js";
 import User from "../models/User.js";
 import Hospital from "../models/Hospital.js";
 import Notification from "../models/Notification.js";
+import { notify } from "../services/notificationService.js";
 
 let teardown;
 let hospitalAdminToken;
@@ -36,7 +37,7 @@ beforeAll(async () => {
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
   );
 
-  await Notification.create({
+  await notify({
     title: "Pharmacy Coverage Risk",
     body: "Pharmacy is enabled, but no pharmacist is linked to a registered pharmacy yet.",
     category: "PHARMACY",
@@ -49,7 +50,7 @@ beforeAll(async () => {
     },
   });
 
-  await Notification.create({
+  await notify({
     title: "Training Reminder",
     body: "A nurse needs training renewal.",
     category: "TRAINING",
@@ -59,7 +60,7 @@ beforeAll(async () => {
     meta: { type: "TRAINING_OVERDUE" },
   });
 
-  await Notification.create({
+  await notify({
     title: "Old Pharmacy Risk",
     body: "Previously acknowledged pharmacy risk.",
     category: "PHARMACY",

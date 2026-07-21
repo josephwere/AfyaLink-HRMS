@@ -134,6 +134,20 @@ export const initSocket = (serverIo) => {
         fromUserId: socket.user?.id ? String(socket.user.id) : null,
       });
     });
+
+    socket.on("encounter:signal", ({ encounterId, participantId, targetParticipantId, signalType, payload }) => {
+      if (!encounterId || !participantId || !signalType) return;
+      const roomKey = `encounter:${String(encounterId)}`;
+      socket.join(roomKey);
+      socket.to(roomKey).emit("encounter:signal", {
+        encounterId: String(encounterId),
+        participantId: String(participantId),
+        targetParticipantId: String(targetParticipantId || ""),
+        signalType,
+        payload,
+        fromUserId: socket.user?.id ? String(socket.user.id) : null,
+      });
+    });
     socket.on("consultation:chat", ({ roomKey, callId, message }) => {
       const text = String(message || "").trim();
       if (!roomKey || !text) return;

@@ -140,6 +140,25 @@ describe("Pharmacy referral scoping", () => {
     expect(String(audit?.metadata?.pharmacyId)).toBe(pharmacyId);
   });
 
+  test("doctor can direct a referral to the hospital pharmacy when no external pharmacy is chosen", async () => {
+    const res = await request(app)
+      .post("/api/pharmacy-network/referrals")
+      .set("Authorization", `Bearer ${doctorToken}`)
+      .send({
+        pharmacyId: "__hospital__",
+        patientName: "Referral Patient",
+        patientUser: patientUserId,
+        patientRecord: patientRecordId,
+        reason: "Hospital pharmacy preferred",
+        medicationNotes: "Amoxicillin 500mg x 5 days",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.referral?.pharmacy).toBeDefined();
+    const pharmacy = await RegisteredPharmacy.findById(res.body.referral.pharmacy).lean();
+    expect(pharmacy?.name).toMatch(/hospital/i);
+  });
+
   test("linked pharmacist only sees referrals for assigned pharmacy", async () => {
     const res = await request(app)
       .get("/api/pharmacy-network/referrals?limit=50")

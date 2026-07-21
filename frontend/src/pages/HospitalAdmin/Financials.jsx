@@ -1,68 +1,44 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSearchParams } from "react-router-dom";
-import { apiFetch } from '../../utils/apiFetch';
+import useFinancials from '../../hooks/useFinancials';
+
 export default function Financials(){
   const [searchParams] = useSearchParams();
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [q, setQ] = useState(() => searchParams.get("q") || "");
-  const [form, setForm] = useState({patient:'', items:[{description:'Consultation', amount:50}]});
   const highlightedInvoiceId = searchParams.get("invoiceId") || "";
-  useEffect(() => {
-    loadFinancials();
-  }, [page]);
-  const loadFinancials = async () => {
-    try {
-      const data = await apiFetch('/api/financials?page='+page+'&limit=25');
-      const payload = data && typeof data === "object" ? data : {};
-      if (Array.isArray(data)) {
-        setItems(data);
-        setTotal(data.length);
-      } else {
-        setItems(Array.isArray(payload.items) ? payload.items : []);
-        setTotal(Number(payload.total || 0));
-      }
-    } catch {
-      setItems([]);
-      setTotal(0);
-    }
-  };
-  const create = async ()=> {
-    try {
-      await apiFetch('/api/financials', { method: 'POST', body: form });
-      setForm({patient:'', items:[{description:'Consultation', amount:50}]});
-      await loadFinancials();
-    } catch (e) {
-      alert(e?.message || "Failed to create invoice");
-    }
-  };
+  const {
+    items,
+    total,
+    loading,
+    msg,
+    form,
+    page,
+    setForm,
+    setPage,
+    createInvoice,
+    payInvoice,
+    claimInvoice,
+    prevPage,
+    nextPage,
+  } = useFinancials();
+
   const submitCreate = async (e) => {
     e.preventDefault();
-    await create();
+    await createInvoice();
   };
-  const pay = async (id)=> {
+
+  const pay = async (id) => {
     const amount = prompt('Amount to pay', '0');
-    if(!amount) return;
-    try {
-      await apiFetch('/api/financials/'+id+'/pay', {
-        method: 'POST',
-        body: { amount: Number(amount), method: 'Card', reference: 'WEB' },
-      });
-      await loadFinancials();
-    } catch (e) {
-      alert(e?.message || "Failed to record payment");
-    }
+    if (!amount) return;
+    await payInvoice(id, Number(amount));
   };
-  const claim = async (id)=> {
+
+  const claim = async (id) => {
     const provider = prompt('Provider', 'NHIF');
-    try {
-      await apiFetch('/api/financials/'+id+'/claim', { method: 'POST', body: { provider } });
-      await loadFinancials();
-    } catch (e) {
-      alert(e?.message || "Failed to submit claim");
-    }
+    if (!provider) return;
+    await claimInvoice(id, provider);
   };
+
   const visibleItems = useMemo(() => {
     const query = String(q || "").trim().toLowerCase();
     if (!query) return items;
@@ -80,9 +56,11 @@ export default function Financials(){
         .some((value) => String(value).toLowerCase().includes(query))
     );
   }, [items, q]);
+
   return (
     <div className="dashboard">
       <h3>Financials</h3>
+      {msg ? <div className="card" style={{ marginBottom: 12 }}>{msg}</div> : null}
       <div className="grid" style={{ gridTemplateColumns: "minmax(280px, 360px) 1fr", gap: 12 }}>
         <div>
           <form className="card form" onSubmit={submitCreate}>
@@ -92,7 +70,7 @@ export default function Financials(){
               onChange={e=>setForm({...form, patient:e.target.value})}
             />
             <div>
-              <button className="btn-primary" type="submit">Create Invoice</button>
+              <button className="btn-primary" type="submit" disabled={loading}>{loading ? "Saving..." : "Create Invoice"}</button>
             </div>
           </form>
         </div>
@@ -123,8 +101,8 @@ export default function Financials(){
                     <td>{it.total}</td>
                     <td>{it.status}</td>
                     <td>
-                      <button type="button" className="btn-secondary" onClick={()=>pay(it._id)}>Pay</button>
-                      <button type="button" className="btn-secondary" onClick={()=>claim(it._id)}>Claim</button>
+                      <button type="button" className="btn-secondary" onClick={()=>pay(it._id)} disabled={loading}>Pay</button>
+                      <button type="button" className="btn-secondary" onClick={()=>claim(it._id)} disabled={loading}>Claim</button>
                     </td>
                   </tr>
                 ))}
@@ -132,9 +110,9 @@ export default function Financials(){
             </table>
           </div>
           <div className="welcome-actions mt-12">
-            <button type="button" className="btn-secondary" onClick={()=>setPage(p=>Math.max(1,p-1))}>Prev</button>
+            <button type="button" className="btn-secondary" onClick={prevPage} disabled={loading || page <= 1}>Prev</button>
             <span>Page {page}</span>
-            <button type="button" className="btn-secondary" onClick={()=>setPage(p=>p+1)}>Next</button>
+            <button type="button" className="btn-secondary" onClick={nextPage} disabled={loading}>Next</button>
             <span>Total {total}</span>
           </div>
         </div>

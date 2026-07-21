@@ -1,120 +1,20 @@
-import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
+import React from "react";
+import useReceptionistBooking from "../../hooks/useReceptionistBooking";
 
 export default function ReceptionistBookingDesk() {
-  const [patientQuery, setPatientQuery] = useState("");
-  const [patients, setPatients] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [loadingPatients, setLoadingPatients] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [form, setForm] = useState({
-    patient: "",
-    serviceType: "General Consultation",
-    consultationMode: "IN_PERSON",
-    scheduledAt: "",
-    reason: "",
-    doctor: "",
-  });
-
-  const loadPatients = async (query) => {
-    const q = String(query || "").trim();
-    if (!q) {
-      setPatients([]);
-      return;
-    }
-    setLoadingPatients(true);
-    try {
-      const rows = await apiFetch(`/api/patients/search?q=${encodeURIComponent(q)}`);
-      setPatients(Array.isArray(rows) ? rows : []);
-    } catch {
-      setPatients([]);
-    } finally {
-      setLoadingPatients(false);
-    }
-  };
-
-  const loadSuggestions = async () => {
-    if (!form.serviceType) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      const params = new URLSearchParams({
-        serviceType: form.serviceType,
-        consultationMode: form.consultationMode,
-        limit: "5",
-      });
-      if (form.scheduledAt) {
-        params.set("preferredDate", new Date(form.scheduledAt).toISOString());
-      }
-      const res = await apiFetch(`/api/appointments/suggestions?${params.toString()}`);
-      setSuggestions(Array.isArray(res?.items) ? res.items : []);
-    } catch {
-      setSuggestions([]);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadPatients(patientQuery);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [patientQuery]);
-
-  useEffect(() => {
-    loadSuggestions();
-  }, [form.serviceType, form.consultationMode, form.scheduledAt]);
-
-  const submit = async (payloadOverride = null) => {
-    if (!form.patient) {
-      setMsg("Pick a patient first.");
-      return;
-    }
-    setSaving(true);
-    setMsg("");
-    try {
-      const payload = payloadOverride || {
-        patient: form.patient,
-        serviceType: form.serviceType,
-        consultationMode: form.consultationMode,
-        scheduledAt: form.scheduledAt,
-        reason: form.reason || undefined,
-        doctor: form.doctor || undefined,
-      };
-      await apiFetch("/api/appointments", {
-        method: "POST",
-        body: payload,
-      });
-      setMsg("Appointment booked from front desk.");
-      setForm((prev) => ({
-        ...prev,
-        scheduledAt: "",
-        reason: "",
-        doctor: "",
-      }));
-    } catch (err) {
-      setMsg(err?.message || "Failed to book appointment");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const bookSuggestion = async (suggestion) => {
-    const slotDate = suggestion?.appointmentTime ? new Date(suggestion.appointmentTime) : null;
-    if (!slotDate || Number.isNaN(slotDate.getTime())) {
-      setMsg("Suggestion is not ready.");
-      return;
-    }
-    await submit({
-      patient: form.patient,
-      serviceType: form.serviceType,
-      consultationMode: form.consultationMode,
-      scheduledAt: slotDate.toISOString(),
-      doctor: suggestion.doctorId,
-      reason: form.reason || undefined,
-    });
-  };
+  const {
+    patientQuery,
+    setPatientQuery,
+    patients,
+    suggestions,
+    saving,
+    loadingPatients,
+    msg,
+    form,
+    setForm,
+    submit,
+    bookSuggestion,
+  } = useReceptionistBooking();
 
   return (
     <div className="dashboard">

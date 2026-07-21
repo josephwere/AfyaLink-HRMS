@@ -1,44 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
+import { useLabOps } from "../../hooks/useLabOps";
 
 export default function EquipmentLogs() {
-  const [logs, setLogs] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ device: "", status: "UP", note: "" });
-
-  const loadLogs = async () => {
-    try {
-      const data = await listLabOpsRecords({ kind: "EQUIPMENT_LOG", limit: 80 });
-      setLogs(Array.isArray(data?.items) ? data.items : []);
-      setTotal(Number(data?.total || 0));
-      setMessage("");
-    } catch (err) {
-      setLogs([]);
-      setTotal(0);
-      setMessage(err?.message || "Unable to load equipment logs.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadLogs();
-  }, []);
-
-  const sorted = useMemo(
-    () =>
-      [...logs].sort(
-        (a, b) =>
-          new Date(b.observedAt || b.createdAt).getTime() -
-          new Date(a.observedAt || a.createdAt).getTime()
-      ),
-    [logs]
-  );
+  const { records: logs, sorted, total, loading, busy, message, setMessage, form, setForm, createRecord } = useLabOps({
+    kind: "EQUIPMENT_LOG",
+    limit: 80,
+    initialForm: { device: "", status: "UP", note: "" },
+  });
 
   const save = async (e) => {
     e.preventDefault();
@@ -47,22 +17,15 @@ export default function EquipmentLogs() {
       return;
     }
 
-    setBusy(true);
-    try {
-      await createLabOpsRecord({
-        kind: "EQUIPMENT_LOG",
-        title: form.device.trim(),
-        status: form.status,
-        note: form.note,
-      });
+    const ok = await createRecord({
+      kind: "EQUIPMENT_LOG",
+      title: form.device.trim(),
+      status: form.status,
+      note: form.note,
+    });
+    if (ok) {
       setForm({ device: "", status: "UP", note: "" });
       setShowForm(false);
-      await loadLogs();
-      setMessage("Equipment log saved.");
-    } catch (err) {
-      setMessage(err?.message || "Unable to save the equipment log.");
-    } finally {
-      setBusy(false);
     }
   };
 

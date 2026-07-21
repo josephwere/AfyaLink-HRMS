@@ -1,6 +1,9 @@
 import PharmacyItem from "../models/PharmacyItem.js";
 import PharmacyInventoryMovement from "../models/PharmacyInventoryMovement.js";
 import PharmacyReservation from "../models/PharmacyReservation.js";
+import User from "../models/User.js";
+import Notification from "../models/Notification.js";
+import { notifyRolesInHospital } from "../services/notificationService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
 
 function resolveHospital(req) {
@@ -394,6 +397,23 @@ export const dispenseStock = async (req, res) => {
       note: note || "Medication dispensed",
       performedBy: req.user?._id,
     });
+
+    // If stock has reached or fallen below the configured minimum, notify hospital admins and pharmacists
+    try {
+      const minStock = Number(item.minStock || 0);
+      if (minStock > 0 && Number(item.totalQuantity || 0) <= minStock) {
+        const title = `⚠ ${item.name} running low`;
+        const body = `${item.name} has ${Number(item.totalQuantity || 0)} remaining. Minimum: ${minStock}`;
+        const meta = { type: "PHARMACY_LOW_STOCK", itemId: item._id, path: "/pharmacy/inventory" };
+
+        // Use role-targeted helper to notify pharmacists and admins
+        await notifyRolesInHospital({ hospital, roles: ["PHARMACIST"], title, body, category: "PHARMACY", meta });
+        await notifyRolesInHospital({ hospital, roles: ["HOSPITAL_ADMIN"], title: `Inventory running low: ${item.name}`, body: `${item.name} has ${Number(item.totalQuantity || 0)} remaining (min ${minStock}).`, category: "OPERATIONAL", meta });
+      }
+    } catch (notifyErr) {
+      // Non-fatal: log and continue
+      console.error("Low stock notification error:", notifyErr);
+    }
 
     res.json({ item, reservation });
   } catch (err) {

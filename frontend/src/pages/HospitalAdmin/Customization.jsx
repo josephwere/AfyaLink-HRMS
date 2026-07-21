@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
 import EditableSection from "../../components/EditableSection";
 import ContentSkeleton from "../../components/ContentSkeleton";
 import { TableEmptyState } from "../../components/GuidedEmptyState";
 import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
-import {
-  createCustomizationRequest,
-  listCustomizationRequests,
-} from "../../services/customizationRequestApi";
+import { useHospitalAdminOperations } from "../../hooks/useHospitalAdminOperations";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -61,72 +57,29 @@ function sectionEditingState(editing = false) {
 }
 
 export default function HospitalCustomization() {
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [loading, setLoading] = useState(true);
+  const {
+    customizationForm: form,
+    setCustomizationForm: setForm,
+    customizationLoading: loading,
+    customizationMsg: msg,
+    customizationRequests: requests,
+    requestForm,
+    setRequestForm,
+    requestSaving: reqSaving,
+    submitCustomizationRequest,
+    persistCustomization,
+  } = useHospitalAdminOperations();
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState("");
-  const [msg, setMsg] = useState("");
   const [sectionSaved, setSectionSaved] = useState(sectionSavedState(false));
   const [sectionEditing, setSectionEditing] = useState(sectionEditingState(true));
-  const [requests, setRequests] = useState([]);
-  const [reqSaving, setReqSaving] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [requestEditing, setRequestEditing] = useState(true);
-  const [requestForm, setRequestForm] = useState({
-    scope: "HOSPITAL",
-    country: "",
-    title: "",
-    requirements: "",
-    requestedModules: "",
-    exclusiveDeployment: true,
-    desiredGoLiveDate: "",
-  });
-
-  const load = async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    try {
-      const data = await apiFetch("/api/hospital-admin/config");
-      setForm({
-        ...DEFAULT_FORM,
-        ...(data?.customization || {}),
-        branding: {
-          ...DEFAULT_FORM.branding,
-          ...(data?.customization?.branding || {}),
-        },
-        theme: {
-          ...DEFAULT_FORM.theme,
-          ...(data?.customization?.theme || {}),
-        },
-        modules: {
-          ...DEFAULT_FORM.modules,
-          ...(data?.customization?.modules || {}),
-        },
-        clinical: {
-          ...DEFAULT_FORM.clinical,
-          ...(data?.customization?.clinical || {}),
-          closeoutPolicy: {
-            ...(DEFAULT_FORM.clinical.closeoutPolicy || {}),
-            ...(data?.customization?.clinical?.closeoutPolicy || {}),
-          },
-        },
-      });
-      const reqData = await listCustomizationRequests();
-      setRequests(reqData?.items || []);
-      setSectionSaved(sectionSavedState(true));
-      setSectionEditing(sectionEditingState(false));
-    } catch {
-      setForm(DEFAULT_FORM);
-      setRequests([]);
-      setSectionSaved(sectionSavedState(false));
-      setSectionEditing(sectionEditingState(true));
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    load();
-  }, []);
+    setSectionSaved(sectionSavedState(Boolean(form && Object.keys(form).length)));
+    setSectionEditing(sectionEditingState(false));
+  }, [form]);
 
   const showCustomizationSuccess = (title, sectionName = "customization") => {
     showActionSuccessGuide({
@@ -148,18 +101,14 @@ export default function HospitalCustomization() {
     });
   };
 
-  const persistCustomization = async (
+  const handlePersistCustomization = async (
     customizationPatch,
     successMsg = "Hospital customization saved successfully.",
     sectionKey = ""
   ) => {
     setSaving(true);
-    setMsg("");
     try {
-      await apiFetch("/api/hospital-admin/customization", {
-        method: "PUT",
-        body: { customization: customizationPatch },
-      });
+      await persistCustomization(customizationPatch, successMsg);
       if (sectionKey) {
         setSectionSaved((prev) => ({ ...prev, [sectionKey]: true }));
         setSectionEditing((prev) => ({ ...prev, [sectionKey]: false }));
@@ -168,16 +117,15 @@ export default function HospitalCustomization() {
         setSectionEditing(sectionEditingState(false));
       }
       showCustomizationSuccess(successMsg, sectionKey || "all customization settings");
-      await load({ silent: true });
     } catch (error) {
-      setMsg(error?.message || "Failed to save customization.");
+      // The hook already surfaces the error message through its state.
     } finally {
       setSaving(false);
     }
   };
 
   const save = async () => {
-    await persistCustomization(form, "All customization settings saved.");
+    await handlePersistCustomization(form, "All customization settings saved.");
   };
 
   const saveCard = async (key) => {
@@ -190,7 +138,7 @@ export default function HospitalCustomization() {
     };
     if (!patchMap[key]) return;
     setSavingCard(key);
-    await persistCustomization(
+    await handlePersistCustomization(
       patchMap[key],
       `${key.charAt(0).toUpperCase()}${key.slice(1)} settings saved.`,
       key
@@ -214,10 +162,8 @@ export default function HospitalCustomization() {
   };
 
   const submitRequest = async () => {
-    setReqSaving(true);
-    setMsg("");
     try {
-      await createCustomizationRequest({
+      await submitCustomizationRequest({
         scope: requestForm.scope,
         country: requestForm.country,
         title: requestForm.title,
@@ -248,20 +194,8 @@ export default function HospitalCustomization() {
           },
         ],
       });
-      setRequestForm({
-        scope: "HOSPITAL",
-        country: "",
-        title: "",
-        requirements: "",
-        requestedModules: "",
-        exclusiveDeployment: true,
-        desiredGoLiveDate: "",
-      });
-      await load({ silent: true });
-    } catch (error) {
-      setMsg(error?.message || "Failed to submit customization request.");
-    } finally {
-      setReqSaving(false);
+    } catch {
+      // The hook already surfaces the error message through its state.
     }
   };
 

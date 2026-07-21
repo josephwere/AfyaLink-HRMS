@@ -1,0 +1,839 @@
+{
+  "summary": {
+    "total": 83,
+    "resolved": 15,
+    "unresolved": 68
+  },
+  "surfaces": [
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-607",
+      "surface": "dashboard-card",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 607,
+      "label": "interactive action",
+      "target": "/app/revenue/financials/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/revenue/financials/index"
+    },
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-615",
+      "surface": "dashboard-card",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 615,
+      "label": "interactive action",
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/fraud/index"
+    },
+    {
+      "id": "dashboard-card-src/hooks/useUnifiedAssistantDashboard.js-619",
+      "surface": "dashboard-card",
+      "file": "src/hooks/useUnifiedAssistantDashboard.js",
+      "line": 619,
+      "label": "interactive action",
+      "target": "/app/platform/dev/home",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/dev/home"
+    },
+    {
+      "id": "dashboard-card-src/pages/Developer/DecisionCockpit.jsx-72",
+      "surface": "dashboard-card",
+      "file": "src/pages/Developer/DecisionCockpit.jsx",
+      "line": 72,
+      "label": "DLQ Failed",
+      "target": "/developer/queue-replay",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-179",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 179,
+      "label": "interactive action",
+      "target": "/doctor/medical-records${a.patient",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-190",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 190,
+      "label": "interactive action",
+      "target": "/doctor/opd${patientKey ",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-213",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/Dashboard.jsx",
+      "line": 213,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-63",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 63,
+      "label": "Status",
+      "target": "/doctor/opd",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-64",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 64,
+      "label": "Risk",
+      "target": "/doctor/lab-results",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/MedicalRecords.jsx-65",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/MedicalRecords.jsx",
+      "line": 65,
+      "label": "Diagnosis",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-88",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 88,
+      "label": "Status",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-89",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 89,
+      "label": "Risk",
+      "target": "/doctor/lab-results",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-90",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 90,
+      "label": "Primary Diagnosis",
+      "target": "/doctor/reports-notes",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-91",
+      "surface": "dashboard-card",
+      "file": "src/pages/Doctor/OPDWorkspace.jsx",
+      "line": 91,
+      "label": "Visit State",
+      "target": "/doctor/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-24",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 24,
+      "label": "Appointments (30d)",
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-25",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 25,
+      "label": "Pending Assignments",
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/AppointmentAnalytics.jsx-26",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/AppointmentAnalytics.jsx",
+      "line": 26,
+      "label": "No-show Rate",
+      "target": "/hospital-admin/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-51",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/Appointments.jsx",
+      "line": 51,
+      "label": "Requested calls",
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-52",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/Appointments.jsx",
+      "line": 52,
+      "label": "Active calls",
+      "target": "/hospital-admin/consultation-monitor",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/ConsultationMonitor.jsx-38",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/ConsultationMonitor.jsx",
+      "line": 38,
+      "label": "Ward Escalations",
+      "target": "/hospital-admin/escalations",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Dashboard.jsx-357",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/Dashboard.jsx",
+      "line": 357,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/Dashboard.jsx-360",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/Dashboard.jsx",
+      "line": 360,
+      "label": "interactive action",
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/HospitalAdmin/MachineConnectivity.jsx-397",
+      "surface": "dashboard-card",
+      "file": "src/pages/HospitalAdmin/MachineConnectivity.jsx",
+      "line": 397,
+      "label": "interactive action",
+      "target": "/system-admin/integration-hub",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-78",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 78,
+      "label": "interactive action",
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-79",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 79,
+      "label": "interactive action",
+      "target": "/lab-tech/archive",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-80",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 80,
+      "label": "interactive action",
+      "target": "/lab-tech/qc",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-81",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 81,
+      "label": "interactive action",
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-88",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 88,
+      "label": "interactive action",
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-89",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 89,
+      "label": "interactive action",
+      "target": "/lab-tech/samples",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-90",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 90,
+      "label": "interactive action",
+      "target": "/lab-tech/qc",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-91",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 91,
+      "label": "interactive action",
+      "target": "/lab-tech/safety",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-140",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 140,
+      "label": "interactive action",
+      "target": "/lab-tech/test-queue",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/LabTech/Dashboard.jsx-143",
+      "surface": "dashboard-card",
+      "file": "src/pages/LabTech/Dashboard.jsx",
+      "line": 143,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Nurse/Dashboard.jsx-110",
+      "surface": "dashboard-card",
+      "file": "src/pages/Nurse/Dashboard.jsx",
+      "line": 110,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Nurse/Dashboard.jsx-113",
+      "surface": "dashboard-card",
+      "file": "src/pages/Nurse/Dashboard.jsx",
+      "line": 113,
+      "label": "interactive action",
+      "target": "/nurse/ward-board",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Billing.jsx-70",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Billing.jsx",
+      "line": 70,
+      "label": "Encounter Timeline",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-356",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 356,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-359",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 359,
+      "label": "interactive action",
+      "target": "/patient/prescriptions",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-362",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 362,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-367",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 367,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-370",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 370,
+      "label": "interactive action",
+      "target": "/patient/feedback",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-377",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 377,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-380",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/Dashboard.jsx",
+      "line": 380,
+      "label": "interactive action",
+      "target": "/patient/feedback",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-145",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 145,
+      "label": "interactive action",
+      "target": "/profile",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-146",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 146,
+      "label": "interactive action",
+      "target": "/patient/appointments",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-147",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 147,
+      "label": "interactive action",
+      "target": "/patient/medical-records",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Patient/FamilyRecords.jsx-148",
+      "surface": "dashboard-card",
+      "file": "src/pages/Patient/FamilyRecords.jsx",
+      "line": 148,
+      "label": "interactive action",
+      "target": "/reports",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-80",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 80,
+      "label": "interactive action",
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-81",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 81,
+      "label": "interactive action",
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-82",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 82,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-83",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 83,
+      "label": "interactive action",
+      "target": "/workforce/requests",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-92",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 92,
+      "label": "interactive action",
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-103",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 103,
+      "label": "interactive action",
+      "target": "/notifications",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-153",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 153,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/Receptionist/Dashboard.jsx-164",
+      "surface": "dashboard-card",
+      "file": "src/pages/Receptionist/Dashboard.jsx",
+      "line": 164,
+      "label": "interactive action",
+      "target": "/receptionist/booking-desk",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SuperAdmin/Dashboard.jsx-135",
+      "surface": "dashboard-card",
+      "file": "src/pages/SuperAdmin/Dashboard.jsx",
+      "line": 135,
+      "label": "interactive action",
+      "target": "/system-admin/county-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SuperAdmin/Dashboard.jsx-138",
+      "surface": "dashboard-card",
+      "file": "src/pages/SuperAdmin/Dashboard.jsx",
+      "line": 138,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/CountyCommandCenter.jsx-103",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 103,
+      "label": "Hospitals",
+      "target": "/system-admin/government-hospital-registry",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/CountyCommandCenter.jsx-104",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/CountyCommandCenter.jsx",
+      "line": 104,
+      "label": "Pending Approvals",
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-316",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 316,
+      "label": "interactive action",
+      "target": "/hospital-admin/transfer-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-319",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 319,
+      "label": "interactive action",
+      "target": "/system-admin/county-command-center",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/Dashboard.jsx-401",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/Dashboard.jsx",
+      "line": 401,
+      "label": "interactive action",
+      "target": "/step-up",
+      "resolved": true,
+      "reason": "matches canonical route /step-up"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-274",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 274,
+      "label": "interactive action",
+      "target": "/app/governance/registry/hospitals",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/registry/hospitals"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-279",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 279,
+      "label": "interactive action",
+      "target": "/app/governance/registry/patient-identity",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/registry/patient-identity"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx-289",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/GovernmentClaimsDashboard.jsx",
+      "line": 289,
+      "label": "interactive action",
+      "target": "/app/governance/registry/hospitals",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/registry/hospitals"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-122",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 122,
+      "label": "Hospitals With Payments",
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-124",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 124,
+      "label": "M-PESA Coverage",
+      "target": "/admin/payment-settings",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationControlPlane.jsx-125",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/IntegrationControlPlane.jsx",
+      "line": 125,
+      "label": "Overdue Invoices",
+      "target": "/payments/full",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/IntegrationHub.jsx-99",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/IntegrationHub.jsx",
+      "line": 99,
+      "label": "Missing",
+      "target": "/system-admin/integration-control-plane",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-31",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 31,
+      "label": "Staff Total",
+      "target": "/admin/access-control",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-32",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 32,
+      "label": "Inactive Staff",
+      "target": "/admin/access-control",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-33",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 33,
+      "label": "Pending Approvals",
+      "target": "/hospital-admin/approvals",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-34",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 34,
+      "label": "Export Events (30d)",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RegulatoryReports.jsx-35",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RegulatoryReports.jsx",
+      "line": 35,
+      "label": "ABAC Denials (30d)",
+      "target": "/admin/audit-logs",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/RevenueIntelligence.jsx-223",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/RevenueIntelligence.jsx",
+      "line": 223,
+      "label": "Claims dashboard",
+      "target": "/hospital-admin/claims",
+      "resolved": false,
+      "reason": "no matching canonical route"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1037",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1037,
+      "label": "interactive action",
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/consultations/monitor"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1045",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1045,
+      "label": "interactive action",
+      "target": "/app/platform/support/tickets",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/support/tickets"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1053",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1053,
+      "label": "interactive action",
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/fraud/index"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1061",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1061,
+      "label": "interactive action",
+      "target": "/app/governance/claims/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/claims/index"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1069",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1069,
+      "label": "interactive action",
+      "target": "/app/platform/dev/home",
+      "resolved": true,
+      "reason": "matches canonical route /app/platform/dev/home"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1243",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1243,
+      "label": "interactive action",
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/consultations/monitor"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1377",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1377,
+      "label": "Consultation Monitor",
+      "target": "/app/operations/consultations/monitor",
+      "resolved": true,
+      "reason": "matches canonical route /app/operations/consultations/monitor"
+    },
+    {
+      "id": "dashboard-card-src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx-1415",
+      "surface": "dashboard-card",
+      "file": "src/pages/SystemAdmin/UnifiedAssistantDashboard.jsx",
+      "line": 1415,
+      "label": "interactive action",
+      "target": "/app/governance/fraud/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/governance/fraud/index"
+    }
+  ]
+}

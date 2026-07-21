@@ -1,44 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { createLabOpsRecord, listLabOpsRecords } from "../../services/labOpsApi";
+import { useLabOps } from "../../hooks/useLabOps";
 
 export default function SampleTracking() {
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ sampleId: "", patientId: "", stage: "COLLECTED" });
-
-  const loadItems = async () => {
-    try {
-      const data = await listLabOpsRecords({ kind: "SAMPLE_TRACKING", limit: 80 });
-      setItems(Array.isArray(data?.items) ? data.items : []);
-      setTotal(Number(data?.total || 0));
-      setMessage("");
-    } catch (err) {
-      setItems([]);
-      setTotal(0);
-      setMessage(err?.message || "Unable to load sample tracking records.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadItems();
-  }, []);
-
-  const sorted = useMemo(
-    () =>
-      [...items].sort(
-        (a, b) =>
-          new Date(b.observedAt || b.createdAt).getTime() -
-          new Date(a.observedAt || a.createdAt).getTime()
-      ),
-    [items]
-  );
+  const { records: items, sorted, total, loading, busy, message, setMessage, form, setForm, createRecord } = useLabOps({
+    kind: "SAMPLE_TRACKING",
+    limit: 80,
+    initialForm: { sampleId: "", patientId: "", stage: "COLLECTED" },
+  });
 
   const save = async (e) => {
     e.preventDefault();
@@ -47,22 +17,15 @@ export default function SampleTracking() {
       return;
     }
 
-    setBusy(true);
-    try {
-      await createLabOpsRecord({
-        kind: "SAMPLE_TRACKING",
-        title: form.sampleId.trim(),
-        reference: form.patientId.trim(),
-        status: form.stage,
-      });
+    const ok = await createRecord({
+      kind: "SAMPLE_TRACKING",
+      title: form.sampleId.trim(),
+      reference: form.patientId.trim(),
+      status: form.stage,
+    });
+    if (ok) {
       setForm({ sampleId: "", patientId: "", stage: "COLLECTED" });
       setShowForm(false);
-      await loadItems();
-      setMessage("Sample tracking record saved.");
-    } catch (err) {
-      setMessage(err?.message || "Unable to save the sample tracking record.");
-    } finally {
-      setBusy(false);
     }
   };
 

@@ -1,75 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import EditableSection from "../../components/EditableSection";
 import GuidedEmptyState from "../../components/GuidedEmptyState";
 import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
+import { useDoctorClinicalNotes } from "../../hooks/useDoctorClinicalNotes";
 
 export default function ReportsNotes() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const patientId = searchParams.get("patientId") || "";
-  const [patient, setPatient] = useState(null);
-  const [note, setNote] = useState("");
-  const [summary, setSummary] = useState("");
-  const [msg, setMsg] = useState("");
-  const [draftSaved, setDraftSaved] = useState(false);
-  const [draftEditing, setDraftEditing] = useState(true);
-  const [draftSaving, setDraftSaving] = useState(false);
-  const [promoting, setPromoting] = useState(false);
+  const {
+    patient,
+    note,
+    summary,
+    setNote,
+    setSummary,
+    msg,
+    setMsg,
+    draftSaved,
+    draftEditing,
+    setDraftEditing,
+    draftSaving,
+    promoting,
+    saveDraft,
+    promoteDraft,
+  } = useDoctorClinicalNotes(patientId, "DOCTOR_NOTE");
 
-  useEffect(() => {
-    if (!patientId) {
-      setPatient(null);
-      setSummary("");
-      setNote("");
-      setDraftSaved(false);
-      setDraftEditing(true);
-      return;
-    }
-    apiFetch(`/api/patients/${patientId}`)
-      .then(setPatient)
-      .catch(() => setPatient(null));
-
-    apiFetch(`/api/clinical-drafts/DOCTOR_NOTE?patientId=${encodeURIComponent(patientId)}`)
-      .then((res) => {
-        const payload = res?.item?.payload;
-        if (payload && typeof payload === "object") {
-          setSummary(String(payload.summary || ""));
-          setNote(String(payload.note || ""));
-          setDraftSaved(true);
-          setDraftEditing(false);
-        } else {
-          setSummary("");
-          setNote("");
-          setDraftSaved(false);
-          setDraftEditing(true);
-        }
-      })
-      .catch(() => {
-        setSummary("");
-        setNote("");
-        setDraftSaved(false);
-        setDraftEditing(true);
-      });
-  }, [patientId]);
-
-  async function saveDraft() {
-    if (!patientId) return;
-    setDraftSaving(true);
-    setMsg("");
-    try {
-      await apiFetch(`/api/clinical-drafts/DOCTOR_NOTE?patientId=${encodeURIComponent(patientId)}`, {
-        method: "PUT",
-        body: {
-          payload: {
-            summary,
-            note,
-          },
-        },
-      });
-      setDraftSaved(true);
-      setDraftEditing(false);
+  async function handleSaveDraft() {
+    const ok = await saveDraft();
+    if (ok) {
       showActionSuccessGuide({
         title: "Doctor Note Template Saved",
         message: "The note draft is locked and ready to promote into the patient record when reviewed.",
@@ -87,29 +46,12 @@ export default function ReportsNotes() {
           },
         ],
       });
-    } catch (e) {
-      setMsg(e?.message || "Failed to save note draft.");
-    } finally {
-      setDraftSaving(false);
     }
   }
 
-  async function promoteDraft() {
-    if (!patientId) return;
-    try {
-      setPromoting(true);
-      await apiFetch(`/api/clinical-drafts/DOCTOR_NOTE?patientId=${encodeURIComponent(patientId)}`, {
-        method: "PUT",
-        body: {
-          payload: {
-            summary,
-            note,
-          },
-        },
-      });
-      await apiFetch(`/api/clinical-drafts/DOCTOR_NOTE/promote?patientId=${encodeURIComponent(patientId)}`, {
-        method: "POST",
-      });
+  async function handlePromoteDraft() {
+    const ok = await promoteDraft();
+    if (ok) {
       showActionSuccessGuide({
         title: "Note Promoted To Visit Record",
         message: "The reviewed note is now available in the patient visit record.",
@@ -127,10 +69,6 @@ export default function ReportsNotes() {
           },
         ],
       });
-    } catch (e) {
-      setMsg(e?.message || "Failed to promote note draft.");
-    } finally {
-      setPromoting(false);
     }
   }
 
@@ -216,7 +154,7 @@ export default function ReportsNotes() {
           saveLabel="Save Draft"
           onEdit={() => setDraftEditing(true)}
           onCancel={() => setDraftEditing(false)}
-          onSave={saveDraft}
+          onSave={handleSaveDraft}
         >
           <div className="grid" style={{ gap: 12 }}>
             <label>

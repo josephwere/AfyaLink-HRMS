@@ -1,41 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import apiFetch from "../../utils/apiFetch";
 import { publishPatientSelected, publishAppointmentOpened } from "../../ai/neuroedgeEventHelpers";
+import { useDoctorMedicalRecords } from "../../hooks/useDoctorMedicalRecords";
 
 export default function MedicalRecords() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const patientId = searchParams.get("patientId") || "";
-  const [patient, setPatient] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [encounters, setEncounters] = useState([]);
-  const [msg, setMsg] = useState("");
+  const { patient, appointments, encounters } = useDoctorMedicalRecords(patientId);
 
-  useEffect(() => {
-    if (!patientId) {
-      setPatient(null);
-      setAppointments([]);
-      return;
+  React.useEffect(() => {
+    if (patient) {
+      publishPatientSelected(patient);
     }
-    apiFetch(`/api/patients/${patientId}`)
-      .then((loadedPatient) => {
-        setPatient(loadedPatient);
-        publishPatientSelected(loadedPatient);
-      })
-      .catch(() => setPatient(null));
-
-    apiFetch("/api/appointments?limit=50&cursorMode=1")
-      .then((res) => {
-        const rows = Array.isArray(res?.items) ? res.items : [];
-        setAppointments(rows.filter((item) => String(item?.patient?._id || item?.patient) === String(patientId)));
-      })
-      .catch(() => setAppointments([]));
-    apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=25`)
-      .then((rows) => setEncounters(Array.isArray(rows) ? rows : []))
-      .catch(() => setEncounters([]));
-  }, [patientId]);
+  }, [patient]);
 
   return (
     <div className="dashboard doctor-workspace">
@@ -86,12 +65,6 @@ export default function MedicalRecords() {
               <StatCard title="Diagnosis" value={patient.primaryDiagnosis || "-"} onClick={() => navigate(`/doctor/reports-notes?patientId=${patient._id}`)} />
             </div>
           </div>
-        </section>
-      ) : null}
-
-      {msg ? (
-        <section className="section">
-          <div className="card">{msg}</div>
         </section>
       ) : null}
 

@@ -1,53 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { listInventory } from "../../services/inventoryApi";
-import { listTransfers } from "../../services/transferApi";
+import React from "react";
+import { useInventoryPage } from "../../hooks/useInventoryPage";
 
 export default function Inventory() {
-  const [items, setItems] = useState([]);
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    listInventory({ q, page, limit: 25 })
-      .then((res) => {
-        if (!active) return;
-        setItems(res.items || []);
-        setTotal(res.total || 0);
-      })
-      .catch(() => {
-        if (!active) return;
-        setError("Failed to load inventory.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        if (!active) return;
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        if (!active) return;
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-    return () => {
-      active = false;
-    };
-  }, [q, page]);
-
-  const totalPages = Math.max(1, Math.ceil(total / 25));
+  const {
+    items,
+    q,
+    setQ,
+    page,
+    setPage,
+    loading,
+    error,
+    transfers,
+    transferError,
+    totalPages,
+  } = useInventoryPage();
 
   return (
     <div className="dashboard">

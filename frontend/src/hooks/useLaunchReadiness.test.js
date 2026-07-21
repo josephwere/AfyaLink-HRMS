@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 
 // Mock the service before importing the hook
 vi.mock('../services/launchReadinessApi', () => ({
@@ -23,15 +23,14 @@ describe('useLaunchReadiness', () => {
     };
     fetchSignals.mockResolvedValue(mockSignals);
 
-    const { result, waitForNextUpdate } = renderHook(() => useLaunchReadiness());
+    const { result } = renderHook(() => useLaunchReadiness());
 
-    // initial state
+    // initial state should be loading
     expect(result.current.loading).toBe(true);
 
     // wait for effect to finish
-    await waitForNextUpdate();
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.loading).toBe(false);
     expect(result.current.err).toBe("");
     expect(result.current.signals.backendHealth).toEqual({ ok: true });
     expect(result.current.readinessScore).toBeGreaterThanOrEqual(0);

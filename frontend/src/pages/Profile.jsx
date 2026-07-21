@@ -1,8 +1,7 @@
 // frontend/src/pages/Profile.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../utils/auth";
-import apiFetch from "../utils/apiFetch";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { redirectByRole } from "../utils/redirectByRole";
 import CountryPhoneInput, { toE164 } from "../components/CountryPhoneInput";
 import { useGoogleAuth } from "../auth/useGoogleAuth.jsx";
@@ -21,9 +20,9 @@ import {
   saveAccessibilityPrefs,
 } from "../utils/accessibilityPrefs";
 import { useUiPreferences } from "../utils/uiPreferences";
-import { guardedConsoleFetch } from "../services/guardedConsoleFetch";
 import { showActionSuccessGuide } from "../components/ActionSuccessGuide";
 import EditableSection from "../components/EditableSection";
+import { useProfile } from "../hooks/useProfile";
 
 const COOLDOWN_KEY = "verifyCooldownUntil";
 const PROFILE_CACHE_VERSION = 1;
@@ -37,6 +36,28 @@ const PROFILE_SECTION_LABELS = {
   insuranceProfile: "Insurance profile",
   systemData: "System data",
 };
+
+const DEPARTMENT_OPTIONS = [
+  "Cardiology",
+  "Dermatology",
+  "Emergency",
+  "General Practice",
+  "ICU",
+  "Laboratory",
+  "Oncology",
+  "Orthopedics",
+  "Pediatrics",
+  "Pharmacy",
+  "Radiology",
+  "Surgery",
+  "Administration",
+  "HR",
+  "Finance",
+  "Security",
+  "IT",
+  "Operations",
+  "Other",
+];
 
 function profileCacheKey(user) {
   const id = user?._id || user?.id || user?.email || user?.phone || "anonymous";
@@ -75,6 +96,7 @@ function writeCachedProfile(user, profile) {
 function toCachedProfilePayload(me) {
   if (!me || typeof me !== "object") return null;
   return {
+    userId: me?.userId || "",
     twoFactorEnabled: Boolean(me?.twoFactorEnabled),
     twoFactorMethod: me?.twoFactorMethod || "OTP",
     emailVerified: Boolean(me?.emailVerified),
@@ -162,7 +184,28 @@ export default function Profile() {
   } = useAuth();
   const { language, options: languageOptions } = useAppLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUiPreferences, flushUiPreferences } = useUiPreferences();
+  const {
+    loadProfileWorkspace: loadProfileWorkspaceFromHook,
+    updateProfileSection: updateProfileSectionFromHook,
+    saveFamilyPreferences: saveFamilyPreferencesFromHook,
+    getFamilyMonitoring: getFamilyMonitoringFromHook,
+    searchFamilyProfiles: searchFamilyProfilesFromHook,
+    linkFamilyMinor: linkFamilyMinorFromHook,
+    unlinkFamilyMinor: unlinkFamilyMinorFromHook,
+    toggleTwoFactor: toggleTwoFactorFromHook,
+    setupTotp: setupTotpFromHook,
+    verifyTotp: verifyTotpFromHook,
+    disableTotp: disableTotpFromHook,
+    resendVerificationEmail: resendVerificationEmailFromHook,
+    updateProfileField: updateProfileFieldFromHook,
+    requestPhoneOtp: requestPhoneOtpFromHook,
+    verifyPhoneOtp: verifyPhoneOtpFromHook,
+    changePassword: changePasswordFromHook,
+    exportAccountData: exportAccountDataFromHook,
+    deleteAccount: deleteAccountFromHook,
+  } = useProfile();
   const [viewRole, setViewRole] = useState("");
   const selectedLanguageLabel =
     languageOptions.find((item) => item.code === language)?.label || String(language || "en").toUpperCase();
@@ -199,6 +242,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileUserId, setProfileUserId] = useState(user?.userId || "");
+  const [copyIdMsg, setCopyIdMsg] = useState("");
   const loadRetryRef = useRef(null);
   const [syncing, setSyncing] = useState(false);
   const [authMethods, setAuthMethods] = useState(["local"]);
@@ -429,6 +474,19 @@ export default function Profile() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
+  const copyAccountId = async () => {
+    const value = profileUserId || user?.userId || "";
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyIdMsg("Copied");
+      window.setTimeout(() => setCopyIdMsg(""), 1600);
+    } catch {
+      setCopyIdMsg("Copy unavailable");
+      window.setTimeout(() => setCopyIdMsg(""), 1600);
+    }
+  };
+
   const applyProfilePayload = (me) => {
     setTwoFAEnabled(Boolean(me?.twoFactorEnabled));
     setTwoFAMethod(me?.twoFactorMethod || "OTP");
@@ -443,6 +501,7 @@ export default function Profile() {
     const parsedPhone = splitDialAndLocal(me?.phone || "");
     setPhoneCountry(parsedPhone.countryCode || "");
     setPhoneLocal(parsedPhone.local || "");
+    setProfileUserId(me?.userId || user?.userId || "");
     setIdNumber(me?.nationalIdNumber || "");
     setIdCountry(me?.nationalIdCountry || "");
     setLicenseNumber(me?.licenseNumber || "");
@@ -553,7 +612,7 @@ export default function Profile() {
     }
 
     try {
-      const res = await guardedConsoleFetch("/api/profile", {
+      const res = await loadProfileWorkspaceFromHook({
         warmupPath: "/readyz",
         timeoutSequence: [20000, 30000, 45000],
       });
@@ -680,10 +739,7 @@ export default function Profile() {
     try {
       const allPayload = buildExtendedPayload();
       const payload = sectionKey ? sectionPayloadMap(allPayload)[sectionKey] || {} : allPayload;
-      await apiFetch("/api/profile", {
-        method: "PUT",
-        body: payload,
-      });
+      await updateProfileSectionFromHook(payload);
       const okMsg = sectionKey ? "Section saved." : "Profile details updated.";
       setExtendedMsg(okMsg);
       if (sectionKey) {
@@ -825,10 +881,7 @@ export default function Profile() {
     setFamilyBusy(true);
     setFamilyMsg("");
     try {
-      await apiFetch("/api/profile", {
-        method: "PUT",
-        body: { familyMonitoringPreferences: familyPrefs },
-      });
+      await saveFamilyPreferencesFromHook({ familyMonitoringPreferences: familyPrefs });
       setFamilyMsg("Family monitoring preferences saved.");
     } catch (err) {
       setFamilyMsg(err?.message || "Failed to save family monitoring preferences.");
@@ -843,7 +896,7 @@ export default function Profile() {
       setFamilyMsg("");
     }
     try {
-      const data = await apiFetch("/api/profile/family");
+      const data = await getFamilyMonitoringFromHook();
       const items = Array.isArray(data?.items) ? data.items : [];
       setLinkedMinors(items);
       setLinkedMinorCount(items.length);
@@ -878,11 +931,10 @@ export default function Profile() {
     setFamilyBusy(true);
     setFamilyMsg("");
     try {
-      const params = new URLSearchParams({
+      const data = await searchFamilyProfilesFromHook({
         q: familySearch.q.trim(),
         dob: familySearch.dob,
       });
-      const data = await apiFetch(`/api/profile/family/search?${params.toString()}`);
       setFamilyResults(Array.isArray(data?.items) ? data.items : []);
       if (!(data?.items || []).length) {
         setFamilyMsg("No matching minor profile was found in your hospital scope.");
@@ -899,13 +951,10 @@ export default function Profile() {
     setFamilyBusy(true);
     setFamilyMsg("");
     try {
-      const data = await apiFetch("/api/profile/family/minors/link", {
-        method: "POST",
-        body: {
-          patientId,
-          relationship: familySearch.relationship,
-          notes: familySearch.notes,
-        },
+      const data = await linkFamilyMinorFromHook({
+        patientId,
+        relationship: familySearch.relationship,
+        notes: familySearch.notes,
       });
       const items = Array.isArray(data?.items) ? data.items : [];
       setLinkedMinors(items);
@@ -928,9 +977,7 @@ export default function Profile() {
     setFamilyBusy(true);
     setFamilyMsg("");
     try {
-      const data = await apiFetch(`/api/profile/family/minors/${patientId}`, {
-        method: "DELETE",
-      });
+      const data = await unlinkFamilyMinorFromHook(patientId);
       const items = Array.isArray(data?.items) ? data.items : [];
       setLinkedMinors(items);
       setLinkedMinorCount(items.length);
@@ -954,10 +1001,7 @@ export default function Profile() {
   const toggle2FA = async () => {
     try {
       const next = !twoFAEnabled;
-      await apiFetch("/api/2fa/toggle", {
-        method: "POST",
-        body: { enabled: next },
-      });
+      await toggleTwoFactorFromHook({ enabled: next });
       setTwoFAEnabled(next);
       setTwoFAMethod(next ? "OTP" : "OTP");
       setTwoFAMsg(next ? "OTP 2FA enabled." : "2FA disabled.");
@@ -970,7 +1014,7 @@ export default function Profile() {
     setTwoFABusy(true);
     setTwoFAMsg("");
     try {
-      const data = await apiFetch("/api/2fa/setup-totp", { method: "POST" });
+      const data = await setupTotpFromHook();
       setTotpSecret(data?.secret || "");
       setTotpUrl(data?.otpauthUrl || "");
       setRecoveryCodes([]);
@@ -987,10 +1031,7 @@ export default function Profile() {
     setTwoFABusy(true);
     setTwoFAMsg("");
     try {
-      const data = await apiFetch("/api/2fa/verify-totp", {
-        method: "POST",
-        body: { code: totpCode.trim() },
-      });
+      const data = await verifyTotpFromHook({ code: totpCode.trim() });
       setTwoFAEnabled(Boolean(data?.enabled));
       setTwoFAMethod(data?.method || "TOTP");
       setRecoveryCodes(Array.isArray(data?.recoveryCodes) ? data.recoveryCodes : []);
@@ -1008,10 +1049,7 @@ export default function Profile() {
     setTwoFABusy(true);
     setTwoFAMsg("");
     try {
-      await apiFetch("/api/2fa/disable", {
-        method: "POST",
-        body: { code: totpCode.trim() },
-      });
+      await disableTotpFromHook({ code: totpCode.trim() });
       setTwoFAEnabled(false);
       setTwoFAMethod("OTP");
       setTotpSecret("");
@@ -1033,10 +1071,7 @@ export default function Profile() {
     try {
       setSending(true);
       setMessage("");
-      const data = await apiFetch("/api/auth/resend-verification", {
-        method: "POST",
-        body: { email: user?.email },
-      });
+      const data = await resendVerificationEmailFromHook({ email: user?.email });
       const seconds = data?.retryAfter || 60;
       localStorage.setItem(COOLDOWN_KEY, Date.now() + seconds * 1000);
       setCooldown(seconds);
@@ -1094,12 +1129,9 @@ export default function Profile() {
     setIdSaving(true);
     setIdMsg("");
     try {
-      await apiFetch("/api/profile", {
-        method: "PUT",
-        body: {
-          nationalIdNumber: idNumber || undefined,
-          nationalIdCountry: idCountry || undefined,
-        },
+      await updateProfileFieldFromHook({
+        nationalIdNumber: idNumber || undefined,
+        nationalIdCountry: idCountry || undefined,
       });
       setIdMsg("National ID updated");
       setSectionSaved((prev) => ({ ...prev, nationalId: true }));
@@ -1133,12 +1165,9 @@ export default function Profile() {
     setLicenseSaving(true);
     setLicenseMsg("");
     try {
-      await apiFetch("/api/profile", {
-        method: "PUT",
-        body: {
-          licenseNumber: licenseNumber || undefined,
-          licenseExpiry: licenseExpiry || undefined,
-        },
+      await updateProfileFieldFromHook({
+        licenseNumber: licenseNumber || undefined,
+        licenseExpiry: licenseExpiry || undefined,
       });
       setLicenseMsg("License updated");
       setSectionSaved((prev) => ({ ...prev, professionalLicense: true }));
@@ -1173,10 +1202,7 @@ export default function Profile() {
     setPhoneMsg("");
     try {
       const formattedPhone = toE164(phoneCountry, phoneLocal);
-      await apiFetch("/api/auth/phone/request-otp", {
-        method: "POST",
-        body: { phone: formattedPhone || undefined },
-      });
+      await requestPhoneOtpFromHook({ phone: formattedPhone || undefined });
       setPhoneVerified(false);
       setPhoneMsg("OTP sent to your phone.");
     } catch (err) {
@@ -1190,10 +1216,7 @@ export default function Profile() {
     setPhoneBusy(true);
     setPhoneMsg("");
     try {
-      await apiFetch("/api/auth/phone/verify", {
-        method: "POST",
-        body: { otp: phoneOtp.trim() },
-      });
+      await verifyPhoneOtpFromHook({ otp: phoneOtp.trim() });
       setPhoneVerified(true);
       setPhoneOtp("");
       setPhoneMsg("Phone verified successfully.");
@@ -1225,12 +1248,9 @@ export default function Profile() {
     );
 
     try {
-      const data = await apiFetch("/api/auth/change-password", {
-        method: "POST",
-        body: needsCurrentPassword
-          ? { currentPassword, newPassword }
-          : { newPassword },
-      });
+      const data = await changePasswordFromHook(
+        needsCurrentPassword ? { currentPassword, newPassword } : { newPassword }
+      );
 
       setPwMessage("Password changed successfully");
       setHasPassword(true);
@@ -1980,7 +2000,7 @@ export default function Profile() {
     setPrivacyError("");
     setExportBusy(true);
     try {
-      const data = await apiFetch("/api/profile/export", { _skipUiProgress: true });
+      const data = await exportAccountDataFromHook();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -2003,12 +2023,9 @@ export default function Profile() {
     setPrivacyError("");
     setDeleteBusy(true);
     try {
-      const data = await apiFetch("/api/profile/delete-account", {
-        method: "POST",
-        body: {
-          confirmText: deleteConfirmText,
-          currentPassword: deletePassword,
-        },
+      const data = await deleteAccountFromHook({
+        confirmText: deleteConfirmText,
+        currentPassword: deletePassword,
       });
       setPrivacyMsg(data?.message || "Account deleted. Signing out.");
       await logout();
@@ -2238,6 +2255,14 @@ export default function Profile() {
       profileSections.find((section) => section.key === "verificationStatus")?.key || profileSections[0]?.key;
     if (preferred) setActiveSection(preferred);
   }, [activeSection, profileSections]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const requestedSection = params.get("section") || params.get("activeSection");
+    if (requestedSection && profileSections.some((section) => section.key === requestedSection)) {
+      setActiveSection(requestedSection);
+    }
+  }, [location.search, profileSections]);
 
   const summaryCards = [
     {
@@ -2672,11 +2697,18 @@ export default function Profile() {
               disabled={locked}
             />
             <label>Department</label>
-            <input
+            <select
               value={employment.department}
               onChange={(e) => setEmployment({ ...employment, department: e.target.value })}
               disabled={locked}
-            />
+            >
+              <option value="">Select department</option>
+              {DEPARTMENT_OPTIONS.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
             <label>Reporting Manager</label>
             <input
               value={employment.reportingManager}
@@ -3519,7 +3551,16 @@ export default function Profile() {
           <div className="profile-panel-eyebrow">Profile</div>
           <h1>{user?.name || "Your profile workspace"}</h1>
           <p className="muted">
-            Open one focused settings panel at a time. Everything here applies immediately to your account and keeps the profile experience cleaner than a long stacked page.
+            {profileUserId || user?.userId ? (
+              <span>
+                Account ID: <strong>{profileUserId || user?.userId}</strong>
+                <button type="button" className="btn-secondary" style={{ marginLeft: 10 }} onClick={copyAccountId}>
+                  {copyIdMsg || "Copy"}
+                </button>
+              </span>
+            ) : (
+              "Open one focused settings panel at a time. Everything here applies immediately to your account and keeps the profile experience cleaner than a long stacked page."
+            )}
           </p>
         </div>
         <div className="profile-settings-hero-pills">

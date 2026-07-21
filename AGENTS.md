@@ -24,3 +24,5 @@
 - Backend uses ESM and the pnpm lockfile in backend/pnpm-lock.yaml.
 - GitHub workflows should use the existing backend pnpm lockfile for caching and install steps.
 - AI-related code is concentrated in backend/ai/, backend/services/aiAdapter.js, and backend/controllers/aiGatewayController.js.
+- Platform architecture follows the encounter-runtime policy in docs/architecture/encounter-runtime-policy.md.
+- Clinical workflows must be modeled as encounters; domain services must remain operational and event-driven; AI must subscribe to runtime events; media must be treated as an adapter layer.

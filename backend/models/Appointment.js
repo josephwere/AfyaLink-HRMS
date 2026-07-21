@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generateAppointmentId } from "../services/idGenerator.js";
 const { Schema, model } = mongoose;
 
 /* ======================================================
@@ -40,6 +41,14 @@ const appointmentSchema = new Schema(
       index: true,
     },
 
+    appointmentId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      immutable: true,
+      index: true,
+    },
+
     workflowId: {
       type: String,
       index: true,
@@ -75,6 +84,12 @@ const appointmentSchema = new Schema(
       index: true,
     },
 
+    appointmentType: {
+      type: Schema.Types.ObjectId,
+      ref: "AppointmentType",
+      sparse: true,
+    },
+
     /* ==============================
        WORKFLOW STATUS
     ============================== */
@@ -87,6 +102,18 @@ const appointmentSchema = new Schema(
         "Completed",
         "Cancelled",
         "NoShow",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+        "CREATED",
+        "CONFIRMED",
+        "CHECKED_IN",
+        "WAITING",
+        "READY_FOR_PROVIDER",
+        "OPENING_ENCOUNTER",
+        "IN_ENCOUNTER",
+        "EXPIRED",
+        "RESCHEDULED",
       ],
       default: "Scheduled",
       index: true,
@@ -97,6 +124,120 @@ const appointmentSchema = new Schema(
       enum: ["PENDING", "ASSIGNED", "REASSIGNED"],
       default: "PENDING",
       index: true,
+    },
+
+    /* ==============================
+       LIFECYCLE TIMESTAMPS
+    ============================== */
+    confirmedAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    confirmedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      sparse: true,
+    },
+
+    checkedInAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    checkedInBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      sparse: true,
+    },
+
+    minutesLate: {
+      type: Number,
+      default: 0,
+    },
+
+    waitingSince: {
+      type: Date,
+      sparse: true,
+    },
+
+    waitingDurationMins: {
+      type: Number,
+      sparse: true,
+    },
+
+    providerReadyAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    providerReadyBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      sparse: true,
+    },
+
+    encounterRequestedAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    encounter: {
+      type: Schema.Types.ObjectId,
+      ref: "Encounter",
+      sparse: true,
+    },
+
+    encounterStartedAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    completedAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    completionNotes: {
+      type: String,
+      sparse: true,
+    },
+
+    actualDurationMins: {
+      type: Number,
+      sparse: true,
+    },
+
+    expiredAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    noShowAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    noShowReportedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      sparse: true,
+    },
+
+    rescheduledAt: {
+      type: Date,
+      sparse: true,
+    },
+
+    rescheduledBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      sparse: true,
+    },
+
+    rescheduledFrom: {
+      type: Date,
+      sparse: true,
     },
 
     /* ==============================
@@ -146,6 +287,11 @@ const appointmentSchema = new Schema(
 
     cancelledAt: {
       type: Date,
+    },
+
+    cancellationReason: {
+      type: String,
+      sparse: true,
     },
 
     metadata: {
@@ -212,8 +358,32 @@ appointmentSchema.pre("save", function (next) {
 });
 
 // UPDATE (findOneAndUpdate, updateOne, etc.)
-appointmentSchema.pre(
-  ["findOneAndUpdate", "updateOne", "updateMany"],
+appointmentSchema.pre("findOneAndUpdate", async function (next) {
+    const options = this.getOptions();
+    if (!options.upsert) return next();
+
+    const update = this.getUpdate() || {};
+    const hasAppointmentId =
+      update.appointmentId !== undefined ||
+      (update.$set && update.$set.appointmentId !== undefined) ||
+      (update.$setOnInsert && update.$setOnInsert.appointmentId !== undefined);
+
+    if (!hasAppointmentId) {
+      const nextId = await generateAppointmentId();
+      this.setUpdate({
+        ...update,
+        $setOnInsert: {
+          ...(update.$setOnInsert || {}),
+          appointmentId: nextId,
+        },
+      });
+    }
+
+    next();
+  });
+
+  appointmentSchema.pre(
+    ["updateOne", "updateMany"],
   function (next) {
     if (!this.getOptions()?.viaWorkflow) {
       throw new Error(

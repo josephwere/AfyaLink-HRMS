@@ -5,11 +5,14 @@ import InsuranceAuthorization from "../models/InsuranceAuthorization.js";
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
 import Notification from "../models/Notification.js";
+import { notify, notifyRolesInHospital } from "../services/notificationService.js";
 import AuditLog from "../models/AuditLog.js";
 import PharmacyReferral from "../models/PharmacyReferral.js";
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
+import mongoose from "mongoose";
 import { assertWorkflowState } from "../services/clinicalWorkflowGuard.js";
 import { getIO } from "../utils/socket.js";
+import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 async function resolveActorPharmacyIds(req) {
   const direct = req.user?.registeredPharmacy ? [String(req.user.registeredPharmacy)] : [];
@@ -197,7 +200,7 @@ export async function createPrescription(req, res) {
       await appointment.save();
     }
 
-    await Notification.create({
+    await notify({
       title: "Prescription Created",
       body: "Your doctor created a prescription for your visit.",
       category: "PHARMACY",
@@ -209,6 +212,23 @@ export async function createPrescription(req, res) {
         path: "/patient/prescriptions",
       },
     });
+
+    // Notify pharmacists that a new prescription is available for dispensing
+    try {
+      const medsCount = Array.isArray(cleanedMeds) ? cleanedMeds.length : 0;
+      const doctorName = req.user?.name || "A clinician";
+      const patientLabel = patientRecord ? `${patientRecord.firstName || ""} ${patientRecord.lastName || ""}`.trim() : "a patient";
+      const title = `New prescription: ${doctorName}`;
+      const body = `${doctorName} prescribed ${medsCount} medication(s) for ${patientLabel}.`;
+      await notifyRolesInHospital({ hospital: req.user.hospital, roles: ["PHARMACIST"], title, body, category: "PHARMACY", meta: { prescriptionId: rx._id, appointmentId } });
+
+      // Also send an operational notification to hospital admins
+      const adminTitle = `Prescription created by ${doctorName}`;
+      const adminBody = `${doctorName} created a prescription for ${patientLabel} (${medsCount} items).`;
+      await notifyRolesInHospital({ hospital: req.user.hospital, roles: ["HOSPITAL_ADMIN"], title: adminTitle, body: adminBody, category: "OPERATIONAL", meta: { prescriptionId: rx._id, appointmentId } });
+    } catch (notifyErr) {
+      console.error("Failed to notify pharmacists/admins about new prescription:", notifyErr);
+    }
 
     try {
       getIO().to(String(patientUserId)).emit("prescription_issued", {
@@ -253,7 +273,29 @@ export async function listPrescriptions(req, res) {
     const filter = { hospital: req.user.hospital };
 
     if (req.query?.appointmentId) filter.appointment = req.query.appointmentId;
-    if (req.query?.patientId) filter.patientRecord = req.query.patientId;
+    if (req.query?.patientId) {
+      const patientId = String(req.query.patientId || "").trim();
+      if (patientId && !mongoose.isValidObjectId(patientId)) {
+        const patient = await Patient.findOne({ patientId }).select("_id").lean();
+        if (patient) {
+          filter.patientRecord = patient._id;
+        } else {
+          filter.patientRecord = patientId;
+        }
+      } else {
+        filter.patientRecord = patientId;
+      }
+    }
+    const q = String(req.query.q || "").trim();
+
+    let qFilter = null;
+    if (q) {
+      qFilter = { $or: buildBusinessIdSearchFilter(q, ["prescriptionId"], [
+        { status: { $regex: q, $options: "i" } },
+        { "appointment.status": { $regex: q, $options: "i" } },
+      ]).$or };
+      Object.assign(filter, qFilter);
+    }
 
     if (role === "DOCTOR") {
       filter.doctor = req.user._id;
@@ -262,7 +304,13 @@ export async function listPrescriptions(req, res) {
     if (role === "PATIENT") {
       const records = await Patient.find({ "metadata.userId": req.user._id }).select("_id");
       const recordIds = records.map((item) => item._id);
-      filter.$or = [{ patient: req.user._id }, { patientRecord: { $in: recordIds } }];
+      const patientFilter = { $or: [{ patient: req.user._id }, { patientRecord: { $in: recordIds } }] };
+      if (filter.$or) {
+        filter.$and = [patientFilter, { $or: filter.$or }];
+        delete filter.$or;
+      } else {
+        Object.assign(filter, patientFilter);
+      }
     }
 
     if (role === "PHARMACIST") {
@@ -376,8 +424,8 @@ export async function dispenseMedication(req, res) {
       await workflow.transition("DISPENSED", req.user);
     }
 
-    await Notification.insertMany([
-      {
+    await Promise.all([
+      notify({
         title: "Prescription Dispensed",
         body: "Your medicine has been marked as dispensed.",
         category: "PHARMACY",
@@ -389,8 +437,8 @@ export async function dispenseMedication(req, res) {
           dispensedAt: rx.dispensedAt,
           path: "/patient/prescriptions",
         },
-      },
-      {
+      }),
+      notify({
         title: "Prescription Dispensed",
         body: "A prescription for your patient was dispensed.",
         category: "PHARMACY",
@@ -402,7 +450,7 @@ export async function dispenseMedication(req, res) {
           patientRecordId: rx.patientRecord || null,
           path: "/doctor/prescriptions",
         },
-      },
+      }),
     ]);
 
     await AuditLog.create({

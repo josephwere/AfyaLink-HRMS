@@ -1,11 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSystemSettings } from "../../utils/systemSettings.jsx";
-import {
-  clearAssistantMemory,
-  getAssistantContext,
-  streamAssistantChat,
-  submitAssistantFeedback,
-} from "../../services/assistantApi";
+import { useChatbotPage } from "../../hooks/useChatbotPage";
 import { useAuth } from "../../utils/auth";
 import { useAIContext } from "../../context/AIContextProvider";
 import { DEFAULT_AI_ICON } from "../../constants/aiBranding";
@@ -13,6 +8,7 @@ import { getPreferredAssetSource, markAssetBroken } from "../../utils/assetFallb
 
 export default function Chatbot() {
   const { settings } = useSystemSettings();
+  const { getAssistantContext, streamAssistantChat, submitAssistantFeedback, clearAssistantMemory } = useChatbotPage();
   const { user } = useAuth();
   const userId = user?.id || user?._id || "";
   const [message, setMessage] = useState("");

@@ -1,107 +1,30 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../utils/auth";
-import { getSecurityAdminDashboard } from "../../services/dashboardApi";
-import {
-  bookInternalAccess,
-  getAccessLogs,
-  getOverstays,
-  getSecurityAlerts,
-  searchUsersForAccess,
-} from "../../services/securityAccessApi";
-import { listTransfers } from "../../services/transferApi";
+import React from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
+import { useSecurityAdminDashboard } from "../../hooks/useSecurityAdminDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function SecurityAdminDashboard() {
-  const { user } = useAuth();
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [overstays, setOverstays] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [staffQ, setStaffQ] = useState("");
-  const [staffOptions, setStaffOptions] = useState([]);
-  const [selectedStaff, setSelectedStaff] = useState("");
-  const [msg, setMsg] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-  const [internalForm, setInternalForm] = useState({
-    personType: "CONTRACTOR",
-    purpose: "",
-    expiresAt: "",
-  });
-
-  useEffect(() => {
-    Promise.all([
-      getSecurityAdminDashboard().catch(() => null),
-      getSecurityAlerts().catch(() => ({ alerts: [] })),
-      getOverstays().catch(() => ({ overstayed: [] })),
-      getAccessLogs({ limit: 12 }).catch(() => ({ items: [] })),
-    ]).then(([dash, a, o, l]) => {
-      setData(dash);
-      setAlerts(a?.alerts || []);
-      setOverstays(o?.overstayed || []);
-      setLogs(l?.items || []);
-    });
-    listTransfers({ limit: 8, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
-
-  const pendingTransfers = transfers.filter(
-    (t) => String(t?.status || "").toUpperCase() === "PENDING"
-  ).length;
-
-  useEffect(() => {
-    const handle = setTimeout(async () => {
-      if (!staffQ.trim()) {
-        setStaffOptions([]);
-        return;
-      }
-      try {
-        const out = await searchUsersForAccess({ q: staffQ.trim(), limit: 20 });
-        setStaffOptions(out?.items || []);
-      } catch {
-        setStaffOptions([]);
-      }
-    }, 250);
-    return () => clearTimeout(handle);
-  }, [staffQ]);
-
-  const selectedStaffLabel = useMemo(
-    () => staffOptions.find((u) => u._id === selectedStaff)?.name || "",
-    [selectedStaff, staffOptions]
-  );
-
-  const onBookInternal = async (e) => {
-    e.preventDefault();
-    setBusy(true);
-    setMsg("");
-    try {
-      const res = await bookInternalAccess({
-        personRef: selectedStaff,
-        personType: internalForm.personType,
-        purpose: internalForm.purpose,
-        expiresAt: new Date(internalForm.expiresAt).toISOString(),
-      });
-      setMsg(`Internal access created. Code: ${res.accessCode}`);
-      setSelectedStaff("");
-      setStaffQ("");
-      setInternalForm({ personType: "CONTRACTOR", purpose: "", expiresAt: "" });
-    } catch (err) {
-      setMsg(err?.message || "Failed to grant internal access");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const {
+    data,
+    alerts,
+    overstays,
+    logs,
+    staffQ,
+    setStaffQ,
+    staffOptions,
+    selectedStaff,
+    setSelectedStaff,
+    msg,
+    busy,
+    transfers,
+    transferError,
+    pendingTransfers,
+    internalForm,
+    setInternalForm,
+    selectedStaffLabel,
+    onBookInternal,
+  } = useSecurityAdminDashboard();
 
   return (
     <DashboardHomeShell

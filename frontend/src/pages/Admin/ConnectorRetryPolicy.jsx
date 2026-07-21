@@ -1,37 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
+import { useConnectorRetryPolicy } from '../../hooks/useConnectorRetryPolicy';
 
 export default function ConnectorRetryPolicy(){
-  const [connectors,setConnectors]=useState([]);
-  const [sel,setSel]=useState('');
-  const [policy,setPolicy]=useState({ attempts:5, backoffDelay:1000, backoffType:'exponential' });
-  const [msg, setMsg] = useState("");
-
-  useEffect(()=>{ load(); },[]);
-  async function load(){
-    try {
-      const js = await apiFetch('/api/connectors');
-      setConnectors(Array.isArray(js) ? js : Array.isArray(js?.items) ? js.items : []);
-    } catch (e) {
-      setMsg(e?.message || "Failed to load connectors");
-      setConnectors([]);
-    }
-  }
-  async function save(){
-    if(!sel) return setMsg('Select connector');
-    try {
-      await apiFetch('/api/integrations/dlq/connector/' + sel + '/retry-policy', { method:'POST', body: policy });
-      setMsg("Policy saved.");
-    } catch (e) {
-      setMsg(e?.message || "Failed to save policy");
-    }
-  }
+  const { connectors, selectedConnectorId, setSelectedConnectorId, policy, setPolicy, message, save } = useConnectorRetryPolicy();
 
   return (
     <div className="dashboard">
       <h2>Connector Delivery Policies</h2>
       <div className="card form">
-        <select value={sel} onChange={e=>setSel(e.target.value)}>
+        <select value={selectedConnectorId} onChange={e=>setSelectedConnectorId(e.target.value)}>
           <option value=''>Select</option>
           {connectors.map(c => (<option key={c._id} value={c._id}>{c.name}</option>))}
         </select>
@@ -40,7 +17,7 @@ export default function ConnectorRetryPolicy(){
         <div><label>Backoff Type</label><select value={policy.backoffType} onChange={e=>setPolicy(p=>({...p,backoffType:e.target.value}))}><option value='exponential'>exponential</option><option value='fixed'>fixed</option></select></div>
         <div><button type="button" className="btn-primary" onClick={save}>Save Policy</button></div>
       </div>
-      {msg ? <p className="muted">{msg}</p> : null}
+      {message ? <p className="muted">{message}</p> : null}
     </div>
   );
 }

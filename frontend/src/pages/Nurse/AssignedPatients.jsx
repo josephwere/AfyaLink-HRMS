@@ -1,56 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import apiFetch from "../../utils/apiFetch";
+import { useNursePatientFlow } from "../../hooks/useNursePatientFlow";
 
 export default function AssignedPatients() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectedPatientId = searchParams.get("patientId") || "";
-  const [rows, setRows] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(null);
-  const [encounterByPatient, setEncounterByPatient] = useState({});
-  const [msg, setMsg] = useState("");
-  const [escalatingPatientId, setEscalatingPatientId] = useState("");
-
-  useEffect(() => {
-    apiFetch("/api/patients?limit=50")
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setRows(items);
-        return Promise.all(
-          items
-            .map((item) => String(item?._id || ""))
-            .filter(Boolean)
-            .map(async (patientId) => {
-              try {
-                const encounterRows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
-                const encounterItems = Array.isArray(encounterRows) ? encounterRows : [];
-                return [patientId, encounterItems[0] || null];
-              } catch {
-                return [patientId, null];
-              }
-            })
-        );
-      })
-      .then((pairs) => {
-        if (Array.isArray(pairs)) setEncounterByPatient(Object.fromEntries(pairs));
-      })
-      .catch(() => {
-        setRows([]);
-        setEncounterByPatient({});
-      });
-  }, []);
-
-  useEffect(() => {
-    if (!selectedPatientId) {
-      setSelectedPatient(null);
-      return;
-    }
-    apiFetch(`/api/patients/${selectedPatientId}`)
-      .then(setSelectedPatient)
-      .catch(() => setSelectedPatient(null));
-  }, [selectedPatientId]);
+  const { rows, selectedPatient, encounterByPatient, msg, escalatingPatientId, escalateEncounter } = useNursePatientFlow(selectedPatientId);
 
   const orderedRows = useMemo(() => {
     if (!selectedPatientId) return rows;
@@ -76,24 +33,6 @@ export default function AssignedPatients() {
     if (summary.openCount > 0) return "Escalated • Awaiting response";
     return "Escalation resolved";
   };
-
-  async function escalateEncounter(encounter) {
-    if (!encounter?._id) return;
-    try {
-      setEscalatingPatientId(String(encounter.patient?._id || encounter.patient || ""));
-      const res = await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation`, {
-        method: "POST",
-        body: {
-          note: "Ward team requested clinician review before discharge or transfer.",
-        },
-      });
-      setMsg(`Escalation sent to ${res?.recipients || 0} recipient(s).`);
-    } catch (e) {
-      setMsg(e?.message || "Failed to send escalation.");
-    } finally {
-      setEscalatingPatientId("");
-    }
-  }
 
   return (
     <div className="dashboard doctor-workspace">

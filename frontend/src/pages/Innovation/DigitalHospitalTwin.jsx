@@ -1,10 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import { useAuth } from "../../utils/auth";
-import { normalizeRole } from "../../utils/normalizeRole";
-import apiFetch from "../../utils/apiFetch";
-import { getDigitalHospitalTwinSnapshot } from "../../services/platformInnovationApi";
+import { useInnovationSnapshot } from "../../hooks/useInnovationSnapshot";
 
 function formatPct(value) {
   return `${Number(value || 0).toFixed(1)}%`;
@@ -12,60 +9,22 @@ function formatPct(value) {
 
 export default function DigitalHospitalTwin() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const actorRole = normalizeRole(user?.actualRole || user?.role);
-  const canSwitchHospital = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(actorRole);
-  const [hospitalId, setHospitalId] = useState(() => searchParams.get("hospitalId") || "");
-  const [snapshot, setSnapshot] = useState(null);
-  const [hospitals, setHospitals] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [clientMeta, setClientMeta] = useState(null);
+  const {
+    actorRole,
+    canSwitchHospital,
+    hospitalId,
+    handleHospitalChange,
+    snapshot,
+    hospitals,
+    loading,
+    msg,
+    clientMeta,
+    loadSnapshot,
+    hasSnapshot,
+    initialLoading,
+    refreshing,
+  } = useInnovationSnapshot({ kind: "digital-twin" });
   const comparisonPath = canSwitchHospital ? "/system-admin/county-command-center" : "/hospital-admin/appointments";
-  const requestRef = useRef(0);
-
-  useEffect(() => {
-    if (!canSwitchHospital) return;
-    apiFetch("/api/hospitals/marketplace?limit=200")
-      .then((res) => setHospitals(Array.isArray(res?.items) ? res.items : []))
-      .catch(() => setHospitals([]));
-  }, [canSwitchHospital]);
-
-  const loadSnapshot = useCallback(
-    async ({ preserveSnapshot = false } = {}) => {
-      const requestId = requestRef.current + 1;
-      requestRef.current = requestId;
-      setLoading(true);
-      setMsg("");
-      try {
-        const result = await getDigitalHospitalTwinSnapshot({
-          hospitalId: hospitalId || undefined,
-        });
-        if (requestRef.current !== requestId) return;
-        setSnapshot(result?.payload || null);
-        setClientMeta(result?.clientMeta || null);
-      } catch (err) {
-        if (requestRef.current !== requestId) return;
-        if (!preserveSnapshot) setSnapshot(null);
-        setMsg(
-          err?.message ||
-            "We could not load the digital hospital twin yet. Try again in a moment."
-        );
-      } finally {
-        if (requestRef.current === requestId) setLoading(false);
-      }
-    },
-    [hospitalId]
-  );
-
-  useEffect(() => {
-    loadSnapshot({ preserveSnapshot: false });
-  }, [loadSnapshot]);
-
-  const hasSnapshot = Boolean(snapshot);
-  const initialLoading = loading && !hasSnapshot;
-  const refreshing = loading && hasSnapshot;
 
   const summary = snapshot?.summary || {};
   const wardState = snapshot?.wardState || [];
@@ -164,11 +123,7 @@ export default function DigitalHospitalTwin() {
               {canSwitchHospital ? (
                 <select
                   value={hospitalId}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setHospitalId(next);
-                    setSearchParams(next ? { hospitalId: next } : {});
-                  }}
+                  onChange={(e) => handleHospitalChange(e.target.value)}
                 >
                   <option value="">All hospitals</option>
                   {hospitals.map((hospital) => (

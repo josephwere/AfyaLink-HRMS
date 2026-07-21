@@ -1,103 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  getDelegationScope,
-  getUserDelegatedPermissions,
-  saveUserDelegatedPermissions,
-} from "../../services/delegatedPermissionsApi";
+import { useNavigate } from "react-router-dom";
+import { useAccessControl } from "../../hooks/useAccessControl";
 
 export default function AccessControl() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const permissionsRef = useRef(null);
-  const [q, setQ] = useState(() => searchParams.get("q") || "");
-  const [scope, setScope] = useState({
-    actorRole: "",
-    manageableRoles: [],
-    users: [],
-    permissionsCatalog: [],
-  });
-  const [selectedUserId, setSelectedUserId] = useState(() => searchParams.get("userId") || "");
-  const [checked, setChecked] = useState({});
-  const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-
-  const loadScope = async () => {
-    setLoading(true);
-    try {
-      const data = await getDelegationScope({ q });
-      setScope(data || {});
-      if (!selectedUserId && data?.users?.length) {
-        setSelectedUserId(String(data.users[0]._id));
-      }
-    } catch (err) {
-      setMessage(err?.message || "Failed to load access scope");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadScope();
-  }, []);
-
-  useEffect(() => {
-    const id = setTimeout(loadScope, 250);
-    return () => clearTimeout(id);
-  }, [q]);
-
-  useEffect(() => {
-    if (!selectedUserId) return;
-    setBusy(true);
-    getUserDelegatedPermissions(selectedUserId)
-      .then((data) => {
-        const targetRole = String(data?.target?.role || "").toUpperCase();
-        const next = {};
-        for (const item of scope.permissionsCatalog || []) {
-          const roles = Array.isArray(item.roles) ? item.roles : [];
-          next[item.permissionKey] = roles.includes(targetRole);
-        }
-        for (const grant of data?.grants || []) {
-          const key = grant?.permissionKey;
-          if (!key) continue;
-          next[key] = grant?.effect === "ALLOW";
-        }
-        setChecked(next);
-      })
-      .catch(() => setChecked({}))
-      .finally(() => setBusy(false));
-  }, [selectedUserId, scope.permissionsCatalog]);
-
-  const catalogBySection = useMemo(() => {
-    const map = new Map();
-    for (const item of scope.permissionsCatalog || []) {
-      const section = item.section || "General";
-      const arr = map.get(section) || [];
-      arr.push(item);
-      map.set(section, arr);
-    }
-    return Array.from(map.entries());
-  }, [scope.permissionsCatalog]);
-
-  const onSave = async () => {
-    if (!selectedUserId) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const grants = Object.entries(checked).map(([permissionKey, allowed]) => ({
-        permissionKey,
-        action: "VIEW",
-        effect: allowed ? "ALLOW" : "DENY",
-      }));
-      await saveUserDelegatedPermissions(selectedUserId, grants);
-      setMessage("Access permissions updated successfully.");
-    } catch (err) {
-      setMessage(err?.message || "Failed to save permissions");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const {
+    permissionsRef,
+    q,
+    setQ,
+    scope,
+    selectedUserId,
+    setSelectedUserId,
+    checked,
+    setChecked,
+    busy,
+    loading,
+    message,
+    catalogBySection,
+    loadScope,
+    onSave,
+  } = useAccessControl();
 
   return (
     <div className="page">

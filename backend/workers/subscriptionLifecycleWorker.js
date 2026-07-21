@@ -1,6 +1,6 @@
 import Hospital from "../models/Hospital.js";
 import User from "../models/User.js";
-import Notification from "../models/Notification.js";
+import { notifyRolesInHospital } from "../services/notificationService.js";
 
 const TRIAL_WARNING_WINDOWS = [
   { days: 30, tag: "trial_30d", label: "about 1 month" },
@@ -25,16 +25,14 @@ async function notifyHospitalRoles({ hospitalId, title, body, category, meta = {
 
   if (!users.length) return 0;
 
-  await Notification.insertMany(
-    users.map((u) => ({
-      title,
-      body,
-      user: u._id,
-      hospital: hospitalId,
-      category,
-      meta,
-    }))
-  );
+  await notifyRolesInHospital({
+    hospital: hospitalId,
+    roles: ["HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"],
+    title,
+    body,
+    category,
+    meta,
+  });
 
   return users.length;
 }

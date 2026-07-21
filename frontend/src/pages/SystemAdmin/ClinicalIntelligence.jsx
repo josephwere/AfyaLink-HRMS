@@ -1,116 +1,27 @@
-import React, { useState } from "react";
-import {
-  runStaffingForecast,
-  runBurnoutScore,
-  runCausalImpact,
-  runDigitalTwin,
-} from "../../services/mlApi";
+import React from "react";
+import { useClinicalIntelligence } from "../../hooks/useClinicalIntelligence";
 
 export default function ClinicalIntelligence() {
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState("");
-
-  const [forecastInput, setForecastInput] = useState({
-    beds: 220,
-    occupancyRate: 0.78,
-    avgPatientsPerDoctor: 14,
-    avgPatientsPerNurse: 5,
-    horizonDays: 14,
-  });
-  const [forecastResult, setForecastResult] = useState(null);
-
-  const [burnoutInput, setBurnoutInput] = useState({
-    hoursPerWeek: 52,
-    nightShifts: 6,
-    consecutiveDays: 7,
-    overtimeHours: 12,
-    leaveBalanceDays: 8,
-    incidentsIn30d: 1,
-  });
-  const [burnoutResult, setBurnoutResult] = useState(null);
-
-  const [causalInput, setCausalInput] = useState({
-    baseline: 100,
-    interventionsJson: JSON.stringify(
-      [
-        { name: "Add ICU nurses", effectPct: 8, confidence: 0.7 },
-        { name: "Shift rebalancing", effectPct: 5, confidence: 0.8 },
-      ],
-      null,
-      2
-    ),
-  });
-  const [causalResult, setCausalResult] = useState(null);
-
-  const [twinInput, setTwinInput] = useState({
-    departmentsJson: JSON.stringify(
-      [
-        { name: "ICU", staff: 18, demand: 24, absenteeismRate: 0.08 },
-        { name: "Emergency", staff: 26, demand: 30, absenteeismRate: 0.05 },
-        { name: "Pediatrics", staff: 15, demand: 12, absenteeismRate: 0.03 },
-      ],
-      null,
-      2
-    ),
-  });
-  const [twinResult, setTwinResult] = useState(null);
-
-  const runForecast = async () => {
-    setLoading("forecast");
-    setMsg("");
-    try {
-      const out = await runStaffingForecast(forecastInput);
-      setForecastResult(out || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run staffing forecast");
-    } finally {
-      setLoading("");
-    }
-  };
-
-  const runBurnout = async () => {
-    setLoading("burnout");
-    setMsg("");
-    try {
-      const out = await runBurnoutScore(burnoutInput);
-      setBurnoutResult(out || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run burnout scoring");
-    } finally {
-      setLoading("");
-    }
-  };
-
-  const runCausal = async () => {
-    setLoading("causal");
-    setMsg("");
-    try {
-      const interventions = JSON.parse(causalInput.interventionsJson || "[]");
-      const out = await runCausalImpact({
-        baseline: Number(causalInput.baseline || 0),
-        interventions,
-      });
-      setCausalResult(out || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run causal impact");
-    } finally {
-      setLoading("");
-    }
-  };
-
-  const runTwin = async () => {
-    setLoading("twin");
-    setMsg("");
-    try {
-      const departments = JSON.parse(twinInput.departmentsJson || "[]");
-      const out = await runDigitalTwin({ departments });
-      setTwinResult(out || null);
-    } catch (e) {
-      setMsg(e?.message || "Failed to run digital twin simulation");
-    } finally {
-      setLoading("");
-    }
-  };
+  const {
+    msg,
+    loading,
+    forecastInput,
+    setForecastInput,
+    forecastResult,
+    burnoutInput,
+    setBurnoutInput,
+    burnoutResult,
+    causalInput,
+    setCausalInput,
+    causalResult,
+    twinInput,
+    setTwinInput,
+    twinResult,
+    runForecast,
+    runBurnout,
+    runCausal,
+    runTwin,
+  } = useClinicalIntelligence();
 
   return (
     <div className="dashboard">

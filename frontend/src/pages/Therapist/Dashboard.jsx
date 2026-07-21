@@ -1,28 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import { getTherapistDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
+import { useTherapistDashboard } from "../../hooks/useTherapistDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function TherapistDashboard() {
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getTherapistDashboard().then(setData).catch(() => setData(null));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { data, transfers, transferError } = useTherapistDashboard();
 
   return (
     <DashboardHomeShell

@@ -1,0 +1,658 @@
+{
+  "generatedAt": "2026-07-21T11:01:13.081Z",
+  "summary": {
+    "totalRoutes": 162,
+    "issues": 0,
+    "status": "pass"
+  },
+  "routes": [
+    {
+      "route": "/",
+      "status": "candidate"
+    },
+    {
+      "route": "/2fa",
+      "status": "candidate"
+    },
+    {
+      "route": "/403",
+      "status": "candidate"
+    },
+    {
+      "route": "/app",
+      "status": "candidate"
+    },
+    {
+      "route": "/app/care/diagnostics/lab-results",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/encounters/inpatient",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/encounters/opd",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/encounters/surgery",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/escalations/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/intelligence/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/medication/administration",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/medications/prescriptions",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/notes/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/patients/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/records/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/referrals/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/transfers/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/care/vitals/entry",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/claims/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/command/county",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/fraud/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/registry/hospitals",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/registry/patient-identity",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/reports/regulatory",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/verification/hospitals",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/ai/chatbot",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/ai/extract",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/ai/medical",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/ai/triage",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/ai/voice",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/copilot/clinical-order",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/digital-twin/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/innovation/interop-marketplace/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/bed-board/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/consultations/monitor",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/devices/alerts",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/devices/connectivity",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/driver/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/emergency/command",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/escalations/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/front-desk/booking-desk",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/incidents/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/inventory/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/archive",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/encounter-queue",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/equipment",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/qc",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/safety",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/samples",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/lab/test-queue",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/mortuary/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/controlled",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/expiry",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/inventory",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/prescription-queue",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/referrals",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/reports",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/pharmacy/suppliers",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/scheduling/analytics",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/scheduling/appointments",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/scheduling/my-schedule",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/transfers/command",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/triage/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/dialysis",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/icu",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/imaging",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/neonatal-icu",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/oncology-daycare",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/operations/units/theatre",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/approvals/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/performance/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/recruitment/ads",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/requests/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/requests/leave",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/schedule/shift",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/staff/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/staff/register",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/staff/transfers",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/training/cme",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/training/playbook",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/people/training/tracker",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/account/clinician-settings",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/account/profile",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/admin/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/ai/autofill-audit",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/ai/extraction-history",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/ai/nlp-analytics",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/ai/super-assistants",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/ai/unified-assistant",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/analytics/hospital-kpis",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/analytics/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/audit/logs",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/audit/pharmacy-access",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/compliance/center",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/data/crdt/patients",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/dev/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/facility/customization",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/inbox/communication",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/inbox/notifications",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/connector-sdk",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/control-plane",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/hub",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/mapping-studio",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/realtime",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/integrations/webhook-retry",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/migrations/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/offline/ops",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/print/center",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/queues/replay",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/reports/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/rollout/launch-readiness",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/rollout/pilot-onboarding",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/security/abac",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/security/access-control",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/security/admin-creation",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/security/admin/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/security/officer/home",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/settings/system",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/sre/incidents",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/support/tickets",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/trust/decision-cockpit",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/trust/provenance",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/appointments/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/billing/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/diagnostics/lab-results",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/discovery/ads",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/discovery/hospitals",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/family/records",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/family/timeline",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/insurance/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/medications/prescriptions",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/records/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/support/feedback",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/portal/transfers/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/claims/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/claims/rules",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/commerce/config",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/financials/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/intelligence/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/payments/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/payments/settings",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/revenue/transactions/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/careers",
+      "status": "candidate"
+    },
+    {
+      "route": "/forgot-password",
+      "status": "candidate"
+    },
+    {
+      "route": "/login",
+      "status": "candidate"
+    },
+    {
+      "route": "/privacy",
+      "status": "candidate"
+    },
+    {
+      "route": "/register",
+      "status": "candidate"
+    },
+    {
+      "route": "/reset-password",
+      "status": "candidate"
+    },
+    {
+      "route": "/step-up",
+      "status": "candidate"
+    },
+    {
+      "route": "/terms",
+      "status": "candidate"
+    },
+    {
+      "route": "/unauthorized",
+      "status": "candidate"
+    },
+    {
+      "route": "/verify-email",
+      "status": "candidate"
+    },
+    {
+      "route": "/verify-success",
+      "status": "candidate"
+    }
+  ]
+}

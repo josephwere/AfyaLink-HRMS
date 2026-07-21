@@ -3,11 +3,13 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
+import { generateUserId } from "../services/idGenerator.js";
 import { incrementMetricCounter } from "../utils/metrics.js";
 import { isPrivilegedOverrideAllowed, isReadOnlyOverrideAllowed } from "./readOnlyOverride.js";
 import { resolveEffectiveRole } from "./effectiveRole.js";
 import { redis } from "../utils/redis.js";
 import { HOSPITAL_SCOPED_ROLES } from "../utils/roleSets.js";
+import { enforceApplicationContext } from "./applicationContext.js";
 
 dotenv.config();
 
@@ -149,6 +151,16 @@ const authenticate = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+
+    if (!user.userId) {
+      try {
+        user.userId = await generateUserId();
+        await user.save();
+      } catch (err) {
+        console.error("Failed to assign missing userId:", err?.message || err);
+      }
+    }
+
     if (user.active === false) {
       return res.status(401).json({ message: "Account inactive" });
     }
@@ -169,8 +181,23 @@ const authenticate = async (req, res, next) => {
     user.effectiveRole = effectiveRole;
     user.role = effectiveRole;
 
+    const requestedHospitalId = [
+      req.headers?.["x-hospital"],
+      req.headers?.["x-hospital-id"],
+      req.query?.hospitalId,
+      req.body?.hospitalId,
+    ].find((value) => typeof value === "string" && value.trim());
+
+    if (
+      requestedHospitalId &&
+      ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(String(user.role || "").toUpperCase())
+    ) {
+      user.hospitalId = String(requestedHospitalId).trim();
+      user.hospital = user.hospitalId;
+    }
+
     // normalize common field access
-    user.hospitalId = user.hospital;
+    user.hospitalId = user.hospitalId || user.hospital;
 
     /* ======================================================
        🔐 FORCE 2FA FOR ADMINS
@@ -218,7 +245,7 @@ const authenticate = async (req, res, next) => {
     // Attach user and token payload to request
     req.user = user;
     req.tokenPayload = decoded;
-    next();
+    return enforceApplicationContext(req, res, next);
   } catch (error) {
     if (!isJwtError(error) && error?.code === "AUTH_BACKEND_TIMEOUT") {
       console.error("Auth backend timeout:", error.message);
@@ -274,7 +301,7 @@ const authenticateOptional = async (req, _res, next) => {
     user.hospitalId = user.hospital;
     req.user = user;
     req.tokenPayload = decoded;
-    return next();
+    return enforceApplicationContext(req, res, next);
   } catch {
     return next();
   }

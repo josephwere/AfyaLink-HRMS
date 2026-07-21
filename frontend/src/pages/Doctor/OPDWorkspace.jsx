@@ -1,315 +1,45 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import apiFetch from "../../utils/apiFetch";
-import { requestTransfer } from "../../services/transferApi";
-
-const INITIAL_FORM = {
-  diagnosis: "",
-  diagnosisCode: "",
-  symptoms: "",
-  assessment: "",
-  treatmentPlan: "",
-  followUp: "",
-  labTests: "",
-  billingItems: "",
-};
-
-const CONSENT_SCOPES = ["demographics", "encounters", "labs", "prescriptions", "reports"];
-const DEFAULT_SCOPES = ["demographics", "encounters", "labs", "prescriptions"];
+import { useDoctorConsultation } from "../../hooks/useDoctorConsultation";
 
 export default function OPDWorkspace() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const patientId = searchParams.get("patientId") || "";
   const focus = String(searchParams.get("focus") || "").toUpperCase();
-  const [patient, setPatient] = useState(null);
-  const [encounter, setEncounter] = useState(null);
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [msg, setMsg] = useState("");
-  const [promoting, setPromoting] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const [handoffLoading, setHandoffLoading] = useState(false);
-  const [billingLoading, setBillingLoading] = useState(false);
-  const [resolvingEscalation, setResolvingEscalation] = useState(false);
-  const [transferHospitals, setTransferHospitals] = useState([]);
-  const [transferLoading, setTransferLoading] = useState(false);
-  const [transferForm, setTransferForm] = useState({
-    toHospitalId: "",
-    reasons: "",
-    handoverSummary: "",
-    scopes: DEFAULT_SCOPES,
-  });
-
-  const closeoutStatus = {
-    visit: encounter?._id ? "READY" : "MISSING",
-    diagnosis:
-      encounter?.closeout?.requirements?.diagnosis
-        ? encounter?.closeout?.missingRequirements?.includes("DIAGNOSIS")
-          ? "MISSING"
-          : "DONE"
-        : "OPTIONAL",
-    billing:
-      encounter?.closeout?.requirements?.billing
-        ? encounter?.closeout?.missingRequirements?.includes("BILLING")
-          ? "MISSING"
-          : "DONE"
-        : "OPTIONAL",
-    prescriptions:
-      encounter?.closeout?.requirements?.prescription
-        ? encounter?.closeout?.missingRequirements?.includes("PRESCRIPTION")
-          ? "MISSING"
-          : "DONE"
-        : "OPTIONAL",
-  };
-  const resolvedPolicy = encounter?.closeout?.policy || null;
-  const escalationSummary = encounter?.escalationSummary || null;
-  const focusLabel =
-    focus === "DIAGNOSIS"
-      ? "Send Diagnosis & Labs"
-      : focus === "BILLING"
-      ? "Send Billing"
-      : focus === "PRESCRIPTION"
-      ? "Open Prescribe"
-      : "";
-
-  async function refreshEncounter(targetPatientId = patientId) {
-    if (!targetPatientId) {
-      setEncounter(null);
-      return;
-    }
-    try {
-      const rows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(targetPatientId)}&limit=1`);
-      const items = Array.isArray(rows) ? rows : [];
-      setEncounter(items[0] || null);
-    } catch {
-      setEncounter(null);
-    }
-  }
-
-  useEffect(() => {
-    if (!patientId) {
-      setPatient(null);
-      setEncounter(null);
-      return;
-    }
-    apiFetch(`/api/patients/${patientId}`)
-      .then(setPatient)
-      .catch(() => setPatient(null));
-
-    refreshEncounter(patientId);
-
-    apiFetch(`/api/clinical-drafts/OPD_CONSULTATION?patientId=${encodeURIComponent(patientId)}`)
-      .then((res) => {
-        const payload = res?.item?.payload;
-        if (payload && typeof payload === "object") {
-          setForm((prev) => ({ ...prev, ...payload }));
-        } else {
-          setForm(INITIAL_FORM);
-        }
-      })
-      .catch(() => setForm(INITIAL_FORM));
-  }, [patientId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadHospitals = async () => {
-      try {
-        const res = await apiFetch("/api/hospitals/marketplace?limit=1000");
-        if (cancelled) return;
-        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
-        setTransferHospitals(items);
-      } catch {
-        if (!cancelled) setTransferHospitals([]);
-      }
-    };
-    loadHospitals();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  function updateField(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function toggleTransferScope(scope, enabled) {
-    setTransferForm((prev) => {
-      const set = new Set(prev.scopes || []);
-      if (enabled) set.add(scope);
-      else set.delete(scope);
-      return { ...prev, scopes: Array.from(set) };
-    });
-  }
-
-  async function submitTransferRequest() {
-    if (!patientId) {
-      setMsg("Select a patient first.");
-      return;
-    }
-    if (!transferForm.toHospitalId) {
-      setMsg("Pick a destination hospital for the transfer.");
-      return;
-    }
-    try {
-      setTransferLoading(true);
-      await requestTransfer({
-        patient: patientId,
-        toHospital: transferForm.toHospitalId,
-        reasons: transferForm.reasons,
-        scopes: transferForm.scopes,
-        metadata: transferForm.handoverSummary ? { handoverSummary: transferForm.handoverSummary } : undefined,
-      });
-      setMsg("Transfer request sent.");
-      setTransferForm((prev) => ({ ...prev, reasons: "", handoverSummary: "" }));
-    } catch (e) {
-      setMsg(e?.message || "Failed to send transfer request.");
-    } finally {
-      setTransferLoading(false);
-    }
-  }
-
-  async function saveDraft() {
-    if (!patientId) {
-      setMsg("Select a patient first.");
-      return;
-    }
-    try {
-      await apiFetch(`/api/clinical-drafts/OPD_CONSULTATION?patientId=${encodeURIComponent(patientId)}`, {
-        method: "PUT",
-        body: { payload: form },
-      });
-      const patientName = patient
-        ? [patient.firstName, patient.lastName].filter(Boolean).join(" ")
-        : "selected patient";
-      setMsg(`Consultation draft saved for ${patientName || "patient"}.`);
-    } catch (e) {
-      setMsg(e?.message || "Failed to save consultation draft.");
-    }
-  }
-
-  async function promoteDraft() {
-    if (!patientId) {
-      setMsg("Select a patient first.");
-      return;
-    }
-    try {
-      setPromoting(true);
-      await apiFetch(`/api/clinical-drafts/OPD_CONSULTATION?patientId=${encodeURIComponent(patientId)}`, {
-        method: "PUT",
-        body: { payload: form },
-      });
-      const res = await apiFetch(
-        `/api/clinical-drafts/OPD_CONSULTATION/promote?patientId=${encodeURIComponent(patientId)}`,
-        { method: "POST" }
-      );
-      const appointment = res?.appointment;
-      await refreshEncounter(patientId);
-      const patientName = patient
-        ? [patient.firstName, patient.lastName].filter(Boolean).join(" ")
-        : "selected patient";
-      setMsg(
-        `Consultation promoted for ${patientName || "patient"}${appointment?.status ? ` • ${appointment.status}` : ""}.`
-      );
-    } catch (e) {
-      setMsg(e?.message || "Failed to promote consultation to appointment.");
-    } finally {
-      setPromoting(false);
-    }
-  }
-
-  async function completeVisit() {
-    if (!encounter?._id) {
-      setMsg("Promote the consultation first to create the active visit.");
-      return;
-    }
-    try {
-      setClosing(true);
-      const updated = await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/close`, {
-        method: "POST",
-      });
-      await refreshEncounter(patientId);
-      setMsg("Visit closed successfully.");
-    } catch (e) {
-      const missing = Array.isArray(e?.closeout?.missingRequirements) ? e.closeout.missingRequirements.join(", ") : "";
-      setMsg(
-        e?.message || e?.error || (missing ? `Cannot close visit yet. Missing: ${missing}` : "Failed to close visit.")
-      );
-    } finally {
-      setClosing(false);
-    }
-  }
-
-  async function applyCloseoutEffects() {
-    if (!encounter?._id) {
-      setMsg("Promote the consultation first to create the active visit.");
-      return;
-    }
-    try {
-      setHandoffLoading(true);
-      const res = await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/closeout-effects`, {
-        method: "POST",
-        body: {
-          diagnosis: form.diagnosis,
-          diagnosisCode: form.diagnosisCode,
-          labTests: form.labTests,
-        },
-      });
-      await refreshEncounter(patientId);
-      const createdLabs = Array.isArray(res?.labOrders) ? res.labOrders.length : 0;
-      setMsg(
-        `Closeout effects applied.${res?.diagnosis ? " Diagnosis recorded." : ""}${createdLabs ? ` ${createdLabs} lab order(s) created.` : ""}`
-      );
-    } catch (e) {
-      setMsg(e?.message || "Failed to apply closeout effects.");
-    } finally {
-      setHandoffLoading(false);
-    }
-  }
-
-  async function sendBillingHandoff() {
-    if (!encounter?._id) {
-      setMsg("Promote the consultation first to create the active visit.");
-      return;
-    }
-    try {
-      setBillingLoading(true);
-      const res = await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/billing-handoff`, {
-        method: "POST",
-        body: {
-          items: form.billingItems,
-        },
-      });
-      await refreshEncounter(patientId);
-      setMsg(
-        `Billing handoff created${res?.invoice?.invoiceNumber ? ` • ${res.invoice.invoiceNumber}` : ""}.`
-      );
-    } catch (e) {
-      setMsg(e?.message || "Failed to create billing handoff.");
-    } finally {
-      setBillingLoading(false);
-    }
-  }
-
-  async function resolveEscalation() {
-    if (!encounter?._id) {
-      setMsg("No active visit to resolve.");
-      return;
-    }
-    try {
-      setResolvingEscalation(true);
-      const res = await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
-        method: "POST",
-        body: { note: "Clinician reviewed nurse escalation in consultation workspace." },
-      });
-      await refreshEncounter(patientId);
-      setMsg(`Escalation resolved for ${res?.resolved || 0} recipient notification(s).`);
-    } catch (e) {
-      setMsg(e?.message || "Failed to resolve escalation.");
-    } finally {
-      setResolvingEscalation(false);
-    }
-  }
+  const {
+    patient,
+    form,
+    msg,
+    promoting,
+    closing,
+    handoffLoading,
+    billingLoading,
+    resolvingEscalation,
+    transferHospitals,
+    transferLoading,
+    transferForm,
+    setTransferForm,
+    encounter,
+    encounterLoading,
+    encounterError,
+    updateField,
+    toggleTransferScope,
+    submitTransferRequest,
+    saveDraft,
+    promoteDraft,
+    completeVisit,
+    handleApplyCloseoutEffects,
+    sendBillingHandoff,
+    resolveEscalation: resolveEscalationAction,
+    closeoutStatus,
+    resolvedPolicy,
+    escalationSummary,
+    focusLabel,
+    CONSENT_SCOPES,
+    DEFAULT_SCOPES,
+  } = useDoctorConsultation(patientId, focus);
 
   return (
     <div className="dashboard doctor-workspace">
@@ -382,7 +112,7 @@ export default function OPDWorkspace() {
                 type="button"
                 className="btn-secondary"
                 style={{ marginTop: 10 }}
-                onClick={resolveEscalation}
+                onClick={resolveEscalationAction}
                 disabled={resolvingEscalation}
               >
                 {resolvingEscalation ? "Resolving..." : "Mark Escalation Resolved"}
@@ -606,7 +336,7 @@ export default function OPDWorkspace() {
             <button
               type="button"
               className={`btn-secondary${focus === "DIAGNOSIS" ? " active" : ""}`}
-              onClick={applyCloseoutEffects}
+              onClick={handleApplyCloseoutEffects}
               disabled={handoffLoading}
             >
               {handoffLoading ? "Sending..." : "Send Diagnosis & Labs"}

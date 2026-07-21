@@ -6,7 +6,7 @@ class WorkflowService {
   /**
    * START a workflow (entry point)
    */
-  async start(type, context) {
+  async start(type, context, { session } = {}) {
     if (type !== "CONSULTATION") {
       throw new Error("Unsupported workflow type");
     }
@@ -20,7 +20,7 @@ class WorkflowService {
       assignmentStatus: context.doctor ? "ASSIGNED" : "PENDING",
     });
     appointment.$locals = { ...(appointment.$locals || {}), viaWorkflow: true };
-    await appointment.save();
+    await appointment.save({ session });
 
     return {
       id: workflowId,
@@ -32,12 +32,12 @@ class WorkflowService {
   /**
    * TRANSITION a workflow
    */
-  async transition(type, workflowId, { updates = {}, cancel = false }) {
+  async transition(type, workflowId, { updates = {}, cancel = false, session } = {}) {
     if (type !== "CONSULTATION") {
       throw new Error("Unsupported workflow type");
     }
 
-    const appointment = await Appointment.findOne({ workflowId });
+    const appointment = await Appointment.findOne({ workflowId }).session(session || null);
     if (!appointment) throw new Error("Workflow not found");
 
     if (cancel) {
@@ -47,7 +47,7 @@ class WorkflowService {
     }
 
     appointment.$locals = { ...(appointment.$locals || {}), viaWorkflow: true };
-    await appointment.save();
+    await appointment.save({ session });
 
     return {
       id: workflowId,
@@ -59,7 +59,7 @@ class WorkflowService {
   /**
    * ENCOUNTER-level transition (clinical)
    */
-  async transitionEncounter(encounterId, nextState, payload = {}) {
+  async transitionEncounter(encounterId, nextState, payload = {}, { session } = {}) {
     const encounter = await Encounter.findById(encounterId);
     if (!encounter) throw new Error("Encounter not found");
 
@@ -78,7 +78,7 @@ class WorkflowService {
     }
 
     encounter.$locals = { ...(encounter.$locals || {}), viaWorkflow: true };
-    await encounter.save();
+    await encounter.save({ session });
     return encounter;
   }
 }

@@ -1,96 +1,28 @@
-import React, { useEffect, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import EditableSection from "../../components/EditableSection";
 import ContentSkeleton from "../../components/ContentSkeleton";
 import { TableEmptyState } from "../../components/GuidedEmptyState";
-import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
-
-function emptyInsurance() {
-  return { code: "", name: "", country: "", enabled: true };
-}
-
-function emptyPayment() {
-  return {
-    type: "",
-    label: "",
-    accountName: "",
-    accountNumber: "",
-    paybill: "",
-    tillNumber: "",
-    phone: "",
-    email: "",
-    instructions: "",
-    enabled: true,
-  };
-}
+import { useCommerceConfig } from "../../hooks/useCommerceConfig";
 
 export default function CommerceConfig() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [insuranceProviders, setInsuranceProviders] = useState([]);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [settingsSaved, setSettingsSaved] = useState(false);
-  const [settingsEditing, setSettingsEditing] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await apiFetch("/api/hospital-admin/config");
-      setInsuranceProviders(Array.isArray(data?.insuranceProviders) ? data.insuranceProviders : []);
-      setPaymentMethods(Array.isArray(data?.patientPaymentMethods) ? data.patientPaymentMethods : []);
-      setSettingsSaved(true);
-      setSettingsEditing(false);
-    } catch (err) {
-      setInsuranceProviders([]);
-      setPaymentMethods([]);
-      setSettingsSaved(false);
-      setSettingsEditing(true);
-      setMsg(err?.message || "Could not load billing settings.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const save = async () => {
-    setSaving(true);
-    setMsg("");
-    try {
-      await apiFetch("/api/hospital-admin/commerce-config", {
-        method: "PUT",
-        body: { insuranceProviders, patientPaymentMethods: paymentMethods },
-      });
-      setMsg("Hospital insurance and payment settings saved.");
-      setSettingsSaved(true);
-      setSettingsEditing(false);
-      showActionSuccessGuide({
-        title: "Billing Settings Saved",
-        message: "Patient insurance and payment options have been updated for this hospital.",
-        icon: "KES",
-        nextActions: [
-          { label: "Open Branding", path: "/hospital-admin/customization", variant: "secondary" },
-          {
-            label: "Ask AI",
-            action: "ai",
-            aiPrompt: "Review these hospital billing settings and suggest what should be checked before patients use online payments.",
-            variant: "secondary",
-          },
-        ],
-        notificationCategory: "ACCOUNT",
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const {
+    loading,
+    saving,
+    msg,
+    insuranceProviders,
+    paymentMethods,
+    settingsSaved,
+    settingsEditing,
+    setSettingsEditing,
+    save,
+    addInsuranceProvider,
+    addPaymentMethod,
+    updateInsuranceProvider,
+    updatePaymentMethod,
+    removeInsuranceProvider,
+    removePaymentMethod,
+    openCustomization,
+  } = useCommerceConfig();
 
   if (loading) {
     return (
@@ -108,7 +40,7 @@ export default function CommerceConfig() {
           <p className="muted">Configure insurance services (e.g. SHA) and payment methods visible to patients.</p>
         </div>
         <div className="welcome-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate("/hospital-admin/customization")}>
+          <button type="button" className="btn-secondary" onClick={() => openCustomization()}>
             Open Branding & Customization
           </button>
         </div>
@@ -122,7 +54,7 @@ export default function CommerceConfig() {
         editing={settingsEditing}
         saving={saving}
         onEdit={() => setSettingsEditing(true)}
-        onSave={save}
+        onSave={() => void save()}
         onCancel={() => setSettingsEditing(false)}
         saveLabel="Save Settings"
         message={msg}
@@ -144,11 +76,11 @@ export default function CommerceConfig() {
               <tbody>
                 {insuranceProviders.map((row, idx) => (
                   <tr key={`ins-${idx}`}>
-                    <td><input value={row.code || ""} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, code: e.target.value.toUpperCase() } : r))} /></td>
-                    <td><input value={row.name || ""} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, name: e.target.value } : r))} /></td>
-                    <td><input value={row.country || ""} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, country: e.target.value.toUpperCase() } : r))} /></td>
-                    <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => setInsuranceProviders((prev) => prev.map((r,i)=> i===idx ? { ...r, enabled: e.target.checked } : r))} /></td>
-                    <td><button type="button" className="btn-secondary" onClick={() => setInsuranceProviders((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
+                    <td><input value={row.code || ""} onChange={(e) => updateInsuranceProvider(idx, { code: e.target.value.toUpperCase() })} /></td>
+                    <td><input value={row.name || ""} onChange={(e) => updateInsuranceProvider(idx, { name: e.target.value })} /></td>
+                    <td><input value={row.country || ""} onChange={(e) => updateInsuranceProvider(idx, { country: e.target.value.toUpperCase() })} /></td>
+                    <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => updateInsuranceProvider(idx, { enabled: e.target.checked })} /></td>
+                    <td><button type="button" className="btn-secondary" onClick={() => removeInsuranceProvider(idx)}>Remove</button></td>
                   </tr>
                 ))}
                 {insuranceProviders.length === 0 && (
@@ -162,7 +94,7 @@ export default function CommerceConfig() {
               </tbody>
             </table>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => setInsuranceProviders((prev) => [...prev, emptyInsurance()])}>Add Insurance Provider</button>
+          <button type="button" className="btn-secondary" onClick={() => addInsuranceProvider()}>Add Insurance Provider</button>
         </section>
 
         <section className="section">
@@ -182,24 +114,24 @@ export default function CommerceConfig() {
               <tbody>
                 {paymentMethods.map((row, idx) => (
                   <tr key={`pay-${idx}`}>
-                    <td><input value={row.type || ""} onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, type: e.target.value.toUpperCase() } : r))} /></td>
-                    <td><input value={row.label || ""} onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, label: e.target.value } : r))} /></td>
+                    <td><input value={row.type || ""} onChange={(e) => updatePaymentMethod(idx, { type: e.target.value.toUpperCase() })} /></td>
+                    <td><input value={row.label || ""} onChange={(e) => updatePaymentMethod(idx, { label: e.target.value })} /></td>
                     <td>
                       <input
                         value={row.paybill || row.tillNumber || row.accountNumber || ""}
-                        onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, accountNumber: e.target.value } : r))}
+                        onChange={(e) => updatePaymentMethod(idx, { accountNumber: e.target.value })}
                         placeholder="Paybill, till or account"
                       />
                     </td>
                     <td>
                       <input
                         value={row.phone || row.email || ""}
-                        onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, phone: e.target.value } : r))}
+                        onChange={(e) => updatePaymentMethod(idx, { phone: e.target.value })}
                         placeholder="Phone or email"
                       />
                     </td>
-                    <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => setPaymentMethods((prev) => prev.map((r,i)=> i===idx ? { ...r, enabled: e.target.checked } : r))} /></td>
-                    <td><button type="button" className="btn-secondary" onClick={() => setPaymentMethods((prev) => prev.filter((_,i) => i !== idx))}>Remove</button></td>
+                    <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => updatePaymentMethod(idx, { enabled: e.target.checked })} /></td>
+                    <td><button type="button" className="btn-secondary" onClick={() => removePaymentMethod(idx)}>Remove</button></td>
                   </tr>
                 ))}
                 {paymentMethods.length === 0 && (
@@ -213,7 +145,7 @@ export default function CommerceConfig() {
               </tbody>
             </table>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => setPaymentMethods((prev) => [...prev, emptyPayment()])}>Add Payment Method</button>
+          <button type="button" className="btn-secondary" onClick={() => addPaymentMethod()}>Add Payment Method</button>
         </section>
       </EditableSection>
     </div>

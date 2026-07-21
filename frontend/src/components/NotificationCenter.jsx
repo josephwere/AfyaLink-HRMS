@@ -293,10 +293,10 @@ export default function NotificationCenter() {
             {grouped.map((group) => (
               <section key={group.label}>
                 <h4>{group.label}</h4>
-                {group.items.map((item) => {
+                {group.items.map((item, index) => {
                   const category = normalizeCategory(item.category, item.title);
                   return (
-                    <article key={notificationKey(item)} className={`notification-center-item${item.read ? "" : " unread"}`}>
+                    <article key={`${notificationKey(item)}-${index}`} className={`notification-center-item${item.read ? "" : " unread"}`}>
                       <div className="notification-center-icon" aria-hidden="true">
                         {categoryIcon(category)}
                       </div>

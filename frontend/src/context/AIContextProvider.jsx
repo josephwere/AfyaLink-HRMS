@@ -26,12 +26,26 @@ function buildWorkspaceContext(pathname = "", user = {}, assistantContext = {}, 
           ? "AI"
           : "Workspace";
 
+  const workspaceName = path.includes("/pharmacy") ? "Pharmacy"
+    : path.includes("/lab") ? "Laboratory"
+    : path.includes("/radiology") ? "Radiology"
+    : path.includes("/security") ? "Security"
+    : path.includes("/super-admin") ? "Administration"
+    : path.includes("/hospital-admin") ? "Operations"
+    : module;
+
   return {
     module,
+    workspace: workspaceName,
     page: path || "Home",
-    workflow: "General assistance",
+    route: pathname || "/",
+    workflow: path.includes("/appointment") || path.includes("/appointments") ? "Scheduling" : "General assistance",
     organizationId: user?.hospitalId || user?.hospital || assistantContext?.hospitalScope || null,
     hospitalId: user?.hospitalId || user?.hospital || assistantContext?.hospitalScope || null,
+    department: assistantContext?.department || user?.department || null,
+    patientId: assistantContext?.patientId || null,
+    encounterId: assistantContext?.encounterId || null,
+    role,
     language: settings?.language || "en",
     theme: settings?.theme || "light",
   };

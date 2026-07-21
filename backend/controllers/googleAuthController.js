@@ -139,12 +139,16 @@ export const googleLogin = async (req, res) => {
       refreshToken,
       user: {
         id: user._id,
+        userId: user.userId,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
+        hospital: user.hospital || null,
+        hospitalId: user.hospitalId || user.hospital || null,
+        registeredPharmacy: user.registeredPharmacy || null,
         authProvider: user.authProvider || "local",
         authMethods: Array.isArray(user.authMethods)
           ? user.authMethods

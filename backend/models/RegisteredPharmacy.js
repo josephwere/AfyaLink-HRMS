@@ -1,14 +1,22 @@
 import mongoose from "mongoose";
+import { generatePharmacyId } from "../services/idGenerator.js";
 
 const registeredPharmacySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, index: true },
     licenseNumber: { type: String, required: true, trim: true, unique: true, index: true },
+    pharmacyId: { type: String, unique: true, immutable: true, sparse: true, index: true },
     governmentRegistryId: { type: String, trim: true, default: "" },
     status: {
       type: String,
       enum: ["ACTIVE", "SUSPENDED", "CLOSED"],
       default: "ACTIVE",
+      index: true,
+    },
+    hospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hospital",
+      default: null,
       index: true,
     },
     contact: {
@@ -32,6 +40,37 @@ const registeredPharmacySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+registeredPharmacySchema.pre("save", async function (next) {
+  if (!this.pharmacyId) {
+    this.pharmacyId = await generatePharmacyId();
+  }
+  next();
+});
+
+registeredPharmacySchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasPharmacyId =
+    update.pharmacyId !== undefined ||
+    (update.$set && update.$set.pharmacyId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.pharmacyId !== undefined);
+
+  if (!hasPharmacyId) {
+    const nextId = await generatePharmacyId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        pharmacyId: nextId,
+      },
+    });
+  }
+
+  next();
+});
 
 registeredPharmacySchema.index({ name: 1, createdAt: -1 });
 registeredPharmacySchema.index({ "location.region": 1, "location.city": 1 });

@@ -4,8 +4,8 @@ import LeaveRequest from "../models/LeaveRequest.js";
 import OvertimeRequest from "../models/OvertimeRequest.js";
 import ShiftRequest from "../models/ShiftRequest.js";
 import WorkflowSlaPolicy from "../models/WorkflowSlaPolicy.js";
-import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { notifyUsers } from "./notificationService.js";
 import {
   WORKFORCE_REQUEST_TYPES,
   WORKFORCE_SLA_DEFAULTS,
@@ -90,22 +90,20 @@ async function notifyEscalationTargets({ hospitalId, requestType, requestId, lev
       ? `${requestType} request requires urgent action (${delayedMinutes}m delayed).`
       : `${requestType} request exceeded SLA by ${delayedMinutes}m.`;
 
-  await Notification.insertMany(
-    users.map((u) => ({
-      title,
-      body,
-      user: u._id,
-      hospital: hospitalId,
-      category: "WORKFORCE",
-      meta: {
-        type: "WORKFORCE_SLA",
-        requestType,
-        requestId,
-        escalationLevel: level,
-        delayedMinutes,
-      },
-    }))
-  );
+  await notifyUsers({
+    users: users.map((u) => u._id),
+    hospital: hospitalId,
+    title,
+    body,
+    category: "WORKFORCE",
+    meta: {
+      type: "WORKFORCE_SLA",
+      requestType,
+      requestId,
+      escalationLevel: level,
+      delayedMinutes,
+    },
+  });
 }
 
 async function processPendingRequestSLA({ model, requestType, now, policyCache }) {

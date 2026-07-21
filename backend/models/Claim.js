@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generateClaimId } from "../services/idGenerator.js";
 
 const { Schema } = mongoose;
 
@@ -19,6 +20,13 @@ const claimSchema = new Schema(
     hospital: { type: Schema.Types.ObjectId, ref: "Hospital", required: true, index: true },
     patient: { type: Schema.Types.ObjectId, ref: "Patient", required: true, index: true },
     encounter: { type: Schema.Types.ObjectId, ref: "Encounter" },
+    claimId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      immutable: true,
+      index: true,
+    },
 
     provider: {
       code: { type: String, trim: true, default: "" }, // SHA, NHIF, etc
@@ -100,4 +108,36 @@ claimSchema.index({ patient: 1, createdAt: -1 });
 claimSchema.index({ "provider.code": 1, status: 1, createdAt: -1 });
 claimSchema.index({ duplicateGroup: 1 });
 
-export default mongoose.model("Claim", claimSchema);
+claimSchema.pre("save", async function (next) {
+  if (!this.claimId) {
+    this.claimId = await generateClaimId();
+  }
+  next();
+});
+
+claimSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasClaimId =
+    update.claimId !== undefined ||
+    (update.$set && update.$set.claimId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.claimId !== undefined);
+
+  if (!hasClaimId) {
+    const nextId = await generateClaimId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        claimId: nextId,
+      },
+    });
+  }
+
+  next();
+});
+
+export default mongoose.models.Claim || mongoose.model("Claim", claimSchema);
+

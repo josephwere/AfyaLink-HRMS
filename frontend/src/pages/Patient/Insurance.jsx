@@ -1,36 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
+import { usePatientInsurance } from "../../hooks/usePatientInsurance";
 
 export default function PatientInsurance() {
   const navigate = useNavigate();
   const { t } = usePatientLanguage();
-  const [profile, setProfile] = useState(null);
-  const [hospitals, setHospitals] = useState([]);
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [me, market] = await Promise.all([
-        apiFetch("/api/profile"),
-        apiFetch(`/api/hospitals/marketplace?q=${encodeURIComponent(q)}`),
-      ]);
-      setProfile(me || null);
-      setHospitals(Array.isArray(market?.items) ? market.items : []);
-    } catch {
-      setProfile(null);
-      setHospitals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [q]);
+  const { profile, hospitals, loading } = usePatientInsurance(q);
 
   return (
     <div className="dashboard">

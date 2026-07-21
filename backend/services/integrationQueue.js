@@ -1,43 +1,61 @@
 import Queue from 'bull';
 
-const REDIS = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const REDIS_URL = process.env.REDIS_URL || "";
+const isTestEnv = process.env.NODE_ENV === "test";
+const redisHost = REDIS_URL || "redis://127.0.0.1:6379";
+
+function createQueue(name, options = {}) {
+  if (isTestEnv && !REDIS_URL) {
+    return {
+      name,
+      add: async () => null,
+      process: () => {},
+      on: () => {},
+      close: async () => {},
+      remove: async () => {},
+    };
+  }
+
+  return new Queue(name, redisHost, options);
+}
 
 // Main integration queue with retries + exponential backoff
-export const integrationQueue = new Queue('integration-queue', REDIS, {
+export const integrationQueue = createQueue('integration-queue', {
   defaultJobOptions: {
     attempts: 5,
     backoff: { type: 'exponential', delay: 1000 },
     removeOnComplete: true,
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 // Dead-letter queue (DLQ)
-export const integrationDLQ = new Queue('integration-dlq', REDIS, {
-  defaultJobOptions: { removeOnComplete: true, removeOnFail: false }
+export const integrationDLQ = createQueue('integration-dlq', {
+  defaultJobOptions: { removeOnComplete: true, removeOnFail: false },
 });
 
-// When job fails too many times → move to DLQ
-integrationQueue.on('failed', async (job, err) => {
-  try {
-    const maxAttempts = job.opts.attempts || 5;
+if (!isTestEnv || REDIS_URL) {
+  integrationQueue.on('failed', async (job, err) => {
+    try {
+      const maxAttempts = job.opts.attempts || 5;
 
-    if (job.attemptsMade >= maxAttempts) {
-      await integrationDLQ.add({
-        originalJob: job.data,
-        failedReason: err.message,
-        stack: err.stack
-      });
+      if (job.attemptsMade >= maxAttempts) {
+        await integrationDLQ.add({
+          originalJob: job.data,
+          failedReason: err.message,
+          stack: err.stack,
+        });
 
-      await job.remove();
-      console.error('Job moved to DLQ:', job.id, err.message);
+        await job.remove();
+        console.error('Job moved to DLQ:', job.id, err.message);
+      }
+    } catch (e) {
+      console.error('Error moving job to DLQ:', e);
     }
-  } catch (e) {
-    console.error('Error moving job to DLQ:', e);
-  }
-});
+  });
+}
 
 export default {
   integrationQueue,
-  integrationDLQ
+  integrationDLQ,
 };

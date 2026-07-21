@@ -1,0 +1,53 @@
+name: Backend Governance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  backend-governance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build backend
+        run: pnpm build
+
+      - name: Lint backend
+        run: pnpm lint
+
+      - name: Verify governance
+        run: pnpm verify:governance
+
+      - name: Run architecture tests
+        run: NODE_OPTIONS=--experimental-vm-modules pnpm jest tests/runtimeArchitecture.test.js --runInBand
+
+      - name: Run backend test suite
+        run: NODE_OPTIONS=--experimental-vm-modules pnpm test
+
+      - name: Generate health report
+        run: node scripts/generate-health-report.mjs
+
+      - name: Upload health report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-health-report
+          path: backend/artifacts/health-report.txt

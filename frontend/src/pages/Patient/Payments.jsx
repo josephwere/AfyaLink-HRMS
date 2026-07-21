@@ -1,39 +1,11 @@
 import React from 'react';
-import apiFetch from '../../utils/apiFetch';
+import usePatientPayments from '../../hooks/usePatientPayments';
 
 export default function PatientPayments(){
-  const [status, setStatus] = React.useState("");
-  const [busy, setBusy] = React.useState("");
-  const run = async (key, fn) => {
-    setBusy(key);
-    setStatus("");
-    try {
-      const js = await fn();
-      setStatus(JSON.stringify(js, null, 2));
-    } catch (err) {
-      setStatus(err?.message || "Payment request failed");
-    } finally {
-      setBusy("");
-    }
-  };
-  const startStripe = async ()=>{
-    return apiFetch('/api/payments/stripe/create-intent', {
-      method:'POST',
-      body:{ amount: 10, currency: 'usd' },
-    });
-  };
-  const startMpesa = async ()=>{
-    return apiFetch('/api/payments/mpesa/stk', {
-      method:'POST',
-      body:{ phone: '254700000000', amount: 10 },
-    });
-  };
-  const startFw = async ()=>{
-    return apiFetch('/api/payments/flutter/init', {
-      method:'POST',
-      body:{ amount: 10, email:'test@example.com' },
-    });
-  };
+  const { status, busy, run, payWithCard, payWithMpesa, payWithFlutterwave } = usePatientPayments();
+  const startStripe = async ()=> payWithCard();
+  const startMpesa = async ()=> payWithMpesa();
+  const startFw = async ()=> payWithFlutterwave();
   return (
     <div className="dashboard premium-shell">
       <section className="premium-card premium-shell-head">

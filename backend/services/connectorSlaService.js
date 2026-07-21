@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import Notification from "../models/Notification.js";
 import ConnectorSlaEvent from "../models/ConnectorSlaEvent.js";
 import AuditLog from "../models/AuditLog.js";
+import { notify } from "./notificationService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,7 +76,7 @@ export async function recordConnectorSlaProbe({
   });
 
   if (breach) {
-    await Notification.create({
+    await notify({
       title: "Connector SLA breach",
       body: `${connector?.name || "Connector"} ${operation} breached SLA (${breachReason})`,
       category: "INTEGRATION",

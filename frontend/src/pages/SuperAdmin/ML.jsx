@@ -1,26 +1,7 @@
-import React, {useState} from 'react';
-import { apiFetch } from '../../utils/apiFetch';
+import React from 'react';
+import { useMLAdmin } from '../../hooks/useMLAdmin';
 export default function ML(){
-  const [model, setModel] = useState(null);
-  const [msg, setMsg] = useState("");
-  const train = async ()=>{
-    try {
-      const data = await apiFetch('/api/ml/train', { method: 'POST', body: [{example:1}] });
-      setModel(data);
-      setMsg("Model trained");
-    } catch (e) {
-      setMsg(e?.message || "Training failed");
-    }
-  };
-  const predict = async ()=>{
-    if(!model) return setMsg('Train first');
-    try {
-      const data = await apiFetch('/api/ml/'+model.modelId+'/predict', { method: 'POST', body: { input: {} } });
-      setMsg(JSON.stringify(data));
-    } catch (e) {
-      setMsg(e?.message || "Prediction failed");
-    }
-  };
+  const { model, msg, setMsg, train, predict } = useMLAdmin();
   return (
     <div className="dashboard premium-shell">
       <section className="premium-card premium-shell-head">

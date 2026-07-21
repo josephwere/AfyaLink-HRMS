@@ -1,71 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import apiFetch, { ApiError } from "../utils/apiFetch";
-import { setAccessToken } from "../utils/browserSession";
+import React from "react";
+import { useStepUp } from "../hooks/useStepUp";
 import AuthPageShell from "../components/AuthPageShell";
 
 export default function StepUp() {
-  const navigate = useNavigate();
-  const [sessionRisk, setSessionRisk] = useState(null);
-  const [otp, setOtp] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const loadRisk = async () => {
-    try {
-      const data = await apiFetch("/api/auth/session-risk");
-      setSessionRisk(data || null);
-    } catch (err) {
-      setSessionRisk(null);
-      setError(err?.message || "Failed to load session risk");
-    }
-  };
-
-  useEffect(() => {
-    loadRisk();
-  }, []);
-
-  const requestCode = async () => {
-    setRequesting(true);
-    setError("");
-    setMessage("");
-    try {
-      await apiFetch("/api/auth/step-up/request", { method: "POST" });
-      setMessage("Step-up code sent. Check your email or phone.");
-    } catch (err) {
-      setError(err?.message || "Failed to request step-up code");
-    } finally {
-      setRequesting(false);
-    }
-  };
-
-  const verifyCode = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setMessage("");
-    try {
-      const data = await apiFetch("/api/auth/step-up/verify", {
-        method: "POST",
-        body: { otp: otp.trim() },
-      });
-      if (data?.accessToken) {
-        setAccessToken(data.accessToken);
-      }
-      setMessage("Session unlocked successfully.");
-      setTimeout(() => navigate(-1), 600);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Failed to verify step-up code");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { sessionRisk, otp, setOtp, loading, requesting, message, error, loadRisk, requestCode, verifyCode } = useStepUp();
 
   const risk = sessionRisk?.risk || {};
   const restriction = sessionRisk?.restriction || null;

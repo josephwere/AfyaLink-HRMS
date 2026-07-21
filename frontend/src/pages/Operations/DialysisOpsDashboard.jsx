@@ -1,32 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
-import { getDialysisOpsDashboard } from "../../services/dashboardApi";
-import { listTransfers } from "../../services/transferApi";
+import { useOperationsDashboard } from "../../hooks/useOperationsDashboard";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 
 export default function DialysisOpsDashboard() {
   const { translateText } = useAppLanguage();
-  const [data, setData] = useState(null);
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    getDialysisOpsDashboard().then(setData).catch(() => setData(null));
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((resp) => {
-        const items = Array.isArray(resp?.items) ? resp.items : Array.isArray(resp) ? resp : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
-
-  const pendingTransfers = transfers.filter(
-    (t) => String(t?.status || "").toUpperCase() === "PENDING"
-  ).length;
+  const { data, transfers, transferError, pendingTransfers } = useOperationsDashboard({
+    dashboardType: "dialysis",
+  });
 
   return (
     <DashboardHomeShell

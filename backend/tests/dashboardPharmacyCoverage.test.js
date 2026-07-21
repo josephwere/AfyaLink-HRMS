@@ -6,17 +6,20 @@ import User from "../models/User.js";
 import Hospital from "../models/Hospital.js";
 import RegisteredPharmacy from "../models/RegisteredPharmacy.js";
 import Notification from "../models/Notification.js";
+import { notify } from "../services/notificationService.js";
 import Bed from "../models/Bed.js";
 import AuditLog from "../models/AuditLog.js";
+import Financial from "../models/Financial.js";
 
 let teardown;
 let hospitalAdminToken;
 let superAdminToken;
+let hospitalA;
 
 beforeAll(async () => {
   teardown = await setup();
 
-  const hospitalA = await Hospital.create({
+  hospitalA = await Hospital.create({
     name: "Coverage Risk Hospital",
     code: "COVERAGE-RISK-HOSP",
     active: true,
@@ -87,7 +90,7 @@ beforeAll(async () => {
   // keep linter quiet about intentionally created coverage user
   expect(unlinkedPharmacist._id).toBeDefined();
 
-  await Notification.create({
+  await notify({
     title: "Pharmacy Coverage Risk",
     body: "Pharmacy is enabled, but no pharmacist is linked to a registered pharmacy yet.",
     category: "PHARMACY",
@@ -104,6 +107,14 @@ beforeAll(async () => {
     { hospital: hospitalA._id, ward: "Ward A", number: "A-01", occupied: false },
     { hospital: hospitalA._id, ward: "Ward B", number: "B-01", occupied: false },
   ]);
+
+  await Financial.create({
+    hospital: hospitalA._id,
+    invoiceNumber: "INV-EXEC-001",
+    total: 2500,
+    status: "Paid",
+    metadata: { payments: [{ at: new Date() }] },
+  });
 
   await AuditLog.create({
     actorId: hospitalAdmin._id,
@@ -129,6 +140,39 @@ afterAll(async () => {
 });
 
 describe("Dashboard pharmacy coverage warnings", () => {
+  test("executive dashboard endpoint returns aggregated command-center metrics", async () => {
+    const res = await request(app)
+      .get("/api/dashboard/executive")
+      .set("Authorization", `Bearer ${hospitalAdminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalStaff).toBeDefined();
+    expect(res.body.totalBeds).toBe(2);
+    expect(res.body.occupiedBeds).toBe(0);
+    expect(res.body.bedOccupancyRate).toBe(0);
+    expect(res.body.admissionsToday).toBe(0);
+    expect(res.body.dischargesToday).toBe(0);
+    expect(res.body.revenueToday).toBe(2500);
+    expect(res.body.pendingClaims).toBe(0);
+    expect(Array.isArray(res.body.wardOccupancy)).toBe(true);
+    expect(res.body.domains).toBeDefined();
+    expect(res.body.domains.operations).toBeDefined();
+    expect(res.body.domains.pharmacy.risk).toBe(true);
+    expect(res.body.domains.pharmacy.pendingPrescriptions).toBe(0);
+    expect(res.body.domains.pharmacy.lowStockItems).toBe(0);
+    expect(res.body.domains.clinical.pendingLabOrders).toBe(0);
+    expect(res.body.domains.clinical.pendingImagingStudies).toBe(0);
+    expect(res.body.domains.clinical.completedImagingStudies).toBe(0);
+    expect(res.body.domains.clinical.criticalFindingsBacklog).toBe(0);
+    expect(res.body.domains.operations.totalBeds).toBe(2);
+    expect(res.body.domains.operations.availableBeds).toBe(2);
+    expect(res.body.domains.operations.bedOccupancyRate).toBe(0);
+    expect(res.body.domains.finance.revenueToday).toBe(2500);
+    expect(res.body.domains.finance.outstandingAmount).toBe(0);
+    expect(res.body.domains.finance.totalClaims).toBe(0);
+    expect(res.body.domains.finance.approvalRate).toBe(0);
+  });
+
   test("hospital admin dashboard exposes pharmacy coverage risk when pharmacists are unlinked", async () => {
     const res = await request(app)
       .get("/api/dashboard/hospital-admin")

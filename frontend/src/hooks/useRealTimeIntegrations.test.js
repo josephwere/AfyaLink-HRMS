@@ -23,9 +23,12 @@ describe('useRealTimeIntegrations', () => {
 
     expect(sendWebhook).toHaveBeenCalled();
 
-    // set a valid JSON for FHIR
+    // set a valid JSON for FHIR and ensure state updates before calling sendFHIR
     await act(async () => {
       result.current.setFhir(JSON.stringify({ resourceType: 'Patient' }));
+    });
+
+    await act(async () => {
       await result.current.sendFHIR();
     });
 

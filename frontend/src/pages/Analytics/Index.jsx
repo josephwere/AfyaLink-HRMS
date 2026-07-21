@@ -1,62 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  getRevenueDaily,
-  getDoctorUtilization,
-  getPharmacyProfit,
-} from "../../services/analyticsApi";
-import { listTransfers } from "../../services/transferApi";
+import React from "react";
+import { useAnalyticsPage } from "../../hooks/useAnalyticsPage";
 
 export default function Analytics() {
-  const [revenue, setRevenue] = useState([]);
-  const [utilization, setUtilization] = useState([]);
-  const [profit, setProfit] = useState([]);
-  const [transfers, setTransfers] = useState([]);
-  const [error, setError] = useState("");
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    Promise.all([
-      getRevenueDaily(),
-      getDoctorUtilization(),
-      getPharmacyProfit(),
-    ])
-      .then(([rev, util, prof]) => {
-        setRevenue(Array.isArray(rev) ? rev : []);
-        setUtilization(Array.isArray(util) ? util : []);
-        setProfit(Array.isArray(prof) ? prof : []);
-      })
-      .catch(() => setError("Failed to load analytics"));
-  }, []);
-
-  useEffect(() => {
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((data) => {
-        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Unable to load transfers.");
-      });
-  }, []);
-
-  const revenueTotal = useMemo(
-    () => revenue.reduce((sum, r) => sum + (r.total || 0), 0),
-    [revenue]
-  );
-  const revenueMax = useMemo(
-    () => Math.max(1, ...revenue.map((r) => r.total || 0)),
-    [revenue]
-  );
-  const utilMax = useMemo(
-    () => Math.max(1, ...utilization.map((u) => u.count || 0)),
-    [utilization]
-  );
-  const profitMax = useMemo(
-    () => Math.max(1, ...profit.map((p) => p.profit || 0)),
-    [profit]
-  );
+  const {
+    revenue,
+    utilization,
+    profit,
+    transfers,
+    error,
+    transferError,
+    revenueTotal,
+    revenueMax,
+    utilMax,
+    profitMax,
+    pendingTransfers,
+  } = useAnalyticsPage();
 
   return (
     <div className="dashboard">
@@ -76,9 +34,7 @@ export default function Analytics() {
               <h3>Transfer Continuity</h3>
               <p className="muted">Recent transfers and handoff status.</p>
             </div>
-            <div className="action-pill">
-              Pending: {transfers.filter((t) => t.status === "Pending").length}
-            </div>
+            <div className="action-pill">Pending: {pendingTransfers}</div>
           </div>
           {transferError ? <div className="muted">{transferError}</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>

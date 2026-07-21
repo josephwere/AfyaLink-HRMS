@@ -1139,22 +1139,20 @@ export const reviewHospitalVerification = async (req, res) => {
     await hospital.save();
 
     if (hospital.admins?.length) {
-      await Notification.insertMany(
-        hospital.admins.map((adminId) => ({
-          title: decision === "APPROVE" ? "Hospital Verified" : "Hospital Verification Rejected",
-          body:
-            decision === "APPROVE"
-              ? `${hospital.name} is now government approved on AfyaLink.`
-              : `${hospital.name} verification was rejected. Review notes were attached.`,
-          category: "SYSTEM",
-          user: adminId,
-          hospital: hospital._id,
-          meta: {
-            type: "HOSPITAL_REVIEW_DECISION",
-            decision,
-          },
-        }))
-      );
+      await notifyUsers({
+        users: hospital.admins,
+        hospital: hospital._id,
+        title: decision === "APPROVE" ? "Hospital Verified" : "Hospital Verification Rejected",
+        body:
+          decision === "APPROVE"
+            ? `${hospital.name} is now government approved on AfyaLink.`
+            : `${hospital.name} verification was rejected. Review notes were attached.`,
+        category: "SYSTEM",
+        meta: {
+          type: "HOSPITAL_REVIEW_DECISION",
+          decision,
+        },
+      });
     }
 
     return res.json({ success: true, hospital });

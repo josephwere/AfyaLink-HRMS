@@ -1,37 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import ModuleWorkspace from "../../components/ModuleWorkspace";
-import { listAvailableMedicines } from "../../services/inventoryApi";
-import { listTransfers } from "../../services/transferApi";
+import usePharmacyInventory from "../../hooks/usePharmacyInventory";
 
 export default function InventoryPage() {
   const navigate = useNavigate();
-  const [medicines, setMedicines] = useState([]);
-  const [medicineError, setMedicineError] = useState("");
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  useEffect(() => {
-    listAvailableMedicines({ limit: 100, includeOutOfStock: true })
-      .then((res) => {
-        setMedicines(Array.isArray(res?.items) ? res.items : []);
-        setMedicineError("");
-      })
-      .catch((err) => {
-        setMedicines([]);
-        setMedicineError(err?.message || "Failed to load medicine inventory.");
-      });
-    listTransfers({ limit: 6, scope: "facility" })
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : [];
-        setTransfers(items);
-        setTransferError("");
-      })
-      .catch((err) => {
-        setTransfers([]);
-        setTransferError(err?.message || "Failed to load transfers.");
-      });
-  }, []);
+  const { medicines, medicineError, transfers, transferError, loading } = usePharmacyInventory();
 
   return (
     <div className="dashboard">
@@ -59,6 +33,7 @@ export default function InventoryPage() {
             <div className="action-pill">{medicines.filter((item) => item.stockStatus === "LOW_STOCK").length} low stock</div>
           </div>
           {medicineError ? <div className="muted">{medicineError}</div> : null}
+          {loading && medicines.length === 0 ? <div className="muted">Loading inventory...</div> : null}
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="doctor-table">
               <thead>

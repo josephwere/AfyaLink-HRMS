@@ -1,5 +1,8 @@
 import workflowService from "../services/workflowService.js";
 import { WORKFLOW } from "../constants/workflowStates.js";
+import { createEncounterRuntime } from "../encounter/runtime/encounterRuntime.js";
+import { ENCOUNTER_STATES } from "../encounter/runtime/encounterStateMachine.js";
+import { createTelemedicineAdapter } from "../encounter/adapters/telemedicineAdapter.js";
 import Invoice from "../models/Invoice.js";
 import InsuranceAuthorization from "../models/InsuranceAuthorization.js";
 import Encounter from "../models/Encounter.js";
@@ -11,10 +14,11 @@ import AuditLog from "../models/AuditLog.js";
 import Financial from "../models/Financial.js";
 import Prescription from "../models/Prescription.js";
 import Hospital from "../models/Hospital.js";
-import Notification from "../models/Notification.js";
+import { notify, notifyRolesInHospital } from "../services/notificationService.js";
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
 import { v4 as uuidv4 } from "uuid";
 import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
+import { serializeEncounter } from "../utils/serializers.js";
 
 function resolveHospitalId(req) {
   const role = String(req.user?.role || "").toUpperCase();
@@ -24,6 +28,136 @@ function resolveHospitalId(req) {
   }
   return req.user?.hospital || req.user?.hospitalId || null;
 }
+
+function mapRuntimeStateToWorkflowState(state) {
+  switch (state) {
+    case ENCOUNTER_STATES.CREATED:
+      return WORKFLOW.CREATED;
+    case ENCOUNTER_STATES.CONSULTING:
+      return WORKFLOW.CONSULTING;
+    case ENCOUNTER_STATES.CLOSED:
+      return WORKFLOW.CLOSED;
+    default:
+      return state;
+  }
+}
+
+function mapWorkflowStateToRuntimeState(state) {
+  switch (state) {
+    case WORKFLOW.CREATED:
+      return ENCOUNTER_STATES.CREATED;
+    case WORKFLOW.CONSULTING:
+      return ENCOUNTER_STATES.CONSULTING;
+    case WORKFLOW.CLOSED:
+      return ENCOUNTER_STATES.CLOSED;
+    default:
+      return ENCOUNTER_STATES.CREATED;
+  }
+}
+
+function buildRuntimePublisher() {
+  return {
+    publish() {},
+  };
+}
+
+export const createRuntimeEncounter = async (req, res) => {
+  try {
+    const hospitalId = resolveHospitalId(req);
+    const patientId = String(req.body?.patientId || req.body?.patient || "").trim();
+    const doctorId = String(req.body?.doctorId || req.body?.doctor || req.user?._id || req.user?.id || "").trim();
+    const appointmentId = String(req.body?.appointmentId || req.body?.appointment || "").trim();
+    const mode = String(req.body?.mode || "in-person").toLowerCase();
+
+    if (!hospitalId || !patientId || !doctorId) {
+      return res.status(400).json({ message: "Hospital, patient, and doctor are required" });
+    }
+
+    const runtime = createEncounterRuntime({ publisher: buildRuntimePublisher() });
+    const runtimeEncounter = runtime.createEncounter({ patientId, doctorId, mode });
+    const adapterState = mode === "telemedicine" ? createTelemedicineAdapter().connect() : null;
+
+    const encounterDoc = new Encounter({
+      patient: patientId,
+      doctor: doctorId,
+      hospital: hospitalId,
+      appointment: appointmentId || undefined,
+      state: mapRuntimeStateToWorkflowState(runtimeEncounter.state),
+    });
+    encounterDoc.$locals = { ...(encounterDoc.$locals || {}), viaWorkflow: true };
+    await encounterDoc.save();
+
+    return res.status(201).json({
+      encounter: encounterDoc.toObject(),
+      runtime: { ...runtimeEncounter, adapter: adapterState },
+    });
+  } catch (err) {
+    console.error("Create runtime encounter error:", err);
+    return res.status(500).json({ message: err?.message || "Failed to create encounter" });
+  }
+};
+
+export const joinRuntimeEncounter = async (req, res) => {
+  try {
+    const encounterDoc = await Encounter.findById(req.params.id).select("_id state").lean();
+    if (!encounterDoc) {
+      return res.status(404).json({ message: "Encounter not found" });
+    }
+
+    const runtime = createEncounterRuntime({ publisher: buildRuntimePublisher() });
+    const participant = {
+      id: String(req.user?._id || req.user?.id || req.body?.participantId || "anonymous"),
+      role: String(req.user?.role || req.body?.role || "PATIENT"),
+      connectionId: String(req.body?.connectionId || `conn-${Date.now()}`),
+    };
+
+    const participants = runtime.joinPresence(String(encounterDoc._id), participant);
+    return res.json({
+      encounterId: String(encounterDoc._id),
+      presence: {
+        encounterId: String(encounterDoc._id),
+        participants,
+      },
+    });
+  } catch (err) {
+    console.error("Join runtime encounter error:", err);
+    return res.status(500).json({ message: err?.message || "Failed to join encounter" });
+  }
+};
+
+export const startRuntimeEncounter = async (req, res) => {
+  try {
+    const encounterDoc = await Encounter.findById(req.params.id);
+    if (!encounterDoc) {
+      return res.status(404).json({ message: "Encounter not found" });
+    }
+
+    const runtime = createEncounterRuntime({ publisher: buildRuntimePublisher() });
+    const runtimeEncounter = {
+      id: String(encounterDoc._id),
+      state: mapWorkflowStateToRuntimeState(encounterDoc.state),
+      timeline: [],
+    };
+
+    const transitioned = runtime.transitionEncounter(runtimeEncounter, {
+      to: ENCOUNTER_STATES.CONSULTING,
+      actor: req.user?._id || req.user?.id || "system",
+      note: String(req.body?.note || "Encounter started"),
+    });
+
+    encounterDoc.state = mapRuntimeStateToWorkflowState(transitioned.state);
+    encounterDoc.$locals = { ...(encounterDoc.$locals || {}), viaWorkflow: true };
+    await encounterDoc.save();
+
+    return res.json({
+      encounter: encounterDoc.toObject(),
+      runtime: transitioned,
+    });
+  } catch (err) {
+    console.error("Start runtime encounter error:", err);
+    return res.status(500).json({ message: err?.message || "Failed to start encounter" });
+  }
+};
 
 function toAllowedTransitions(state) {
   switch (state) {
@@ -107,6 +241,7 @@ export const listEncounters = async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query?.limit || "50", 10), 1), 200);
     const patientId = req.query?.patientId || null;
     const appointmentId = req.query?.appointmentId || null;
+    const q = String(req.query?.q || "").trim();
 
     const stateFilter = {};
     if (stage === "LAB") {
@@ -125,12 +260,20 @@ export const listEncounters = async (req, res) => {
       scopedPatientFilter = { patient: { $in: ownPatientIds } };
     }
 
-    const rows = await Encounter.find({
+    const encounterFilter = {
       ...(hospitalId ? { hospital: hospitalId } : {}),
       ...scopedPatientFilter,
       ...(appointmentId ? { appointment: appointmentId } : {}),
       ...stateFilter,
-    })
+    };
+
+    if (q) {
+      encounterFilter.$or = buildBusinessIdSearchFilter(q, ["encounterId"], [
+        { state: { $regex: q, $options: "i" } },
+      ]).$or;
+    }
+
+    const rows = await Encounter.find(encounterFilter)
       .populate("patient", "firstName lastName")
       .populate("doctor", "name role")
       .sort({ createdAt: -1, _id: -1 })
@@ -635,7 +778,7 @@ export const bulkAssignEncounterEscalations = async (req, res) => {
       })
     );
 
-    await Notification.create({
+    await notify({
       title: "Escalation Assigned",
       body: "You have been assigned a ward escalation and should review pending handoffs.",
       category: "WORKFLOW",
@@ -915,38 +1058,40 @@ export const createNurseEscalation = async (req, res) => {
       ? `${patientName} cannot be discharged or transferred yet. Missing: ${missingRequirements.join(", ")}.${note ? ` Note: ${note}` : ""}`
       : `${patientName} needs clinician review before ward movement.${note ? ` Note: ${note}` : ""}`;
 
-    const recipients = [];
+    // Notify assigned doctor directly
+    let recipientCount = 0;
     if (encounter.doctor?._id) {
-      recipients.push({
-        title,
-        body,
-        category: "WORKFLOW",
-        user: encounter.doctor._id,
-        hospital: hospitalId,
-        meta: {
-          type: "NURSE_ESCALATION",
-          encounterId: encounter._id,
-          patientId: encounter.patient?._id,
-          missingRequirements,
-          path: `/doctor/opd?patientId=${encodeURIComponent(String(encounter.patient?._id || ""))}${
-            missingRequirements[0] ? `&focus=${encodeURIComponent(missingRequirements[0])}` : ""
-          }`,
-        },
-      });
+      try {
+        await notify({
+          user: encounter.doctor._id,
+          hospital: hospitalId,
+          title,
+          body,
+          category: "WORKFLOW",
+          meta: {
+            type: "NURSE_ESCALATION",
+            encounterId: encounter._id,
+            patientId: encounter.patient?._id,
+            missingRequirements,
+            path: `/doctor/opd?patientId=${encodeURIComponent(String(encounter.patient?._id || ""))}${
+              missingRequirements[0] ? `&focus=${encodeURIComponent(missingRequirements[0])}` : ""
+            }`,
+          },
+        });
+        recipientCount += 1;
+      } catch (err) {
+        console.error("Failed to notify assigned clinician for escalation:", err);
+      }
     }
 
-    const opsUsers = await User.find({
-      hospital: hospitalId,
-      role: { $in: ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"] },
-      isActive: { $ne: false },
-    }).select("_id");
-    opsUsers.forEach((row) => {
-      recipients.push({
+    // Notify hospital admin / ops staff
+    try {
+      await notifyRolesInHospital({
+        hospital: hospitalId,
+        roles: ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"],
         title,
         body,
         category: "WORKFLOW",
-        user: row._id,
-        hospital: hospitalId,
         meta: {
           type: "NURSE_ESCALATION",
           encounterId: encounter._id,
@@ -955,10 +1100,15 @@ export const createNurseEscalation = async (req, res) => {
           path: `/hospital-admin/ward-board`,
         },
       });
-    });
-
-    if (recipients.length) {
-      await Notification.insertMany(recipients);
+      // opsUsers count for audit
+      const opsUsers = await User.find({
+        hospital: hospitalId,
+        role: { $in: ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"] },
+        isActive: { $ne: false },
+      }).select("_id");
+      recipientCount += opsUsers.length;
+    } catch (err) {
+      console.error("Failed to notify hospital admins for escalation:", err);
     }
 
     await AuditLog.create({
@@ -973,13 +1123,13 @@ export const createNurseEscalation = async (req, res) => {
         patientId: encounter.patient?._id,
         missingRequirements,
         note,
-        recipientCount: recipients.length,
+        recipientCount,
       },
     });
 
     return res.status(201).json({
       ok: true,
-      recipients: recipients.length,
+      recipients: recipientCount,
       missingRequirements,
     });
   } catch (err) {
@@ -1220,16 +1370,20 @@ export const createEncounterBillingHandoff = async (req, res) => {
     }
 
     const items = parseBillingItems(req.body?.items);
-    if (!items.length) {
-      return res.status(400).json({ error: "At least one billing item is required" });
-    }
+    const fallbackItems = [
+      {
+        description: "Encounter services",
+        amount: 0,
+      },
+    ];
+    const normalizedItems = items.length ? items : fallbackItems;
 
-    const total = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const total = normalizedItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     const invoice = await Financial.create({
       hospital: encounter.hospital,
       patient: encounter.patient,
       invoiceNumber: "INV-" + uuidv4().slice(0, 8).toUpperCase(),
-      items,
+      items: normalizedItems,
       total,
       status: "Pending",
       metadata: {
@@ -1250,7 +1404,7 @@ export const createEncounterBillingHandoff = async (req, res) => {
         encounterId: String(encounter._id),
         invoiceNumber: invoice.invoiceNumber,
         total,
-        itemCount: items.length,
+        itemCount: normalizedItems.length,
       },
     });
 

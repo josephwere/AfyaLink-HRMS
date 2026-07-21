@@ -1,57 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import apiFetch from '../../utils/apiFetch';
+import React from 'react';
 import PasswordInput from "../../components/PasswordInput";
+import { useAdminIntegrations } from "../../hooks/useAdminIntegrations";
 
 const isDev = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
 export default function Integrations(){
-  const [list,setList]=useState([]);
-  const [form,setForm]=useState({ name:'', type:'rest', url:'', apiKey:'', authType:'none', username:'', password:'', retryPolicy:{ attempts:5, backoffType:'exponential', backoffDelay:1000 } });
-  const [testResult,setTestResult]=useState(null); // { message, details? }
-
-  useEffect(()=>{ load(); },[]);
-  async function load(){
-    const js = await apiFetch('/api/connectors');
-    setList(Array.isArray(js) ? js : Array.isArray(js?.items) ? js.items : []);
-  }
-
-  async function save(){
-    const js = await apiFetch('/api/connectors', { method:'POST', body: form });
-    alert('Saved: ' + (js?._id || "connector"));
-    load();
-  }
-
-  async function test(id){
-    setTestResult({ message: "Running connection check...", details: "" });
-    try {
-      const js = await apiFetch('/api/connectors/' + id + '/test');
-      setTestResult({
-        message: js?.ok ? "Connection successful." : "Connection check completed.",
-        details: isDev ? JSON.stringify(js, null, 2) : "",
-      });
-    } catch (e) {
-      setTestResult({
-        message: e?.message || "Connection check failed.",
-        details: isDev ? JSON.stringify({ message: e?.message, status: e?.status, code: e?.code }, null, 2) : "",
-      });
-    }
-  }
-
-  async function testFhir(id){
-    setTestResult({ message: "Running FHIR check...", details: "" });
-    try {
-      const js = await apiFetch('/api/connectors/' + id + '/test-fhir');
-      setTestResult({
-        message: js?.ok ? "FHIR check successful." : "FHIR check completed.",
-        details: isDev ? JSON.stringify(js, null, 2) : "",
-      });
-    } catch (e) {
-      setTestResult({
-        message: e?.message || "FHIR check failed.",
-        details: isDev ? JSON.stringify({ message: e?.message, status: e?.status, code: e?.code }, null, 2) : "",
-      });
-    }
-  }
+  const { list, form, setForm, testResult, setTestResult, loading, saving, save, test, testFhir } = useAdminIntegrations();
 
   return (<div className="dashboard">
     <div className="welcome-panel">
@@ -83,10 +37,11 @@ export default function Integrations(){
           <label>Backoff Type</label><select value={form.retryPolicy.backoffType} onChange={e=>setForm(f=>({...f,retryPolicy:{...f.retryPolicy,backoffType: e.target.value}}))}><option value='exponential'>Exponential</option><option value='fixed'>Fixed</option></select>
           <label>Delay (ms)</label><input type='number' value={form.retryPolicy.backoffDelay} onChange={e=>setForm(f=>({...f,retryPolicy:{...f.retryPolicy,backoffDelay: Number(e.target.value)}}))} />
         </div>
-        <div><button type="button" className="btn-primary" onClick={save}>Save Connector</button></div>
+        <div><button type="button" className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Connector'}</button></div>
       </div>
       <div className="card">
         <h3>Existing</h3>
+        {loading ? <p className="muted">Loading...</p> : null}
         {list.map(l=>(
           <div key={l._id} style={{padding:8,margin:8,background:'#fff1'}}>
             <div>{l.name} ({l.type})</div>
@@ -104,6 +59,7 @@ export default function Integrations(){
           <h3>Connection Check</h3>
           <p className="muted">{testResult.message}</p>
           {isDev && testResult.details ? <pre className="code-inline">{testResult.details}</pre> : null}
+          {testResult.message !== 'Saved: connector' && testResult.message !== 'Saved: ' ? null : <button type="button" className="btn-secondary" onClick={() => setTestResult(null)} style={{ marginTop: 8 }}>Dismiss</button>}
         </div>
       </section>
     ) : null}

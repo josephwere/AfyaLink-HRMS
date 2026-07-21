@@ -1,5 +1,5 @@
 import React, { startTransition, useEffect, useRef, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../utils/auth";
 import apiFetch from "../../utils/apiFetch";
@@ -12,11 +12,15 @@ import { pushOfflineClientMetrics } from "../../services/offlineOpsApi";
 import { getBrowserRegionDefaults } from "../../utils/locale";
 
 import Navbar from "../../components/Navbar";
-import Sidebar from "../../components/Sidebar";
-import CommandPalette from "../../components/CommandPalette";
+import Sidebar from "../../components/Navigation/Sidebar";
+import Breadcrumbs from "../../components/Navigation/Breadcrumbs";
+import QuickActions from "../../components/Navigation/QuickActions";
 import FirstLoginTour from "../../components/FirstLoginTour";
 import MobileTabBar from "../../components/MobileTabBar";
 import ContextRail from "./ContextRail";
+import { isDashboardRoute } from "../../utils/dashboardShellUtils";
+import { useUserContext } from "../../contexts/UserContextContext";
+import { getContextRedirectPath } from "../../contexts/contextRouteRules";
 
 function readDismissedReminderCache() {
   try {
@@ -200,12 +204,42 @@ function buildOfflineMetricsSignature({ deviceId, userId, snapshot }) {
   });
 }
 
+// Returns user's stored sidebar preference, or null if never set
+function readStoredSidebarPreference(userId) {
+  if (typeof window === "undefined" || !userId) return null;
+  try {
+    const key = `afyalink_sidebar_preference_${userId}`;
+    const stored = localStorage.getItem(key);
+    if (stored === "open" || stored === "closed") return stored === "open";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Persist sidebar preference only after user manually changes it
+function writeSidebarPreference(userId, isOpen) {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    const key = `afyalink_sidebar_preference_${userId}`;
+    localStorage.setItem(key, isOpen ? "open" : "closed");
+  } catch {
+    // Ignore storage quota failures
+  }
+}
+
 export default function AppShell() {
   const { user } = useAuth();
+  const location = useLocation();
   const { settings } = useSystemSettings();
   const { uiPreferences, setUiPreferences, flushUiPreferences } = useUiPreferences();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { mode } = useUserContext();
+  const userHasManuallyChangedSidebarRef = useRef(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return false;
+  });
   const [contextOpen, setContextOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
@@ -557,14 +591,36 @@ export default function AppShell() {
     }
   };
 
+  const handleToggleSidebar = () => {
+    setSidebarOpen((v) => {
+      const nextState = !v;
+      // Only persist preference after user manually changes it
+      userHasManuallyChangedSidebarRef.current = true;
+      if (user?.id) {
+        writeSidebarPreference(user.id, nextState);
+      }
+      return nextState;
+    });
+    setContextOpen(false);
+  };
+
+  const handleSidebarItemClick = () => {
+    // On mobile, automatically close sidebar when a menu item is selected
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const redirectPath = getContextRedirectPath(location.pathname, mode);
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
+  }
+
   return (
     <>
       {user && (
         <Navbar
-          onToggleSidebar={() => {
-            setSidebarOpen((v) => !v);
-            setContextOpen(false);
-          }}
+          onToggleSidebar={handleToggleSidebar}
           onToggleContextRail={() => {
             setContextOpen((v) => !v);
             setSidebarOpen(false);
@@ -590,7 +646,7 @@ export default function AppShell() {
       <div
         className={`app-grid ${sidebarOpen ? "" : "sidebar-collapsed"} ${contextOpen ? "" : "context-collapsed"}`.trim()}
       >
-        {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+        {user && <Sidebar currentPath={location.pathname} compact={!sidebarOpen} onItemClick={handleSidebarItemClick} />}
 
         <main className="main">
           {securityNotice && (
@@ -634,13 +690,19 @@ export default function AppShell() {
               </button>
             ))}
 
+          {!isDashboardRoute(location.pathname) ? (
+            <div className="app-shell-navigation-toolbar">
+              <Breadcrumbs currentPath={location.pathname} homeLabel="Home" homeRoute="/app" />
+              <div className="app-shell-navigation-actions" />
+            </div>
+          ) : null}
+
+          {!isDashboardRoute(location.pathname) ? <QuickActions className="app-shell-navigation-quick-actions" /> : null}
           <Outlet />
         </main>
 
         <ContextRail open={contextOpen} onClose={() => setContextOpen(false)} />
       </div>
-
-      {user && <CommandPalette />}
       {user && <FirstLoginTour />}
       {user && (
         <MobileTabBar

@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
 import Patient from '../models/Patient.js';
 import Appointment from '../models/Appointment.js';
+import { normalizeScheduledAtInput } from '../controllers/appointmentController.js';
 
 let teardown;
 let token;
@@ -104,6 +105,12 @@ describe('Appointments', ()=>{
     expect(String(r.body.hospital)).toBe(hospitalId);
     expect(String(r.body.doctor)).toBe(doctorUserId);
     expect(r.body.assignmentStatus).toBe('ASSIGNED');
+  });
+
+  test('interprets datetime-local values in the requested time zone', ()=>{
+    const parsed = normalizeScheduledAtInput('2025-03-10T10:30', 'Africa/Nairobi');
+    const expectedUtc = new Date(Date.UTC(2025, 2, 10, 7, 30, 0));
+    expect(parsed.getTime()).toBe(expectedUtc.getTime());
   });
 
   test('blocks patient self-service duplicate booking for the same calendar day', async ()=>{

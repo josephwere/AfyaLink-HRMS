@@ -1,36 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
-import {
-  getAppointmentOverview,
-  getAppointmentHeatmap,
-  getConsultationActivity,
-} from "../../services/analyticsApi";
-
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+import { useAppointmentAnalytics } from "../../hooks/useAppointmentAnalytics";
 
 export default function AppointmentAnalytics() {
   const navigate = useNavigate();
-  const [overview, setOverview] = useState(null);
-  const [heatmap, setHeatmap] = useState([]);
-  const [consultations, setConsultations] = useState([]);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    Promise.all([
-      getAppointmentOverview(),
-      getAppointmentHeatmap(),
-      getConsultationActivity(),
-    ])
-      .then(([o, h, c]) => {
-        setOverview(o || null);
-        setHeatmap(Array.isArray(h) ? h : []);
-        setConsultations(Array.isArray(c) ? c : []);
-      })
-      .catch(() => setError("Failed to load appointment analytics"));
-  }, []);
-
-  const topHeat = useMemo(() => [...heatmap].sort((a, b) => (b.count || 0) - (a.count || 0)).slice(0, 12), [heatmap]);
+  const { overview, consultations, error, topHeat, dayLabel } = useAppointmentAnalytics();
 
   return (
     <div className="dashboard">
@@ -100,7 +75,7 @@ export default function AppointmentAnalytics() {
             {topHeat.map((item, index) => (
               <div key={`heat-${index}`} className="bar-row">
                 <span className="bar-label">
-                  {DAY_NAMES[(item?._id?.dayOfWeek || 1) - 1] || "Day"} {item?._id?.hour}:00
+                  {dayLabel(item)} {item?._id?.hour}:00
                 </span>
                 <div className="bar-track">
                   <div

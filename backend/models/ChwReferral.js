@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generateReferralId } from "../services/idGenerator.js";
 
 const { Schema, model } = mongoose;
 
@@ -18,6 +19,37 @@ const chwReferralSchema = new Schema(
 );
 
 chwReferralSchema.index({ hospital: 1, status: 1, createdAt: -1 });
+
+chwReferralSchema.pre("save", async function (next) {
+  if (!this.referralId) {
+    this.referralId = await generateReferralId();
+  }
+  next();
+});
+
+chwReferralSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasReferralId =
+    update.referralId !== undefined ||
+    (update.$set && update.$set.referralId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.referralId !== undefined);
+
+  if (!hasReferralId) {
+    const nextId = await generateReferralId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        referralId: nextId,
+      },
+    });
+  }
+
+  next();
+});
 
 export default mongoose.models.ChwReferral || model("ChwReferral", chwReferralSchema);
 

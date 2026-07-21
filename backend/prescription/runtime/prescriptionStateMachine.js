@@ -1,0 +1,15 @@
+export const PRESCRIPTION_STATES = {
+  CREATED: "CREATED",
+  DISPENSED: "DISPENSED",
+  CANCELLED: "CANCELLED",
+};
+
+const TRANSITIONS = {
+  [PRESCRIPTION_STATES.CREATED]: [PRESCRIPTION_STATES.DISPENSED, PRESCRIPTION_STATES.CANCELLED],
+  [PRESCRIPTION_STATES.DISPENSED]: [],
+  [PRESCRIPTION_STATES.CANCELLED]: [],
+};
+
+export function canTransitionPrescription(currentState, nextState) {
+  return TRANSITIONS[currentState]?.includes(nextState);
+}

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generatePrescriptionId } from "../services/idGenerator.js";
 
 const PrescriptionSchema = new mongoose.Schema(
   {
@@ -14,6 +15,14 @@ const PrescriptionSchema = new mongoose.Schema(
       ref: "Appointment",
       index: true,
       default: null,
+    },
+
+    prescriptionId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      immutable: true,
+      index: true,
     },
 
     patient: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -80,10 +89,38 @@ const PrescriptionSchema = new mongoose.Schema(
 );
 
 /* 🔒 HARD GUARD */
-PrescriptionSchema.pre("save", function (next) {
+PrescriptionSchema.pre("save", async function (next) {
+  if (!this.prescriptionId) {
+    this.prescriptionId = await generatePrescriptionId();
+  }
+
   if (!this.$locals?.viaWorkflow) {
     return next(new Error("Prescription must be created via workflow"));
   }
+  next();
+});
+
+PrescriptionSchema.pre("findOneAndUpdate", async function (next) {
+  const options = this.getOptions();
+  if (!options.upsert) return next();
+
+  const update = this.getUpdate() || {};
+  const hasPrescriptionId =
+    update.prescriptionId !== undefined ||
+    (update.$set && update.$set.prescriptionId !== undefined) ||
+    (update.$setOnInsert && update.$setOnInsert.prescriptionId !== undefined);
+
+  if (!hasPrescriptionId) {
+    const nextId = await generatePrescriptionId();
+    this.setUpdate({
+      ...update,
+      $setOnInsert: {
+        ...(update.$setOnInsert || {}),
+        prescriptionId: nextId,
+      },
+    });
+  }
+
   next();
 });
 

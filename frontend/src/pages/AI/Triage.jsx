@@ -1,25 +1,8 @@
-import React, { useState } from "react";
-import { triage } from "../../services/aiClient";
+import React from "react";
+import { useTriage } from "../../hooks/useTriage";
 
 export default function Triage() {
-  const [symptoms, setSymptoms] = useState("");
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function run() {
-    if (!symptoms.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const out = await triage(symptoms.trim());
-      setResult(out);
-    } catch (e) {
-      setError(e.message || "Failed to classify triage");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { symptoms, setSymptoms, result, loading, error, run } = useTriage();
 
   return (
     <div className="dashboard">

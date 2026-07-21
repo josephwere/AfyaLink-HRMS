@@ -1,48 +1,23 @@
 import React, {useEffect, useState} from 'react';
-import { apiFetch } from '../../utils/apiFetch';
+import { useDoctorAppointments } from '../../hooks/useDoctorAppointments';
 export default function Appointments(){
-  const [items, setItems] = useState([]);
+  const { items, loadAppointments, create, remove, update } = useDoctorAppointments();
   const [form, setForm] = useState({patient:'', doctor:'', scheduledAt:'', durationMins:30});
   useEffect(() => {
-    loadAppointments();
-  }, []);
-  const loadAppointments = async () => {
-    try {
-      const data = await apiFetch('/api/appointments');
-      setItems(Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []);
-    } catch {
-      setItems([]);
-    }
-  };
-  const create = async ()=> {
+    void loadAppointments();
+  }, [loadAppointments]);
+  const submitCreate = async (e) => {
+    e.preventDefault();
     if(!form.patient||!form.scheduledAt){ alert('patient and date required'); return;}
     try {
-      await apiFetch('/api/appointments', { method: 'POST', body: form });
+      await create({
+        ...form,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Nairobi',
+      });
       setForm({patient:'', doctor:'', scheduledAt:'', durationMins:30});
-      await loadAppointments();
     } catch (e) {
       alert(e?.message || "Failed to create appointment");
     }
-  };
-  const remove = async (id)=> {
-    try {
-      await apiFetch('/api/appointments/'+id, { method: 'DELETE' });
-      await loadAppointments();
-    } catch (e) {
-      alert(e?.message || "Failed to delete appointment");
-    }
-  };
-  const update = async (id)=> {
-    try {
-      await apiFetch('/api/appointments/'+id, { method: 'PATCH', body: { status: 'Completed' } });
-      await loadAppointments();
-    } catch (e) {
-      alert(e?.message || "Failed to update appointment");
-    }
-  };
-  const submitCreate = async (e) => {
-    e.preventDefault();
-    await create();
   };
   return (<div className="dashboard">
     <h3>Appointments</h3>

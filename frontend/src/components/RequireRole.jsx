@@ -1,11 +1,14 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { requireRole } from "../utils/requireRole";
+import { useUserContext } from "../contexts/UserContextContext";
+import { getContextRedirectPath } from "../contexts/contextRouteRules";
 import AuthGateFallback from "./AuthGateFallback";
 
 export default function RequireRole({ roles = [], children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const { mode } = useUserContext();
 
   if (loading && !user) {
     return (
@@ -26,6 +29,11 @@ export default function RequireRole({ roles = [], children }) {
 
   if (!check.allowed) {
     return <Navigate to="/unauthorized" replace />;
+  }
+
+  const redirectPath = getContextRedirectPath(location.pathname, mode);
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   // ✅ Allowed

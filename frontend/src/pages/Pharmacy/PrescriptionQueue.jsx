@@ -1,75 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
-import apiFetch from "../../utils/apiFetch";
-import { listPharmacyReferrals, updatePharmacyReferral } from "../../services/pharmacyNetworkApi";
-import { listTransfers } from "../../services/transferApi";
+import React from "react";
+import usePharmacyQueue from "../../hooks/usePharmacyQueue";
 
 export default function PrescriptionQueue() {
-  const [items, setItems] = useState([]);
-  const [referrals, setReferrals] = useState([]);
-  const [filter, setFilter] = useState("CREATED");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [transfers, setTransfers] = useState([]);
-  const [transferError, setTransferError] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const res = await apiFetch("/api/pharmacy/prescriptions");
-      setItems(Array.isArray(res?.items) ? res.items : []);
-      const referralRes = await listPharmacyReferrals({ limit: 50 });
-      setReferrals(Array.isArray(referralRes?.items) ? referralRes.items : []);
-      const transferRes = await listTransfers({ limit: 6, scope: "facility" });
-      setTransfers(Array.isArray(transferRes?.items) ? transferRes.items : []);
-      setTransferError("");
-    } catch (err) {
-      setItems([]);
-      setReferrals([]);
-      setTransfers([]);
-      setTransferError(err?.message || "Failed to load transfers.");
-      setMsg(err?.message || "Could not load pharmacy queue.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const visible = useMemo(() => {
-    if (filter === "ALL") return items;
-    return items.filter((item) => String(item.status) === filter);
-  }, [items, filter]);
-
-  const dispense = async (item) => {
-    try {
-      setMsg("");
-      await apiFetch("/api/pharmacy/dispense", {
-        method: "POST",
-        body: {
-          prescriptionId: item._id,
-          encounterId: item.encounter || undefined,
-        },
-      });
-      setMsg("Prescription dispensed.");
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Could not dispense prescription.");
-    }
-  };
-
-  const updateReferralStatus = async (item, status) => {
-    try {
-      setMsg("");
-      await updatePharmacyReferral(item._id, { status });
-      setMsg(`Referral marked ${status.toLowerCase()}.`);
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Could not update referral status.");
-    }
-  };
+  const {
+    items,
+    referrals,
+    filter,
+    setFilter,
+    loading,
+    msg,
+    transfers,
+    transferError,
+    visible,
+    load,
+    dispense,
+    updateReferralStatus,
+  } = usePharmacyQueue();
 
   return (
     <div className="dashboard">

@@ -1,0 +1,36 @@
+# AFY-P1-020 Deep Links Audit
+
+- Total entries: 46
+- Resolved: 34
+- Unresolved: 12
+
+- src/App.jsx:327 interactive action -> /unauthorized (resolved)
+- src/App.jsx:428 interactive action -> /app/revenue/payments/index (resolved)
+- src/components/AIAutofillAuditSummary.jsx:97 interactive action -> /app/platform/ai/autofill-audit (resolved)
+- src/components/AccessDeniedCard.jsx:14 interactive action -> /profile (unresolved)
+- src/components/AccessDeniedCard.jsx:17 interactive action -> / (resolved)
+- src/components/ConsultationRoom.jsx:648 interactive action -> /patient/medical-records (unresolved)
+- src/components/ConsultationRoom.jsx:657 interactive action -> /patient/prescriptions (unresolved)
+- src/components/LegalLinks.jsx:8 interactive action -> /terms (resolved)
+- src/components/LegalLinks.jsx:10 interactive action -> /privacy (resolved)
+- src/components/Protected.jsx:25 interactive action -> /login (resolved)
+- src/components/Protected.jsx:30 interactive action -> /unauthorized (resolved)
+- src/components/RequireAuth.jsx:19 interactive action -> /login (resolved)
+- src/components/RequireFeature.jsx:18 interactive action -> /403 (resolved)
+- src/components/RequireRole.jsx:24 interactive action -> /login (resolved)
+- src/components/RequireRole.jsx:31 interactive action -> /unauthorized (resolved)
+- src/components/RouteGuard.jsx:78 interactive action -> /login (resolved)
+- src/pages/Admin/CreateAdmin.jsx:47 Manage Super Assistants -> /admin/super-assistants (unresolved)
+- src/pages/Admin/Dashboard.jsx:86 Open Audit Logs -> /admin/audit-logs (unresolved)
+- src/pages/Admin/Dashboard.jsx:87 Open AI Autofill Audit -> /admin/ai-autofill-audit (unresolved)
+- src/pages/Admin/Dashboard.jsx:88 Create Admin -> /admin/create-admin (unresolved)
+- src/pages/Admin/Dashboard.jsx:89 Super Assistants -> /admin/super-assistants (unresolved)
+- src/pages/Admin/SuperAssistants.jsx:58 Unified Workspace -> /app/platform/ai/unified-assistant (resolved)
+- src/pages/Admin/SuperAssistants.jsx:59 Register Super Assistant -> /admin/create-admin (unresolved)
+- src/pages/Doctor/MySchedule.jsx:71 interactive action -> /doctor/settings (unresolved)
+- src/pages/ForgotPassword.jsx:214 Back to sign in -> /login (resolved)
+- src/pages/HospitalAdmin/ConsultationMonitor.jsx:21 interactive action -> /hospital-admin/escalations (unresolved)
+- src/pages/Login.jsx:95 interactive action -> /forgot-password (resolved)
+- src/pages/Login.jsx:113 Create account -> /register (resolved)
+- src/pages/Login.jsx:118 View careers -> /careers (resolved)
+- src/pages/Patient/AdsFeed.jsx:44 interactive action -> /register (resolved)

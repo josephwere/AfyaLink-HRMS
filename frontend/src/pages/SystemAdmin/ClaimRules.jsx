@@ -1,107 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { createClaimRule, listClaimRules, updateClaimRule } from "../../services/systemAdminApi";
-
-const RULE_TYPES = [
-  "MAX_PER_WINDOW",
-  "AGE_LIMIT",
-  "GENDER_ONLY",
-  "COOLDOWN_DAYS",
-];
+import React from "react";
+import useClaimRules from "../../hooks/useClaimRules";
 
 export default function ClaimRules() {
-  const [items, setItems] = useState([]);
-  const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ country: "", ruleType: "", enabled: "" });
-  const [form, setForm] = useState({
-    country: "",
-    ruleType: "MAX_PER_WINDOW",
-    procedureCode: "",
-    procedureCategory: "",
-    maxPerWindow: "",
-    windowDays: "",
-    minAge: "",
-    maxAge: "",
-    allowedGenders: "",
-    cooldownDays: "",
-    severity: "MEDIUM",
-    enabled: true,
-    notes: "",
-  });
-
-  const load = async () => {
-    setLoading(true);
-    setMsg("");
-    try {
-      const rows = await listClaimRules({
-        country: filters.country || undefined,
-        ruleType: filters.ruleType || undefined,
-        enabled: filters.enabled === "" ? undefined : filters.enabled === "true",
-      });
-      setItems(rows);
-    } catch (err) {
-      setMsg(err?.message || "Failed to load claim rules.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [filters.country, filters.ruleType, filters.enabled]);
+  const {
+    items,
+    msg,
+    loading,
+    filters,
+    form,
+    setFilters,
+    setForm,
+    createRule,
+    toggleRule,
+    load,
+    ruleTypes,
+  } = useClaimRules();
 
   const submit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMsg("");
-    try {
-      await createClaimRule({
-        ...form,
-        country: form.country || "",
-        procedureCode: form.procedureCode || "",
-        procedureCategory: form.procedureCategory || "",
-        maxPerWindow: form.maxPerWindow ? Number(form.maxPerWindow) : null,
-        windowDays: form.windowDays ? Number(form.windowDays) : null,
-        minAge: form.minAge ? Number(form.minAge) : null,
-        maxAge: form.maxAge ? Number(form.maxAge) : null,
-        cooldownDays: form.cooldownDays ? Number(form.cooldownDays) : null,
-        allowedGenders: form.allowedGenders,
-      });
-      setMsg("Claim rule saved.");
-      setForm({
-        country: "",
-        ruleType: "MAX_PER_WINDOW",
-        procedureCode: "",
-        procedureCategory: "",
-        maxPerWindow: "",
-        windowDays: "",
-        minAge: "",
-        maxAge: "",
-        allowedGenders: "",
-        cooldownDays: "",
-        severity: "MEDIUM",
-        enabled: true,
-        notes: "",
-      });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to save claim rule.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleRule = async (rule) => {
-    setLoading(true);
-    setMsg("");
-    try {
-      await updateClaimRule(rule._id, { enabled: !rule.enabled });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Failed to update rule.");
-    } finally {
-      setLoading(false);
-    }
+    await createRule();
   };
 
   return (
@@ -124,7 +41,7 @@ export default function ClaimRules() {
         <form className="card form" onSubmit={submit}>
           <input placeholder="Country (blank = global)" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value.toUpperCase() })} />
           <select value={form.ruleType} onChange={(e) => setForm({ ...form, ruleType: e.target.value })}>
-            {RULE_TYPES.map((t) => (
+            {ruleTypes.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
@@ -153,7 +70,7 @@ export default function ClaimRules() {
             <input className="search-input" placeholder="Country" value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value.toUpperCase() })} />
             <select value={filters.ruleType} onChange={(e) => setFilters({ ...filters, ruleType: e.target.value })}>
               <option value="">All rule types</option>
-              {RULE_TYPES.map((t) => (
+              {ruleTypes.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>

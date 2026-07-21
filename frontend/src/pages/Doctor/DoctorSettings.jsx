@@ -1,97 +1,35 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import EditableSection from "../../components/EditableSection";
 import ContentSkeleton from "../../components/ContentSkeleton";
 import { showActionSuccessGuide } from "../../components/ActionSuccessGuide";
-import apiFetch from "../../utils/apiFetch";
-import { useAuth } from "../../utils/auth";
+import { useDoctorAvailability } from "../../hooks/useDoctorAvailability";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function buildDefaultRows() {
-  return [1, 2, 3, 4, 5].map((dayOfWeek) => ({
-    dayOfWeek,
-    startTime: "08:00",
-    endTime: "17:00",
-    appointmentSlots: 12,
-    isAvailable: true,
-    consultationAvailable: true,
-    modes: {
-      chat: true,
-      voice: false,
-      video: false,
-      inPerson: true,
-    },
-    notes: "",
-  }));
-}
-
 export default function DoctorSettings() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [rows, setRows] = useState(buildDefaultRows());
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [availabilitySaved, setAvailabilitySaved] = useState(false);
-  const [availabilityEditing, setAvailabilityEditing] = useState(false);
   const weeklySectionRef = useRef(null);
+  const {
+    rows,
+    loading,
+    saving,
+    msg,
+    availabilitySaved,
+    availabilityEditing,
+    setAvailabilityEditing,
+    todayIndex,
+    todayRow,
+    patchRow,
+    patchModes,
+    load,
+    save,
+  } = useDoctorAvailability();
 
-  const todayIndex = new Date().getDay();
-  const todayRow = useMemo(
-    () => rows.find((row) => Number(row.dayOfWeek) === todayIndex) || null,
-    [rows, todayIndex]
-  );
-
-  const load = async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setMsg("");
-    try {
-      const res = await apiFetch(`/api/appointments/doctors/${user.id}/availability`);
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setRows(items.length ? items : buildDefaultRows());
-      setAvailabilitySaved(true);
-      setAvailabilityEditing(false);
-    } catch (err) {
-      setRows(buildDefaultRows());
-      setMsg(err?.message || "Could not load your schedule.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [user?.id]);
-
-  const patchRow = (index, updates) => {
-    setRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...updates } : row)));
-  };
-
-  const patchModes = (index, key, value) => {
-    setRows((prev) =>
-      prev.map((row, i) =>
-        i === index ? { ...row, modes: { ...(row.modes || {}), [key]: value } } : row
-      )
-    );
-  };
-
-  const save = async () => {
-    if (!user?.id) return;
-    setSaving(true);
-    setMsg("");
-    try {
-      await apiFetch(`/api/appointments/doctors/${user.id}/availability`, {
-        method: "PUT",
-        body: {
-          items: rows,
-        },
-      });
-      setMsg("Availability saved.");
-      setAvailabilitySaved(true);
-      setAvailabilityEditing(false);
+  const handleSave = async () => {
+    const ok = await save();
+    if (ok !== false) {
       showActionSuccessGuide({
         title: "Availability Saved",
         message: "Your consultation schedule and booking capacity have been updated.",
@@ -107,11 +45,6 @@ export default function DoctorSettings() {
         ],
         notificationCategory: "ACCOUNT",
       });
-      await load();
-    } catch (err) {
-      setMsg(err?.message || "Could not save availability.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -169,7 +102,7 @@ export default function DoctorSettings() {
               editing={availabilityEditing}
               saving={saving}
               onEdit={() => setAvailabilityEditing(true)}
-              onSave={save}
+              onSave={handleSave}
               onCancel={() => setAvailabilityEditing(false)}
               saveLabel="Save Availability"
               aside={<span className="action-pill">{availabilitySaved && !availabilityEditing ? "Locked" : "Editable"}</span>}

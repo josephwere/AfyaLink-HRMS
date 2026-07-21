@@ -12,8 +12,8 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   SYSTEM_ADMIN: "/app/governance/home/index",
   DEVELOPER: "/app/platform/dev/home",
 
-  SECURITY_ADMIN: "/app/platform/home/index",
-  SECURITY_OFFICER: "/app/platform/home/index",
+  SECURITY_ADMIN: "/app/platform/security/admin/home",
+  SECURITY_OFFICER: "/app/platform/security/officer/home",
 
   // 🏥 Facility ops
   HOSPITAL_ADMIN: "/app/operations/home/index",
@@ -22,6 +22,14 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   COMMUNITY_HEALTH_WORKER: "/app/operations/home/index",
   LAB_TECH: "/app/operations/home/index",
   PHARMACIST: "/app/operations/home/index",
+  DRIVER: "/app/operations/driver/home",
+  AMBULANCE_DRIVER: "/app/operations/driver/home",
+  MORTUARY_STAFF: "/app/operations/mortuary/home",
+  MORTUARY_MANAGER: "/app/operations/mortuary/home",
+  MAINTENANCE_TECH: "/app/operations/home/index",
+  BIOMEDICAL_TECHNICIAN: "/app/operations/home/index",
+  HOUSEKEEPING_STAFF: "/app/operations/home/index",
+  KITCHEN_STAFF: "/app/operations/home/index",
 
   // 🩺 Care
   DOCTOR: "/app/care/home/index",

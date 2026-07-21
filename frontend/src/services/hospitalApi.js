@@ -20,6 +20,17 @@ export const updateHospital = async (id, data) => {
   });
 };
 
+export const listHospitalMarketplace = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.q) query.set("q", String(params.q));
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.lat) query.set("lat", String(params.lat));
+  if (params.lng) query.set("lng", String(params.lng));
+  if (params.radiusKm) query.set("radiusKm", String(params.radiusKm));
+  const qs = query.toString();
+  return apiFetch(`/api/hospitals/marketplace${qs ? `?${qs}` : ""}`);
+};
+
 export const searchGovernmentHospitals = async (params = {}) => {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {

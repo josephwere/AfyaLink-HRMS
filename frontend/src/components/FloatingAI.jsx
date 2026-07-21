@@ -239,6 +239,20 @@ export default function FloatingAI() {
     }
   }, [isOverlayOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleAiOpen = (event) => {
+      const detail = event?.detail || {};
+      if (!detail?.prompt && detail?.action !== "ai") return;
+      setPresetPrompt(detail.prompt || "");
+      setIsOverlayOpen(true);
+    };
+
+    window.addEventListener("afyalink:ai-open", handleAiOpen);
+    return () => window.removeEventListener("afyalink:ai-open", handleAiOpen);
+  }, []);
+
   const loadAssistantContext = async () => {
     setContextLoading(true);
     try {

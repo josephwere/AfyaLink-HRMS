@@ -1,56 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import apiFetch from "../../utils/apiFetch";
+import { useDoctorPatients } from "../../hooks/useDoctorPatients";
 
 export default function MyPatients() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("ALL");
   const [status, setStatus] = useState("ALL");
-  const [rows, setRows] = useState([]);
-  const [encounterByPatient, setEncounterByPatient] = useState({});
-  const [resolvingEncounterId, setResolvingEncounterId] = useState("");
-
-  useEffect(() => {
-    const q = search.trim();
-    const endpoint = q ? `/api/patients?q=${encodeURIComponent(q)}&limit=100` : "/api/patients?limit=100";
-    apiFetch(endpoint)
-      .then((res) => {
-        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
-        setRows(items);
-        return Promise.all(
-          items
-            .map((item) => String(item?._id || ""))
-            .filter(Boolean)
-            .map(async (patientId) => {
-              try {
-                const encounterRows = await apiFetch(`/api/encounters?patientId=${encodeURIComponent(patientId)}&limit=1`);
-                const encounterItems = Array.isArray(encounterRows) ? encounterRows : [];
-                return [patientId, encounterItems[0] || null];
-              } catch {
-                return [patientId, null];
-              }
-            })
-        );
-      })
-      .then((pairs) => {
-        if (Array.isArray(pairs)) setEncounterByPatient(Object.fromEntries(pairs));
-      })
-      .catch(() => {
-        setRows([]);
-        setEncounterByPatient({});
-      });
-  }, [search]);
-
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      const rowStatus = String(r.status || "ACTIVE").toUpperCase();
-      const rowRisk = String(r.riskLevel || "MEDIUM").toUpperCase();
-      const statusOk = status === "ALL" || rowStatus === status;
-      const riskOk = risk === "ALL" || rowRisk === risk;
-      return statusOk && riskOk;
-    });
-  }, [rows, risk, status]);
+  const { filtered, encounterByPatient, resolvingEncounterId, resolveEscalation } = useDoctorPatients({ search, status, risk });
 
   const firstMissingRequirement = (encounter) => {
     const items = Array.isArray(encounter?.closeout?.missingRequirements)
@@ -72,21 +29,10 @@ export default function MyPatients() {
     return encounter.escalationSummary.unreadMine > 0 ? "Nurse escalation" : "Escalation open";
   };
 
-  const resolveEscalation = async (encounter, patientId) => {
-    if (!encounter?._id) return;
-    try {
-      setResolvingEncounterId(String(encounter._id));
-      await apiFetch(`/api/encounters/${encodeURIComponent(encounter._id)}/nurse-escalation-resolve`, {
-        method: "POST",
-        body: { note: "Clinician acknowledged patient-list escalation and resumed closeout workflow." },
-      });
-      navigate(
-        `/doctor/opd?patientId=${encodeURIComponent(String(patientId))}${
-          firstMissingRequirement(encounter) ? `&focus=${encodeURIComponent(firstMissingRequirement(encounter))}` : ""
-        }`
-      );
-    } finally {
-      setResolvingEncounterId("");
+  const handleResolveEscalation = async (encounter, patientId) => {
+    const redirectPath = await resolveEscalation(encounter, patientId);
+    if (redirectPath) {
+      navigate(redirectPath);
     }
   };
 
@@ -170,7 +116,7 @@ export default function MyPatients() {
                             <button
                               type="button"
                               className="action-pill warning"
-                              onClick={() => resolveEscalation(encounterByPatient[String(p._id)], p._id)}
+                              onClick={() => handleResolveEscalation(encounterByPatient[String(p._id)], p._id)}
                             >
                               {resolvingEncounterId === String(encounterByPatient[String(p._id)]?._id) ? "Resolving..." : escalationLabel(encounterByPatient[String(p._id)])}
                             </button>

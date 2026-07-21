@@ -1,10 +1,13 @@
 import { WebSocketServer } from 'ws';
 import ai from './ai/aiService.js';
+import { registerOperationalWebSocketSubscriber } from './services/operationalEventGateway.js';
 
 export function attachWebSocketServer(server) {
   const wss = new WebSocketServer({ server, path: '/ws' });
   wss.on('connection', (ws, req) => {
     console.log('WS connection from', req.socket.remoteAddress);
+    const unsubscribe = registerOperationalWebSocketSubscriber(ws);
+
     ws.on('message', async (msg) => {
       try {
         const data = JSON.parse(msg.toString());
@@ -20,6 +23,10 @@ export function attachWebSocketServer(server) {
       } catch (err) {
         ws.send(JSON.stringify({ type:'error', error: err.message }));
       }
+    });
+
+    ws.on('close', () => {
+      unsubscribe();
     });
   });
   return wss;

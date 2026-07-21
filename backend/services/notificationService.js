@@ -1,5 +1,7 @@
 import Twilio from "twilio";
 import fetch from "node-fetch";
+import Notification from "../models/Notification.js";
+import User from "../models/User.js";
 
 const trimEnv = (key) => String(process.env[key] || "").trim();
 const isAccountSid = (value) => /^AC[a-f0-9]{32}$/i.test(String(value || "").trim());
@@ -263,6 +265,99 @@ export async function sendWhatsApp({ provider = "twilio", to, message }) {
  * Unified patient notification
  * (USED BY WORKFLOWS)
  */
+export async function notify({
+  hospital = null,
+  user = null,
+  title,
+  body,
+  category = "SYSTEM",
+  meta = {},
+  read = false,
+}) {
+  if (!title || !body) {
+    throw new Error("Notification title and body are required");
+  }
+
+  return Notification.create({
+    title,
+    body,
+    category,
+    user,
+    hospital,
+    read,
+    meta,
+  });
+}
+
+/**
+ * Notify all users in a hospital matching the given roles.
+ * roles: array of role strings (e.g. ['HOSPITAL_ADMIN','PHARMACIST'])
+ */
+export const NOTIFICATION_TYPES = {
+  APPOINTMENT_BOOKED: "APPOINTMENT_BOOKED",
+  PATIENT_CHECKED_IN: "PATIENT_CHECKED_IN",
+  CONSULTATION_COMPLETED: "CONSULTATION_COMPLETED",
+  PRESCRIPTION_CREATED: "PRESCRIPTION_CREATED",
+  PRESCRIPTION_DISPENSED: "PRESCRIPTION_DISPENSED",
+  INVENTORY_LOW: "INVENTORY_LOW",
+  LAB_RESULTS_READY: "LAB_RESULTS_READY",
+  RADIOLOGY_COMPLETED: "RADIOLOGY_COMPLETED",
+  HOSPITAL_VERIFIED: "HOSPITAL_VERIFIED",
+  HOSPITAL_REVIEW_DECISION: "HOSPITAL_REVIEW_DECISION",
+  BRANCH_REGISTERED: "BRANCH_REGISTERED",
+  CLAIM_HIGH_RISK: "CLAIM_HIGH_RISK",
+  CLAIM_ASSIGNED: "CLAIM_ASSIGNED",
+  INSPECTION_SCHEDULED: "INSPECTION_SCHEDULED",
+  ENFORCEMENT_ACTION_CREATED: "ENFORCEMENT_ACTION_CREATED",
+  PHARMACY_COVERAGE_RISK: "PHARMACY_COVERAGE_RISK",
+  NURSE_ESCALATION: "NURSE_ESCALATION",
+};
+
+export async function notifyRolesInHospital({ hospital, roles = [], title, body, category = "SYSTEM", meta = {} }) {
+  if (!hospital || !Array.isArray(roles) || !roles.length || !title || !body) return null;
+  const normalized = roles.map((r) => String(r || "").toUpperCase());
+  const recipients = await User.find({ hospital, role: { $in: normalized }, active: true }).select("_id role name").lean();
+  if (!recipients || !recipients.length) return null;
+  const docs = recipients.map((r) => ({
+    title,
+    body,
+    category,
+    user: r._id,
+    hospital,
+    meta,
+  }));
+  try {
+    return Notification.insertMany(docs);
+  } catch (err) {
+    console.error("notifyRolesInHospital failed:", err);
+    return null;
+  }
+}
+
+export async function notifyUsers({ users = [], hospital = null, title, body, category = "SYSTEM", meta = {}, read = false }) {
+  if (!Array.isArray(users) || !users.length || !title || !body) return null;
+  const userIds = users
+    .map((u) => (typeof u === "object" ? String(u._id || u.id || "") : String(u || "")))
+    .filter(Boolean);
+  const uniqueIds = [...new Set(userIds)];
+  if (!uniqueIds.length) return null;
+  const docs = uniqueIds.map((user) => ({
+    title,
+    body,
+    category,
+    user,
+    hospital,
+    read,
+    meta,
+  }));
+  try {
+    return Notification.insertMany(docs);
+  } catch (err) {
+    console.error("notifyUsers failed:", err);
+    return null;
+  }
+}
+
 export async function notifyPatient({
   patient,
   message,
@@ -291,6 +386,7 @@ export async function notifyPatient({
 export default {
   sendSMS,
   sendWhatsApp,
+  notify,
   notifyPatient,
   getSmsProviderStatus,
 };
