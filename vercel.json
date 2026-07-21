@@ -1,0 +1,86 @@
+{
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/background.png",
+      "destination": "/background.png"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "/logo.png"
+    },
+    {
+      "source": "/neuroedge%20logo.png",
+      "destination": "/neuroedge%20logo.png"
+    },
+    {
+      "source": "/neuroedge-logo.png",
+      "destination": "/neuroedge-logo.png"
+    },
+    {
+      "source": "/sw.js",
+      "destination": "/sw.js"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/api/$1"
+    },
+    {
+      "source": "/healthz",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/healthz"
+    },
+    {
+      "source": "/health",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/health"
+    },
+    {
+      "source": "/readyz",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/readyz"
+    },
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/socket.io/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://afya-link-hrms-frontend-4.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
