@@ -1,43 +1,50 @@
 # Performance Report
 
-- Generated: 2026-07-09T18:55:34.032Z
-- Total test execution duration: 360836.898ms
+- Generated: 2026-07-21T14:49:06.078Z
+- Total test execution duration: 48385.837ms
 
 ## Spec Timings
 
 | Spec / Test Case | Outcome | Duration (ms) |
 |---|---|---|
-| Staff UI registration flow | TIMEDOUT | 62102ms |
-| Hospital CRUD via API | FAILED | 1559ms |
-| Wards & Beds CRUD via API | FAILED | 2528ms |
-| Patients CRUD via API | FAILED | 3511ms |
-| Appointments CRUD via API | FAILED | 2126ms |
-| Pharmacy inventory and dispense via API | FAILED | 2443ms |
-| Laboratory result creation and approval via API | FAILED | 2003ms |
-| should exercise all cards, buttons, and actions on dashboards | TIMEDOUT | 61959ms |
-| should load facility customization page and update config via API | PASSED | 8273ms |
-| super-admin login reaches the platform workspace | TIMEDOUT | 60587ms |
-| should successfully login as SUPER_ADMIN | PASSED | 3509ms |
-| should successfully login as SYSTEM_ADMIN | PASSED | 3390ms |
-| should successfully login as HOSPITAL_ADMIN | PASSED | 3596ms |
-| should successfully login as DOCTOR | PASSED | 3198ms |
-| should successfully login as NURSE | PASSED | 3371ms |
-| should successfully login as PHARMACIST | PASSED | 3619ms |
-| should successfully login as LAB_TECHNICIAN | PASSED | 3116ms |
-| should successfully login as RECEPTIONIST | PASSED | 4160ms |
-| should successfully login as PATIENT | PASSED | 3885ms |
-| should successfully login as DRIVER | PASSED | 2975ms |
-| should successfully login as AMBULANCE_DRIVER | PASSED | 3501ms |
-| should successfully login as MORTUARY_STAFF | PASSED | 3209ms |
-| should successfully login as MORTUARY_MANAGER | PASSED | 4345ms |
-| should successfully login as SECURITY_OFFICER | PASSED | 6006ms |
-| should successfully login as COMMUNITY_HEALTH_WORKER | PASSED | 5314ms |
-| should log out successfully and redirect to login page | FAILED | 23706ms |
-| should crawl all discovered routes and capture status | TIMEDOUT | 206800ms |
-| should display notifications page and manage read status | FAILED | 12909ms |
-| Standard Patient Journey workflow | FAILED | 2530ms |
-| Emergency Workflow simulation | FAILED | 1872ms |
-| Nurse should be blocked from Super Admin System Settings | FAILED | 11885ms |
-| Super Admin should be allowed access to System Settings | PASSED | 9989ms |
-| Nurse token should fail to access super admin APIs (Privilege Escalation block) | PASSED | 1840ms |
-| super admin can switch roles to DOCTOR and switch back | TIMEDOUT | 64179ms |
+| Staff UI registration flow | FAILED | 285ms |
+| Hospital CRUD via API | FAILED | 191ms |
+| Wards & Beds CRUD via API | FAILED | 187ms |
+| Patients CRUD via API | FAILED | 201ms |
+| Appointments CRUD via API | FAILED | 202ms |
+| Pharmacy inventory and dispense via API | FAILED | 186ms |
+| Laboratory result creation and approval via API | FAILED | 237ms |
+| should exercise all cards, buttons, and actions on dashboards | FAILED | 271ms |
+| should load facility customization page and update config via API | FAILED | 239ms |
+| super-admin login reaches the platform workspace | FAILED | 227ms |
+| should successfully login as SUPER_ADMIN | FAILED | 231ms |
+| should successfully login as SYSTEM_ADMIN | FAILED | 250ms |
+| should successfully login as HOSPITAL_ADMIN | FAILED | 245ms |
+| should successfully login as DOCTOR | FAILED | 233ms |
+| should successfully login as NURSE | FAILED | 236ms |
+| should successfully login as PHARMACIST | FAILED | 244ms |
+| should successfully login as LAB_TECHNICIAN | FAILED | 229ms |
+| should successfully login as RECEPTIONIST | FAILED | 245ms |
+| should successfully login as PATIENT | FAILED | 247ms |
+| should successfully login as DRIVER | FAILED | 276ms |
+| should successfully login as AMBULANCE_DRIVER | FAILED | 254ms |
+| should successfully login as MORTUARY_STAFF | FAILED | 270ms |
+| should successfully login as MORTUARY_MANAGER | FAILED | 325ms |
+| should successfully login as SECURITY_OFFICER | FAILED | 347ms |
+| should successfully login as COMMUNITY_HEALTH_WORKER | FAILED | 239ms |
+| should log out successfully and redirect to login page | FAILED | 357ms |
+| should crawl all discovered routes and capture status | FAILED | 251ms |
+| should display notifications page and manage read status | FAILED | 239ms |
+| Standard Patient Journey workflow | FAILED | 2704ms |
+| Emergency Workflow simulation | FAILED | 688ms |
+| Nurse should be blocked from Super Admin System Settings | FAILED | 231ms |
+| Super Admin should be allowed access to System Settings | FAILED | 220ms |
+| Nurse token should fail to access super admin APIs (Privilege Escalation block) | FAILED | 736ms |
+| super admin can switch roles to DOCTOR and switch back | FAILED | 272ms |
+| billing handoff completes | PASSED | 601ms |
+| emergency patient flow completes end to end | PASSED | 866ms |
+| admission workflow reaches discharge | PASSED | 805ms |
+| lab ordering and completion works | PASSED | 765ms |
+| new patient journey completes end to end | PASSED | 2085ms |
+| prescription and dispense flow completes | PASSED | 567ms |
+| surgery workflow reaches discharge | PASSED | 574ms |

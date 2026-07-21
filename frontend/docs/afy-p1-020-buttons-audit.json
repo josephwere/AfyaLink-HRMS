@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 153,
-    "resolved": 29,
+    "total": 151,
+    "resolved": 27,
     "unresolved": 124
   },
   "surfaces": [
@@ -164,26 +164,6 @@
       "target": "/app/innovation/ai/chatbot",
       "resolved": true,
       "reason": "matches canonical route /app/innovation/ai/chatbot"
-    },
-    {
-      "id": "button-src/components/Navbar.jsx-119",
-      "surface": "button",
-      "file": "src/components/Navbar.jsx",
-      "line": 119,
-      "label": "interactive action",
-      "target": "/app/operations/home/index",
-      "resolved": true,
-      "reason": "matches canonical route /app/operations/home/index"
-    },
-    {
-      "id": "button-src/components/Navbar.jsx-121",
-      "surface": "button",
-      "file": "src/components/Navbar.jsx",
-      "line": 121,
-      "label": "interactive action",
-      "target": "/app/portal/home/index",
-      "resolved": true,
-      "reason": "matches canonical route /app/portal/home/index"
     },
     {
       "id": "button-src/components/Navbar.jsx-164",
@@ -706,20 +686,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-926",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 949,
+      "line": 926,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-931",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 954,
+      "line": 931,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,

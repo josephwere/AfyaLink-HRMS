@@ -1,92 +1,69 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import AccessDeniedCard from "../../components/AccessDeniedCard";
 import useHospitalAdminApprovals from "../../hooks/useHospitalAdminApprovals";
 
-function isOverdue(item) {
-  if (!item?.slaDueAt) return false;
-  return item.status === "PENDING" && new Date(item.slaDueAt).getTime() < Date.now();
-}
-
 export default function Approvals() {
-  const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const [leave, setLeave] = useState([]);
-  const [overtime, setOvertime] = useState([]);
-  const [shifts, setShifts] = useState([]);
-  const [leaveCursor, setLeaveCursor] = useState(null);
-  const [overtimeCursor, setOvertimeCursor] = useState(null);
-  const [shiftCursor, setShiftCursor] = useState(null);
-  const [hasMoreLeave, setHasMoreLeave] = useState(false);
-  const [hasMoreOvertime, setHasMoreOvertime] = useState(false);
-  const [hasMoreShift, setHasMoreShift] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadingMoreKind, setLoadingMoreKind] = useState("");
-  const [queue, setQueue] = useState(null);
-  const [policies, setPolicies] = useState([]);
-  const [policyEdits, setPolicyEdits] = useState({});
-  const [automationPolicies, setAutomationPolicies] = useState([]);
-  const [automationPresets, setAutomationPresets] = useState([]);
-  const [showInactivePresets, setShowInactivePresets] = useState(false);
-  const [presetHistory, setPresetHistory] = useState([]);
-  const [customPreset, setCustomPreset] = useState({
-    key: "",
-    name: "",
-    description: "",
-    config: {
-      active: true,
-      autoApprove: false,
-      requireSecondApprover: true,
-      fallbackRole: "AUTO",
-      escalationAfterMinutes: 120,
-      conditions: {
-        priorityAgeMultiplier: 1,
-        priorityWeightCap: 5,
-      },
-    },
-  });
-  const [automationEdits, setAutomationEdits] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [savingPolicy, setSavingPolicy] = useState(false);
-  const [savingAutomation, setSavingAutomation] = useState(false);
-  const [simResult, setSimResult] = useState(null);
-  const [previewResult, setPreviewResult] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [viewMode, setViewMode] = useState("ALL");
-  const [queueKindFilter, setQueueKindFilter] = useState("ALL");
-  const [breachCursor, setBreachCursor] = useState(0);
-  const [autoAdvance, setAutoAdvance] = useState(true);
-  const [pendingAutoJump, setPendingAutoJump] = useState(false);
-  const [activeBreachKey, setActiveBreachKey] = useState("");
-  const [filter, setFilter] = useState("");
-  const filterRef = useRef(null);
-  const [cacheReady, setCacheReady] = useState(false);
-  const [cacheBadge, setCacheBadge] = useState("Live • now");
-  const skipInitialNetworkLoadRef = useRef(false);
+  const {
+    allowed,
+    loading,
+    leave,
+    overtime,
+    shifts,
+    cacheReady,
+    cacheBadge,
+    loadApprovalsData,
+    msg,
+    summary,
+  } = useHospitalAdminApprovals();
 
-  const role = normalizeRole(user?.actualRole || user?.role);
-  if (!ALLOWED.has(role)) {
+  useEffect(() => {
+    if (!cacheReady) return;
+    void loadApprovalsData({ append: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheReady, location.search]);
+
+  if (!allowed) {
     return <AccessDeniedCard message="Approval queues are only available to the configured workforce approval roles." />;
   }
-  const prefScope = `${role || "UNKNOWN"}:${user?._id || user?.id || user?.email || "anon"}`;
-  const canManagePresetLifecycle = PRESET_LIFECYCLE_ALLOWED.has(role);
-  const scrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
-  const normalizeCursorResponse = (data) => {
-    if (Array.isArray(data)) {
-      return { items: data, nextCursor: null, hasMore: false };
-    }
-    return {
-      items: Array.isArray(data?.items) ? data.items : [],
-      nextCursor: data?.nextCursor || null,
-      hasMore: Boolean(data?.hasMore),
-    };
-  };
+  return (
+    <div className="dashboard">
+      <div className="welcome-panel">
+        <div>
+          <h2>Approvals</h2>
+          <p className="muted">Work approvals for leave, overtime and shift changes.</p>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <small className="muted">{cacheBadge}</small>
+        </div>
+      </div>
+
+      {msg ? <div className="card">{msg}</div> : null}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <StatCard title="Leave" value={summary?.leave ?? (Array.isArray(leave) ? leave.length : "—")} path="/app/people/approvals/index?kind=LEAVE" />
+        <StatCard title="Overtime" value={summary?.overtime ?? (Array.isArray(overtime) ? overtime.length : "—")} path="/app/people/approvals/index?kind=OVERTIME" />
+        <StatCard title="Shifts" value={summary?.shifts ?? (Array.isArray(shifts) ? shifts.length : "—")} path="/app/people/approvals/index?kind=SHIFT" />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        {loading ? <div className="card">Loading approvals…</div> : null}
+        {!loading && (Array.isArray(leave) || Array.isArray(overtime) || Array.isArray(shifts)) ? (
+          <div className="card">
+            <h3>Recent queue items</h3>
+            <ul>
+              {Array.isArray(leave) && leave.slice(0, 5).map((it) => <li key={`leave-${it.id || it._id || JSON.stringify(it)}`}>{it.title || it.reason || JSON.stringify(it)}</li>)}
+              {Array.isArray(overtime) && overtime.slice(0, 5).map((it) => <li key={`overtime-${it.id || it._id || JSON.stringify(it)}`}>{it.title || it.reason || JSON.stringify(it)}</li>)}
+              {Array.isArray(shifts) && shifts.slice(0, 5).map((it) => <li key={`shift-${it.id || it._id || JSON.stringify(it)}`}>{it.title || it.reason || JSON.stringify(it)}</li>)}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 
   const applyAutomationPreset = (requestType, presetKey) => {
     const preset = automationPresets.find(

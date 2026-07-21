@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T18:55:34.032Z",
+  "generatedAt": "2026-07-21T14:49:06.078Z",
   "certificationStatus": "not-certified",
   "summary": {
     "criticalIssues": 1,
@@ -8,20 +8,20 @@
     "lowIssues": 0
   },
   "criticalIssues": [
-    "Playwright E2E suite has 16 failing test specs."
+    "Playwright E2E suite has 34 failing test specs."
   ],
   "highIssues": [
-    "Crawl found 68 unreachable, forbidden, or broken pages."
+    "Crawl found 81 unreachable, forbidden, or broken pages."
   ],
   "mediumIssues": [
     "Crawl captured 28 console errors.",
-    "Crawl captured 1085 network request failures."
+    "Crawl captured 1034 network request failures."
   ],
   "lowIssues": [],
   "evidence": {
-    "totalTests": 18,
-    "failedTests": 16,
+    "totalTests": 7,
+    "failedTests": 34,
     "routesCrawled": 162,
-    "successfulRoutes": 94
+    "successfulRoutes": 81
   }
 }

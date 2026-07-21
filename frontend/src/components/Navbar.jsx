@@ -116,9 +116,9 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
               toggleMode();
               window.setTimeout(() => {
                 if (isMyHealthMode) {
-                  navigate("/app/operations/home/index");
+                  navigate(redirectByRole(user, "WORK"));
                 } else {
-                  navigate("/app/portal/home/index");
+                  navigate(redirectByRole(user, "MY_HEALTH"));
                 }
                 setSwitchingContext(false);
               }, 350);

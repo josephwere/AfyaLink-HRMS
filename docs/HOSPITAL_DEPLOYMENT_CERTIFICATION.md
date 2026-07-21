@@ -1,6 +1,6 @@
 # Hospital Deployment Certification
 
-- Generated: 2026-07-09T18:55:34.032Z
+- Generated: 2026-07-21T14:49:06.078Z
 - Certification status: **NOT CERTIFIED FOR PRODUCTION**
 
 ## 1. Is AfyaLink safe for production?
@@ -24,5 +24,5 @@
 
 ## 5. Remaining blockers
 
-- Playwright E2E suite has 16 failing test specs.
-- Crawl found 68 unreachable, forbidden, or broken pages.
+- Playwright E2E suite has 34 failing test specs.
+- Crawl found 81 unreachable, forbidden, or broken pages.

@@ -1,6 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../utils/auth";
 import { canUseMyHealthContext, getDefaultContextMode, getContextModeLabel, isPatientContextUser } from "./userContextModel";
+import { resolveRequiredContext } from "./contextRouteRules";
 
 const STORAGE_KEY = "afyalink_user_context_mode";
 
@@ -31,21 +33,35 @@ function getStoredMode() {
 
 export function UserContextProvider({ children }) {
   const { user } = useAuth();
+  const location = useLocation();
   const [mode, setModeState] = useState(() => getStoredMode() || getDefaultContextMode(user));
+  const prevUserIdRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (isPatientContextUser(user)) {
-      setModeState("MY_HEALTH");
+    if (!user) {
+      prevUserIdRef.current = null;
       return;
     }
-    const stored = getStoredUserContextMode();
-    if (stored === "WORK" || stored === "MY_HEALTH") {
-      setModeState(stored);
+
+    // 1. Resolve context based on current URL path
+    const required = resolveRequiredContext(location.pathname);
+    if (required === "WORK" || required === "MY_HEALTH") {
+      setModeState(required);
+      prevUserIdRef.current = user.id;
       return;
     }
-    setModeState(getDefaultContextMode(user));
-  }, [user]);
+
+    // 2. Check for fresh user session login / restore
+    if (prevUserIdRef.current !== user.id) {
+      prevUserIdRef.current = user.id;
+      const defaultMode = getDefaultContextMode(user);
+      setModeState(defaultMode);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, defaultMode);
+      } catch {}
+    }
+  }, [user, location.pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

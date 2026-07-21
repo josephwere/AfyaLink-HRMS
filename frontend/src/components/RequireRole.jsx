@@ -31,7 +31,7 @@ export default function RequireRole({ roles = [], children }) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  const redirectPath = getContextRedirectPath(location.pathname, mode);
+  const redirectPath = getContextRedirectPath(location.pathname, mode, user);
   if (redirectPath) {
     return <Navigate to={redirectPath} replace />;
   }

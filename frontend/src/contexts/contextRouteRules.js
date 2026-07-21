@@ -1,3 +1,5 @@
+import { canUseMyHealthContext, isPatientContextUser } from "./userContextModel";
+
 const WORK_ROUTE_PREFIXES = [
   "/app/care",
   "/app/operations",
@@ -21,18 +23,21 @@ export function resolveRequiredContext(pathname = "") {
   return null;
 }
 
-export function getContextRedirectPath(pathname = "", currentContext = "WORK") {
+export function getContextRedirectPath(pathname = "", currentContext = "WORK", user = null) {
   const normalizedPath = normalizePath(pathname);
   const requiredContext = resolveRequiredContext(normalizedPath);
   if (!requiredContext || requiredContext === currentContext) return null;
 
-  let redirectTarget = "/app/operations/home/index";
-  if (requiredContext === "MY_HEALTH" || currentContext === "MY_HEALTH") {
-    redirectTarget = "/app/portal/home/index";
-  }
-
+  const redirectTarget = "/app/portal/home/index";
   if (redirectTarget === normalizedPath) {
     return null;
+  }
+
+  if (requiredContext === "MY_HEALTH" && currentContext === "WORK") {
+    if (canUseMyHealthContext(user) && !isPatientContextUser(user)) {
+      return null;
+    }
+    return redirectTarget;
   }
 
   return redirectTarget;

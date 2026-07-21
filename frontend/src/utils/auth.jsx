@@ -20,6 +20,7 @@ import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch"
 import { assertSecureApiBase, getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
 import { AUTH_EXPIRED_EVENT } from "../lib/api/client";
 import { publishUserSignedIn, publishUserSignedOut } from "../ai/neuroedgeEventHelpers";
+import { getDefaultContextMode } from "../contexts/userContextModel";
 
 /* ======================================================
    JWT PARSER (BASE64URL SAFE)
@@ -457,6 +458,9 @@ export function AuthProvider({ children }) {
       clearRoleOverrideState();
       setRoleOverrideState("");
       setStrictImpersonationState(false);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("afyalink_user_context_mode", getDefaultContextMode(safeUser));
+      }
 
       setLoading(false);
       setBaseUser({
@@ -538,6 +542,9 @@ export function AuthProvider({ children }) {
     clearRoleOverrideState();
     setRoleOverrideState("");
     setStrictImpersonationState(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("afyalink_user_context_mode", getDefaultContextMode(safeUser));
+    }
     rememberOfflineLoginCredential(safeUser, identifierOrToken, passwordOrOptions).catch(() => {});
 
     const decoded = parseJwt(data.accessToken);
@@ -572,6 +579,9 @@ export function AuthProvider({ children }) {
     const storedUser = resolvedUser || readStoredUser();
     if (storedUser) {
       writeStoredUser(storedUser);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("afyalink_user_context_mode", getDefaultContextMode(storedUser));
+      }
     }
 
     setLoading(false);
@@ -602,6 +612,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("2fa_identifier");
       localStorage.removeItem(ROLE_OVERRIDE_KEY);
       localStorage.removeItem(STRICT_IMPERSONATION_KEY);
+      localStorage.removeItem("afyalink_user_context_mode");
       // Clear sidebar preference on logout (ensures Option A: starts collapsed on next login)
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {

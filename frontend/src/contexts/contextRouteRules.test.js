@@ -16,7 +16,7 @@ describe("context route rules", () => {
     expect(getContextRedirectPath("/app/care/patients/index", "MY_HEALTH")).toBe("/app/portal/home/index");
   });
 
-  it("keeps portal routes within the patient experience when Work is active", () => {
-    expect(getContextRedirectPath("/app/portal/appointments/index", "WORK")).toBe("/app/portal/home/index");
+  it("allows eligible non-patient users to access portal appointments from Work context", () => {
+    expect(getContextRedirectPath("/app/portal/appointments/index", "WORK", { role: "DOCTOR" })).toBeNull();
   });
 });

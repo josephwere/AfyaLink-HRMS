@@ -1,7 +1,7 @@
 # AFY-P1-020 Buttons Audit
 
-- Total entries: 153
-- Resolved: 29
+- Total entries: 151
+- Resolved: 27
 - Unresolved: 124
 
 - src/app/shell/AppShell.jsx:80 interactive action -> /app/platform/account/profile (resolved)
@@ -20,8 +20,6 @@
 - src/app/shell/AppShell.jsx:561 interactive action -> /step-up (resolved)
 - src/app/shell/AppShell.jsx:653 interactive action -> /step-up (resolved)
 - src/components/FloatingAI.jsx:356 interactive action -> /app/innovation/ai/chatbot (resolved)
-- src/components/Navbar.jsx:119 interactive action -> /app/operations/home/index (resolved)
-- src/components/Navbar.jsx:121 interactive action -> /app/portal/home/index (resolved)
 - src/components/Navbar.jsx:164 interactive action -> /app/platform/account/profile (resolved)
 - src/components/Navigation/Sidebar.jsx:292 interactive action -> /app/platform/account/profile (resolved)
 - src/components/NotificationCenter.jsx:341 interactive action -> /app/platform/inbox/notifications (resolved)
@@ -34,3 +32,5 @@
 - src/hooks/useRevenueIntelligence.js:118 interactive action -> /payments/full (unresolved)
 - src/hooks/useSuperAssistants.js:265 interactive action -> /app/platform/support/tickets${suffix} (resolved)
 - src/hooks/useTwoFactor.js:77 interactive action -> /login (resolved)
+- src/hooks/useTwoFactor.js:127 interactive action -> / (resolved)
+- src/hooks/useTwoFactor.js:165 interactive action -> /login (resolved)

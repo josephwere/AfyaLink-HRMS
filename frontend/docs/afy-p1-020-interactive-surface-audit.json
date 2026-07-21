@@ -1,12 +1,12 @@
 {
   "summary": {
-    "generatedAt": "2026-07-21T11:01:05.563Z",
-    "total": 282,
-    "resolved": 78,
+    "generatedAt": "2026-07-21T20:46:38.182Z",
+    "total": 280,
+    "resolved": 76,
     "unresolved": 204,
     "bySurface": {
       "deep-link": 46,
-      "button": 153,
+      "button": 151,
       "dashboard-card": 83
     },
     "canonicalRoutes": 162
@@ -261,26 +261,6 @@
       "target": "/privacy",
       "resolved": true,
       "reason": "matches canonical route /privacy"
-    },
-    {
-      "id": "button-src/components/Navbar.jsx-119",
-      "surface": "button",
-      "file": "src/components/Navbar.jsx",
-      "line": 119,
-      "label": "interactive action",
-      "target": "/app/operations/home/index",
-      "resolved": true,
-      "reason": "matches canonical route /app/operations/home/index"
-    },
-    {
-      "id": "button-src/components/Navbar.jsx-121",
-      "surface": "button",
-      "file": "src/components/Navbar.jsx",
-      "line": 121,
-      "label": "interactive action",
-      "target": "/app/portal/home/index",
-      "resolved": true,
-      "reason": "matches canonical route /app/portal/home/index"
     },
     {
       "id": "button-src/components/Navbar.jsx-164",
@@ -1153,20 +1133,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-926",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 949,
+      "line": 926,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-931",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 954,
+      "line": 931,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,
@@ -3515,20 +3495,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-926",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 949,
+      "line": 926,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-931",
       "surface": "button",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 954,
+      "line": 931,
       "label": "interactive action",
       "target": "/admin/audit-logs",
       "resolved": false,

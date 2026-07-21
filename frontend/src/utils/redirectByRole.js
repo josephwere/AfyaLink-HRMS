@@ -54,14 +54,24 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   GUEST: "/app/portal/home/index",
 });
 
-/**
- * Redirect user to correct home by role
- * @param {object} user
- * @returns {string}
- */
-export const redirectByRole = (user) => {
+export const redirectByRole = (user, context) => {
   if (!user?.role) return "/login";
   const role = normalizeRole(user.role);
+
+  // Resolve context: check parameter, fallback to default for role
+  const resolvedContext = context || (role === "PATIENT" || role === "GUEST" ? "MY_HEALTH" : "WORK");
+
+  if (resolvedContext === "MY_HEALTH") {
+    // Service/system accounts never receive My Health access
+    const isService = user.isServiceAccount || user.isBotAccount || user.isAutomationAccount || user.isSystemAccount;
+    const accountType = user.accountType ? String(user.accountType).trim().toLowerCase() : "";
+    const isServiceType = ["service", "system", "automation", "bot", "monitoring", "worker", "scheduler"].includes(accountType);
+
+    if (!isService && !isServiceType) {
+      const allowPortal = role === "PATIENT" || role === "GUEST";
+      return allowPortal ? "/app/portal/home/index" : "/app/portal/appointments/index";
+    }
+  }
 
   return ROLE_REDIRECT_MAP[role] || "/unauthorized";
 };

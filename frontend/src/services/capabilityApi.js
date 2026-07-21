@@ -7,30 +7,41 @@ import { guardedConsoleFetch } from "./guardedConsoleFetch";
 
 let cachedCapabilities = null;
 let capabilitiesCache = null;
+let capabilitiesRequestPromise = null;
 
 /**
  * Fetch user's capabilities from backend
  */
 export async function getUserCapabilities() {
-  try {
-    if (cachedCapabilities) {
-      return cachedCapabilities;
-    }
-
-    const result = await guardedConsoleFetch("/api/auth/capabilities", {
-      warmupKey: "user-capabilities",
-    });
-
-    if (result?.payload?.success) {
-      cachedCapabilities = result.payload;
-      return cachedCapabilities;
-    }
-
-    return null;
-  } catch (err) {
-    console.error("Failed to fetch user capabilities:", err);
-    return null;
+  if (cachedCapabilities) {
+    return cachedCapabilities;
   }
+
+  if (capabilitiesRequestPromise) {
+    return capabilitiesRequestPromise;
+  }
+
+  capabilitiesRequestPromise = (async () => {
+    try {
+      const result = await guardedConsoleFetch("/api/auth/capabilities", {
+        warmupKey: "user-capabilities",
+      });
+
+      if (result?.payload?.success) {
+        cachedCapabilities = result.payload;
+        return cachedCapabilities;
+      }
+
+      return null;
+    } catch (err) {
+      console.error("Failed to fetch user capabilities:", err);
+      return null;
+    } finally {
+      capabilitiesRequestPromise = null;
+    }
+  })();
+
+  return capabilitiesRequestPromise;
 }
 
 /**
@@ -150,6 +161,7 @@ export async function getQuickActions() {
 export function clearCapabilitiesCache() {
   cachedCapabilities = null;
   capabilitiesCache = null;
+  capabilitiesRequestPromise = null;
 }
 
 /**

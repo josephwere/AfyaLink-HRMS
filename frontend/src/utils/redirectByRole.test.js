@@ -45,4 +45,21 @@ describe("redirectByRole", () => {
       ])
     );
   });
+
+  it("respects context overrides for redirects", () => {
+    const doctor = { role: "DOCTOR" };
+    expect(redirectByRole(doctor, "WORK")).toBe("/app/care/home/index");
+    expect(redirectByRole(doctor, "MY_HEALTH")).toBe("/app/portal/appointments/index");
+
+    const patient = { role: "PATIENT" };
+    expect(redirectByRole(patient, "MY_HEALTH")).toBe("/app/portal/home/index");
+  });
+
+  it("never routes service/bot/system accounts to MY_HEALTH context", () => {
+    const service = { role: "DOCTOR", isServiceAccount: true };
+    expect(redirectByRole(service, "MY_HEALTH")).toBe("/app/care/home/index");
+
+    const sys = { role: "SUPER_ADMIN", accountType: "system" };
+    expect(redirectByRole(sys, "MY_HEALTH")).toBe("/app/platform/home/index");
+  });
 });

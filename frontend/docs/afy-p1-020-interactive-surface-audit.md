@@ -1,15 +1,15 @@
 # AFY-P1-020 Interactive Surface Audit
 
-- Generated: 2026-07-21T11:01:05.563Z
-- Total interactive surfaces scanned: 282
-- Resolved: 78
+- Generated: 2026-07-21T20:46:38.182Z
+- Total interactive surfaces scanned: 280
+- Resolved: 76
 - Unresolved: 204
 - Canonical routes discovered: 162
 
 ## Surface distribution
 
 - deep-link: 46
-- button: 153
+- button: 151
 - dashboard-card: 83
 
 ## Unresolved targets

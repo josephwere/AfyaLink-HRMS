@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-07-21T11:01:05.637Z",
+  "generatedAt": "2026-07-21T20:46:38.251Z",
   "validationCommands": [
     "npm run audit:interactive-surfaces",
     "npm run audit:simulate-clicks"
   ],
   "summary": {
-    "generatedAt": "2026-07-21T11:01:05.563Z",
-    "total": 282,
-    "resolved": 78,
+    "generatedAt": "2026-07-21T20:46:38.182Z",
+    "total": 280,
+    "resolved": 76,
     "unresolved": 204,
     "bySurface": {
       "deep-link": 46,
-      "button": 153,
+      "button": 151,
       "dashboard-card": 83
     },
     "canonicalRoutes": 162

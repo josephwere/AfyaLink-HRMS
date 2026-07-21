@@ -611,7 +611,7 @@ export default function AppShell() {
     }
   };
 
-  const redirectPath = getContextRedirectPath(location.pathname, mode);
+  const redirectPath = getContextRedirectPath(location.pathname, mode, user);
   if (redirectPath) {
     return <Navigate to={redirectPath} replace />;
   }

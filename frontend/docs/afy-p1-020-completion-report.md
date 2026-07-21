@@ -1,8 +1,8 @@
 # AFY-P1-020 Completion Report
 
-- Generated: 2026-07-21T11:01:05.637Z
-- Total interactive surfaces scanned: 282
-- Resolved: 78
+- Generated: 2026-07-21T20:46:38.251Z
+- Total interactive surfaces scanned: 280
+- Resolved: 76
 - Unresolved: 204
 
 ## Validation commands
