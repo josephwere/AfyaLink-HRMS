@@ -30,3 +30,36 @@ export const handleGoogleLogin = async (credential) => {
     return null;
   }
 };
+
+/**
+ * Initialize Google Sign-In once. Multiple calls are safe and will only initialize once.
+ */
+export function initGoogleSignIn({ clientId, callback, autoSelect = false } = {}) {
+  try {
+    if (typeof window === "undefined") return false;
+    if (window.__afyalink_google_initialized) return true;
+    window.__afyalink_google_initialized = true;
+    // Defer initialize until the GSI library is available
+    const doInit = () => {
+      try {
+        if (!window.google || !window.google.accounts || !window.google.accounts.id) return;
+        window.google.accounts.id.initialize({ client_id: clientId, callback, auto_select: !!autoSelect });
+      } catch (e) {
+        // ignore errors during init
+      }
+    };
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      doInit();
+    } else {
+      // Listen once for the library to load
+      const onLoad = () => {
+        doInit();
+        window.removeEventListener('gsi-loaded', onLoad);
+      };
+      window.addEventListener('gsi-loaded', onLoad);
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}

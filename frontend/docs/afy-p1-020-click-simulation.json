@@ -1,138 +1,138 @@
 {
-  "generatedAt": "2026-07-09T09:03:36.799Z",
+  "generatedAt": "2026-07-21T21:11:40.803Z",
   "clickSimulation": [
     {
-      "id": "deep-link-src/App.jsx-326",
+      "id": "deep-link-src/App.jsx-327",
       "file": "src/App.jsx",
-      "line": 326,
+      "line": 327,
       "target": "/unauthorized",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "deep-link-src/App.jsx-427",
+      "id": "deep-link-src/App.jsx-428",
       "file": "src/App.jsx",
-      "line": 427,
+      "line": 428,
       "target": "/app/revenue/payments/index",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-77",
+      "id": "button-src/app/shell/AppShell.jsx-80",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 77,
+      "line": 80,
       "target": "/app/platform/account/profile",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-85",
+      "id": "button-src/app/shell/AppShell.jsx-88",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 85,
+      "line": 88,
       "target": "/app/platform/account/profile",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-93",
+      "id": "button-src/app/shell/AppShell.jsx-96",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 93,
+      "line": 96,
       "target": "/app/platform/account/profile",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-120",
+      "id": "button-src/app/shell/AppShell.jsx-123",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 120,
+      "line": 123,
       "target": "/app/people/approvals/index",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-128",
+      "id": "button-src/app/shell/AppShell.jsx-131",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 128,
+      "line": 131,
       "target": "/app/people/home/index",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-136",
+      "id": "button-src/app/shell/AppShell.jsx-139",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 136,
+      "line": 139,
       "target": "/app/people/home/index",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-147",
+      "id": "button-src/app/shell/AppShell.jsx-150",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 147,
+      "line": 150,
       "target": "/app/revenue/payments/index",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-155",
+      "id": "button-src/app/shell/AppShell.jsx-158",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 155,
+      "line": 158,
       "target": "/app/platform/inbox/notifications",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-163",
+      "id": "button-src/app/shell/AppShell.jsx-166",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 163,
+      "line": 166,
       "target": "/app/operations/lab/test-queue",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-171",
+      "id": "button-src/app/shell/AppShell.jsx-174",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 171,
+      "line": 174,
       "target": "/app/operations/lab/test-queue",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-179",
+      "id": "button-src/app/shell/AppShell.jsx-182",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 179,
+      "line": 182,
       "target": "/app/operations/scheduling/appointments",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-484",
+      "id": "button-src/app/shell/AppShell.jsx-488",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 484,
+      "line": 488,
       "target": "/step-up",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-539",
+      "id": "button-src/app/shell/AppShell.jsx-543",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 539,
+      "line": 543,
       "target": "/app/platform/account/profile",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-557",
+      "id": "button-src/app/shell/AppShell.jsx-561",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 557,
+      "line": 561,
       "target": "/step-up",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/app/shell/AppShell.jsx-644",
+      "id": "button-src/app/shell/AppShell.jsx-653",
       "file": "src/app/shell/AppShell.jsx",
-      "line": 644,
+      "line": 653,
       "target": "/step-up",
       "resolved": true,
       "action": "click-target-resolved"
@@ -202,9 +202,9 @@
       "action": "click-target-resolved"
     },
     {
-      "id": "button-src/components/Navbar.jsx-129",
+      "id": "button-src/components/Navbar.jsx-164",
       "file": "src/components/Navbar.jsx",
-      "line": 129,
+      "line": 164,
       "target": "/app/platform/account/profile",
       "resolved": true,
       "action": "click-target-resolved"
@@ -258,17 +258,17 @@
       "action": "click-target-resolved"
     },
     {
-      "id": "deep-link-src/components/RequireRole.jsx-21",
+      "id": "deep-link-src/components/RequireRole.jsx-24",
       "file": "src/components/RequireRole.jsx",
-      "line": 21,
+      "line": 24,
       "target": "/login",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "deep-link-src/components/RequireRole.jsx-28",
+      "id": "deep-link-src/components/RequireRole.jsx-31",
       "file": "src/components/RequireRole.jsx",
-      "line": 28,
+      "line": 31,
       "target": "/unauthorized",
       "resolved": true,
       "action": "click-target-resolved"
@@ -290,20 +290,12 @@
       "action": "click-target-unresolved"
     },
     {
-      "id": "button-src/hooks/useLogin.js-93",
+      "id": "button-src/hooks/useLogin.js-91",
       "file": "src/hooks/useLogin.js",
-      "line": 93,
+      "line": 91,
       "target": "/2fa",
       "resolved": true,
       "action": "click-target-resolved"
-    },
-    {
-      "id": "button-src/hooks/useLogin.js-112",
-      "file": "src/hooks/useLogin.js",
-      "line": 112,
-      "target": "/profile",
-      "resolved": false,
-      "action": "click-target-unresolved"
     },
     {
       "id": "button-src/hooks/useRegister.js-94",
@@ -906,17 +898,17 @@
       "action": "click-target-unresolved"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-949",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-926",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 949,
+      "line": 926,
       "target": "/admin/audit-logs",
       "resolved": false,
       "action": "click-target-unresolved"
     },
     {
-      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-954",
+      "id": "button-src/pages/HospitalAdmin/Approvals.jsx-931",
       "file": "src/pages/HospitalAdmin/Approvals.jsx",
-      "line": 954,
+      "line": 931,
       "target": "/admin/audit-logs",
       "resolved": false,
       "action": "click-target-unresolved"
@@ -1170,25 +1162,25 @@
       "action": "click-target-unresolved"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-94",
+      "id": "deep-link-src/pages/Login.jsx-95",
       "file": "src/pages/Login.jsx",
-      "line": 94,
+      "line": 95,
       "target": "/forgot-password",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-112",
+      "id": "deep-link-src/pages/Login.jsx-113",
       "file": "src/pages/Login.jsx",
-      "line": 112,
+      "line": 113,
       "target": "/register",
       "resolved": true,
       "action": "click-target-resolved"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-117",
+      "id": "deep-link-src/pages/Login.jsx-118",
       "file": "src/pages/Login.jsx",
-      "line": 117,
+      "line": 118,
       "target": "/careers",
       "resolved": true,
       "action": "click-target-resolved"
@@ -1640,6 +1632,14 @@
       "target": "/reports",
       "resolved": false,
       "action": "click-target-unresolved"
+    },
+    {
+      "id": "button-src/pages/Patient/MyAppointments.jsx-253",
+      "file": "src/pages/Patient/MyAppointments.jsx",
+      "line": 253,
+      "target": "/app/portal/appointments/index",
+      "resolved": true,
+      "action": "click-target-resolved"
     },
     {
       "id": "deep-link-src/pages/Pharmacy/Index.jsx-71",

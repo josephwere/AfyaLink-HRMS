@@ -8,13 +8,19 @@ import { guardedConsoleFetch } from "./guardedConsoleFetch";
 let cachedCapabilities = null;
 let capabilitiesCache = null;
 let capabilitiesRequestPromise = null;
+let lastFailureAt = 0;
+const FAILURE_COOLDOWN_MS = 10 * 1000; // when a recent failure happened, avoid hammering the API
 
 /**
  * Fetch user's capabilities from backend
  */
 export async function getUserCapabilities() {
-  if (cachedCapabilities) {
-    return cachedCapabilities;
+  // Return fast cache when available
+  if (cachedCapabilities) return cachedCapabilities;
+
+  // If we had a recent failure, throttle retries to avoid creating many concurrent requests
+  if (Date.now() - lastFailureAt < FAILURE_COOLDOWN_MS && capabilitiesRequestPromise == null) {
+    return null;
   }
 
   if (capabilitiesRequestPromise) {
@@ -22,19 +28,38 @@ export async function getUserCapabilities() {
   }
 
   capabilitiesRequestPromise = (async () => {
+    const maxAttempts = 3;
+    const baseDelay = 500;
+    let lastErr = null;
     try {
-      const result = await guardedConsoleFetch("/api/auth/capabilities", {
-        warmupKey: "user-capabilities",
-      });
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        try {
+          const result = await guardedConsoleFetch("/api/auth/capabilities", {
+            warmupKey: "user-capabilities",
+          });
 
-      if (result?.payload?.success) {
-        cachedCapabilities = result.payload;
-        return cachedCapabilities;
+          if (result?.payload?.success) {
+            cachedCapabilities = result.payload;
+            lastFailureAt = 0;
+            return cachedCapabilities;
+          }
+
+          // If backend responded but without payload, treat as failure and retry
+          lastErr = new Error("Invalid capabilities payload");
+        } catch (err) {
+          lastErr = err;
+          // If the error looks like a rate-limit or auth-throttle, record failure timestamp and break
+          const code = String(err?.code || "").toUpperCase();
+          const msg = String(err?.message || "").toLowerCase();
+          if (err?.status === 429 || msg.includes("too many") || code.includes("RATE") || code.includes("THROTTLE") || msg.includes("auth")) {
+            lastFailureAt = Date.now();
+            break;
+          }
+          // otherwise wait before retrying
+          await new Promise((res) => setTimeout(res, baseDelay * (attempt + 1)));
+        }
       }
-
-      return null;
-    } catch (err) {
-      console.error("Failed to fetch user capabilities:", err);
+      console.error("Failed to fetch user capabilities:", lastErr);
       return null;
     } finally {
       capabilitiesRequestPromise = null;
@@ -162,6 +187,7 @@ export function clearCapabilitiesCache() {
   cachedCapabilities = null;
   capabilitiesCache = null;
   capabilitiesRequestPromise = null;
+  lastFailureAt = 0;
 }
 
 /**

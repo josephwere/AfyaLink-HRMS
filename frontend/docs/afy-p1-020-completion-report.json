@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-21T20:46:38.251Z",
+  "generatedAt": "2026-07-21T21:29:33.163Z",
   "validationCommands": [
     "npm run audit:interactive-surfaces",
     "npm run audit:simulate-clicks"
   ],
   "summary": {
-    "generatedAt": "2026-07-21T20:46:38.182Z",
+    "generatedAt": "2026-07-21T21:29:33.110Z",
     "total": 280,
     "resolved": 76,
     "unresolved": 204,

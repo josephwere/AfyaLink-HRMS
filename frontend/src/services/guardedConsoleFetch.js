@@ -9,6 +9,8 @@ const RETRYABLE_ERROR_HINTS = [
   "network error",
   "failed to fetch",
   "taking longer than usual",
+  "too many",
+  "auth",
 ];
 
 const warmPromises = new Map();
@@ -30,7 +32,8 @@ function isRetryableConsoleError(error) {
   const message = String(error?.message || "").toLowerCase();
   return (
     RETRYABLE_ERROR_HINTS.some((hint) => message.includes(hint)) ||
-    Number(error?.status || 0) >= 500
+    Number(error?.status || 0) >= 500 ||
+    Number(error?.status || 0) === 429
   );
 }
 
