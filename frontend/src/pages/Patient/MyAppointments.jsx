@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 import { useUserContext } from "../../contexts/UserContextContext";
@@ -8,9 +8,13 @@ import { filterDoctorsForDiscovery, getDoctorRecommendation } from "./doctorDisc
 import { buildJourneySteps } from "./patientJourneyUtils";
 import { getAppointmentFlowStage, getVisibleHospitals } from "./appointmentLayoutUtils";
 import { getAppointmentExperienceAccessMessage, getPatientAppointmentFeatureFlagState, isPatientExperienceMode } from "./appointmentFeatureFlags";
+import { getPersonalizedGreeting } from "./patientGreetingUtils";
+import { shouldShowMapSelectionCard } from "./mapSelectionUtils";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
+const PATIENT_DISCOVERY_COMPLETE_KEY = "afyalink_patient_discovery_complete_v1";
+const PATIENT_PANEL_COLLAPSE_KEY = "afyalink_patient_map_panel_collapsed_v1";
 const PATIENT_CONTEXT_STORAGE_KEY = "afyalink_patient_experience_mode";
 const CALL_HISTORY_DAYS = 30;
 
@@ -139,13 +143,6 @@ function bookingLockFromError(err) {
   };
 }
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 18) return "Good Afternoon";
-  return "Good Evening";
-}
-
 function formatSlotLabel(value) {
   if (!value) return "Unavailable";
   const date = new Date(value);
@@ -254,11 +251,41 @@ export default function MyAppointments() {
   };
 
   const [discoveryStepIndex, setDiscoveryStepIndex] = useState(0);
-  const [discoveryComplete, setDiscoveryComplete] = useState(false);
+  const [discoveryComplete, setDiscoveryComplete] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(PATIENT_DISCOVERY_COMPLETE_KEY) === "true";
+  });
   const [showAllHospitalsDrawer, setShowAllHospitalsDrawer] = useState(false);
   const [hospitalSortMode, setHospitalSortMode] = useState("recommended");
   const [mapZoom, setMapZoom] = useState(2);
+  const [showNearbyHospitalsList, setShowNearbyHospitalsList] = useState(false);
+  const [selectedMapHospitalId, setSelectedMapHospitalId] = useState(hospitalId || "");
+  const [hoveredHospitalId, setHoveredHospitalId] = useState("");
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(PATIENT_PANEL_COLLAPSE_KEY) === "true";
+  });
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [isHospitalInfoTransitioning, setIsHospitalInfoTransitioning] = useState(false);
+  const [isMapDetailExpanded, setIsMapDetailExpanded] = useState(false);
+  const [routeSummary, setRouteSummary] = useState(null);
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
+  const [mapLoadError, setMapLoadError] = useState("");
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [doctorFilters, setDoctorFilters] = useState({ specialty: "", language: "", gender: "", availability: "", consultationMode: "", insurance: "" });
+  const mapShellRef = useRef(null);
+  const mapContainerRef = useRef(null);
+  const googleMapRef = useRef(null);
+  const googleMarkersRef = useRef([]);
+  const googleDirectionsRendererRef = useRef(null);
+  const markerBounceTimerRef = useRef(null);
+  const transitionTimerRef = useRef(null);
+  const panelResizeTimerRef = useRef(null);
+  const mapPanTimerRef = useRef(null);
+  const mapsApiKey = useMemo(() => import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY || "", []);
   const [journeyState, setJourneyState] = useState({ bookingSuccess: Boolean(bookingSuccess), bookingConfirmed: Boolean(bookingSuccess), doctorAssigned: Boolean(bookingSuccess?.appointment?.doctor), appointmentBooked: Boolean(bookingSuccess) });
   const featureFlags = useMemo(() => getPatientAppointmentFeatureFlagState(), []);
   const {
@@ -271,14 +298,25 @@ export default function MyAppointments() {
   const journeySteps = useMemo(() => buildJourneySteps(journeyState), [journeyState]);
 
   useEffect(() => {
+    if (discoveryComplete) {
+      setDiscoveryStepIndex(4);
+      return;
+    }
+
     const stepSequence = [0, 1, 2, 3, 4];
     const timers = stepSequence.map((index) => setTimeout(() => setDiscoveryStepIndex(index), index * 900));
-    const finishTimer = setTimeout(() => setDiscoveryComplete(true), stepSequence.length * 900 + 250);
+    const finishTimer = setTimeout(() => {
+      setDiscoveryComplete(true);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PATIENT_DISCOVERY_COMPLETE_KEY, "true");
+      }
+    }, stepSequence.length * 900 + 250);
+
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(finishTimer);
     };
-  }, []);
+  }, [discoveryComplete]);
 
   useEffect(() => {
     setJourneyState((prev) => ({
@@ -292,6 +330,7 @@ export default function MyAppointments() {
   }, [bookingSuccess]);
 
   const displayHospitals = useMemo(() => getVisibleHospitals(hospitals, false, 3), [hospitals]);
+  const showMapSelectionCard = useMemo(() => shouldShowMapSelectionCard(selectedMapHospitalId, hospitalId), [selectedMapHospitalId, hospitalId]);
   const filteredDoctorsForDiscovery = useMemo(() => filterDoctorsForDiscovery(doctors, doctorFilters), [doctors, doctorFilters]);
   const selectedHospitalId = String(hospitalId || "");
   const flowStage = useMemo(() => getAppointmentFlowStage({
@@ -315,11 +354,336 @@ export default function MyAppointments() {
     if (!query) return null;
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
   }, [selectedHospital]);
-  const handleSelectHospital = (nextId) => {
+  const handleSelectHospital = useCallback((nextId) => {
     const id = String(nextId || "");
     if (!id) return;
+    const nextHospital = hospitals.find((hospital) => String(hospital._id) === id);
     setHospitalId(id);
-  };
+    setSelectedMapHospitalId(id);
+    setIsPanelCollapsed(false);
+    setIsMobileSheetOpen(true);
+    setIsMapDetailExpanded(false);
+    setIsHospitalInfoTransitioning(true);
+    clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = window.setTimeout(() => setIsHospitalInfoTransitioning(false), 220);
+    if (googleMapRef.current && window.google?.maps && nextHospital) {
+      const latValue = Number(nextHospital?.location?.lat ?? nextHospital?.lat ?? nextHospital?.coordinates?.lat);
+      const lngValue = Number(nextHospital?.location?.lng ?? nextHospital?.lng ?? nextHospital?.coordinates?.lng);
+      if (Number.isFinite(latValue) && Number.isFinite(lngValue)) {
+        const position = new window.google.maps.LatLng(latValue, lngValue);
+        const map = googleMapRef.current;
+        const bounds = map.getBounds?.();
+        const isVisible = bounds && bounds.contains(position);
+        if (!isVisible) {
+          if (mapPanTimerRef.current) {
+            window.clearTimeout(mapPanTimerRef.current);
+          }
+          mapPanTimerRef.current = window.setTimeout(() => {
+            map.panTo(position);
+            if (!prefersReducedMotion) {
+              map.panBy(0, -110);
+            }
+          }, 50);
+        } else if (!prefersReducedMotion) {
+          map.panBy(0, -110);
+        }
+        // Preserve zoom unless the selection requires a new level of detail.
+        if (map.getZoom() < 13) {
+          map.setZoom(13);
+        }
+      }
+    }
+  }, [hospitals, setHospitalId, prefersReducedMotion]);
+
+  const pulseSelectedMarker = useCallback((id) => {
+    if (!window.google?.maps || !googleMarkersRef.current.length) return;
+    const googleMaps = window.google.maps;
+    const marker = googleMarkersRef.current.find((markerItem) => String(markerItem.hospitalId) === String(id));
+    if (!marker) return;
+    marker.setAnimation(googleMaps.Animation.BOUNCE);
+    if (markerBounceTimerRef.current) {
+      window.clearTimeout(markerBounceTimerRef.current);
+    }
+    markerBounceTimerRef.current = window.setTimeout(() => marker.setAnimation(null), 650);
+  }, []);
+
+  const mapHospital = useMemo(() => {
+    if (!selectedMapHospitalId) return selectedHospital;
+    return hospitals.find((hospital) => String(hospital._id) === String(selectedMapHospitalId)) || selectedHospital;
+  }, [hospitals, selectedMapHospitalId, selectedHospital]);
+  const toggleFullscreen = useCallback(() => {
+    if (!mapShellRef.current) return;
+    const doc = document;
+    if (!isMapFullscreen) {
+      if (mapShellRef.current.requestFullscreen) {
+        mapShellRef.current.requestFullscreen();
+      } else if (mapShellRef.current.webkitRequestFullscreen) {
+        mapShellRef.current.webkitRequestFullscreen();
+      } else if (mapShellRef.current.msRequestFullscreen) {
+        mapShellRef.current.msRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+    }
+  }, [isMapFullscreen]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const doc = document;
+      setIsMapFullscreen(
+        doc.fullscreenElement === mapShellRef.current ||
+        doc.webkitFullscreenElement === mapShellRef.current ||
+        doc.msFullscreenElement === mapShellRef.current
+      );
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("msfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const handleViewRoute = useCallback(() => {
+    setIsMapDetailExpanded(true);
+    if (!googleMapRef.current || !window.google?.maps || !mapHospital) return;
+    const latValue = Number(mapHospital?.location?.lat ?? mapHospital?.lat ?? mapHospital?.coordinates?.lat);
+    const lngValue = Number(mapHospital?.location?.lng ?? mapHospital?.lng ?? mapHospital?.coordinates?.lng);
+    if (!Number.isFinite(latValue) || !Number.isFinite(lngValue)) return;
+    const position = new window.google.maps.LatLng(latValue, lngValue);
+    googleMapRef.current.panTo(position);
+    googleMapRef.current.panBy(0, -110);
+    googleMapRef.current.setZoom(13);
+  }, [mapHospital]);
+  const mapHospitalDistance = useMemo(() => {
+    if (!mapHospital) return null;
+    const distance = Number(mapHospital.distanceKm);
+    return Number.isFinite(distance) ? `${distance.toFixed(1)} km away` : "Nearby";
+  }, [mapHospital]);
+  const mapEmbedQuery = useMemo(() => {
+    const queryParts = [];
+    if (mapHospital?.name) queryParts.push(mapHospital.name);
+    if (mapHospital?.address) queryParts.push(mapHospital.address);
+    if (locationLabel) queryParts.push(locationLabel);
+    if (!queryParts.length) queryParts.push("Nairobi Hospital");
+    return queryParts.join(" ");
+  }, [mapHospital, locationLabel]);
+
+  useEffect(() => {
+    if (hospitalId) {
+      setSelectedMapHospitalId(String(hospitalId));
+      setIsMapDetailExpanded(false);
+    }
+  }, [hospitalId]);
+
+  useEffect(() => {
+    return () => {
+      if (markerBounceTimerRef.current) {
+        window.clearTimeout(markerBounceTimerRef.current);
+      }
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+      if (mapPanTimerRef.current) {
+        window.clearTimeout(mapPanTimerRef.current);
+      }
+      if (panelResizeTimerRef.current) {
+        window.clearTimeout(panelResizeTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(PATIENT_PANEL_COLLAPSE_KEY, isPanelCollapsed ? "true" : "false");
+    if (googleMapRef.current && window.google?.maps) {
+      if (panelResizeTimerRef.current) {
+        window.clearTimeout(panelResizeTimerRef.current);
+      }
+      panelResizeTimerRef.current = window.setTimeout(() => {
+        window.google.maps.event.trigger(googleMapRef.current, "resize");
+      }, 280);
+    }
+    return () => {
+      if (panelResizeTimerRef.current) {
+        window.clearTimeout(panelResizeTimerRef.current);
+      }
+    };
+  }, [isPanelCollapsed]);
+
+  useEffect(() => {
+    if (!mapsApiKey) {
+      setMapLoadError("Add VITE_GOOGLE_MAPS_API_KEY to enable the live discovery map.");
+      return;
+    }
+    if (!mapContainerRef.current) return;
+
+    const initializeMap = () => {
+      if (!window.google?.maps) return;
+      if (!googleMapRef.current) {
+        const initialCenter = locationReady && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+          ? { lat: Number(lat), lng: Number(lng) }
+          : { lat: -1.286389, lng: 36.817223 };
+        const map = new window.google.maps.Map(mapContainerRef.current, {
+          center: initialCenter,
+          zoom: 12,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+          gestureHandling: "greedy",
+        });
+        googleMapRef.current = map;
+        const directionsRenderer = new window.google.maps.DirectionsRenderer({
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: "#2563eb",
+            strokeWeight: 4,
+            strokeOpacity: 0.9,
+          },
+        });
+        directionsRenderer.setMap(map);
+        googleDirectionsRendererRef.current = directionsRenderer;
+      }
+
+      const map = googleMapRef.current;
+      const googleMaps = window.google.maps;
+      const markers = googleMarkersRef.current;
+      markers.forEach((marker) => marker.setMap(null));
+      googleMarkersRef.current = [];
+
+      const hospitalCoordinates = hospitals.filter((hospital) => {
+        const latValue = Number(hospital?.location?.lat ?? hospital?.lat ?? hospital?.coordinates?.lat);
+        const lngValue = Number(hospital?.location?.lng ?? hospital?.lng ?? hospital?.coordinates?.lng);
+        return Number.isFinite(latValue) && Number.isFinite(lngValue);
+      });
+
+      const bounds = new googleMaps.LatLngBounds();
+      if (locationReady && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+        const userPosition = new googleMaps.LatLng(Number(lat), Number(lng));
+        bounds.extend(userPosition);
+        map.setCenter(userPosition);
+      }
+
+      hospitalCoordinates.forEach((hospital) => {
+        const latValue = Number(hospital?.location?.lat ?? hospital?.lat ?? hospital?.coordinates?.lat);
+        const lngValue = Number(hospital?.location?.lng ?? hospital?.lng ?? hospital?.coordinates?.lng);
+        const position = new googleMaps.LatLng(latValue, lngValue);
+        bounds.extend(position);
+        const isSelected = String(hospital._id) === String(selectedMapHospitalId || hospitalId || "");
+        const isHovered = String(hospital._id) === String(hoveredHospitalId || "");
+        const marker = new googleMaps.Marker({
+          position,
+          map,
+          title: hospital.name,
+          icon: {
+            path: googleMaps.SymbolPath.CIRCLE,
+            scale: isSelected ? 12 : isHovered ? 10 : 8,
+            fillColor: isSelected ? "#0f766e" : isHovered ? "#1d4ed8" : "#2563eb",
+            fillOpacity: 0.95,
+            strokeColor: "#ffffff",
+            strokeWeight: isSelected ? 3 : 2,
+          },
+          animation: isSelected ? googleMaps.Animation.BOUNCE : googleMaps.Animation.DROP,
+        });
+        marker.addListener("click", () => {
+          handleSelectHospital(hospital._id);
+          if (markerBounceTimerRef.current) {
+            window.clearTimeout(markerBounceTimerRef.current);
+          }
+          marker.setAnimation(googleMaps.Animation.BOUNCE);
+          markerBounceTimerRef.current = window.setTimeout(() => marker.setAnimation(null), 650);
+        });
+        marker.addListener("mouseover", () => setHoveredHospitalId(String(hospital._id)));
+        marker.addListener("mouseout", () => setHoveredHospitalId((current) => (current === String(hospital._id) ? "" : current)));
+        marker.hospitalId = String(hospital._id);
+        googleMarkersRef.current.push(marker);
+      });
+
+      if (locationReady && hospitalCoordinates.length) {
+        map.fitBounds(bounds, 60);
+      } else if (locationReady) {
+        map.setZoom(13);
+      }
+
+      const selectedHospitalCoords = mapHospital ? {
+        lat: Number(mapHospital?.location?.lat ?? mapHospital?.lat ?? mapHospital?.coordinates?.lat),
+        lng: Number(mapHospital?.location?.lng ?? mapHospital?.lng ?? mapHospital?.coordinates?.lng),
+      } : null;
+      const hasRouteableCoords = locationReady && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) && selectedHospitalCoords && Number.isFinite(selectedHospitalCoords.lat) && Number.isFinite(selectedHospitalCoords.lng);
+      if (hasRouteableCoords && googleDirectionsRendererRef.current) {
+        const directionsService = new googleMaps.DirectionsService();
+        directionsService.route({
+          origin: { lat: Number(lat), lng: Number(lng) },
+          destination: { lat: selectedHospitalCoords.lat, lng: selectedHospitalCoords.lng },
+          travelMode: googleMaps.TravelMode.DRIVING,
+        }, (result, status) => {
+          if (status === googleMaps.DirectionsStatus.OK && result?.routes?.[0]) {
+            googleDirectionsRendererRef.current.setDirections(result);
+            const leg = result.routes[0].legs[0];
+            setRouteSummary({
+              distance: leg?.distance?.text || null,
+              duration: leg?.duration?.text || null,
+            });
+          } else {
+            googleDirectionsRendererRef.current.setDirections(null);
+            setRouteSummary(null);
+          }
+        });
+      } else {
+        googleDirectionsRendererRef.current?.setDirections(null);
+        setRouteSummary(null);
+      }
+    };
+
+    if (window.google?.maps) {
+      initializeMap();
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+    const onLoad = () => initializeMap();
+    if (existingScript) {
+      existingScript.addEventListener("load", onLoad, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey)}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = onLoad;
+    script.onerror = () => setMapLoadError("Unable to load the Google Maps script.");
+    document.head.appendChild(script);
+  }, [mapsApiKey, hospitals, lat, lng, locationReady, hospitalId, selectedMapHospitalId, mapHospital, handleSelectHospital]);
+
+  useEffect(() => {
+    if (!window.google?.maps || !googleMarkersRef.current.length) return;
+    const googleMaps = window.google.maps;
+    googleMarkersRef.current.forEach((marker) => {
+      const isSelected = String(marker.hospitalId) === String(selectedMapHospitalId || hospitalId || "");
+      const isHovered = String(marker.hospitalId) === String(hoveredHospitalId || "");
+      marker.setIcon({
+        path: googleMaps.SymbolPath.CIRCLE,
+        scale: isSelected ? 12 : isHovered ? 10 : 8,
+        fillColor: isSelected ? "#0f766e" : isHovered ? "#1d4ed8" : "#2563eb",
+        fillOpacity: 0.95,
+        strokeColor: "#ffffff",
+        strokeWeight: isSelected ? 3 : 2,
+      });
+    });
+  }, [hoveredHospitalId, selectedMapHospitalId, hospitalId]);
+
   const suggestedSlotsBySection = useMemo(() => {
     const sections = { Morning: [], Afternoon: [], Evening: [] };
     suggestions.forEach((item) => {
@@ -389,7 +753,7 @@ export default function MyAppointments() {
       <div className="welcome-panel patient-hero-card">
         <div className="patient-hero-copy">
           <div className="appointment-success-kicker"> Healthcare Appointment discovery</div>
-          <h2>{getGreeting()}, Joseph</h2>
+          <h2>{getPersonalizedGreeting(user, new Date())}</h2>
           <p className="muted">Find the best healthcare near you and move from discovery to booking in a guided experience.</p>
           <div className="patient-flow-progress">
             <div className="appointment-success-kicker">Journey progress · stage {flowStage} / 4</div>
@@ -634,27 +998,120 @@ export default function MyAppointments() {
           </div>
 
           {mapEnabled ? (
-            <div className="patient-map-shell">
-              <div className="patient-map-toolbar">
-                <div className="appointment-success-kicker">Live map view</div>
-                <div className="patient-map-toolbar-actions">
-                  <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.min(prev + 1, 3))}>Zoom +</button>
-                  <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.max(prev - 1, 1))}>Zoom −</button>
-                </div>
-              </div>
-              <div className={`patient-map-canvas map-zoom-${mapZoom}`} aria-label="Interactive healthcare map">
-                <div className="patient-map-user">You</div>
-                <div className="patient-map-overlay" />
-                {displayHospitals.map((hospital, index) => {
-                  const isSelected = String(hospital._id) === selectedHospitalId;
-                  const left = `${16 + ((index % 3) * 24)}%`;
-                  const top = `${20 + ((index % 2) * 25)}%`;
-                  return (
-                    <button key={hospital._id} type="button" className={`patient-map-marker ${isSelected ? "selected" : ""}`} style={{ left, top }} onClick={() => handleSelectHospital(hospital._id)} aria-label={`Select ${hospital.name}`}>
-                      <span>🏥</span>
+            <div className="patient-map-shell" ref={mapShellRef}>
+              <div className="patient-map-layout">
+                <div className="patient-map-main">
+                  <div className="patient-map-toolbar">
+                    <div className="appointment-success-kicker">live map</div>
+                  </div>
+                  <div className={`patient-map-canvas map-zoom-${mapZoom}`} aria-label="Interactive healthcare map">
+                    <div className="patient-map-overlay" />
+                    <div className="patient-map-satellite" aria-hidden="true" />
+                    <button type="button" className="btn-secondary mobile-details-toggle" onClick={() => setIsMobileSheetOpen((prev) => !prev)}>
+                      {isMobileSheetOpen ? "Hide details" : "View details"}
                     </button>
-                  );
-                })}
+                    {mapsApiKey && !mapLoadError ? (
+                      <div ref={mapContainerRef} className="patient-map-embed" />
+                    ) : (
+                      <iframe
+                        title="Hospital map"
+                        className="patient-map-embed"
+                        src={`https://www.google.com/maps?q=${encodeURIComponent(mapEmbedQuery)}&output=embed`}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    )}
+                    {!showMapSelectionCard && !mapLoadError ? (
+                      <div className="patient-map-empty-hint">Tap a hospital marker to view details</div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className={`patient-map-sidepanel ${isPanelCollapsed ? "collapsed-panel" : ""}`}>
+                  <div className="patient-map-sidepanel-inner">
+                    <div className="patient-map-sidepanel-header">
+                      <div>
+                        <div className="appointment-success-kicker">details</div>
+                        <div className="patient-map-sidepanel-note">Select a hospital marker on the map to review booking details.</div>
+                      </div>
+                      <div className="patient-map-control-group">
+                        <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.min(prev + 1, 3))} aria-label="Zoom in">+</button>
+                        <button type="button" className="btn-secondary compact-btn" onClick={() => setMapZoom((prev) => Math.max(prev - 1, 1))} aria-label="Zoom out">−</button>
+                        <button type="button" className="btn-secondary compact-btn" onClick={toggleFullscreen} aria-label={isMapFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
+                          {isMapFullscreen ? "Exit" : "Fullscreen"}
+                        </button>
+                        <button type="button" className="btn-secondary compact-btn hide-on-mobile" onClick={() => setIsPanelCollapsed((prev) => !prev)} aria-label={isPanelCollapsed ? "Show details panel" : "Hide details panel"}>
+                          {isPanelCollapsed ? "▶" : "◀"}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="patient-map-sidepanel-content">
+                      {mapLoadError ? (
+                        <div className="patient-map-detail-card patient-map-detail-card-sidepanel">
+                          <strong>Live map unavailable</strong>
+                          <p className="muted" style={{ margin: "6px 0 0" }}>{mapLoadError}</p>
+                        </div>
+                      ) : showMapSelectionCard && mapHospital ? (
+                        <div
+                          className={`patient-map-detail-card patient-map-detail-card-sidepanel ${isMapDetailExpanded ? "expanded" : "collapsed"} ${hoveredHospitalId === String(mapHospital._id) ? "highlighted" : ""} ${isHospitalInfoTransitioning ? "transitioning" : ""}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            if (event.target === event.currentTarget) {
+                              pulseSelectedMarker(mapHospital._id);
+                            }
+                          }}
+                        >
+                          <button type="button" className="patient-map-detail-handle" onClick={() => setIsMapDetailExpanded((prev) => !prev)}>
+                            <span className="patient-map-detail-handle-pill" />
+                            <span>{isMapDetailExpanded ? "Hide details" : `Hospital details · ${mapHospital.name}`}</span>
+                            <span>{isMapDetailExpanded ? "▼" : "▲"}</span>
+                          </button>
+                          {isMapDetailExpanded ? (
+                            <div className="patient-map-detail-body" onMouseEnter={() => setHoveredHospitalId(String(mapHospital._id))} onMouseLeave={() => setHoveredHospitalId("")}> 
+                              <div className="patient-map-detail-head">
+                                <strong className="patient-map-detail-title">{mapHospital.name}</strong>
+                                <span className="patient-discovery-status-pill">{mapHospitalDistance}</span>
+                              </div>
+                              <div className="patient-map-detail-meta">
+                                <span className="hospital-discovery-pill">Open</span>
+                                <span className="hospital-discovery-pill">{Number.isFinite(Number(mapHospital?.distanceKm)) ? `${Number(mapHospital.distanceKm).toFixed(1)} km` : "Near you"}</span>
+                              </div>
+                              <p className="muted" style={{ margin: "6px 0 0" }}>{mapHospital.address || "Verified care near you"}</p>
+                              {routeSummary ? (
+                                <div className="patient-map-route-summary">Driving {routeSummary.duration || ""} • {routeSummary.distance || ""}</div>
+                              ) : null}
+                              <div className="patient-map-detail-actions patient-map-detail-actions-fullwidth">
+                                <button type="button" className="btn-primary full-width" onClick={() => document.getElementById("patient-booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Book Appointment</button>
+                                <button type="button" className="btn-secondary full-width" onClick={handleViewRoute}>View Route</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="patient-map-detail-collapsed" onMouseEnter={() => setHoveredHospitalId(String(mapHospital._id))} onMouseLeave={() => setHoveredHospitalId("")}>
+                              <strong className="patient-map-detail-title">{mapHospital.name}</strong>
+                              <span className="muted">Tap to view details</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : loading ? (
+                        <div className="patient-map-detail-card patient-map-detail-card-sidepanel patient-map-skeleton-card">
+                          <div className="skeleton-line skeleton-title" />
+                          <div className="skeleton-line skeleton-text" />
+                          <div className="skeleton-line skeleton-text short" />
+                          <div className="skeleton-buttons">
+                            <div className="skeleton-pill" />
+                            <div className="skeleton-pill" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="patient-map-detail-card patient-map-detail-card-sidepanel">
+                          <strong>Select a hospital on the map to view details and book an appointment.</strong>
+                          <p className="muted" style={{ margin: "8px 0 0" }}>The details panel updates as you choose a provider.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -672,98 +1129,107 @@ export default function MyAppointments() {
           <div className="card-title-row" style={{ marginBottom: 12 }}>
             <div>
               <div className="action-card-eyebrow">Step 2 · Select hospital</div>
-              <h3 style={{ margin: 0 }}>{t("selectHospitalTitle", "Recommended Hospitals")}</h3>
-              <p className="muted" style={{ margin: "4px 0 0" }}>Recommended hospitals appear first, and the full list opens in a compact drawer when you need more choice.</p>
+              <h3 style={{ margin: 0 }}>{t("selectHospitalTitle", "Nearby Hospitals")}</h3>
+              <p className="muted" style={{ margin: "4px 0 0" }}>The map stays front and center while the nearby hospital list remains compact and expandable.</p>
             </div>
-            {hospitals.length > 3 && hospitalDrawerEnabled ? (
-              <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer((prev) => !prev)}>
-                {showAllHospitalsDrawer ? "Hide Full List" : `View All Hospitals (${hospitals.length})`}
-              </button>
-            ) : null}
-          </div>
-          <div className="patient-hospital-grid">
-            {loading && !hospitals.length ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <div key={`skeleton-${index}`} className="patient-hospital-card skeleton-card" aria-hidden="true">
-                  <div className="skeleton skeleton-line" style={{ width: "52%", height: 12, marginBottom: 8 }} />
-                  <div className="skeleton skeleton-line" style={{ width: "84%", height: 10, marginBottom: 6 }} />
-                  <div className="skeleton skeleton-pill" style={{ width: "64%", marginBottom: 8 }} />
-                  <div className="skeleton skeleton-pill" style={{ width: "46%" }} />
-                </div>
-              ))
-            ) : null}
-            {!loading && displayHospitals.map((hospital, index) => {
-              const isSelected = String(hospital._id) === selectedHospitalId;
-              const distanceLabel = Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km away` : "Nearby";
-              const recommendation = getHospitalRecommendation(hospital, index);
-              const badges = [
-                hospital?.verification?.badgeLabel || hospital?.isVerified ? "Verified" : null,
-                hospital?.isLive ? "Open" : null,
-                hospital?.services?.includes("Emergency") || hospital?.emergencyServices ? "Emergency" : null,
-                hospital?.consultationModes?.includes("VIDEO") || hospital?.multiModal?.video ? "Video" : null,
-                Number.isFinite(Number(hospital.distanceKm)) && Number(hospital.distanceKm) <= 5 ? "Near you" : null,
-              ].filter(Boolean);
-              const visibleBadges = badges.slice(0, 3);
-              const hiddenBadgeCount = Math.max(0, badges.length - visibleBadges.length);
-              return (
-                <button key={hospital._id} type="button" className={`patient-hospital-card ${isSelected ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
-                  <div className="patient-hospital-head">
-                    <div className="patient-hospital-main-title">
-                      <strong>{hospital.name}</strong>
-                      <span className="muted patient-hospital-address">{hospital.address || "Verified care near you"}</span>
-                    </div>
-                    <span className="patient-discovery-status-pill">{distanceLabel}</span>
-                  </div>
-                  <div className="patient-hospital-rating-row">
-                    <span className="patient-hospital-pill">★ {hospital.rating || "4.9"}</span>
-                    <span className="patient-hospital-pill accent-pill">AI Match {recommendation.score}%</span>
-                  </div>
-                  <div className="patient-hospital-tags">
-                    {visibleBadges.map((badge) => (
-                      <span key={badge} className="hospital-discovery-pill">{badge}</span>
-                    ))}
-                    {hiddenBadgeCount > 0 ? <span className="hospital-discovery-pill">+{hiddenBadgeCount} more</span> : null}
-                  </div>
-                  <div className="patient-hospital-actions">
-                    <span className="btn-secondary compact-btn">{isSelected ? "Selected" : "Continue"}</span>
-                  </div>
+            <div className="patient-map-toolbar-actions">
+              {hospitals.length > 3 && hospitalDrawerEnabled ? (
+                <button type="button" className="btn-secondary" onClick={() => setShowNearbyHospitalsList((prev) => !prev)}>
+                  {showNearbyHospitalsList ? "Hide Nearby List" : `Nearby Hospitals (${hospitals.length})`}
                 </button>
-              );
-            })}
-            {!loading && !hospitals.length && (
-              <div className="card premium-card" style={{ gridColumn: "1 / -1" }}>
-                <p className="muted">We are still scanning. Your current location and search terms will surface hospitals shortly.</p>
-              </div>
-            )}
+              ) : null}
+              {hospitals.length > 3 && hospitalDrawerEnabled ? (
+                <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer((prev) => !prev)}>
+                  {showAllHospitalsDrawer ? "Hide Full List" : `View All Hospitals (${hospitals.length})`}
+                </button>
+              ) : null}
+            </div>
           </div>
-          {hospitalDrawerEnabled && showAllHospitalsDrawer ? (
-            <div className="patient-hospital-drawer" role="dialog" aria-label="All hospitals">
-              <div className="patient-hospital-drawer-head">
-                <strong>All Hospitals</strong>
-                <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer(false)}>Close</button>
-              </div>
-              <div className="patient-hospital-drawer-controls">
-                <input value={hospitalQuery} onChange={(e) => setHospitalQuery(e.target.value)} placeholder="Search hospitals" />
-                <select value={hospitalSortMode} onChange={(e) => setHospitalSortMode(e.target.value)}>
-                  <option value="recommended">Recommended</option>
-                  <option value="distance">Distance</option>
-                  <option value="rating">Rating</option>
-                </select>
-              </div>
-              <div className="patient-hospital-drawer-list">
-                {sortedHospitals.map((hospital) => (
-                  <button key={hospital._id} type="button" className={`patient-hospital-drawer-item ${String(hospital._id) === selectedHospitalId ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
-                    <div>
-                      <strong>{hospital.name}</strong>
-                      <div className="muted small-text">{hospital.address || "Verified care near you"}</div>
+          {showNearbyHospitalsList || !hospitals.length ? (
+            <div className="patient-hospital-grid">
+              {loading && !hospitals.length ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={`skeleton-${index}`} className="patient-hospital-card skeleton-card" aria-hidden="true">
+                    <div className="skeleton skeleton-line" style={{ width: "52%", height: 12, marginBottom: 8 }} />
+                    <div className="skeleton skeleton-line" style={{ width: "84%", height: 10, marginBottom: 6 }} />
+                    <div className="skeleton skeleton-pill" style={{ width: "64%", marginBottom: 8 }} />
+                    <div className="skeleton skeleton-pill" style={{ width: "46%" }} />
+                  </div>
+                ))
+              ) : null}
+              {!loading && displayHospitals.map((hospital, index) => {
+                const isSelected = String(hospital._id) === selectedHospitalId;
+                const distanceLabel = Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km away` : "Nearby";
+                const recommendation = getHospitalRecommendation(hospital, index);
+                const badges = [
+                  hospital?.verification?.badgeLabel || hospital?.isVerified ? "Verified" : null,
+                  hospital?.isLive ? "Open" : null,
+                  hospital?.services?.includes("Emergency") || hospital?.emergencyServices ? "Emergency" : null,
+                  hospital?.consultationModes?.includes("VIDEO") || hospital?.multiModal?.video ? "Video" : null,
+                  Number.isFinite(Number(hospital.distanceKm)) && Number(hospital.distanceKm) <= 5 ? "Near you" : null,
+                ].filter(Boolean);
+                const visibleBadges = badges.slice(0, 3);
+                const hiddenBadgeCount = Math.max(0, badges.length - visibleBadges.length);
+                return (
+                  <button key={hospital._id} type="button" className={`patient-hospital-card ${isSelected ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
+                    <div className="patient-hospital-head">
+                      <div className="patient-hospital-main-title">
+                        <strong>{hospital.name}</strong>
+                        <span className="muted patient-hospital-address">{hospital.address || "Verified care near you"}</span>
+                      </div>
+                      <span className="patient-discovery-status-pill">{distanceLabel}</span>
                     </div>
-                    <span className="patient-discovery-status-pill">{Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km` : "Nearby"}</span>
+                    <div className="patient-hospital-rating-row">
+                      <span className="patient-hospital-pill">★ {hospital.rating || "4.9"}</span>
+                      <span className="patient-hospital-pill accent-pill">AI Match {recommendation.score}%</span>
+                    </div>
+                    <div className="patient-hospital-tags">
+                      {visibleBadges.map((badge) => (
+                        <span key={badge} className="hospital-discovery-pill">{badge}</span>
+                      ))}
+                      {hiddenBadgeCount > 0 ? <span className="hospital-discovery-pill">+{hiddenBadgeCount} more</span> : null}
+                    </div>
+                    <div className="patient-hospital-actions">
+                      <span className="btn-secondary compact-btn">{isSelected ? "Selected" : "Continue"}</span>
+                    </div>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+              {!loading && !hospitals.length && (
+                <div className="card premium-card" style={{ gridColumn: "1 / -1" }}>
+                  <p className="muted">We are still scanning. Your current location and search terms will surface hospitals shortly.</p>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
+        {hospitalDrawerEnabled && showAllHospitalsDrawer ? (
+          <div className="patient-hospital-drawer" role="dialog" aria-label="All hospitals">
+            <div className="patient-hospital-drawer-head">
+              <strong>All Hospitals</strong>
+              <button type="button" className="btn-secondary" onClick={() => setShowAllHospitalsDrawer(false)}>Close</button>
+            </div>
+            <div className="patient-hospital-drawer-controls">
+              <input value={hospitalQuery} onChange={(e) => setHospitalQuery(e.target.value)} placeholder="Search hospitals" />
+              <select value={hospitalSortMode} onChange={(e) => setHospitalSortMode(e.target.value)}>
+                <option value="recommended">Recommended</option>
+                <option value="distance">Distance</option>
+                <option value="rating">Rating</option>
+              </select>
+            </div>
+            <div className="patient-hospital-drawer-list">
+              {sortedHospitals.map((hospital) => (
+                <button key={hospital._id} type="button" className={`patient-hospital-drawer-item ${String(hospital._id) === selectedHospitalId ? "selected" : ""}`} onClick={() => handleSelectHospital(hospital._id)}>
+                  <div>
+                    <strong>{hospital.name}</strong>
+                    <div className="muted small-text">{hospital.address || "Verified care near you"}</div>
+                  </div>
+                  <span className="patient-discovery-status-pill">{Number.isFinite(Number(hospital.distanceKm)) ? `${Number(hospital.distanceKm).toFixed(1)} km` : "Nearby"}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {selectedHospital ? (

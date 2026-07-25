@@ -11477,6 +11477,285 @@ button.card.stat {
   gap: 8px;
 }
 
+.patient-map-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  transition: grid-template-columns 240ms ease, gap 240ms ease;
+}
+
+.patient-map-main {
+  min-width: 0;
+}
+
+.patient-map-sidepanel {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  max-width: 100%;
+}
+
+.patient-map-sidepanel .btn-secondary,
+.patient-map-sidepanel .btn-primary,
+.patient-map-control-group button,
+.mobile-details-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.patient-map-sidepanel-inner {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+.patient-map-sidepanel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.patient-map-sidepanel-note {
+  font-size: 0.9rem;
+  color: var(--app-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.patient-map-control-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.patient-map-sidepanel-content {
+  min-height: 0;
+  overflow: auto;
+}
+
+.patient-map-detail-card-sidepanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.patient-map-detail-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-map-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.patient-map-detail-actions-fullwidth {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.patient-map-sidepanel.collapsed-panel {
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 20px;
+  transition: width 240ms ease, transform 240ms ease, opacity 240ms ease;
+}
+
+.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-note,
+.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-content {
+  display: none;
+}
+
+.patient-map-sidepanel.collapsed-panel .patient-map-control-group button:not(:last-child) {
+  display: none;
+}
+
+.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-inner {
+  padding: 10px 0 0;
+}
+
+.patient-map-sidepanel.collapsed-panel .appointment-success-kicker {
+  font-size: 0.75rem;
+}
+
+.patient-map-shell {
+  position: relative;
+}
+
+.mobile-details-toggle {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+  transition: transform 180ms ease, opacity 180ms ease, background-color 180ms ease;
+}
+
+.mobile-details-toggle:hover,
+.mobile-details-toggle:focus-visible {
+  transform: translateY(-2px);
+}
+
+.patient-map-skeleton-card {
+  padding: 18px;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(248,250,252,1) 0%, rgba(229,231,235,1) 50%, rgba(248,250,252,1) 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 70%;
+  margin-bottom: 14px;
+}
+
+.skeleton-text {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.skeleton-text.short {
+  width: 55%;
+}
+
+.skeleton-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.skeleton-pill {
+  flex: 1;
+  min-height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(248,250,252,1) 0%, rgba(229,231,235,1) 50%, rgba(248,250,252,1) 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -200% 0; }
+}
+
+@media (max-width: 1023px) {
+  .patient-map-sidepanel {
+    position: fixed;
+    inset: auto 10px 10px 10px;
+    width: auto;
+    max-width: calc(100% - 20px);
+    border-radius: 24px;
+    background: rgba(255,255,255,0.98);
+    box-shadow: 0 24px 48px rgba(15,23,42,0.18);
+    transform: translateY(100%);
+    transition: transform 240ms ease, opacity 240ms ease;
+    opacity: 0;
+    z-index: 12;
+    max-height: 70vh;
+    touch-action: manipulation;
+  }
+
+  .patient-map-sidepanel.mobile-sheet-open {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .patient-map-sidepanel .patient-map-sidepanel-content {
+    max-height: calc(70vh - 98px);
+    overflow: auto;
+  }
+
+  .patient-map-sidepanel.collapsed-panel {
+    width: auto;
+    min-width: auto;
+    max-width: calc(100% - 20px);
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patient-map-detail-card,
+  .patient-map-markers,
+  .patient-map-sidepanel,
+  .patient-map-canvas,
+  .mobile-details-toggle,
+  .patient-map-control-group button,
+  .btn-primary,
+  .btn-secondary {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+.patient-map-toolbar-actions button,
+.patient-map-control-group button,
+.patient-map-detail-actions button {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.patient-map-control-group button:focus-visible,
+.patient-map-detail-actions button:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .patient-map-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 28%);
+    align-items: stretch;
+  }
+
+  .patient-map-sidepanel {
+    position: relative;
+    max-width: 420px;
+  }
+
+  .patient-map-main {
+    min-height: 100%;
+  }
+
+  .patient-map-detail-card-sidepanel {
+    overflow: auto;
+    padding: 16px;
+  }
+}
+
 .patient-map-toolbar {
   display: flex;
   justify-content: space-between;
@@ -11492,7 +11771,7 @@ button.card.stat {
 
 .patient-map-canvas {
   position: relative;
-  width: min(100%, 720px);
+  width: 100%;
   aspect-ratio: 16 / 8;
   border-radius: 24px;
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(16, 185, 129, 0.14));
@@ -11500,6 +11779,14 @@ button.card.stat {
   overflow: hidden;
   box-shadow: inset 0 0 60px rgba(15, 23, 42, 0.06);
   transition: transform 180ms ease;
+}
+
+.patient-map-embed {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  min-height: 280px;
+  background: #f8fafc;
 }
 
 .patient-map-canvas.map-zoom-2 {
@@ -11538,6 +11825,16 @@ button.card.stat {
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   font-weight: 700;
+  z-index: 6;
+}
+
+.patient-map-satellite {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.55) 10%, transparent 12%),
+    linear-gradient(120deg, rgba(255,255,255,0.2), rgba(16, 185, 129, 0.06));
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .patient-map-marker {
@@ -11559,6 +11856,125 @@ button.card.stat {
 .patient-map-marker.selected {
   transform: translate(-50%, -50%) scale(1.08);
   box-shadow: 0 12px 28px rgba(16, 185, 129, 0.24);
+}
+
+.patient-map-detail-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.97);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(12px);
+  transition: transform 220ms ease, height 220ms ease, background-color 220ms ease;
+}
+
+.patient-map-detail-card-sidepanel {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .patient-map-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: stretch;
+  }
+
+  .patient-map-main {
+    min-height: 100%;
+  }
+
+  .patient-map-detail-card {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+.patient-map-detail-card.collapsed {
+  min-height: 72px;
+  transform: translateY(0);
+}
+
+.patient-map-detail-card.expanded {
+  min-height: 190px;
+}
+
+.patient-map-detail-card-inline {
+  left: 16px;
+  right: auto;
+}
+
+.patient-map-detail-handle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 2px 8px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.patient-map-detail-handle-pill {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.patient-map-detail-body {
+  display: grid;
+  gap: 8px;
+}
+
+.patient-map-detail-collapsed {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 2px 2px;
+}
+
+.patient-map-empty-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 7;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.patient-map-route-summary {
+  margin-top: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.patient-map-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+
+.patient-map-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .patient-hospital-grid {
@@ -12981,7 +13397,286 @@ form.auth-card {
   background: rgba(120, 53, 15, 0.42);
 }
 
+.shared-calendar-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.calendar-hero {
+  align-items: flex-start;
+}
+
+.calendar-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.calendar-summary-grid .stat {
+  text-align: left;
+}
+
+.calendar-summary-grid .stat:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
+.shared-calendar-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.shared-calendar-card,
+.calendar-day-panel {
+  padding: 18px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-toolbar h3,
+.calendar-day-panel h3 {
+  margin: 4px 0 0;
+}
+
+.calendar-weekdays,
+.calendar-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekdays span {
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.calendar-month-grid {
+  overflow: hidden;
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 18px;
+  background: var(--card-border, #e5e7eb);
+  gap: 1px;
+}
+
+.calendar-day-cell {
+  min-height: 126px;
+  padding: 10px;
+  border: 0;
+  background: var(--card-bg, #ffffff);
+  color: var(--text, #0f172a);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.calendar-day-cell:hover,
+.calendar-day-cell:focus-visible {
+  position: relative;
+  z-index: 1;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 2px #2563eb;
+  outline: none;
+}
+
+.calendar-day-cell.is-muted {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.calendar-day-cell.is-today {
+  box-shadow: inset 0 0 0 2px #0f766e;
+}
+
+.calendar-day-cell.is-selected {
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+
+.calendar-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.calendar-day-cell.is-today .calendar-day-number {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.calendar-day-year {
+  float: right;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.calendar-event-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.calendar-event-chip,
+.calendar-more-chip {
+  display: block;
+  overflow: hidden;
+  padding: 5px 7px;
+  border-left: 4px solid var(--event-color, #2563eb);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--event-color, #2563eb) 10%, #ffffff);
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-more-chip {
+  border-left-color: #64748b;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.calendar-hospital-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 999px;
+  color: var(--text, #0f172a);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.calendar-legend-item span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.calendar-selected-events {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.calendar-selected-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-left: 5px solid var(--event-color, #2563eb);
+  border-radius: 14px;
+  background: var(--card-bg, #ffffff);
+}
+
+.calendar-selected-event p {
+  margin: 4px 0 0;
+}
+
+.calendar-selected-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.calendar-selected-meta span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+[data-theme="dark"] .calendar-month-grid {
+  background: rgba(148, 163, 184, 0.24);
+}
+
+[data-theme="dark"] .calendar-day-cell {
+  background: #111827;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .calendar-day-cell:hover,
+[data-theme="dark"] .calendar-day-cell:focus-visible,
+[data-theme="dark"] .calendar-day-cell.is-selected {
+  background: #172554;
+}
+
+[data-theme="dark"] .calendar-day-cell.is-muted {
+  background: #0f172a;
+  color: #64748b;
+}
+
+[data-theme="dark"] .calendar-event-chip {
+  background: color-mix(in srgb, var(--event-color, #60a5fa) 28%, #020617);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .calendar-more-chip,
+[data-theme="dark"] .calendar-selected-meta span {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
 @media (max-width: 900px) {
+  .calendar-summary-grid,
+  .shared-calendar-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendar-day-cell {
+    min-height: 96px;
+    padding: 8px;
+  }
+
+  .calendar-day-year {
+    display: none;
+  }
+
+  .calendar-event-chip,
+  .calendar-more-chip {
+    font-size: 10px;
+  }
+
   .auth-detail-grid {
     grid-template-columns: 1fr;
   }

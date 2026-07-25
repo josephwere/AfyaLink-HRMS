@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listMarketplaceHospitals, listVerifiedHospitals } from "../services/patientApi";
 import { listAppointmentsForHospital, listDoctorAvailability, listAppointmentCalls, listAppointmentSuggestions, createAppointment, createAppointmentCall } from "../services/appointmentWorkflow";
 
@@ -62,6 +62,14 @@ function bookingLockFromError(err) {
   };
 }
 
+export function mergeAppointmentList(existingAppointments = [], nextAppointment = null) {
+  if (!nextAppointment) return existingAppointments;
+  const normalized = Array.isArray(existingAppointments) ? existingAppointments : [];
+  const nextId = String(nextAppointment?._id || "");
+  const withoutDuplicate = normalized.filter((item) => String(item?._id || "") !== nextId);
+  return [nextAppointment, ...withoutDuplicate];
+}
+
 export function usePatientAppointments({ hospitalFromQuery = "", savedLocation = {} } = {}) {
   const [hospitalId, setHospitalId] = useState(() => hospitalFromQuery || localStorage.getItem(SELECTED_HOSPITAL_KEY) || "");
   const [hospitals, setHospitals] = useState([]);
@@ -84,6 +92,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
   const [radiusKm, setRadiusKm] = useState(savedLocation?.radiusKm ?? 15);
   const [locationLabel, setLocationLabel] = useState(savedLocation?.label || "");
   const [locating, setLocating] = useState(false);
+  const autoLocationAttemptedRef = useRef(false);
   const [form, setForm] = useState({ scheduledAt: "", reason: "", doctor: "", serviceType: "General Consultation", consultationMode: "IN_PERSON" });
 
   const selectedHospital = useMemo(() => hospitals.find((h) => String(h._id) === String(hospitalId)) || null, [hospitals, hospitalId]);
@@ -216,7 +225,8 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
   };
 
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.geolocation || lat || lng || locating) return;
+    if (typeof window === "undefined" || !navigator.geolocation || lat || lng || locating || autoLocationAttemptedRef.current) return;
+    autoLocationAttemptedRef.current = true;
     useCurrentLocation();
   }, [lat, lng, locating]);
 
@@ -230,6 +240,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
     try {
       const appointment = await createAppointment({ hospitalId, scheduledAt: form.scheduledAt, reason: form.reason || undefined, serviceType: form.serviceType, consultationMode: form.consultationMode, doctor: form.doctor || undefined, timeZone: bookingTimeZone });
       setBookingSuccess({ appointment, scheduledAt: appointment?.scheduledAt || form.scheduledAt, serviceType: appointment?.serviceType || form.serviceType, consultationMode: appointment?.consultationMode || form.consultationMode, hospitalName: selectedHospital?.name || "Selected hospital" });
+      setAppointments((prev) => mergeAppointmentList(prev, appointment));
       window.dispatchEvent(new CustomEvent("afyalink:notification-local", { detail: { title: "Appointment confirmed", body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`, category: "CLINICAL", meta: { appointmentId: appointment?._id, path: "/patient/appointments" } } }));
       setForm({ scheduledAt: "", reason: "", doctor: "", serviceType: "General Consultation", consultationMode: "IN_PERSON" });
       setMsg("Appointment request submitted.");
@@ -248,6 +259,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
     try {
       const appointment = await createAppointment({ hospitalId, doctor: suggestion.doctorId, scheduledAt: slotDate.toISOString(), serviceType: form.serviceType, consultationMode: form.consultationMode, reason: form.reason || undefined, timeZone: bookingTimeZone });
       setBookingSuccess({ appointment, scheduledAt: appointment?.scheduledAt || slotDate.toISOString(), serviceType: appointment?.serviceType || form.serviceType, consultationMode: appointment?.consultationMode || form.consultationMode, hospitalName: selectedHospital?.name || "Selected hospital", doctorName: suggestion?.doctorName || "" });
+      setAppointments((prev) => mergeAppointmentList(prev, appointment));
       window.dispatchEvent(new CustomEvent("afyalink:notification-local", { detail: { title: "Appointment confirmed", body: `${appointment?.serviceType || form.serviceType || "General Consultation"} has been booked.`, category: "CLINICAL", meta: { appointmentId: appointment?._id, path: "/patient/appointments" } } }));
       setMsg("Suggested slot booked.");
       await loadAppointments();
