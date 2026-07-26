@@ -1,11 +1,20 @@
 {
   "SUPER_ADMIN": {
     "headers": {
-      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzk5YWE3MzUzNGM3ZjZkOTVhZGIxNyIsInJvbGUiOiJTVVBFUl9BRE1JTiIsImVtYWlsVmVyaWZpZWQiOnRydWUsInBob25lVmVyaWZpZWQiOmZhbHNlLCJ0d29GYWN0b3JWZXJpZmllZCI6dHJ1ZSwic3RlcFVwVmVyaWZpZWRBdCI6bnVsbCwicmlza0xldmVsIjoiTE9XIiwicmlza1Njb3JlIjoxNSwiaWF0IjoxNzg0NjQ1MzMwLCJleHAiOjE3ODQ2NDYyMzB9.h3x7iE-seO3R5_OTqAtfRGP1oH99Cqag-B2ewHXsDZo",
-      "X-Hospital": "6a46b1c2ea932922e8407b14",
-      "X-Hospital-Id": "6a46b1c2ea932922e8407b14"
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzk5YWE3MzUzNGM3ZjZkOTVhZGIxNyIsInJvbGUiOiJTVVBFUl9BRE1JTiIsImVtYWlsVmVyaWZpZWQiOnRydWUsInBob25lVmVyaWZpZWQiOmZhbHNlLCJ0d29GYWN0b3JWZXJpZmllZCI6dHJ1ZSwic3RlcFVwVmVyaWZpZWRBdCI6bnVsbCwicmlza0xldmVsIjoiTE9XIiwicmlza1Njb3JlIjoxNSwiaWF0IjoxNzg1MDU1MDA4LCJleHAiOjE3ODUwNTU5MDh9.cYQEacevEddwghKlW5Om8CdtfHdx_SgSkKhomfFN43c",
+      "X-Hospital": "6a3c5f256891eaf54c0514e9",
+      "X-Hospital-Id": "6a3c5f256891eaf54c0514e9"
     },
-    "expiresAt": 1784645631418,
+    "expiresAt": 1785055309017,
+    "apiURL": "http://127.0.0.1:5000"
+  },
+  "NURSE": {
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhM2M1ZjI3NWI2YzRmMjMyMmQ0NzE0MCIsInJvbGUiOiJOVVJTRSIsImVtYWlsVmVyaWZpZWQiOnRydWUsInBob25lVmVyaWZpZWQiOnRydWUsInR3b0ZhY3RvclZlcmlmaWVkIjp0cnVlLCJzdGVwVXBWZXJpZmllZEF0IjpudWxsLCJyaXNrTGV2ZWwiOiJMT1ciLCJyaXNrU2NvcmUiOjE1LCJpYXQiOjE3ODUwNTUyNTIsImV4cCI6MTc4NTA1NjE1Mn0.nOUjnL-u7SIsKXeZ3U_g_T_T_xVmEq_rfpBXYKiHL7U",
+      "X-Hospital": "6a3c5f256891eaf54c0514e9",
+      "X-Hospital-Id": "6a3c5f256891eaf54c0514e9"
+    },
+    "expiresAt": 1785055552630,
     "apiURL": "http://127.0.0.1:5000"
   }
 }

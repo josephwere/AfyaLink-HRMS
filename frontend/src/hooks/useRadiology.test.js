@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useRadiology } from "./useRadiology";
+import * as radiologyQueries from "../services/radiology/queries";
+
+vi.mock("../services/radiology/queries", () => ({
+  listStudies: vi.fn(),
+}));
 
 /**
  * useRadiology Hook Tests
@@ -13,12 +18,10 @@ describe("useRadiology", () => {
   });
 
   it("loads radiology studies and updates state", async () => {
-    vi.mock("../services/radiology/queries", () => ({
-      listStudies: vi.fn().mockResolvedValue({
-        studies: [{ _id: "1", studyType: "CT" }],
-        total: 1,
-      }),
-    }));
+    radiologyQueries.listStudies.mockResolvedValueOnce({
+      studies: [{ _id: "1", studyType: "CT" }],
+      total: 1,
+    });
 
     const { result } = renderHook(() => useRadiology());
 
@@ -35,18 +38,15 @@ describe("useRadiology", () => {
   });
 
   it("refreshes on parameter change", async () => {
-    vi.mock("../services/radiology/queries", () => ({
-      listStudies: vi
-        .fn()
-        .mockResolvedValueOnce({
-          studies: [{ _id: "1", studyType: "CT" }],
-          total: 1,
-        })
-        .mockResolvedValueOnce({
-          studies: [{ _id: "2", studyType: "MRI" }],
-          total: 1,
-        }),
-    }));
+    radiologyQueries.listStudies
+      .mockResolvedValueOnce({
+        studies: [{ _id: "1", studyType: "CT" }],
+        total: 1,
+      })
+      .mockResolvedValueOnce({
+        studies: [{ _id: "2", studyType: "MRI" }],
+        total: 1,
+      });
 
     const { result, rerender } = renderHook(
       ({ q, page }) => useRadiology({ q, page }),

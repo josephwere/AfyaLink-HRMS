@@ -124,3 +124,4 @@ export function clearBrowserSession({ preserveUser = false } = {}) {
 
 migrateLegacyAccessToken();
 accessTokenCache = readSessionToken();
+

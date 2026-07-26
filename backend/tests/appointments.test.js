@@ -91,6 +91,31 @@ describe('Appointments', ()=>{
     expect(Array.isArray(items)).toBe(true);
   });
 
+  test('lists hospital appointments for patient self-service bookings', async ()=>{
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({
+        patient: selfServicePatientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        timeZone: 'Africa/Nairobi',
+      });
+
+    expect([200, 201]).toContain(created.status);
+
+    const r = await request(app)
+      .get(`/api/appointments/hospital/${hospitalId}`)
+      .set('Authorization', `Bearer ${patientToken}`)
+      .query({ limit: 10 });
+
+    expect(r.status).toBe(200);
+    const items = Array.isArray(r.body) ? r.body : r.body.items;
+    expect(Array.isArray(items)).toBe(true);
+    expect(items.some((item) => String(item._id) === String(created.body._id))).toBe(true);
+  });
+
   test('auto assigns hospital doctor when admin books by hospital and service', async ()=>{
     const r = await request(app)
       .post('/api/appointments')
@@ -114,11 +139,33 @@ describe('Appointments', ()=>{
   });
 
   test('blocks patient self-service duplicate booking for the same calendar day', async ()=>{
+    const isolatedUser = await User.create({
+      name: 'Fresh Portal Patient',
+      email: 'fresh-portal-patient@afya.test',
+      password: 'Patient123!',
+      role: 'PATIENT',
+      active: true,
+      phone: '+254700000002',
+    });
+    const isolatedToken = jwt.sign(
+      { id: String(isolatedUser._id), twoFactorVerified: true },
+      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+    );
+    const isolatedPatient = await Patient.create({
+      firstName: 'Fresh',
+      lastName: 'Portal Patient',
+      contact: isolatedUser.phone,
+      hospital: hospitalId,
+      metadata: { userId: String(isolatedUser._id) },
+      active: true,
+    });
+    const isolatedPatientId = String(isolatedPatient._id);
+
     const first = await request(app)
       .post('/api/appointments')
-      .set('Authorization', `Bearer ${patientToken}`)
+      .set('Authorization', `Bearer ${isolatedToken}`)
       .send({
-        patient: selfServicePatientId,
+        patient: isolatedPatientId,
         hospitalId,
         scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
         serviceType: 'General Consultation',
@@ -128,9 +175,9 @@ describe('Appointments', ()=>{
 
     const second = await request(app)
       .post('/api/appointments')
-      .set('Authorization', `Bearer ${patientToken}`)
+      .set('Authorization', `Bearer ${isolatedToken}`)
       .send({
-        patient: selfServicePatientId,
+        patient: isolatedPatientId,
         hospitalId,
         scheduledAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
         serviceType: 'General Consultation',
@@ -150,9 +197,9 @@ describe('Appointments', ()=>{
 
     const nextDayBooking = await request(app)
       .post('/api/appointments')
-      .set('Authorization', `Bearer ${patientToken}`)
+      .set('Authorization', `Bearer ${isolatedToken}`)
       .send({
-        patient: selfServicePatientId,
+        patient: isolatedPatientId,
         hospitalId,
         scheduledAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
         serviceType: 'General Consultation',

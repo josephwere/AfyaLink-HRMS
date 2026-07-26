@@ -34,10 +34,26 @@ export function RouteGuard({
   const { user, loading: authLoading } = useAuth();
   const [hasAccess, setHasAccess] = React.useState(false);
   const [checking, setChecking] = React.useState(true);
+  const userAccessKey = `${user?.id || user?._id || user?.email || "anonymous"}:${user?.role || "UNKNOWN"}`;
+  const requiresCapabilityCheck = Boolean(capability) ||
+    (Array.isArray(anyCapability) && anyCapability.length > 0) ||
+    (Array.isArray(allCapabilities) && allCapabilities.length > 0);
+  const anyCapabilityKey = Array.isArray(anyCapability) ? anyCapability.join("|") : "";
+  const allCapabilitiesKey = Array.isArray(allCapabilities) ? allCapabilities.join("|") : "";
 
   React.useEffect(() => {
+    let cancelled = false;
+
     const checkAccess = async () => {
       try {
+        if (!requiresCapabilityCheck) {
+          if (!cancelled) {
+            setHasAccess(true);
+            setChecking(false);
+          }
+          return;
+        }
+
         setChecking(true);
 
         let allowed = false;
@@ -53,19 +69,25 @@ export function RouteGuard({
           allowed = true;
         }
 
-        setHasAccess(allowed);
+        if (!cancelled) setHasAccess(allowed);
       } catch (err) {
         console.error("RouteGuard capability check failed:", err);
-        setHasAccess(false);
+        if (!cancelled) setHasAccess(false);
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
     };
 
     if (!authLoading && user) {
       checkAccess();
+    } else if (!authLoading && !user) {
+      setChecking(false);
     }
-  }, [capability, anyCapability, allCapabilities, authLoading, user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [capability, anyCapabilityKey, allCapabilitiesKey, authLoading, requiresCapabilityCheck, userAccessKey]);
 
   // Still loading auth for a first-time restore, but an already-authenticated user
   // should be allowed to continue immediately rather than being stuck on a skeleton.
@@ -76,6 +98,10 @@ export function RouteGuard({
   // Not authenticated
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!requiresCapabilityCheck) {
+    return children;
   }
 
   // Checking capabilities
@@ -108,10 +134,26 @@ export function useRouteGuard(
   const { user, loading: authLoading } = useAuth();
   const [hasAccess, setHasAccess] = React.useState(false);
   const [checking, setChecking] = React.useState(true);
+  const userAccessKey = `${user?.id || user?._id || user?.email || "anonymous"}:${user?.role || "UNKNOWN"}`;
+  const requiresCapabilityCheck = Boolean(capability) ||
+    (Array.isArray(anyCapability) && anyCapability.length > 0) ||
+    (Array.isArray(allCapabilities) && allCapabilities.length > 0);
+  const anyCapabilityKey = Array.isArray(anyCapability) ? anyCapability.join("|") : "";
+  const allCapabilitiesKey = Array.isArray(allCapabilities) ? allCapabilities.join("|") : "";
 
   React.useEffect(() => {
+    let cancelled = false;
+
     const checkAccess = async () => {
       try {
+        if (!requiresCapabilityCheck) {
+          if (!cancelled) {
+            setHasAccess(true);
+            setChecking(false);
+          }
+          return;
+        }
+
         setChecking(true);
 
         let allowed = false;
@@ -126,19 +168,25 @@ export function useRouteGuard(
           allowed = true;
         }
 
-        setHasAccess(allowed);
+        if (!cancelled) setHasAccess(allowed);
       } catch (err) {
         console.error("useRouteGuard check failed:", err);
-        setHasAccess(false);
+        if (!cancelled) setHasAccess(false);
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
     };
 
     if (!authLoading && user) {
       checkAccess();
+    } else if (!authLoading && !user) {
+      setChecking(false);
     }
-  }, [capability, anyCapability, allCapabilities, authLoading, user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [capability, anyCapabilityKey, allCapabilitiesKey, authLoading, requiresCapabilityCheck, userAccessKey]);
 
   return {
     hasAccess,

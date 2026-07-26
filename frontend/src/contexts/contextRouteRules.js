@@ -28,17 +28,16 @@ export function getContextRedirectPath(pathname = "", currentContext = "WORK", u
   const requiredContext = resolveRequiredContext(normalizedPath);
   if (!requiredContext || requiredContext === currentContext) return null;
 
-  const redirectTarget = "/app/portal/home/index";
-  if (redirectTarget === normalizedPath) {
+  // Let direct navigation drive the context mode. Redirecting here creates
+  // route loops when a stored My Health preference meets a staff/admin work URL.
+  if (requiredContext === "WORK") {
     return null;
   }
 
-  if (requiredContext === "MY_HEALTH" && currentContext === "WORK") {
-    if (canUseMyHealthContext(user) && !isPatientContextUser(user)) {
-      return null;
-    }
-    return redirectTarget;
+  if (requiredContext === "MY_HEALTH" && canUseMyHealthContext(user)) {
+    return null;
   }
 
-  return redirectTarget;
+  const redirectTarget = "/app/portal/home/index";
+  return redirectTarget === normalizedPath ? null : redirectTarget;
 }

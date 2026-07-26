@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { usePatientAppointments } from "./usePatientAppointments";
+import { mergeAppointmentList, usePatientAppointments } from "./usePatientAppointments";
 import * as appointmentWorkflow from "../services/appointmentWorkflow";
 import * as patientApi from "../services/patientApi";
 
@@ -26,6 +26,22 @@ beforeEach(() => {
       removeItem: vi.fn(),
     },
     configurable: true,
+  });
+});
+
+describe("mergeAppointmentList", () => {
+  it("prepends a newly created appointment immediately for the patient list", () => {
+    const existing = [{ _id: "old-1", status: "Scheduled" }];
+    const updated = mergeAppointmentList(existing, { _id: "new-1", status: "Pending" });
+
+    expect(updated).toHaveLength(2);
+    expect(updated[0]).toMatchObject({ _id: "new-1", status: "Pending" });
+    expect(updated[1]).toMatchObject({ _id: "old-1", status: "Scheduled" });
+  });
+
+  it("keeps the existing list when there is no new appointment", () => {
+    const existing = [{ _id: "old-1", status: "Scheduled" }];
+    expect(mergeAppointmentList(existing, null)).toEqual(existing);
   });
 });
 
@@ -65,6 +81,21 @@ describe("usePatientAppointments", () => {
       expect(result.current.lng).toBe("36.8");
       expect(result.current.locationMode).toBe("gps");
     });
+  });
+
+  it("does not retry geolocation repeatedly after an initial failure", async () => {
+    const geolocation = {
+      getCurrentPosition: vi.fn((success, error) => error?.({ code: 1, message: "denied" })),
+    };
+    Object.defineProperty(window.navigator, "geolocation", { value: geolocation, configurable: true });
+
+    const { result } = renderHook(() => usePatientAppointments({ hospitalFromQuery: "", savedLocation: {} }));
+
+    await waitFor(() => {
+      expect(result.current.msg).toBe("Could not read your current location. You can still search by town, county, or a landmark.");
+    });
+
+    expect(geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
   });
 
   it("submits an appointment through the shared hook", async () => {

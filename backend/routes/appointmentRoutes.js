@@ -59,6 +59,20 @@ router.get(
 );
 
 router.get(
+  "/hospital/:hospitalId",
+  protect,
+  authorize("appointments", "read"),
+  async (req, res, next) => {
+    try {
+      req.query.hospitalId = req.params.hospitalId;
+      return listAppointments(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
   "/suggestions",
   protect,
   authorize("appointments", "read"),

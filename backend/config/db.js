@@ -2,7 +2,16 @@ import mongoose from 'mongoose';
 import { incrementMetricCounter, setMetricGauge } from "../utils/metrics.js";
 import "./loadEnv.js";
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/afyalink';
+const DEFAULT_LOCAL_MONGO_URI = 'mongodb://127.0.0.1:27017/afyalink';
+const MONGO_URI = process.env.MONGO_URI || DEFAULT_LOCAL_MONGO_URI;
+
+export function shouldUseMemoryMongo() {
+  const explicitFlag = String(process.env.USE_MEMORY_MONGO || "").trim().toLowerCase();
+  const nodeEnv = String(process.env.NODE_ENV || "development").toLowerCase();
+  const mongoUri = String(process.env.MONGO_URI || "").trim();
+  const isDefaultLocalUri = !mongoUri || mongoUri === DEFAULT_LOCAL_MONGO_URI;
+  return (nodeEnv === "test" || explicitFlag === "true" || explicitFlag === "1") && isDefaultLocalUri;
+}
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
@@ -58,7 +67,15 @@ function bindMongoMetrics() {
 const connectDB = async () => {
   try {
     bindMongoMetrics();
-    await mongoose.connect(MONGO_URI, {
+    if (shouldUseMemoryMongo()) {
+      const { MongoMemoryServer } = await import("mongodb-memory-server");
+      const memoryServer = await MongoMemoryServer.create({
+        instance: { ip: "127.0.0.1", port: 27017 },
+      });
+      process.env.MONGO_URI = memoryServer.getUri();
+      console.log("[DB] using in-memory MongoDB for local development");
+    }
+    await mongoose.connect(process.env.MONGO_URI || MONGO_URI, {
       serverSelectionTimeoutMS: parsePositiveInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS, 8000),
       connectTimeoutMS: parsePositiveInt(process.env.MONGO_CONNECT_TIMEOUT_MS, 10000),
       socketTimeoutMS: parsePositiveInt(process.env.MONGO_SOCKET_TIMEOUT_MS, 20000),

@@ -155,6 +155,7 @@ export default function StaffManagement() {
   const roleOptions = isGlobalActor ? GLOBAL_ROLE_OPTIONS : HOSPITAL_ADMIN_ROLE_OPTIONS;
   const [hospitalByUser, setHospitalByUser] = React.useState({});
   const [pharmacyByUser, setPharmacyByUser] = React.useState({});
+  const pageSize = 20;
 
   if (
     normalizedRole !== "HOSPITAL_ADMIN" &&
@@ -447,7 +448,7 @@ export default function StaffManagement() {
               type="button"
               className="btn-secondary"
               onClick={() => setPage((p) => p + 1)}
-              disabled={loading || page * limit >= total}
+              disabled={loading || page * pageSize >= total}
             >
               Next
             </button>

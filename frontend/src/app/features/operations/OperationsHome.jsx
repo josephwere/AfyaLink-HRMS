@@ -7,6 +7,7 @@ import ReceptionistDashboard from "../../../pages/Receptionist/Dashboard";
 import CommunityHealthWorkerDashboard from "../../../pages/CommunityHealthWorker/Dashboard";
 import LabTechDashboard from "../../../pages/LabTech/Dashboard";
 import PharmacyDashboard from "../../../pages/Pharmacy/Index";
+import StaffDashboard from "../../../pages/Staff/Dashboard";
 
 export default function OperationsHome() {
   const { user } = useAuth();
@@ -17,8 +18,10 @@ export default function OperationsHome() {
   if (role === "COMMUNITY_HEALTH_WORKER") return <CommunityHealthWorkerDashboard />;
   if (role === "LAB_TECH") return <LabTechDashboard />;
   if (role === "PHARMACIST") return <PharmacyDashboard />;
+  if (["MAINTENANCE_TECH", "BIOMEDICAL_TECHNICIAN", "HOUSEKEEPING_STAFF", "KITCHEN_STAFF"].includes(role)) {
+    return <StaffDashboard />;
+  }
 
-  // Safe fallback for founder + developer role views.
-  return <HospitalAdminDashboard />;
+  return <StaffDashboard />;
 }
 

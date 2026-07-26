@@ -7,8 +7,9 @@ import {
   buildSearchIndex,
   searchIndex as searchIndexService,
 } from "../services/navigationService";
-import { getUserCapabilities, getNavigationItems } from "../services/capabilityApi";
+import { getNavigationItems } from "../services/capabilityApi";
 import { MODULE_REGISTRY } from "../config/moduleRegistry";
+import { useAuth } from "../utils/auth";
 
 /**
  * NavigationContext
@@ -39,38 +40,52 @@ function normalizeNotifications(value) {
 }
 
 export function NavigationProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [recent, setRecent] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [expandedModules, setExpandedModules] = useState([]);
   const [searchIndexData, setSearchIndexData] = useState([]);
   const [navigationLoading, setNavigationLoading] = useState(true);
+  const userNavigationKey = `${user?.id || user?._id || user?.email || "anonymous"}:${user?.role || "GUEST"}`;
 
   // Initialize navigation state
   useEffect(() => {
+    let cancelled = false;
+
     const loadNavigationState = async () => {
       try {
         setNavigationLoading(true);
 
         // Load local state
-        setFavorites(favoritesService.getFavorites());
-        setRecent(recentService.getRecent());
-        setNotifications(normalizeNotifications(notificationService.getNotifications()));
-        setExpandedModules(sidebarService.getExpanded());
+        if (!cancelled) {
+          setFavorites(favoritesService.getFavorites());
+          setRecent(recentService.getRecent());
+          setNotifications(normalizeNotifications(notificationService.getNotifications()));
+          setExpandedModules(sidebarService.getExpanded());
+        }
 
-        // Build search index from capabilities and modules
+        // Capability-backed navigation requires an authenticated session.
+        if (authLoading || !user) {
+          if (!cancelled) setSearchIndexData([]);
+          return;
+        }
+
         const navItems = await getNavigationItems();
         const index = await buildSearchIndex(navItems, MODULE_REGISTRY);
-        setSearchIndexData(index);
+        if (!cancelled) setSearchIndexData(index);
       } catch (err) {
         console.error("Failed to load navigation state:", err);
       } finally {
-        setNavigationLoading(false);
+        if (!cancelled) setNavigationLoading(false);
       }
     };
 
     loadNavigationState();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, userNavigationKey]);
 
   // Favorites handlers
   const addFavorite = useCallback((item) => {

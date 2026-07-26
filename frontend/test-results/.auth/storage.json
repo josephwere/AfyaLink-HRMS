@@ -1,4 +1,45 @@
 {
-  "cookies": [],
-  "origins": []
+  "cookies": [
+    {
+      "name": "g_state",
+      "value": "{\"i_l\":0,\"i_ll\":1785055006018,\"i_b\":\"eERK0p/SRwdL8jJZWbODlq27Egi0YkLWGs26N/L0z8Y\",\"i_e\":{\"enable_itp_optimization\":24},\"i_et\":1785055006018}",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1800607006,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:5173",
+      "localStorage": [
+        {
+          "name": "afyalink_user_context_mode",
+          "value": "WORK"
+        },
+        {
+          "name": "afyalink_public_settings_base",
+          "value": "http://localhost:5000"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"6a399aa73534c7f6d95adb17\",\"name\":\"System Super Admin\",\"email\":\"josephogwe8@gmail.com\",\"phoneVerified\":false,\"emailVerified\":true,\"role\":\"SUPER_ADMIN\"}"
+        },
+        {
+          "name": "afyalink_public_branding",
+          "value": "{\"sidebarIcons\":{},\"appIcon\":\"\",\"favicon\":\"\",\"logo\":\"\",\"loginBackground\":\"\",\"homeBackground\":\"\"}"
+        },
+        {
+          "name": "afyalink_public_settings",
+          "value": "{\"branding\":{\"sidebarIcons\":{},\"appIcon\":\"\",\"favicon\":\"\",\"logo\":\"\",\"loginBackground\":\"\",\"homeBackground\":\"\"},\"ai\":{\"enabled\":true,\"icon\":\"\",\"name\":\"NeuroEdge\",\"greeting\":\"Hi, how can I help?\",\"url\":\"\"},\"monetization\":{\"featureAccess\":{\"ai\":\"FREE\"}},\"patientSelfService\":{\"defaultLanguage\":\"en\",\"enabledLanguages\":[\"en\",\"sw\",\"fr\"],\"allowLanguageSwitch\":true,\"voiceFirstIntake\":false,\"whatsappSupport\":false,\"helpLine\":\"\"},\"updatedAt\":\"2026-07-26T07:32:25.720Z\"}"
+        },
+        {
+          "name": "afyalink_offline_login_v1",
+          "value": "{\"josephogwe8@gmail.com\":{\"salt\":\"30c7afc3d2e4fa699658f21492a3e0e5\",\"hash\":\"58c540bb897009a2cd2c0158201790dcd1745e062bf961218a48214ddcf91171\",\"profile\":{\"id\":\"6a399aa73534c7f6d95adb17\",\"name\":\"System Super Admin\",\"email\":\"josephogwe8@gmail.com\",\"role\":\"SUPER_ADMIN\",\"emailVerified\":true,\"phoneVerified\":false,\"twoFactorVerified\":true},\"updatedAt\":\"2026-07-26T08:36:46.704Z\"}}"
+        }
+      ]
+    }
+  ]
 }

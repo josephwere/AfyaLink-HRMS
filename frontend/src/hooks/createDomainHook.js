@@ -15,7 +15,8 @@ export function createDomainHook({
     throw new Error("createDomainHook requires a service");
   }
 
-  return function useDomainHook(params = {}) {
+  return function useDomainHook(...hookArgs) {
+    const params = hookArgs.length === 0 ? {} : hookArgs.length === 1 ? hookArgs[0] : hookArgs;
     const normalizedParams = params ?? {};
     const resource = useResource({
       fetcher: useCallback(
@@ -53,9 +54,13 @@ export function createDomainHook({
       return acc;
     }, {});
 
+    const resolvedData = mapResult(resource.data);
+    const resourceName = resourceKey && typeof resourceKey === "string" ? resourceKey : null;
+
     return {
       ...resource,
-      data: mapResult(resource.data),
+      data: resolvedData,
+      ...(resourceName ? { [resourceName]: resolvedData } : {}),
       ...mutationHandlers,
     };
   };

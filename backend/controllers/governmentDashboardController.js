@@ -10,6 +10,7 @@ import HealthFund from "../models/HealthFund.js";
 import HospitalLicense from "../models/HospitalLicense.js";
 import HospitalInspection from "../models/HospitalInspection.js";
 import EnforcementAction from "../models/EnforcementAction.js";
+import Notification from "../models/Notification.js";
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 

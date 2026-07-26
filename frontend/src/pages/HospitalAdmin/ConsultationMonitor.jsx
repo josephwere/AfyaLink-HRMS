@@ -8,7 +8,7 @@ export default function ConsultationMonitor() {
   const [searchParams] = useSearchParams();
   const highlightedCallId = searchParams.get("callId") || "";
   const initialStatus = searchParams.get("status") || "ALL";
-  const { filter, setFilter, loading, msg, visibleCalls, summary, blockCall, load } = useConsultationMonitor({ statusFilter: initialStatus });
+  const { filter, setFilter, loading, msg, visibleCalls, summary, blockCall, load, escalations } = useConsultationMonitor({ statusFilter: initialStatus });
 
   return (
     <div className="dashboard">

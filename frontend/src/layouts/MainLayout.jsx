@@ -25,7 +25,7 @@ import "./MainLayout.css";
  *
  * Features:
  * - Dynamic sidebar based on user capabilities
- * - Breadcrumb navigation
+ * - Optional breadcrumb navigation
  * - Quick action buttons
  * - Notification badge
  * - Responsive design (sidebar collapses on mobile)
@@ -33,7 +33,7 @@ import "./MainLayout.css";
  */
 export default function MainLayout({
   compact = false,
-  showBreadcrumbs = true,
+  showBreadcrumbs = false,
   showQuickActions = true,
   showNotifications = true,
 }) {

@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react-hooks';
 import * as encounterService from '../services/encounter';
 import { useEncounter } from './useEncounter';
+import { clearResourceCache } from '../services/shared/resourceCache';
 
 vi.mock('../services/encounter', () => ({
   getLatestEncounterForPatient: vi.fn(),
@@ -13,7 +14,12 @@ vi.mock('../services/encounter', () => ({
 
 describe('useEncounter', () => {
   beforeEach(() => {
+    clearResourceCache();
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    clearResourceCache();
   });
 
   it('loads the latest encounter and returns state', async () => {

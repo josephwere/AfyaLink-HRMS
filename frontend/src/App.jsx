@@ -24,6 +24,7 @@ import MainLayout from "./layouts/MainLayout";
 import { LEGACY_ROUTE_MAP } from "./app/routing/legacyRouteMap";
 import { createRuntimeRouteElements } from "./app/runtime/appRouteComposer";
 import { isPatientExperienceMode } from "./pages/Patient/appointmentFeatureFlags";
+import { ROLE_VIEW_OPTIONS } from "./utils/roleViewOptions";
 
 /* =======================
    PUBLIC / AUTH
@@ -269,6 +270,7 @@ const SHARED_NOTIFICATION_ROLES = [
   "THERAPIST",
   "PATIENT",
 ];
+const SHARED_CALENDAR_ROLES = ROLE_VIEW_OPTIONS;
 
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
@@ -410,7 +412,7 @@ export default function App() {
           <Route
             path="/app/operations/home/index"
             element={
-              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "COMMUNITY_HEALTH_WORKER", "LAB_TECH", "PHARMACIST", "SUPER_ADMIN", "DEVELOPER", "SYSTEM_ADMIN"]}>
+              <RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "COMMUNITY_HEALTH_WORKER", "LAB_TECH", "PHARMACIST", "MAINTENANCE_TECH", "BIOMEDICAL_TECHNICIAN", "HOUSEKEEPING_STAFF", "KITCHEN_STAFF", "SUPER_ADMIN", "DEVELOPER", "SYSTEM_ADMIN"]}>
                 <OperationsHome />
               </RequireRole>
             }
@@ -491,7 +493,7 @@ export default function App() {
           <Route path="/app/operations/transfers/command" element={<RequireRole roles={["DOCTOR", "NURSE", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><HospitalAdminTransferCommandCenter /></RequireRole>} />
           <Route path="/app/operations/scheduling/appointments" element={<RequireRole roles={["DOCTOR", "SURGEON", "RECEPTIONIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><SchedulingAppointments /></RequireRole>} />
           <Route path="/app/operations/scheduling/analytics" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminAppointmentAnalytics /></RequireRole>} />
-          <Route path="/app/operations/scheduling/my-schedule" element={<RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}><MySchedule /></RequireRole>} />
+          <Route path="/app/operations/scheduling/my-schedule" element={<RequireRole roles={SHARED_CALENDAR_ROLES}><MySchedule /></RequireRole>} />
           <Route path="/app/operations/front-desk/booking-desk" element={<RequireRole roles={["RECEPTIONIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "DEVELOPER"]}><ReceptionistBookingDesk /></RequireRole>} />
           <Route path="/app/operations/escalations/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminEscalationQueue /></RequireRole>} />
           <Route path="/app/operations/devices/connectivity" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminMachineConnectivity /></RequireRole>} />

@@ -1,6 +1,8 @@
 // frontend/src/utils/auth.jsx
 import {
   createContext,
+  useCallback,
+  useMemo,
   useContext,
   useEffect,
   useRef,
@@ -17,8 +19,7 @@ import {
 import { normalizeRole } from "./normalizeRole";
 import { flushOfflineRegistrations } from "./offlineRegistration";
 import { guardedAuthFetch, warmAuthRuntime } from "../services/guardedAuthFetch";
-import { assertSecureApiBase, getRuntimeConfiguredApiBase, resolveApiBase } from "./networkBase";
-import { AUTH_EXPIRED_EVENT } from "../lib/api/client";
+import { AUTH_EXPIRED_EVENT, refreshAccessToken } from "../lib/api/client";
 import { publishUserSignedIn, publishUserSignedOut } from "../ai/neuroedgeEventHelpers";
 import { getDefaultContextMode } from "../contexts/userContextModel";
 
@@ -48,27 +49,6 @@ const AuthContext = createContext(null);
 const ROLE_OVERRIDE_KEY = "role_override";
 const STRICT_IMPERSONATION_KEY = "strict_impersonation";
 const OFFLINE_LOGIN_KEY = "afyalink_offline_login_v1";
-const AUTH_API_BASE = resolveApiBase(getRuntimeConfiguredApiBase());
-
-async function postJsonWithTimeout(url, body = {}, timeoutMs = 12000) {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
-
 function clearRoleOverrideState() {
   localStorage.removeItem(ROLE_OVERRIDE_KEY);
   localStorage.removeItem(STRICT_IMPERSONATION_KEY);
@@ -166,23 +146,21 @@ export function AuthProvider({ children }) {
   const effectiveRole = canRoleOverride && roleOverride
     ? normalizeRole(roleOverride)
     : normalizeRole(baseUser?.role);
-  const user = baseUser
-    ? {
-        ...baseUser,
-        actualRole: normalizeRole(baseUser.role),
-        role: effectiveRole,
-      }
-    : null;
+  const user = useMemo(() => {
+    if (!baseUser) return null;
+    return {
+      ...baseUser,
+      actualRole: normalizeRole(baseUser.role),
+      role: effectiveRole,
+    };
+  }, [baseUser, effectiveRole]);
 
   const refreshSession = async () => {
     if (refreshInFlightRef.current) return false;
 
     refreshInFlightRef.current = true;
     try {
-      assertSecureApiBase(AUTH_API_BASE);
-      const res = await postJsonWithTimeout(`${AUTH_API_BASE}/api/auth/refresh`, {}, 12000);
-      if (!res.ok) return false;
-      const data = await res.json();
+      const data = await refreshAccessToken();
       if (!data?.accessToken || !data?.user) return false;
 
       setAccessToken(data.accessToken);
@@ -262,15 +240,8 @@ export function AuthProvider({ children }) {
             return;
           }
 
-          assertSecureApiBase(AUTH_API_BASE);
-          const res = await postJsonWithTimeout(`${AUTH_API_BASE}/api/auth/refresh`, {}, 12000);
-
-          if (!res.ok) throw new Error("Refresh failed");
-          const data = await res.json();
+          const data = await refreshAccessToken();
           if (!data?.accessToken || !data?.user) throw new Error("Refresh failed");
-
-          setAccessToken(data.accessToken);
-          writeStoredUser(data.user);
 
           if (mounted) {
             setBaseUser({
@@ -627,7 +598,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const setRoleOverride = (role) => {
+  const setRoleOverride = useCallback((role) => {
     const normalized = normalizeRole(role);
     if (!canRoleOverride) return false;
     if (!normalized) {
@@ -638,9 +609,9 @@ export function AuthProvider({ children }) {
     localStorage.setItem(ROLE_OVERRIDE_KEY, normalized);
     setRoleOverrideState(normalized);
     return true;
-  };
+  }, [canRoleOverride]);
 
-  const setStrictImpersonation = (enabled) => {
+  const setStrictImpersonation = useCallback((enabled) => {
     if (!canRoleOverride) return false;
     const next = Boolean(enabled);
     if (next) {
@@ -650,9 +621,9 @@ export function AuthProvider({ children }) {
     }
     setStrictImpersonationState(next);
     return true;
-  };
+  }, [canRoleOverride]);
 
-  const patchUser = (patch = {}) => {
+  const patchUser = useCallback((patch = {}) => {
     if (!baseUser || !patch || typeof patch !== "object") return false;
     const nextUser = {
       ...baseUser,
@@ -669,7 +640,7 @@ export function AuthProvider({ children }) {
       // ignore local storage sync errors
     }
     return true;
-  };
+  }, [baseUser]);
 
   useEffect(() => {
     if (loading) return;

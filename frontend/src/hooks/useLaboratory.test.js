@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useLaboratory } from "./useLaboratory";
+import * as laboratoryQueries from "../services/laboratory/queries";
+
+vi.mock("../services/laboratory/queries", () => ({
+  listTests: vi.fn(),
+}));
 
 /**
  * useLaboratory Hook Tests
@@ -13,12 +18,10 @@ describe("useLaboratory", () => {
   });
 
   it("loads laboratory list and updates state", async () => {
-    vi.mock("../services/laboratory/queries", () => ({
-      listTests: vi.fn().mockResolvedValue({
-        tests: [{ _id: "1", name: "Test 1" }],
-        total: 1,
-      }),
-    }));
+    laboratoryQueries.listTests.mockResolvedValueOnce({
+      tests: [{ _id: "1", name: "Test 1" }],
+      total: 1,
+    });
 
     const { result } = renderHook(() => useLaboratory());
 
@@ -35,18 +38,15 @@ describe("useLaboratory", () => {
   });
 
   it("refreshes on parameter change", async () => {
-    vi.mock("../services/laboratory/queries", () => ({
-      listTests: vi
-        .fn()
-        .mockResolvedValueOnce({
-          tests: [{ _id: "1", name: "Test 1" }],
-          total: 1,
-        })
-        .mockResolvedValueOnce({
-          tests: [{ _id: "2", name: "Test 2" }],
-          total: 1,
-        }),
-    }));
+    laboratoryQueries.listTests
+      .mockResolvedValueOnce({
+        tests: [{ _id: "1", name: "Test 1" }],
+        total: 1,
+      })
+      .mockResolvedValueOnce({
+        tests: [{ _id: "2", name: "Test 2" }],
+        total: 1,
+      });
 
     const { result, rerender } = renderHook(
       ({ q, page }) => useLaboratory({ q, page }),

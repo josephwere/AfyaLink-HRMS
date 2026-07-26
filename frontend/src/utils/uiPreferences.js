@@ -6,6 +6,10 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function areUiPreferencesEqual(left = {}, right = {}) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export function mergeUiPreferences(base = {}, patch = {}) {
   const source = isPlainObject(base) ? base : {};
   const incoming = isPlainObject(patch) ? patch : {};
@@ -30,6 +34,9 @@ export function useUiPreferences() {
   const { user, patchUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const pendingPrefsRef = useRef(null);
+  const userId = user?.id || user?._id || user?.email || "";
+  const hasUser = Boolean(userId);
+  const userPreferences = isPlainObject(user?.uiPreferences) ? user.uiPreferences : {};
 
   const flushUiPreferences = useCallback(
     async (prefs = pendingPrefsRef.current, requestOptions = {}) => {
@@ -46,14 +53,18 @@ export function useUiPreferences() {
         return false;
       }
     },
-    [user]
+    [userId]
   );
 
   const setUiPreferences = useCallback(
     (patch = {}, options = {}) => {
-      if (!user) return null;
-      const current = isPlainObject(user.uiPreferences) ? user.uiPreferences : {};
+      if (!hasUser) return null;
+      const current = userPreferences;
       const next = mergeUiPreferences(current, patch);
+
+      if (areUiPreferencesEqual(current, next)) {
+        return current;
+      }
 
       patchUser?.({ uiPreferences: next });
       pendingPrefsRef.current = next;
@@ -73,7 +84,7 @@ export function useUiPreferences() {
 
       return next;
     },
-    [flushUiPreferences, patchUser, user]
+    [flushUiPreferences, hasUser, patchUser, userPreferences]
   );
 
   useEffect(() => {
@@ -108,7 +119,7 @@ export function useUiPreferences() {
   );
 
   return {
-    uiPreferences: isPlainObject(user?.uiPreferences) ? user.uiPreferences : {},
+    uiPreferences: userPreferences,
     setUiPreferences,
     flushUiPreferences,
   };

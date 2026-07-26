@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useDoctorConsultation } from "../../hooks/useDoctorConsultation";
+import { useEncounter } from "../../hooks/useEncounter";
 
 export default function OPDWorkspace() {
   const navigate = useNavigate();
@@ -40,6 +41,18 @@ export default function OPDWorkspace() {
     CONSENT_SCOPES,
     DEFAULT_SCOPES,
   } = useDoctorConsultation(patientId, focus);
+  const { encounter: sharedEncounter, closeEncounter, refresh: refreshEncounter } = useEncounter(patientId);
+  const activeEncounter = sharedEncounter || encounter;
+  const encounterId = activeEncounter?._id || encounter?._id;
+
+  const handleCompleteVisit = async () => {
+    if (!encounterId) return false;
+    const result = await closeEncounter(encounterId);
+    if (result !== false) {
+      await refreshEncounter();
+    }
+    return result;
+  };
 
   return (
     <div className="dashboard doctor-workspace">
@@ -88,7 +101,7 @@ export default function OPDWorkspace() {
               <StatCard title="Status" value={patient.status || "ACTIVE"} onClick={() => navigate(`/doctor/medical-records?patientId=${patient._id}`)} />
               <StatCard title="Risk" value={patient.riskLevel || "MEDIUM"} onClick={() => navigate(`/doctor/lab-results?patientId=${patient._id}`)} />
               <StatCard title="Primary Diagnosis" value={patient.primaryDiagnosis || "-"} onClick={() => navigate(`/doctor/reports-notes?patientId=${patient._id}`)} />
-              <StatCard title="Visit State" value={encounter?.state || "NOT_STARTED"} onClick={() => navigate(`/doctor/medical-records?patientId=${patient._id}`)} />
+              <StatCard title="Visit State" value={activeEncounter?.state || "NOT_STARTED"} onClick={() => navigate(`/doctor/medical-records?patientId=${patient._id}`)} />
             </div>
           </div>
         </section>
@@ -352,10 +365,10 @@ export default function OPDWorkspace() {
             <button
               type="button"
               className="btn-primary"
-              onClick={completeVisit}
-              disabled={closing || !encounter?._id || encounter?.closeout?.canClose === false}
+              onClick={handleCompleteVisit}
+              disabled={closing || activeEncounter?.closeout?.canClose === false}
             >
-              {closing ? "Closing..." : encounter?.closeout?.canClose === false ? "Complete Visit Blocked" : "Complete Visit"}
+              {closing ? "Closing..." : activeEncounter?.closeout?.canClose === false ? "Complete Visit Blocked" : "Complete Visit"}
             </button>
           </div>
         </div>

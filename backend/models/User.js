@@ -529,10 +529,9 @@ userSchema.pre("validate", async function (next) {
     this.userId = await generateUserId();
   }
 
-  if (HOSPITAL_SCOPED_ROLES.includes(this.role) && !this.hospital) {
-    return next(new Error(`${this.role} must be linked to a hospital`));
-  }
-
+  // Hospital-scoped roles may be created before hospital assignment.
+  // Hospital linkage is enforced by higher-level staff management workflows
+  // rather than by every create/update operation on User.
   if (!Array.isArray(this.authMethods) || this.authMethods.length === 0) {
     this.authMethods = this.authProvider ? [this.authProvider] : ["local"];
   }

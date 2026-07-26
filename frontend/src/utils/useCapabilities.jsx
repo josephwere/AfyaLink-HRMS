@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "./auth";
 import {
   hasCapability,
   hasAnyCapability,
@@ -36,12 +37,14 @@ export function useAnyCapability(capabilityIds) {
   const [has, setHas] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const capabilityKey = JSON.stringify(capabilityIds || []);
+
   useEffect(() => {
     hasAnyCapability(capabilityIds).then((result) => {
       setHas(result);
       setLoading(false);
     });
-  }, [capabilityIds]);
+  }, [capabilityKey]);
 
   return { has, loading };
 }
@@ -53,12 +56,14 @@ export function useAllCapabilities(capabilityIds) {
   const [has, setHas] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const capabilityKey = JSON.stringify(capabilityIds || []);
+
   useEffect(() => {
     hasAllCapabilities(capabilityIds).then((result) => {
       setHas(result);
       setLoading(false);
     });
-  }, [capabilityIds]);
+  }, [capabilityKey]);
 
   return { has, loading };
 }
@@ -91,22 +96,43 @@ export function useCapabilities() {
  * Hook to get user's capabilities info
  */
 export function useUserCapabilitiesInfo() {
+  const { user, loading: authLoading } = useAuth();
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const userCapabilityKey = `${user?.id || user?._id || user?.email || "anonymous"}:${user?.role || "UNKNOWN"}`;
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (authLoading) return undefined;
+    if (!user) {
+      setInfo(null);
+      setError(null);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
     getUserCapabilities()
       .then((caps) => {
+        if (cancelled) return;
         setInfo(caps);
         setError(null);
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error("Failed to load capabilities info:", err);
         setError(err);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, userCapabilityKey]);
 
   return { info, loading, error };
 }

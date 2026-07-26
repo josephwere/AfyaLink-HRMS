@@ -13,6 +13,7 @@ import LabOrder from "../models/LabOrder.js";
 import AuditLog from "../models/AuditLog.js";
 import Financial from "../models/Financial.js";
 import Prescription from "../models/Prescription.js";
+import Notification from "../models/Notification.js";
 import Hospital from "../models/Hospital.js";
 import { notify, notifyRolesInHospital } from "../services/notificationService.js";
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";

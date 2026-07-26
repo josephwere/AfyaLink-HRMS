@@ -28,6 +28,16 @@ const router = express.Router();
 
 /* 🔐 GLOBAL GUARDS */
 router.use(protect);
+
+/* ======================================================
+   PATIENT / CLINICAL PRESCRIPTION READS
+====================================================== */
+router.get(
+  "/prescriptions",
+  requireRole("DOCTOR", "PHARMACIST", "PATIENT", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
+  listPrescriptions
+);
+
 router.use(requireFeature("pharmacy"));
 
 /* ======================================================
@@ -37,12 +47,6 @@ router.post(
   "/prescriptions",
   authorize("doctor", "write"),
   createPrescription
-);
-
-router.get(
-  "/prescriptions",
-  requireRole("DOCTOR", "PHARMACIST", "PATIENT", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"),
-  listPrescriptions
 );
 
 router.get(

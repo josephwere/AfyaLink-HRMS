@@ -35,6 +35,22 @@ export const WORKSPACE_HOME_PATH = Object.freeze({
   innovation: "/app/innovation/home/index",
 });
 
+const SHARED_CALENDAR_ROUTE = "/app/operations/scheduling/my-schedule";
+
+function calendarGroupForWorkspace(workspaceId) {
+  return {
+    group: "Calendar",
+    items: [
+      {
+        id: `${workspaceId}-calendar`,
+        label: "Calendar",
+        path: SHARED_CALENDAR_ROUTE,
+        icon: "appointments",
+      },
+    ],
+  };
+}
+
 export function getContextualWorkspaceHomePath(mode = "WORK") {
   if (mode === "MY_HEALTH") return "/app/portal/home/index";
   return WORKSPACE_HOME_PATH.portal;
@@ -285,14 +301,15 @@ export function workspacesForUser(user) {
 export function navForWorkspace(workspaceId, user = null) {
   const mode = getStoredUserContextMode();
   if (mode === "MY_HEALTH" && workspaceId === "portal") {
-    return MY_HEALTH_WORKSPACE_NAV[workspaceId] || [];
+    return [...(MY_HEALTH_WORKSPACE_NAV[workspaceId] || []), calendarGroupForWorkspace(workspaceId)];
   }
 
   const staticNav = WORKSPACE_NAV[workspaceId] || [];
   const domainItems = getRuntimeNavigationItems({ userPermissions: user?.permissions || [] }).filter((item) => item.workspace === workspaceId);
+  const baseNav = [...staticNav, calendarGroupForWorkspace(workspaceId)];
 
   if (!domainItems.length) {
-    return staticNav;
+    return baseNav;
   }
 
   const domainGroup = {
@@ -305,5 +322,5 @@ export function navForWorkspace(workspaceId, user = null) {
     })),
   };
 
-  return [...staticNav, domainGroup];
+  return [...baseNav, domainGroup];
 }

@@ -13,7 +13,6 @@ import { getBrowserRegionDefaults } from "../../utils/locale";
 
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Navigation/Sidebar";
-import Breadcrumbs from "../../components/Navigation/Breadcrumbs";
 import QuickActions from "../../components/Navigation/QuickActions";
 import FirstLoginTour from "../../components/FirstLoginTour";
 import MobileTabBar from "../../components/MobileTabBar";
@@ -30,6 +29,11 @@ function readDismissedReminderCache() {
   } catch {
     return [];
   }
+}
+
+function normalizeDismissedReminderIds(values) {
+  if (!Array.isArray(values)) return [];
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function scheduleBackgroundTask(task) {
@@ -244,6 +248,12 @@ export default function AppShell() {
   const [reminders, setReminders] = useState([]);
   const [securityNotice, setSecurityNotice] = useState(null);
   const bootstrapPrefsPendingRef = useRef(false);
+  const offlineDeviceIdRef = useRef("");
+  const userId = user?.id || user?._id || user?.email || "";
+  const userRole = user?.role || "";
+  const userOnlineMode = Boolean(user && !user?.offlineSession);
+  const hasUser = Boolean(userId);
+  const userUiPreferences = user?.uiPreferences || {};
   const offlineMetricsStateRef = useRef({
     inFlight: false,
     lastSignature: "",
@@ -254,12 +264,27 @@ export default function AppShell() {
   });
 
   const getOfflineDeviceId = () => {
+    if (offlineDeviceIdRef.current) return offlineDeviceIdRef.current;
     const key = "afyalink_offline_device_id";
-    let id = localStorage.getItem(key);
+    let id = "";
+    try {
+      if (typeof localStorage?.getItem === "function") {
+        id = localStorage.getItem(key) || "";
+      }
+    } catch {
+      id = "";
+    }
     if (!id) {
       id = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-      localStorage.setItem(key, id);
+      try {
+        if (typeof localStorage?.setItem === "function") {
+          localStorage.setItem(key, id);
+        }
+      } catch {
+        // Storage can be blocked in private browsing or embedded webviews.
+      }
     }
+    offlineDeviceIdRef.current = id;
     return id;
   };
 
@@ -268,14 +293,14 @@ export default function AppShell() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     applyAccessibilityPrefs(loadAccessibilityPrefs(user));
-  }, [user]);
+  }, [hasUser, userId]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     const defaults = getBrowserRegionDefaults();
-    const currentPrefs = user.uiPreferences || {};
+    const currentPrefs = userUiPreferences || {};
     const patch = {};
 
     if (!currentPrefs.locale) patch.locale = defaults.locale;
@@ -289,36 +314,48 @@ export default function AppShell() {
       setUiPreferences(patch, { persist: false });
     }
   }, [
+    hasUser,
     setUiPreferences,
-    user,
-    user?.uiPreferences?.appLanguage,
-    user?.uiPreferences?.currency,
-    user?.uiPreferences?.locale,
-    user?.uiPreferences?.patientLanguage,
-    user?.uiPreferences?.timeZone,
+    userId,
+    userUiPreferences?.appLanguage,
+    userUiPreferences?.currency,
+    userUiPreferences?.locale,
+    userUiPreferences?.patientLanguage,
+    userUiPreferences?.timeZone,
   ]);
 
   useEffect(() => {
-    const profileDismissed = uiPreferences?.navigation?.dismissedReminders;
-    if (Array.isArray(profileDismissed)) {
-      setDismissed(profileDismissed);
+    if (!hasUser) return;
+
+    const profileDismissed = normalizeDismissedReminderIds(
+      uiPreferences?.navigation?.dismissedReminders
+    );
+    const nextDismissed = normalizeDismissedReminderIds(
+      profileDismissed.length ? profileDismissed : readDismissedReminderCache()
+    );
+
+    setDismissed((current) => {
+      const currentDismissed = normalizeDismissedReminderIds(current);
+      if (
+        currentDismissed.length === nextDismissed.length &&
+        currentDismissed.every((value, index) => value === nextDismissed[index])
+      ) {
+        return current;
+      }
+
       try {
-        localStorage.setItem("dismissed_reminders", JSON.stringify(profileDismissed));
+        localStorage.setItem("dismissed_reminders", JSON.stringify(nextDismissed));
       } catch {
         // ignore local cache failures
       }
-      return;
-    }
-
-    if (user) {
-      setDismissed(readDismissedReminderCache());
-    }
-  }, [uiPreferences?.navigation?.dismissedReminders, user]);
+      return nextDismissed;
+    });
+  }, [hasUser, uiPreferences?.navigation?.dismissedReminders, userId]);
 
   useEffect(() => {
-    if (!user?.role) return;
-    prefetchRoutesForRole(user.role);
-  }, [user?.role]);
+    if (!userRole) return;
+    prefetchRoutesForRole(userRole);
+  }, [userRole]);
 
   const roleDashboardEndpoint = (role) => {
     switch (role) {
@@ -359,7 +396,7 @@ export default function AppShell() {
   };
 
   useEffect(() => {
-    if (!user?.id) return undefined;
+    if (!userId) return undefined;
 
     let disposed = false;
     const syncState = offlineMetricsStateRef.current;
@@ -396,7 +433,7 @@ export default function AppShell() {
       const deviceId = getOfflineDeviceId();
       const signature = buildOfflineMetricsSignature({
         deviceId,
-        userId: user.id,
+        userId,
         snapshot: nextSnapshot,
       });
       const now = Date.now();
@@ -465,10 +502,10 @@ export default function AppShell() {
       clearInterval(timer);
       clearRetryTimer();
     };
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     const mobile = window.matchMedia("(max-width: 900px)").matches;
     if (!mobile) return;
     const prev = document.body.style.overflow;
@@ -476,7 +513,7 @@ export default function AppShell() {
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [contextOpen, sidebarOpen, user]);
+  }, [contextOpen, hasUser, sidebarOpen]);
 
   useEffect(() => {
     const onSecurity = (event) => {
@@ -495,7 +532,7 @@ export default function AppShell() {
 
   useEffect(() => {
     let mounted = true;
-    if (!user) return;
+    if (!hasUser) return;
     setReminders((prev) => mergeReminderSets(buildProfileReminders(user, navigate), prev));
 
     const backgroundTask = scheduleBackgroundTask(async () => {
@@ -503,7 +540,7 @@ export default function AppShell() {
         _skipUiProgress: true,
         cacheTtlMs: 15000,
       }).catch(() => null);
-      if (sessionUserResult && bootstrapPrefsPendingRef.current && !user?.offlineSession) {
+      if (sessionUserResult && bootstrapPrefsPendingRef.current && userOnlineMode) {
         const flushed = await flushUiPreferences(undefined, {
           keepalive: true,
           timeoutMs: 4000,
@@ -512,7 +549,7 @@ export default function AppShell() {
           bootstrapPrefsPendingRef.current = false;
         }
       }
-      const dashEndpoint = roleDashboardEndpoint(user?.role);
+      const dashEndpoint = roleDashboardEndpoint(userRole);
       const [sessionRiskResult, twofaResult, dashboardResult] = await Promise.allSettled([
         apiFetch("/api/auth/session-risk", { _skipUiProgress: true, cacheTtlMs: 10000 }),
         apiFetch("/api/2fa/status", { _skipUiProgress: true, cacheTtlMs: 15000 }),
@@ -532,7 +569,7 @@ export default function AppShell() {
       const nextList = appendDashboardReminders(
         buildProfileReminders(profile, navigate),
         dash,
-        user?.role,
+        userRole,
         navigate
       );
 
@@ -573,7 +610,7 @@ export default function AppShell() {
       mounted = false;
       cancelBackgroundTask(backgroundTask);
     };
-  }, [flushUiPreferences, navigate, user?.id, user?.offlineSession, user?.role]);
+  }, [flushUiPreferences, hasUser, navigate, userId, userOnlineMode, userRole]);
 
   const dismissReminder = (id) => {
     const next = Array.from(new Set([...(dismissed || []), id]));
@@ -596,8 +633,8 @@ export default function AppShell() {
       const nextState = !v;
       // Only persist preference after user manually changes it
       userHasManuallyChangedSidebarRef.current = true;
-      if (user?.id) {
-        writeSidebarPreference(user.id, nextState);
+      if (userId) {
+        writeSidebarPreference(userId, nextState);
       }
       return nextState;
     });
@@ -689,13 +726,6 @@ export default function AppShell() {
                 </span>
               </button>
             ))}
-
-          {!isDashboardRoute(location.pathname) ? (
-            <div className="app-shell-navigation-toolbar">
-              <Breadcrumbs currentPath={location.pathname} homeLabel="Home" homeRoute="/app" />
-              <div className="app-shell-navigation-actions" />
-            </div>
-          ) : null}
 
           {!isDashboardRoute(location.pathname) ? <QuickActions className="app-shell-navigation-quick-actions" /> : null}
           <Outlet />

@@ -1,4 +1,5 @@
 import Hospital from "../models/Hospital.js";
+import mongoose from "mongoose";
 import { denyAudit } from "./denyAudit.js";
 import { isBreakGlassActive } from "./breakGlassGuard.js";
 import { getSystemSettingsDoc } from "../utils/systemSettingsStore.js";
@@ -32,13 +33,26 @@ export const planGuard =
 
       const [hospital, systemSettings] = await Promise.all([
         Hospital.findOne({
-        _id: hospitalId,
-        active: true,
-      }).lean(),
+          ...(mongoose.isValidObjectId(hospitalId)
+            ? { _id: hospitalId }
+            : { $or: [{ hospitalId }, { code: hospitalId }] }),
+          active: true,
+        }).lean(),
         getSystemSettingsDoc({ lean: true }),
       ]);
 
       if (!hospital) {
+        if (!mongoose.isValidObjectId(hospitalId)) {
+          return next();
+        }
+
+        const privilegedRole = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(
+          String(req.user?.role || "").toUpperCase()
+        );
+        if (privilegedRole) {
+          return next();
+        }
+
         return res.status(403).json({
           message: "Hospital inactive or not found",
         });
@@ -74,7 +88,7 @@ export const planGuard =
         Boolean(hospital?.subscription?.premiumPaused) || (trialExpired && !paid);
       if (trialExpired && !paid && !hospital?.subscription?.premiumPaused) {
         await Hospital.updateOne(
-          { _id: hospitalId },
+          { _id: hospital._id },
           {
             $set: {
               "subscription.status": "PAUSED",
@@ -84,7 +98,7 @@ export const planGuard =
         ).catch(() => {});
       } else if (paid && (hospital?.subscription?.premiumPaused || subStatus !== "ACTIVE")) {
         await Hospital.updateOne(
-          { _id: hospitalId },
+          { _id: hospital._id },
           {
             $set: {
               "subscription.status": "ACTIVE",
@@ -129,7 +143,7 @@ export const planGuard =
 
         // If limit is undefined/null → unlimited (safe default)
         if (typeof allowed === "number") {
-          const current = await getUsageCount(limitKey, hospitalId);
+          const current = await getUsageCount(limitKey, hospital._id);
 
           if (current >= allowed) {
             await denyAudit(

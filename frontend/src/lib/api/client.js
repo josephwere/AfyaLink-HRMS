@@ -150,7 +150,7 @@ function toNetworkErrorMessage(error) {
   return "Network error. Please check your connection and try again.";
 }
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -169,17 +169,17 @@ async function refreshAccessToken() {
         body: JSON.stringify({}),
       });
 
-      if (!response.ok) return false;
+      if (!response.ok) return null;
       const data = (await safeJson(response)) || {};
-      if (!data?.accessToken) return false;
+      if (!data?.accessToken) return null;
 
       setAccessToken(data.accessToken);
       if (data?.user) {
         writeStoredUser(data.user);
       }
-      return true;
+      return data;
     } catch {
-      return false;
+      return null;
     } finally {
       refreshPromise = null;
     }
@@ -238,7 +238,7 @@ async function request(path, options = {}, { retryOn401 = true } = {}) {
 
     if (response.status === 401 && retryOn401 && !isAuthRoute(path)) {
       const refreshed = await refreshAccessToken();
-      if (refreshed) {
+      if (refreshed?.accessToken) {
         return request(path, options, { retryOn401: false });
       }
 

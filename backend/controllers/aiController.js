@@ -14,6 +14,10 @@ const MAX_DOT_PHRASES = 24;
 const MAX_WORKFLOW_TEMPLATES = 16;
 const DEFAULT_AUTOFILL_THRESHOLD = 0.88;
 
+function isMongoObjectId(value) {
+  return /^[a-f\d]{24}$/i.test(String(value || ''));
+}
+
 function normalizeChatMessage(role, text) {
   const clean = String(text || '').trim();
   if (!clean) return null;
@@ -238,7 +242,9 @@ export const extractDocument = async (req, res, next) => {
       actorRole: req.user?.role,
       action: 'AI_DOCUMENT_EXTRACTED',
       resource: 'ai_document',
-      hospital: req.user?.hospital || req.user?.hospitalId || null,
+      hospital: isMongoObjectId(req.user?.hospital || req.user?.hospitalId)
+        ? req.user?.hospital || req.user?.hospitalId
+        : null,
       after: {
         filename: file.originalname,
         mimeType: file.mimetype,
@@ -588,7 +594,9 @@ export const logAssistantAutofillAudit = async (req, res, next) => {
       actorRole: req.user?.role,
       action: eventType === 'applied' ? 'AI_ASSISTANT_AUTOFILL_APPLIED' : 'AI_ASSISTANT_AUTOFILL_DRAFTED',
       resource: 'ai_assistant_autofill',
-      hospital: req.user?.hospital || req.user?.hospitalId || null,
+      hospital: isMongoObjectId(req.user?.hospital || req.user?.hospitalId)
+        ? req.user?.hospital || req.user?.hospitalId
+        : null,
       after: {
         eventType,
         templateId,

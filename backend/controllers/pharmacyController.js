@@ -270,7 +270,10 @@ export async function createPrescription(req, res) {
 export async function listPrescriptions(req, res) {
   try {
     const role = String(req.user?.role || "").toUpperCase();
-    const filter = { hospital: req.user.hospital };
+    const filter = {};
+    if (req.user?.hospital && role !== "PATIENT") {
+      filter.hospital = req.user.hospital;
+    }
 
     if (req.query?.appointmentId) filter.appointment = req.query.appointmentId;
     if (req.query?.patientId) {

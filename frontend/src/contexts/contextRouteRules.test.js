@@ -12,11 +12,15 @@ describe("context route rules", () => {
     expect(resolveRequiredContext("/app/portal/records/index")).toBe("MY_HEALTH");
   });
 
-  it("redirects work routes when My Health is active", () => {
-    expect(getContextRedirectPath("/app/care/patients/index", "MY_HEALTH")).toBe("/app/portal/home/index");
+  it("lets work routes switch stale My Health context instead of redirecting", () => {
+    expect(getContextRedirectPath("/app/care/patients/index", "MY_HEALTH")).toBeNull();
   });
 
   it("allows eligible non-patient users to access portal appointments from Work context", () => {
     expect(getContextRedirectPath("/app/portal/appointments/index", "WORK", { role: "DOCTOR" })).toBeNull();
+  });
+
+  it("lets patient portal routes switch stale Work context instead of redirecting", () => {
+    expect(getContextRedirectPath("/app/portal/appointments/index", "WORK", { role: "PATIENT" })).toBeNull();
   });
 });

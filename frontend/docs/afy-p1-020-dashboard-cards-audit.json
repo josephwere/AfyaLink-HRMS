@@ -106,40 +106,40 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-88",
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-101",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/OPDWorkspace.jsx",
-      "line": 88,
+      "line": 101,
       "label": "Status",
       "target": "/doctor/medical-records",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-89",
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-102",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/OPDWorkspace.jsx",
-      "line": 89,
+      "line": 102,
       "label": "Risk",
       "target": "/doctor/lab-results",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-90",
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-103",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/OPDWorkspace.jsx",
-      "line": 90,
+      "line": 103,
       "label": "Primary Diagnosis",
       "target": "/doctor/reports-notes",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-91",
+      "id": "dashboard-card-src/pages/Doctor/OPDWorkspace.jsx-104",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/OPDWorkspace.jsx",
-      "line": 91,
+      "line": 104,
       "label": "Visit State",
       "target": "/doctor/medical-records",
       "resolved": false,

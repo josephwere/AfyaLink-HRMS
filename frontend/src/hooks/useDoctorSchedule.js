@@ -7,9 +7,15 @@ import {
   updateAppointmentCall,
 } from "../services/appointmentWorkflow";
 import encounterService from "../services/encounter/service";
+import { normalizeRole } from "../utils/normalizeRole";
+
+const CLINICAL_CALENDAR_ROLES = new Set(["DOCTOR", "SURGEON", "NURSE", "RADIOLOGIST", "THERAPIST"]);
+const DOCTOR_AVAILABILITY_ROLES = new Set(["DOCTOR", "SURGEON"]);
+const CALL_INBOX_ROLES = new Set(["DOCTOR", "SURGEON", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]);
 
 export function useDoctorSchedule() {
   const { user } = useAuth();
+  const role = normalizeRole(user?.role || "");
   const [appointments, setAppointments] = useState([]);
   const [calls, setCalls] = useState([]);
   const [availability, setAvailability] = useState([]);
@@ -50,17 +56,26 @@ export function useDoctorSchedule() {
     setLoading(true);
     setMsg("");
     try {
-      const [appointmentsRes, callsRes] = await Promise.all([
+      const [appointmentsResult, callsResult] = await Promise.allSettled([
         listAppointments({ limit: 25 }),
-        listAppointmentCalls(),
+        CALL_INBOX_ROLES.has(role) ? listAppointmentCalls() : Promise.resolve({ items: [] }),
       ]);
+      if (appointmentsResult.status === "rejected") {
+        throw appointmentsResult.reason;
+      }
+      const appointmentsRes = appointmentsResult.value;
+      const callsRes = callsResult.status === "fulfilled" ? callsResult.value : { items: [] };
       const appointmentRows = Array.isArray(appointmentsRes?.items) ? appointmentsRes.items : [];
       setAppointments(appointmentRows);
       setCalls(Array.isArray(callsRes?.items) ? callsRes.items : []);
-      await fetchEncounterSnapshots(appointmentRows);
+      if (CLINICAL_CALENDAR_ROLES.has(role)) {
+        await fetchEncounterSnapshots(appointmentRows);
+      } else {
+        setEncounterByPatient({});
+      }
 
       const doctorId = user?.id || user?._id;
-      if (doctorId) {
+      if (doctorId && DOCTOR_AVAILABILITY_ROLES.has(role)) {
         const availabilityRes = await listDoctorAvailability(doctorId);
         setAvailability(Array.isArray(availabilityRes?.items) ? availabilityRes.items : []);
       } else {
@@ -71,7 +86,7 @@ export function useDoctorSchedule() {
     } finally {
       setLoading(false);
     }
-  }, [fetchEncounterSnapshots, user?.id, user?._id]);
+  }, [fetchEncounterSnapshots, role, user?.id, user?._id]);
 
   useEffect(() => {
     void load();

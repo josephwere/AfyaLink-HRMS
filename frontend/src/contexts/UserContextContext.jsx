@@ -36,6 +36,8 @@ export function UserContextProvider({ children }) {
   const location = useLocation();
   const [mode, setModeState] = useState(() => getStoredMode() || getDefaultContextMode(user));
   const prevUserIdRef = useRef(null);
+  const userId = user?.id || user?._id || user?.email || "";
+  const userRole = user?.role || user?.actualRole || user?.currentRole || "";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -48,20 +50,20 @@ export function UserContextProvider({ children }) {
     const required = resolveRequiredContext(location.pathname);
     if (required === "WORK" || required === "MY_HEALTH") {
       setModeState(required);
-      prevUserIdRef.current = user.id;
+      prevUserIdRef.current = userId;
       return;
     }
 
     // 2. Check for fresh user session login / restore
-    if (prevUserIdRef.current !== user.id) {
-      prevUserIdRef.current = user.id;
+    if (prevUserIdRef.current !== userId) {
+      prevUserIdRef.current = userId;
       const defaultMode = getDefaultContextMode(user);
       setModeState(defaultMode);
       try {
         window.localStorage.setItem(STORAGE_KEY, defaultMode);
       } catch {}
     }
-  }, [user, location.pathname]);
+  }, [user, userId, userRole, location.pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
