@@ -80,6 +80,17 @@ export async function saveDoctorAvailability(doctorId, payload) {
   });
 }
 
+export async function getMyDoctorWorkStatus() {
+  return apiFetch("/api/appointments/doctors/me/status");
+}
+
+export async function updateMyDoctorWorkStatus(status) {
+  return apiFetch("/api/appointments/doctors/me/status", {
+    method: "PATCH",
+    body: { status },
+  });
+}
+
 export async function listAppointmentCalls(params = {}) {
   const normalizedParams = typeof params === "string" ? { hospitalId: params } : params || {};
   const qs = new URLSearchParams();
@@ -128,6 +139,8 @@ export default {
   listHospitalDoctors,
   listAppointmentSuggestions,
   saveDoctorAvailability,
+  getMyDoctorWorkStatus,
+  updateMyDoctorWorkStatus,
   listAppointmentCalls,
   createAppointmentCall,
   updateAppointmentCall,

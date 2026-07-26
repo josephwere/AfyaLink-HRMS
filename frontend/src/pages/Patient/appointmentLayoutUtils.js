@@ -6,10 +6,10 @@ export function getVisibleHospitals(hospitals = [], expanded = false, defaultLim
 
 export function getAppointmentFlowStage(state = {}) {
   const hasSelection = Boolean(state?.selectedHospital);
-  const hasDoctor = Boolean(state?.selectedDoctor);
+  const hasService = Boolean(state?.selectedService || state?.serviceType);
   const hasAppointment = Boolean(state?.appointmentReady || state?.bookingSuccess);
   if (!hasSelection) return 1;
-  if (!hasDoctor) return 2;
+  if (!hasService) return 2;
   if (!hasAppointment) return 3;
   return 4;
 }

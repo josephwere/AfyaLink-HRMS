@@ -171,6 +171,14 @@ export default function MyAppointments() {
       return {};
     }
   })();
+  const featureFlags = useMemo(() => getPatientAppointmentFeatureFlagState(), []);
+  const {
+    discovery: discoveryEnabled,
+    map: mapEnabled,
+    hospitalDrawer: hospitalDrawerEnabled,
+    doctorMarketplace: doctorMarketplaceEnabled,
+    aiRecommendations: aiRecommendationsEnabled,
+  } = featureFlags;
 
   const {
     hospitalId,
@@ -220,7 +228,7 @@ export default function MyAppointments() {
     submit,
     bookSuggestedSlot,
     startConsultation,
-  } = usePatientAppointments({ hospitalFromQuery, savedLocation });
+  } = usePatientAppointments({ hospitalFromQuery, savedLocation, allowDoctorSelection: doctorMarketplaceEnabled });
 
   const resolvedMode = useMemo(() => {
     if (!canUseMyHealthContext) return false;
@@ -279,14 +287,6 @@ export default function MyAppointments() {
   const mapPanTimerRef = useRef(null);
   const mapsApiKey = useMemo(() => import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY || "", []);
   const [journeyState, setJourneyState] = useState({ bookingSuccess: Boolean(bookingSuccess), bookingConfirmed: Boolean(bookingSuccess), doctorAssigned: Boolean(bookingSuccess?.appointment?.doctor), appointmentBooked: Boolean(bookingSuccess) });
-  const featureFlags = useMemo(() => getPatientAppointmentFeatureFlagState(), []);
-  const {
-    discovery: discoveryEnabled,
-    map: mapEnabled,
-    hospitalDrawer: hospitalDrawerEnabled,
-    doctorMarketplace: doctorMarketplaceEnabled,
-    aiRecommendations: aiRecommendationsEnabled,
-  } = featureFlags;
   const journeySteps = useMemo(() => buildJourneySteps(journeyState), [journeyState]);
 
   useEffect(() => {
@@ -327,10 +327,10 @@ export default function MyAppointments() {
   const selectedHospitalId = String(hospitalId || "");
   const flowStage = useMemo(() => getAppointmentFlowStage({
     selectedHospital: Boolean(selectedHospital),
-    selectedDoctor: Boolean(form.doctor),
+    selectedService: Boolean(form.serviceType),
     appointmentReady: Boolean(form.scheduledAt),
     bookingSuccess: Boolean(bookingSuccess),
-  }), [selectedHospital, form.doctor, form.scheduledAt, bookingSuccess]);
+  }), [selectedHospital, form.serviceType, form.scheduledAt, bookingSuccess]);
   const sortedHospitals = useMemo(() => {
     const rows = [...hospitals];
     if (hospitalSortMode === "rating") {
@@ -720,14 +720,14 @@ export default function MyAppointments() {
         <div className="patient-hero-copy">
           <div className="appointment-success-kicker"> Healthcare Appointment discovery</div>
           <h2>{getPersonalizedGreeting(user, new Date())}</h2>
-          <p className="muted">Find the best healthcare near you and move from discovery to booking in a guided experience.</p>
+          <p className="muted">Choose a hospital service and preferred time. AfyaLink assigns the right care team automatically.</p>
           <div className="patient-flow-progress">
             <div className="appointment-success-kicker">Journey progress · stage {flowStage} / 4</div>
             <div className="patient-flow-step-row">
               {[
                 { label: "Discover", hint: "Location" },
                 { label: "Hospital", hint: "Selection" },
-                { label: "Doctor", hint: "Match" },
+                { label: "Service", hint: "Care need" },
                 { label: "Booking", hint: "Confirm" },
               ].map((item, index) => (
                 <div key={item.label} className={`patient-flow-step ${flowStage >= index + 1 ? "active" : ""}`}>
@@ -845,7 +845,7 @@ export default function MyAppointments() {
             <div className="appointment-success-icon" aria-hidden="true">✓</div>
             <div className="appointment-success-kicker">Premium confirmation</div>
             <h2>Appointment Ready for Your Care Journey</h2>
-            <p>Your appointment is confirmed and the next steps are now visible in one place. Use the actions below to prepare, join, or share the booking reference.</p>
+            <p>Your appointment request is saved. If a clinician is available, AfyaLink assigns one automatically; otherwise the hospital scheduling team will confirm the next available slot.</p>
             <div className="appointment-success-summary">
               <dl>
                 <dt>Date & time</dt>
@@ -856,8 +856,10 @@ export default function MyAppointments() {
                 <dd>{bookingSuccess.serviceType || "General Consultation"}</dd>
                 <dt>Mode</dt>
                 <dd>{String(bookingSuccess.consultationMode || "IN_PERSON").replace(/_/g, " ")}</dd>
-                <dt>Doctor</dt>
-                <dd>{bookingSuccess.doctorName || bookingSuccess.appointment?.doctor?.name || bookingSuccess.appointment?.doctor || "Hospital will assign one"}</dd>
+                <dt>Care team</dt>
+                <dd>{bookingSuccess.doctorName || bookingSuccess.appointment?.doctor?.name || bookingSuccess.appointment?.doctor || "Hospital scheduling queue"}</dd>
+                <dt>Assignment</dt>
+                <dd>{bookingSuccess.assignmentStatus || bookingSuccess.appointment?.assignmentStatus || (bookingSuccess.appointment?.doctor ? "ASSIGNED" : "PENDING")}</dd>
                 <dt>Reference</dt>
                 <dd>{bookingSuccess.appointment?._id || "AFYA-" + Date.now().toString().slice(-6)}</dd>
               </dl>
@@ -886,7 +888,7 @@ export default function MyAppointments() {
               <strong>This visit is now ready for</strong>
               <ul>
                 <li>Preparation instructions tailored to your chosen consultation mode.</li>
-                <li>Direct follow-up actions like joining a video call or contacting the hospital.</li>
+                <li>Hospital-managed clinician assignment based on service, workload, and availability.</li>
                 <li>Live updates as your care journey progresses through labs, pharmacy, and billing.</li>
               </ul>
             </div>
@@ -919,7 +921,7 @@ export default function MyAppointments() {
               <div className="patient-discovery-marker patient-discovery-marker-2" />
               <div className="patient-discovery-marker patient-discovery-marker-3" />
             </div>
-            <div className="discovery-sequence-title">{["Locating you…", "GPS connected", "Scanning nearby hospitals…", "Checking available doctors…", "Building recommendations…"][discoveryStepIndex]}</div>
+            <div className="discovery-sequence-title">{["Locating you…", "GPS connected", "Scanning nearby hospitals…", "Checking service capacity…", "Building recommendations…"][discoveryStepIndex]}</div>
             <div className="discovery-sequence-subtitle">{discoveryStepIndex < 4 ? "The platform is preparing a tailored healthcare discovery view for you." : "Ready"}</div>
             <div className="discovery-progress-row">
               {[0, 1, 2, 3, 4].map((step) => (
@@ -1267,34 +1269,45 @@ export default function MyAppointments() {
             data-ai-aliases="consultation reason|visit reason|chief complaint"
             data-ai-priority="high"
           />
-          <label>{t("preferredDoctorOptional", "Preferred doctor (optional)")}</label>
-          <input
-            value={doctorSearch}
-            onChange={(e) => setDoctorSearch(e.target.value)}
-            placeholder="Search doctor by name, email or department"
-            data-ai-label="Doctor Search"
-            data-ai-aliases="doctor lookup|find doctor|preferred doctor search"
-            data-ai-intent="lookup"
-            data-ai-priority="medium"
-          />
-          <select
-            value={form.doctor}
-            onChange={(e) => setForm((p) => ({ ...p, doctor: e.target.value }))}
-            data-ai-label="Preferred Doctor"
-            data-ai-aliases="doctor|selected doctor|assigned doctor"
-            data-ai-widget="doctor-picker"
-            data-ai-priority="high"
-          >
-            <option value="">Any available doctor</option>
-            {filteredDoctors.map((d) => (
-              <option key={d._id} value={d._id}>
-                {d.name} {d?.employment?.department ? `• ${d.employment.department}` : ""}
-              </option>
-            ))}
-          </select>
-          <p className="muted" style={{ marginTop: 6 }}>
-            The hospital will assign the best available doctor if you leave this blank.
-          </p>
+          {doctorMarketplaceEnabled ? (
+            <>
+              <label>{t("preferredDoctorOptional", "Preferred doctor (optional)")}</label>
+              <input
+                value={doctorSearch}
+                onChange={(e) => setDoctorSearch(e.target.value)}
+                placeholder="Search doctor by name, email or department"
+                data-ai-label="Doctor Search"
+                data-ai-aliases="doctor lookup|find doctor|preferred doctor search"
+                data-ai-intent="lookup"
+                data-ai-priority="medium"
+              />
+              <select
+                value={form.doctor}
+                onChange={(e) => setForm((p) => ({ ...p, doctor: e.target.value }))}
+                data-ai-label="Preferred Doctor"
+                data-ai-aliases="doctor|selected doctor|assigned doctor"
+                data-ai-widget="doctor-picker"
+                data-ai-priority="high"
+              >
+                <option value="">Any available doctor</option>
+                {filteredDoctors.map((d) => (
+                  <option key={d._id} value={d._id}>
+                    {d.name} {d?.employment?.department ? `• ${d.employment.department}` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="muted" style={{ marginTop: 6 }}>
+                Leave this blank for hospital-managed assignment.
+              </p>
+            </>
+          ) : (
+            <div className="empty-state-panel" style={{ marginBottom: 12 }}>
+              <strong>Hospital-managed clinician assignment</strong>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
+                You choose the service and preferred time. The hospital assigns the best available clinician based on specialty, schedule, and workload.
+              </p>
+            </div>
+          )}
           {bookingLocked ? (
             <div className="appointment-lock-card" role="status" style={{ marginBottom: 12 }}>
               <strong>You're already scheduled today</strong>
@@ -1326,7 +1339,7 @@ export default function MyAppointments() {
       <section className="section">
         <div className="card-title-row">
           <div>
-            <div className="action-card-eyebrow">Step 4 · Choose appointment</div>
+            <div className="action-card-eyebrow">Step 4 · Recommended times</div>
             <h3 style={{ margin: 0 }}>{t("suggestions", "Suggested Slots")}</h3>
           </div>
         </div>
@@ -1341,13 +1354,19 @@ export default function MyAppointments() {
                   return (
                     <div key={`${item.doctorId}-${index}`} className="patient-slot-chip-card">
                       <div className="patient-slot-chip-time">{slotLabel}</div>
-                      <div className="patient-slot-chip-meta">{item.doctorName || "Available doctor"}</div>
-                      <button type="button" className="btn-secondary compact-btn" onClick={() => {
-                        const localValue = slotDate && !Number.isNaN(slotDate.getTime()) ? new Date(slotDate.getTime() - slotDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
-                        setForm((prev) => ({ ...prev, doctor: item.doctorId, scheduledAt: localValue || prev.scheduledAt }));
-                      }}>
-                        Select
-                      </button>
+                  <div className="patient-slot-chip-meta">
+                    {doctorMarketplaceEnabled ? item.doctorName || "Available clinician" : item.specialization || form.serviceType || "Care team available"}
+                  </div>
+                  <button type="button" className="btn-secondary compact-btn" onClick={() => {
+                    const localValue = slotDate && !Number.isNaN(slotDate.getTime()) ? new Date(slotDate.getTime() - slotDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
+                    setForm((prev) => ({
+                      ...prev,
+                      doctor: doctorMarketplaceEnabled ? item.doctorId : "",
+                      scheduledAt: localValue || prev.scheduledAt,
+                    }));
+                  }}>
+                    Select
+                  </button>
                     </div>
                   );
                 })}
@@ -1372,9 +1391,9 @@ export default function MyAppointments() {
       <section className="section">
         <div className="card-title-row">
           <div>
-            <div className="action-card-eyebrow">Step 3 · Select doctor</div>
+            <div className="action-card-eyebrow">Optional · Continuity of care</div>
             <h3 style={{ margin: 0 }}>{t("doctorsInHospital", "Doctor Discovery")}</h3>
-            <p className="muted" style={{ margin: "4px 0 0" }}>Browse doctors by specialty, language, availability, and consultation mode, then choose a preferred clinician.</p>
+            <p className="muted" style={{ margin: "4px 0 0" }}>This optional view is for hospitals that allow specific clinician requests, such as specialist follow-ups.</p>
           </div>
         </div>
         <div className="card premium-card doctor-discovery-filters">
@@ -1440,7 +1459,7 @@ export default function MyAppointments() {
                   {doctor.consultationMode?.includes("IN_PERSON") ? <span className="hospital-discovery-pill">In-person</span> : null}
                 </div>
                 <button type="button" className="btn-primary" onClick={() => setForm((p) => ({ ...p, doctor: doctor._id }))} style={{ marginTop: 12 }}>
-                  {t("preferDoctor", "Book")}
+                  {t("preferDoctor", "Request this clinician")}
                 </button>
               </div>
             );
@@ -1504,7 +1523,7 @@ export default function MyAppointments() {
                     <th>Status</th>
                     <th>Service</th>
                     <th>Reason</th>
-                    <th>Doctor</th>
+                    <th>Care Team</th>
                     <th>Notes</th>
                     <th>Call</th>
                   </tr>
@@ -1516,7 +1535,14 @@ export default function MyAppointments() {
                       <td>{a.status || "Scheduled"}</td>
                       <td>{a.serviceType || "General Consultation"}</td>
                       <td>{a.reason || "—"}</td>
-                      <td>{a.doctor?.name || a.doctor || "Unassigned"}</td>
+                      <td>
+                        {a.doctor?.name || a.doctor || "Hospital scheduling"}
+                        {!a.doctor ? (
+                          <div className="muted" style={{ marginTop: 4 }}>
+                            Waiting for assignment
+                          </div>
+                        ) : null}
+                      </td>
                       <td>
                         {a.notes
                           ? `${String(a.notes).slice(0, 100)}${String(a.notes).length > 100 ? "..." : ""}`

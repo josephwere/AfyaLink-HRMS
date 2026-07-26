@@ -6,6 +6,8 @@ import {
   getHospitalSlotSuggestions,
   getHospitalAppointmentOps,
   assignAppointmentDoctor,
+  getMyDoctorWorkStatus,
+  updateMyDoctorWorkStatus,
   getDoctorAvailability,
   upsertDoctorAvailability,
   listCalls,
@@ -92,6 +94,21 @@ router.post(
   requireRole("HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "SUPER_ASSISTANT"),
   audit("APPOINTMENT_ASSIGN_DOCTOR", "appointments"),
   assignAppointmentDoctor
+);
+
+router.get(
+  "/doctors/me/status",
+  protect,
+  requireRole("DOCTOR", "SURGEON"),
+  getMyDoctorWorkStatus
+);
+
+router.patch(
+  "/doctors/me/status",
+  protect,
+  requireRole("DOCTOR", "SURGEON"),
+  audit("DOCTOR_WORK_STATUS_UPDATE", "appointments"),
+  updateMyDoctorWorkStatus
 );
 
 router.get(

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import * as encounterService from "../services/encounter";
+import { getMyDoctorWorkStatus, updateMyDoctorWorkStatus } from "../services/appointmentWorkflow";
 import { getDoctorDashboard, listDoctorDashboardAppointments, listDoctorDashboardNotifications } from "../services/dashboardApi";
 import { listTransfers } from "../services/transferApi";
 
@@ -9,6 +10,8 @@ const initialState = {
   alerts: [],
   transfers: [],
   encounterByPatient: {},
+  workStatus: null,
+  statusSaving: false,
   loading: false,
   error: null,
 };
@@ -59,15 +62,17 @@ export function useDoctorDashboard() {
       const encounterByPatient = await loadEncounterSnapshots(appointmentRows);
       if (!active.current) return;
 
-      setState({
+      setState((prev) => ({
         dashboard,
         appointments: appointmentRows,
         alerts: Array.isArray(alerts) ? alerts.slice(0, 8) : [],
         transfers: Array.isArray(transfersResult?.items) ? transfersResult.items : [],
+        workStatus: prev.workStatus,
+        statusSaving: false,
         encounterByPatient,
         loading: false,
         error: null,
-      });
+      }));
     } catch (error) {
       if (!active.current) return;
       setState((prev) => ({ ...prev, loading: false, error }));
@@ -77,9 +82,30 @@ export function useDoctorDashboard() {
   useEffect(() => {
     active.current = true;
     loadDashboardData();
+    getMyDoctorWorkStatus()
+      .then((workStatus) => {
+        if (active.current) setState((prev) => ({ ...prev, workStatus }));
+      })
+      .catch(() => {});
     return () => {
       active.current = false;
     };
+  }, [loadDashboardData]);
+
+  const setDoctorWorkStatus = useCallback(async (status) => {
+    setState((prev) => ({ ...prev, statusSaving: true, error: null }));
+    try {
+      const workStatus = await updateMyDoctorWorkStatus(status);
+      if (!active.current) return workStatus;
+      setState((prev) => ({ ...prev, workStatus, statusSaving: false }));
+      if (Number(workStatus?.assignedFromQueue || 0) > 0) {
+        await loadDashboardData();
+      }
+      return workStatus;
+    } catch (error) {
+      if (active.current) setState((prev) => ({ ...prev, statusSaving: false, error }));
+      throw error;
+    }
   }, [loadDashboardData]);
 
   const resolveEscalation = useCallback(
@@ -102,6 +128,7 @@ export function useDoctorDashboard() {
     ...state,
     transferStats,
     resolveEscalation,
+    setDoctorWorkStatus,
     refresh: loadDashboardData,
   };
 }

@@ -23,6 +23,7 @@ export default function HospitalAdminAppointments() {
     removeCall,
     saveAvailability,
     dayNames,
+    load,
   } = useHospitalAdminAppointments();
 
   return (
@@ -30,7 +31,7 @@ export default function HospitalAdminAppointments() {
       <div className="welcome-panel">
         <div>
           <h2>Appointment Operations</h2>
-          <p className="muted">Manage hospital bookings, doctor load, schedules, and consultation calls.</p>
+          <p className="muted">Manage service bookings, clinician assignment, doctor load, schedules, and consultation calls.</p>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn-secondary" onClick={() => void load()} disabled={loading}>
@@ -45,7 +46,7 @@ export default function HospitalAdminAppointments() {
         <h3>Today</h3>
         <div className="grid info-grid">
           <StatCard title="Total appointments" value={data.summary.totalAppointments ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
-          <StatCard title="Pending assignments" value={data.summary.pendingAssignments ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
+          <StatCard title="Waiting assignment" value={data.summary.pendingAssignments ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
           <StatCard title="Assigned" value={data.summary.assignedToday ?? 0} onClick={() => scrollToSection(queueSectionRef)} />
           <StatCard title="Doctors online" value={data.summary.doctorsOnline ?? 0} onClick={() => scrollToSection(availabilitySectionRef)} />
           <StatCard title="Requested calls" value={data.calls.filter((call) => call.status === "REQUESTED").length} onClick={() => navigate("/hospital-admin/consultation-monitor?status=REQUESTED")} />
@@ -55,7 +56,16 @@ export default function HospitalAdminAppointments() {
 
       <section className="section doctor-main-grid" ref={queueSectionRef}>
         <div className="card doctor-schedule-card">
-          <h3>Appointment Queue</h3>
+          <h3>Service Booking Queue</h3>
+          {data.summary.pendingAssignments > 0 ? (
+            <div className="appointment-lock-card" role="status" style={{ marginBottom: 12 }}>
+              <strong>Capacity alert</strong>
+              <p style={{ margin: "6px 0 0" }}>
+                {data.summary.pendingAssignments} appointment{data.summary.pendingAssignments === 1 ? "" : "s"} need clinician assignment.
+                Extend clinic hours, assign another doctor, or open another consultation room.
+              </p>
+            </div>
+          ) : null}
           <div className="table-wrap">
             <table className="table premium-table">
               <thead>
@@ -79,7 +89,7 @@ export default function HospitalAdminAppointments() {
                     </td>
                     <td>{item.serviceType || "General Consultation"}</td>
                     <td>{item.assignmentStatus || item.status}</td>
-                    <td>{item.doctor?.name || "Auto-pending"}</td>
+                    <td>{item.doctor?.name || "Waiting for care team"}</td>
                     <td>
                       <select
                         value={item.doctor?._id || ""}

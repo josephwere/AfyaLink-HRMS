@@ -16,9 +16,19 @@ export default function Dashboard() {
     alerts,
     transfers,
     transferStats,
+    workStatus,
+    statusSaving,
     resolveEscalation,
+    setDoctorWorkStatus,
   } = useDoctorDashboard();
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
+  const [statusMsg, setStatusMsg] = useState("");
+  const currentWorkStatus = workStatus?.status || "AVAILABLE";
+  const statusOptions = [
+    { value: "AVAILABLE", label: "Available", icon: "●", description: "Eligible for new automatic assignments." },
+    { value: "BUSY_MANUAL", label: "Busy", icon: "●", description: "Pause new assignments while keeping existing schedule." },
+    { value: "OFFLINE", label: "Offline", icon: "●", description: "Not on duty or not receiving assignments." },
+  ];
 
   const firstMissingRequirement = (encounter) => {
     const items = Array.isArray(encounter?.closeout?.missingRequirements)
@@ -53,6 +63,21 @@ export default function Dashboard() {
       );
     } finally {
       setResolvingEncounterId("");
+    }
+  };
+
+  const handleStatusChange = async (status) => {
+    try {
+      setStatusMsg("");
+      const next = await setDoctorWorkStatus(status);
+      const assigned = Number(next?.assignedFromQueue || 0);
+      setStatusMsg(
+        assigned > 0
+          ? `${assigned} waiting patient${assigned === 1 ? "" : "s"} assigned to your schedule.`
+          : `Status updated to ${next?.label || "Available"}.`
+      );
+    } catch (error) {
+      setStatusMsg(error?.message || "Could not update availability status.");
     }
   };
 
@@ -120,6 +145,48 @@ export default function Dashboard() {
         },
       ]}
     >
+      <DashboardSection
+        className="doctor-main-grid"
+        title="My Status"
+        subtitle="This controls whether the scheduling engine can assign new patients to you."
+      >
+        <div className="card premium-card">
+          <div className="card-title-row">
+            <div>
+              <h3 style={{ margin: 0 }}>{workStatus?.label || "Available"}</h3>
+              <p className="muted" style={{ margin: "4px 0 0" }}>
+                Source: {workStatus?.source || "DEFAULT"} {workStatus?.updatedAt ? `• Updated ${new Date(workStatus.updatedAt).toLocaleString()}` : ""}
+              </p>
+            </div>
+            <span className={`action-pill ${currentWorkStatus === "AVAILABLE" ? "connected" : currentWorkStatus === "OFFLINE" ? "risk" : "warning"}`}>
+              {workStatus?.eligibleForAssignment ? "Receiving assignments" : "Paused"}
+            </span>
+          </div>
+          <div className="doctor-actions-row" style={{ marginTop: 12, flexWrap: "wrap" }}>
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={currentWorkStatus === option.value ? "btn-primary" : "btn-secondary"}
+                disabled={statusSaving}
+                onClick={() => void handleStatusChange(option.value)}
+                title={option.description}
+              >
+                {option.icon} {statusSaving && currentWorkStatus === option.value ? "Updating..." : option.label}
+              </button>
+            ))}
+          </div>
+          {statusMsg ? <p className="muted" style={{ margin: "10px 0 0" }}>{statusMsg}</p> : null}
+          <div className="success-guide-panel" style={{ marginTop: 12 }}>
+            <strong>How assignment works</strong>
+            <ul>
+              <li>Available doctors can receive new queued appointments automatically.</li>
+              <li>Busy doctors keep existing appointments but do not receive new assignments.</li>
+              <li>AfyaLink automatically marks you Busy during active consultations and restores Available afterward.</li>
+            </ul>
+          </div>
+        </div>
+      </DashboardSection>
 
       <DashboardSection className="doctor-main-grid" title="Today’s schedule + alerts" subtitle="Appointments, current blockers, and the fastest action paths for the day.">
         <div className="card doctor-schedule-card">

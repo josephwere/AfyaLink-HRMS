@@ -2,7 +2,7 @@ const DEFAULT_FLAGS = {
   discovery: true,
   map: true,
   hospitalDrawer: true,
-  doctorMarketplace: true,
+  doctorMarketplace: false,
   aiRecommendations: true,
 };
 

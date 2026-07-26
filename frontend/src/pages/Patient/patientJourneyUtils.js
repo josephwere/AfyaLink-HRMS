@@ -14,8 +14,8 @@ export function buildJourneySteps(state = {}) {
     },
     {
       key: "assigned",
-      label: "Doctor Assigned",
-      description: "A doctor is assigned to your visit and you can join online if needed.",
+      label: "Care Team Assigned",
+      description: "The hospital scheduling team assigns the right clinician for your visit.",
       status: "pending",
     },
     {

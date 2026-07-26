@@ -33,7 +33,10 @@ export default function Appointments() {
       {error && <div style={{ color: "red" }}>{error}</div>}
 
       <form onSubmit={createAppointment} className="card form">
-        <h3>Schedule Appointment</h3>
+        <h3>Book Service Appointment</h3>
+        <p className="muted">
+          Select the patient, service, and preferred time. AfyaLink assigns the right available clinician automatically.
+        </p>
 
         <label>Patient</label>
         <select
@@ -59,13 +62,20 @@ export default function Appointments() {
           </button>
         )}
 
-        <label>Doctor</label>
+        <label>Service</label>
+        <input
+          placeholder="General Consultation"
+          value={form.serviceType}
+          onChange={(e) => setForm({ ...form, serviceType: e.target.value })}
+          required
+        />
+
+        <label>Preferred clinician (optional)</label>
         <select
           value={form.doctor}
           onChange={(e) => setForm({ ...form, doctor: e.target.value })}
-          required
         >
-          <option value="">Select doctor</option>
+          <option value="">Hospital assigns automatically</option>
           {doctors.map((d) => (
             <option key={d._id} value={d._id}>
               {d.name}
@@ -92,7 +102,7 @@ export default function Appointments() {
         />
 
         <div>
-          <button className="btn-primary" type="submit">Schedule</button>
+          <button className="btn-primary" type="submit">Book Appointment</button>
         </div>
       </form>
 
@@ -105,7 +115,7 @@ export default function Appointments() {
               <thead>
                 <tr>
                   <th>Patient</th>
-                  <th>Doctor</th>
+                  <th>Care team</th>
                   <th>Date</th>
                   <th>Status</th>
                   <th />
@@ -115,7 +125,7 @@ export default function Appointments() {
                 {appointments.map((a) => (
                   <tr key={a._id}>
                     <td>{a.patient?.name}</td>
-                    <td>{a.doctor?.name}</td>
+                    <td>{a.doctor?.name || "Hospital scheduling"}</td>
                     <td>{new Date(a.scheduledAt).toLocaleString()}</td>
                     <td>{a.status}</td>
                     <td>

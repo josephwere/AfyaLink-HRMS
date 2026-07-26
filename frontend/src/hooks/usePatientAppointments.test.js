@@ -11,6 +11,7 @@ vi.mock("../services/appointmentWorkflow", () => ({
   listAppointmentSuggestions: vi.fn(),
   listAppointmentsForHospital: vi.fn(),
   listDoctorAvailability: vi.fn(),
+  listHospitalDoctors: vi.fn(),
 }));
 
 vi.mock("../services/patientApi", () => ({
@@ -53,6 +54,7 @@ describe("usePatientAppointments", () => {
     appointmentWorkflow.listAppointmentCalls.mockResolvedValue({ items: [] });
     appointmentWorkflow.listAppointmentsForHospital.mockResolvedValue({ items: [] });
     appointmentWorkflow.listDoctorAvailability.mockResolvedValue({ items: [] });
+    appointmentWorkflow.listHospitalDoctors.mockResolvedValue({ items: [{ _id: "doctor-1", name: "Dr Test" }] });
     appointmentWorkflow.listAppointmentSuggestions.mockResolvedValue({ items: [] });
     appointmentWorkflow.createAppointment.mockResolvedValue({ _id: "a-1", serviceType: "General Consultation" });
     appointmentWorkflow.createAppointmentCall.mockResolvedValue({ ok: true });
@@ -98,18 +100,36 @@ describe("usePatientAppointments", () => {
     expect(geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
   });
 
-  it("submits an appointment through the shared hook", async () => {
+  it("submits a service-first appointment without a doctor by default", async () => {
     const { result } = renderHook(() => usePatientAppointments({ hospitalFromQuery: "h-1", savedLocation: { lat: 1, lng: 2, radiusKm: 10, mode: "manual" } }));
 
     await act(async () => {
-      result.current.setForm({ scheduledAt: "2026-01-01T10:00:00.000Z", reason: "Checkup", serviceType: "General Consultation", consultationMode: "IN_PERSON", doctor: "" });
+      result.current.setForm({ scheduledAt: "2026-01-01T10:00:00.000Z", reason: "Checkup", serviceType: "General Consultation", consultationMode: "IN_PERSON", doctor: "doctor-1" });
     });
 
     await act(async () => {
       await result.current.submit({ preventDefault: vi.fn() });
     });
 
-    expect(appointmentWorkflow.createAppointment).toHaveBeenCalled();
+    expect(appointmentWorkflow.createAppointment).toHaveBeenCalledWith(expect.not.objectContaining({ doctor: expect.any(String) }));
     expect(result.current.bookingSuccess).toMatchObject({ hospitalName: "Test Hospital" });
+  });
+
+  it("can submit a preferred doctor only when doctor selection is explicitly enabled", async () => {
+    const { result } = renderHook(() => usePatientAppointments({
+      hospitalFromQuery: "h-1",
+      savedLocation: { lat: 1, lng: 2, radiusKm: 10, mode: "manual" },
+      allowDoctorSelection: true,
+    }));
+
+    await act(async () => {
+      result.current.setForm({ scheduledAt: "2026-01-01T10:00:00.000Z", reason: "Follow-up", serviceType: "General Consultation", consultationMode: "IN_PERSON", doctor: "doctor-1" });
+    });
+
+    await act(async () => {
+      await result.current.submit({ preventDefault: vi.fn() });
+    });
+
+    expect(appointmentWorkflow.createAppointment).toHaveBeenCalledWith(expect.objectContaining({ doctor: "doctor-1" }));
   });
 });

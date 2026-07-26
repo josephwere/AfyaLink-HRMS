@@ -132,6 +132,151 @@ describe('Appointments', ()=>{
     expect(r.body.assignmentStatus).toBe('ASSIGNED');
   });
 
+  test('patient self-service booking ignores submitted doctor and uses hospital scheduling', async ()=>{
+    const isolatedUser = await User.create({
+      name: 'Service First Patient',
+      email: 'service-first-patient@afya.test',
+      password: 'Patient123!',
+      role: 'PATIENT',
+      active: true,
+      phone: '+254700000003',
+    });
+    const isolatedToken = jwt.sign(
+      { id: String(isolatedUser._id), twoFactorVerified: true },
+      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+    );
+    const isolatedPatient = await Patient.create({
+      firstName: 'Service',
+      lastName: 'First',
+      contact: isolatedUser.phone,
+      hospital: hospitalId,
+      metadata: { userId: String(isolatedUser._id) },
+      active: true,
+    });
+
+    const r = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${isolatedToken}`)
+      .send({
+        patient: String(isolatedPatient._id),
+        hospitalId,
+        doctor: new mongoose.Types.ObjectId().toString(),
+        scheduledAt: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        timeZone: 'Africa/Nairobi',
+      });
+
+    expect([200, 201]).toContain(r.status);
+    expect(String(r.body.doctor)).toBe(doctorUserId);
+    expect(r.body.assignmentStatus).toBe('ASSIGNED');
+  });
+
+  test('doctor busy status pauses assignment and available status assigns queued patients', async ()=>{
+    await User.findByIdAndUpdate(doctorUserId, {
+      $set: {
+        "metadata.doctorWorkStatus": "BUSY_MANUAL",
+        "metadata.doctorWorkStatusSource": "MANUAL",
+      },
+    });
+
+    const queued = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(queued.status);
+    expect(queued.body.doctor || null).toBeNull();
+    expect(queued.body.assignmentStatus).toBe('PENDING');
+
+    const status = await request(app)
+      .patch('/api/appointments/doctors/me/status')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'AVAILABLE' });
+
+    expect(status.status).toBe(200);
+    expect(status.body.status).toBe('AVAILABLE');
+    expect(status.body.assignedFromQueue).toBeGreaterThanOrEqual(1);
+
+    const updated = await Appointment.findById(queued.body._id).lean();
+    expect(String(updated.doctor)).toBe(doctorUserId);
+    expect(updated.assignmentStatus).toBe('ASSIGNED');
+  });
+
+  test('reassigns the next queued appointment when a future slot is cancelled', async ()=>{
+    await User.findByIdAndUpdate(doctorUserId, {
+      $set: {
+        "metadata.doctorWorkStatus": "AVAILABLE",
+        "metadata.doctorWorkStatusSource": "MANUAL",
+      },
+    });
+
+    const releasedAt = new Date(Date.now() + 96 * 60 * 60 * 1000);
+    const confirmed = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: releasedAt.toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(confirmed.status);
+    expect(String(confirmed.body.doctor)).toBe(doctorUserId);
+    expect(confirmed.body.assignmentStatus).toBe('ASSIGNED');
+
+    await User.findByIdAndUpdate(doctorUserId, {
+      $set: {
+        "metadata.doctorWorkStatus": "BUSY_MANUAL",
+        "metadata.doctorWorkStatusSource": "MANUAL",
+      },
+    });
+
+    const queued = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 98 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(queued.status);
+    expect(queued.body.doctor || null).toBeNull();
+    expect(queued.body.assignmentStatus).toBe('PENDING');
+
+    await User.findByIdAndUpdate(doctorUserId, {
+      $set: {
+        "metadata.doctorWorkStatus": "AVAILABLE",
+        "metadata.doctorWorkStatusSource": "MANUAL",
+      },
+    });
+
+    const cancelled = await request(app)
+      .delete(`/api/appointments/${confirmed.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Patient cancelled' });
+
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.cancelledAppointment.status).toBe('Cancelled');
+    expect(String(cancelled.body.reassignedAppointment?._id)).toBe(String(queued.body._id));
+
+    const queuedAfterCancellation = await Appointment.findById(queued.body._id).lean();
+    expect(String(queuedAfterCancellation.doctor)).toBe(doctorUserId);
+    expect(queuedAfterCancellation.assignmentStatus).toBe('ASSIGNED');
+    expect(new Date(queuedAfterCancellation.scheduledAt).toISOString()).toBe(releasedAt.toISOString());
+
+    const cancelledAfterCancellation = await Appointment.findById(confirmed.body._id).lean();
+    expect(cancelledAfterCancellation.status).toBe('Cancelled');
+    expect(cancelledAfterCancellation.cancellationReason).toBe('Patient cancelled');
+  });
+
   test('interprets datetime-local values in the requested time zone', ()=>{
     const parsed = normalizeScheduledAtInput('2025-03-10T10:30', 'Africa/Nairobi');
     const expectedUtc = new Date(Date.UTC(2025, 2, 10, 7, 30, 0));

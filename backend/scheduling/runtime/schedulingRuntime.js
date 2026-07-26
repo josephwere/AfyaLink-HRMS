@@ -24,6 +24,12 @@ import { notifyRolesInHospital } from "../../services/notificationService.js";
 
 const ACTIVE_DOCTOR_ROLES = ["DOCTOR", "SURGEON"];
 const EXCLUDED_APPOINTMENT_STATUSES = ["Cancelled", "Completed", "NoShow"];
+const ASSIGNABLE_DOCTOR_STATUS_QUERY = {
+  $or: [
+    { "metadata.doctorWorkStatus": { $exists: false } },
+    { "metadata.doctorWorkStatus": { $in: ["", "AVAILABLE", "ONLINE"] } },
+  ],
+};
 
 function getDayRange(date) {
   const start = new Date(date);
@@ -39,8 +45,9 @@ async function loadDoctors(hospitalId) {
     role: { $in: ACTIVE_DOCTOR_ROLES },
     active: true,
     "employment.status": { $ne: "INACTIVE" },
+    ...ASSIGNABLE_DOCTOR_STATUS_QUERY,
   })
-    .select("_id name employment.department")
+    .select("_id name employment.department metadata.doctorWorkStatus")
     .lean();
 }
 
@@ -84,11 +91,19 @@ export function createSchedulingRuntime({ observability } = {}) {
       role: { $in: ACTIVE_DOCTOR_ROLES },
       active: true,
       "employment.status": { $ne: "INACTIVE" },
+      ...ASSIGNABLE_DOCTOR_STATUS_QUERY,
     })
-      .select("_id name employment.department")
+      .select("_id name employment.department metadata.doctorWorkStatus")
       .lean();
 
     if (!doctor) return null;
+
+    const existingDoctorBooking = await Appointment.findOne({
+      doctor: doctorId,
+      scheduledAt: scheduledDate,
+      status: { $nin: EXCLUDED_APPOINTMENT_STATUSES },
+    }).select("_id").lean();
+    if (existingDoctorBooking) return null;
 
     const availability = await DoctorAvailability.findOne({
       doctor: doctor._id,

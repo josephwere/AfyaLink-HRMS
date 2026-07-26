@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getPatientAppointmentFeatureFlags, isPatientExperienceMode } from "./appointmentFeatureFlags";
 
 describe("getPatientAppointmentFeatureFlags", () => {
-  it("defaults all appointment experience flags to enabled", () => {
+  it("defaults to service-first booking with optional doctor marketplace disabled", () => {
     expect(getPatientAppointmentFeatureFlags({})).toEqual({
       discovery: true,
       map: true,
       hospitalDrawer: true,
-      doctorMarketplace: true,
+      doctorMarketplace: false,
       aiRecommendations: true,
     });
   });

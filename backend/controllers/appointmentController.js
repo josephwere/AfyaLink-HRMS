@@ -20,6 +20,9 @@ import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
 const DEFAULT_BOOKING_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || "Africa/Nairobi";
+const DOCTOR_WORK_STATUSES = new Set(["AVAILABLE", "BUSY_MANUAL", "BUSY_AUTOMATIC", "OFFLINE"]);
+const ASSIGNABLE_DOCTOR_WORK_STATUSES = new Set(["AVAILABLE"]);
+const APPOINTMENT_INACTIVE_STATUSES = ["Cancelled", "Completed", "NoShow", "CANCELLED", "COMPLETED", "NO_SHOW"];
 const DEMO_HOSPITAL_FALLBACK_IDS = [
   process.env.DEMO_HOSPITAL_ID,
   process.env.E2E_HOSPITAL_ID,
@@ -28,6 +31,46 @@ const DEMO_HOSPITAL_FALLBACK_IDS = [
   .filter(Boolean)
   .map((value) => String(value).trim())
   .filter(Boolean);
+
+function normalizeDoctorWorkStatus(value) {
+  const normalized = String(value || "AVAILABLE").trim().toUpperCase();
+  if (normalized === "BUSY") return "BUSY_MANUAL";
+  if (normalized === "ONLINE") return "AVAILABLE";
+  if (DOCTOR_WORK_STATUSES.has(normalized)) return normalized;
+  return "AVAILABLE";
+}
+
+function getDoctorWorkStatus(user = {}) {
+  if (user?.active === false || user?.employment?.status === "INACTIVE") return "OFFLINE";
+  return normalizeDoctorWorkStatus(user?.metadata?.doctorWorkStatus || "AVAILABLE");
+}
+
+function serializeDoctorWorkStatus(user = {}) {
+  const status = getDoctorWorkStatus(user);
+  return {
+    status,
+    label:
+      status === "AVAILABLE"
+        ? "Available"
+        : status === "BUSY_AUTOMATIC"
+        ? "Busy (Automatic)"
+        : status === "BUSY_MANUAL"
+        ? "Busy"
+        : "Offline",
+    source: user?.metadata?.doctorWorkStatusSource || (status === "AVAILABLE" ? "DEFAULT" : "SYSTEM"),
+    eligibleForAssignment: ASSIGNABLE_DOCTOR_WORK_STATUSES.has(status),
+    updatedAt: user?.metadata?.doctorWorkStatusUpdatedAt || null,
+  };
+}
+
+function doctorWorkStatusQuery() {
+  return {
+    $or: [
+      { "metadata.doctorWorkStatus": { $exists: false } },
+      { "metadata.doctorWorkStatus": { $in: ["", "AVAILABLE", "ONLINE"] } },
+    ],
+  };
+}
 
 async function resolveDemoHospitalFallbackId() {
   if (DEMO_HOSPITAL_FALLBACK_IDS.length) {
@@ -301,8 +344,9 @@ async function autoAssignDoctor({
     role: { $in: CLINICIAN_ROLES },
     active: true,
     "employment.status": { $ne: "INACTIVE" },
+    ...doctorWorkStatusQuery(),
   })
-    .select("_id name employment.department")
+    .select("_id name employment.department metadata.doctorWorkStatus")
     .lean();
 
   if (!doctors.length) {
@@ -407,8 +451,9 @@ async function buildHospitalSlotSuggestions({
     role: { $in: CLINICIAN_ROLES },
     active: true,
     "employment.status": { $ne: "INACTIVE" },
+    ...doctorWorkStatusQuery(),
   })
-    .select("_id name employment.department")
+    .select("_id name employment.department metadata.doctorWorkStatus")
     .lean();
   if (!doctorRows.length) return [];
 
@@ -505,6 +550,17 @@ async function notifyAppointmentLifecycle({ appointment, action, actorId }) {
     });
   }
 
+  if (!appointment.doctor) {
+    await notifyRolesInHospital({
+      hospital: appointment.hospital,
+      roles: ["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"],
+      title: "Appointment needs clinician assignment",
+      body: "A patient selected a service and time, but no matching doctor was available. Review the appointment queue.",
+      category: "OPERATIONAL",
+      meta: { appointmentId: appointment._id, actorId, assignmentStatus: appointment.assignmentStatus || "PENDING" },
+    });
+  }
+
   // Notify receptionists on new bookings so front desk staff can prepare
   if (action === "created") {
     try {
@@ -574,6 +630,11 @@ export const createAppointment = async (req, res, next) => {
       }
     }
 
+    // Patients book a hospital service/time; the scheduling engine owns clinician allocation.
+    if (role === "PATIENT") {
+      doctor = null;
+    }
+
     // Ensure doctor-created appointments remain visible in doctor queues/lists.
     if (role === "DOCTOR" && !doctor) {
       doctor = req.user.id;
@@ -613,8 +674,7 @@ export const createAppointment = async (req, res, next) => {
       return res.status(403).json({ msg: "Voice consultation is currently disabled" });
     }
 
-    // Controller is thin: do not perform doctor assignment or availability checks here.
-    // Delegate booking authority to scheduling runtime which enforces policies and reservations.
+    // Delegate booking authority and doctor assignment to scheduling runtime.
     const assignedDoctor = doctor || null;
     const assignmentStatus = doctor ? "ASSIGNED" : "PENDING";
 
@@ -803,7 +863,7 @@ export const listHospitalDoctors = async (req, res, next) => {
       role: { $in: CLINICIAN_ROLES },
       active: true,
     })
-      .select("_id name email role employment.department employment.status")
+      .select("_id name email role employment.department employment.status metadata.doctorWorkStatus metadata.doctorWorkStatusSource metadata.doctorWorkStatusUpdatedAt")
       .sort({ name: 1 })
       .lean();
 
@@ -822,10 +882,11 @@ export const listHospitalDoctors = async (req, res, next) => {
     return res.json({
       items: rows.map((row) => {
         const availability = availabilityByDoctor.get(String(row._id));
+        const workStatus = serializeDoctorWorkStatus(row);
         return {
           ...row,
           specialization: row?.employment?.department || row.role,
-          availableToday: availability ? availability.isAvailable !== false : true,
+          availableToday: workStatus.eligibleForAssignment && (availability ? availability.isAvailable !== false : true),
           consultationAvailable: availability ? availability.consultationAvailable !== false : true,
           availability,
           doctorStatus:
@@ -833,7 +894,8 @@ export const listHospitalDoctors = async (req, res, next) => {
               ? "TRANSFER_PENDING"
               : availability?.isAvailable === false
               ? "UNAVAILABLE"
-              : "ONLINE",
+              : workStatus.status,
+          workStatus,
         };
       }),
     });
@@ -885,7 +947,7 @@ export const getHospitalAppointmentOps = async (req, res, next) => {
         role: { $in: CLINICIAN_ROLES },
         active: true,
       })
-        .select("_id name role employment.department employment.status")
+        .select("_id name role employment.department employment.status metadata.doctorWorkStatus metadata.doctorWorkStatusSource metadata.doctorWorkStatusUpdatedAt")
         .sort({ name: 1 })
         .lean(),
       DoctorAvailability.find({ hospital: hospitalId }).lean(),
@@ -898,6 +960,10 @@ export const getHospitalAppointmentOps = async (req, res, next) => {
         .lean(),
     ]);
 
+    const doctorStatusRows = doctors.map((doctor) => serializeDoctorWorkStatus(doctor));
+    const availableDoctors = doctorStatusRows.filter((status) => status.status === "AVAILABLE").length;
+    const busyDoctors = doctorStatusRows.filter((status) => status.status === "BUSY_MANUAL" || status.status === "BUSY_AUTOMATIC").length;
+    const offlineDoctors = doctorStatusRows.filter((status) => status.status === "OFFLINE").length;
     const pendingAssignments = appointments.filter((item) => !item.doctor).length;
     const assignedToday = appointments.filter(
       (item) => item.doctor && ["Scheduled", "CheckedIn", "InConsultation"].includes(item.status)
@@ -909,9 +975,13 @@ export const getHospitalAppointmentOps = async (req, res, next) => {
         pendingAssignments,
         assignedToday,
         doctorsOnline: doctors.filter((doc) => doc.employment?.status !== "INACTIVE").length,
+        availableDoctors,
+        busyDoctors,
+        offlineDoctors,
+        capacityOverflow: Math.max(0, pendingAssignments - availableDoctors),
       },
       appointments,
-      doctors,
+      doctors: doctors.map((doctor) => ({ ...doctor, workStatus: serializeDoctorWorkStatus(doctor) })),
       availability: availabilityRows,
       calls,
     });
@@ -968,6 +1038,220 @@ export const assignAppointmentDoctor = async (req, res, next) => {
     });
 
     return res.json(wf.context.appointment);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+async function assignQueuedAppointmentsToDoctor({ doctor, actorId, limit = 5 }) {
+  const hospitalId = doctor?.hospital;
+  if (!hospitalId || getDoctorWorkStatus(doctor) !== "AVAILABLE") {
+    return [];
+  }
+
+  const queued = await Appointment.find({
+    hospital: hospitalId,
+    assignmentStatus: "PENDING",
+    status: { $nin: APPOINTMENT_INACTIVE_STATUSES },
+    $or: [{ doctor: null }, { doctor: { $exists: false } }],
+  })
+    .sort({ scheduledAt: 1, createdAt: 1 })
+    .limit(25);
+
+  const assigned = [];
+  for (const appointment of queued) {
+    if (assigned.length >= limit) break;
+    if (!appointment.workflowId) continue;
+    const validDoctor = await schedulingService.validatePreferredDoctor({
+      doctorId: doctor._id,
+      hospitalId: appointment.hospital,
+      scheduledDate: new Date(appointment.scheduledAt),
+      consultationMode: appointment.consultationMode,
+    });
+    if (!validDoctor) continue;
+
+    const assignedAt = new Date();
+    const wf = await workflowService.transition("CONSULTATION", appointment.workflowId, {
+      updates: {
+        doctor: doctor._id,
+        assignmentStatus: "ASSIGNED",
+        confirmedAt: appointment.confirmedAt || assignedAt,
+        confirmedBy: actorId,
+        metadata: {
+          ...(appointment.metadata || {}),
+          autoAssignedFromQueue: true,
+          autoAssignedAt: assignedAt.toISOString(),
+          autoAssignedReason: "doctor_marked_available",
+        },
+      },
+      actor: { _id: actorId, id: actorId, role: "SYSTEM" },
+    });
+
+    await notifyAppointmentLifecycle({
+      appointment: wf.context.appointment,
+      action: "reassigned",
+      actorId,
+    });
+    assigned.push(wf.context.appointment);
+  }
+
+  return assigned;
+}
+
+async function findQueuedAppointmentForReleasedSlot(appointment) {
+  if (!appointment?.hospital) return null;
+  const baseQuery = {
+    hospital: appointment.hospital,
+    assignmentStatus: "PENDING",
+    status: { $nin: APPOINTMENT_INACTIVE_STATUSES },
+    _id: { $ne: appointment._id },
+    $or: [{ doctor: null }, { doctor: { $exists: false } }],
+  };
+  const serviceQuery = appointment.serviceType
+    ? { ...baseQuery, serviceType: appointment.serviceType }
+    : baseQuery;
+
+  return (
+    (await Appointment.findOne(serviceQuery).sort({ scheduledAt: 1, createdAt: 1 })) ||
+    (await Appointment.findOne(baseQuery).sort({ scheduledAt: 1, createdAt: 1 }))
+  );
+}
+
+async function assignNextQueuedAppointmentToReleasedSlot({ cancelledAppointment, actorId }) {
+  const appointment = cancelledAppointment?.toObject
+    ? cancelledAppointment.toObject()
+    : cancelledAppointment;
+  if (!appointment?.doctor || !appointment?.hospital || !appointment?.scheduledAt) return null;
+
+  const releasedSlot = new Date(appointment.scheduledAt);
+  if (Number.isNaN(releasedSlot.getTime()) || releasedSlot.getTime() <= Date.now()) return null;
+
+  const doctor = await User.findOne({
+    _id: appointment.doctor,
+    hospital: appointment.hospital,
+    role: { $in: CLINICIAN_ROLES },
+    active: true,
+    "employment.status": { $ne: "INACTIVE" },
+  }).select("_id role hospital active employment.status metadata");
+  if (!doctor || getDoctorWorkStatus(doctor) !== "AVAILABLE") return null;
+
+  const queuedAppointment = await findQueuedAppointmentForReleasedSlot(appointment);
+  if (!queuedAppointment?.workflowId) return null;
+
+  const validDoctor = await schedulingService.validatePreferredDoctor({
+    doctorId: doctor._id,
+    hospitalId: appointment.hospital,
+    scheduledDate: releasedSlot,
+    consultationMode: queuedAppointment.consultationMode || appointment.consultationMode,
+  });
+  if (!validDoctor) return null;
+
+  const now = new Date();
+  const wf = await workflowService.transition("CONSULTATION", queuedAppointment.workflowId, {
+    updates: {
+      doctor: doctor._id,
+      scheduledAt: releasedSlot,
+      assignmentStatus: "ASSIGNED",
+      confirmedAt: queuedAppointment.confirmedAt || now,
+      confirmedBy: actorId,
+      rescheduledAt: now,
+      rescheduledBy: actorId,
+      rescheduledFrom: queuedAppointment.scheduledAt,
+      metadata: {
+        ...(queuedAppointment.metadata || {}),
+        autoAssignedFromCancellation: true,
+        releasedAppointmentId: String(appointment._id),
+        previousScheduledAt: queuedAppointment.scheduledAt
+          ? new Date(queuedAppointment.scheduledAt).toISOString()
+          : null,
+        autoAssignedAt: now.toISOString(),
+      },
+    },
+    actor: { _id: actorId, id: actorId, role: "SYSTEM" },
+  });
+
+  await notifyAppointmentLifecycle({
+    appointment: wf.context.appointment,
+    action: "reassigned",
+    actorId,
+  });
+
+  return wf.context.appointment;
+}
+
+async function setDoctorAutomaticStatus({ doctorId, status, source = "SYSTEM", onlyIfAutomatic = false }) {
+  if (!doctorId) return null;
+  const doctor = await User.findById(doctorId).select("_id role active employment.status metadata");
+  if (!doctor || !CLINICIAN_ROLES.includes(normalizeRole(doctor.role))) return null;
+  const currentStatus = getDoctorWorkStatus(doctor);
+  if (onlyIfAutomatic && currentStatus !== "BUSY_AUTOMATIC") return serializeDoctorWorkStatus(doctor);
+  if (currentStatus === "BUSY_MANUAL" && status === "BUSY_AUTOMATIC") return serializeDoctorWorkStatus(doctor);
+  if (currentStatus === "OFFLINE" && status !== "AVAILABLE") return serializeDoctorWorkStatus(doctor);
+
+  doctor.metadata = {
+    ...(doctor.metadata || {}),
+    doctorWorkStatus: normalizeDoctorWorkStatus(status),
+    doctorWorkStatusSource: source,
+    doctorWorkStatusUpdatedAt: new Date().toISOString(),
+    doctorWorkStatusUpdatedBy: "SYSTEM",
+  };
+  await doctor.save();
+  return serializeDoctorWorkStatus(doctor);
+}
+
+export const getMyDoctorWorkStatus = async (req, res, next) => {
+  try {
+    const doctor = await User.findById(req.user.id || req.user._id)
+      .select("_id role active employment.status metadata")
+      .lean();
+    if (!doctor || !CLINICIAN_ROLES.includes(normalizeRole(doctor.role))) {
+      return res.status(403).json({ msg: "Only clinicians can manage doctor availability status" });
+    }
+    return res.json(serializeDoctorWorkStatus(doctor));
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updateMyDoctorWorkStatus = async (req, res, next) => {
+  try {
+    const actorId = req.user._id || req.user.id;
+    const nextStatus = normalizeDoctorWorkStatus(req.body?.status);
+    if (!["AVAILABLE", "BUSY_MANUAL", "OFFLINE"].includes(nextStatus)) {
+      return res.status(400).json({ msg: "Status must be Available, Busy, or Offline" });
+    }
+
+    const doctor = await User.findById(actorId).select("_id role hospital active employment.status metadata");
+    if (!doctor || !CLINICIAN_ROLES.includes(normalizeRole(doctor.role))) {
+      return res.status(403).json({ msg: "Only clinicians can manage doctor availability status" });
+    }
+
+    doctor.metadata = {
+      ...(doctor.metadata || {}),
+      doctorWorkStatus: nextStatus,
+      doctorWorkStatusSource: "MANUAL",
+      doctorWorkStatusUpdatedAt: new Date().toISOString(),
+      doctorWorkStatusUpdatedBy: String(actorId),
+    };
+    await doctor.save();
+
+    let assignedFromQueue = [];
+    if (nextStatus === "AVAILABLE") {
+      assignedFromQueue = await assignQueuedAppointmentsToDoctor({ doctor, actorId, limit: 5 });
+    }
+
+    try {
+      getIO().to(String(actorId)).emit("doctorWorkStatusUpdated", {
+        ...serializeDoctorWorkStatus(doctor),
+        assignedFromQueue: assignedFromQueue.length,
+      });
+    } catch (_) {}
+
+    return res.json({
+      ...serializeDoctorWorkStatus(doctor),
+      assignedFromQueue: assignedFromQueue.length,
+      assignedAppointments: assignedFromQueue.map((appointment) => serializeAppointment(appointment)),
+    });
   } catch (err) {
     return next(err);
   }
@@ -1207,6 +1491,7 @@ export const activateCallSession = async (req, res, next) => {
       roomKey: item.metadata?.roomKey || `call_${String(item._id)}`,
     };
     await item.save();
+    await setDoctorAutomaticStatus({ doctorId: item.doctor, status: "BUSY_AUTOMATIC" });
     const patientUserId = await getPatientUserId(item.patient);
     if (patientUserId) {
       await notify({
@@ -1268,6 +1553,7 @@ export const endCallSession = async (req, res, next) => {
       endedAt: new Date().toISOString(),
     };
     await item.save();
+    await setDoctorAutomaticStatus({ doctorId: item.doctor, status: "AVAILABLE", onlyIfAutomatic: true });
     const patientUserId = await getPatientUserId(item.patient);
     if (patientUserId) {
       await notify({
@@ -1358,6 +1644,14 @@ export const updateAppointment = async (req, res, next) => {
 
     const updated = wf.context.appointment;
 
+    const nextStatus = String(updated?.status || "").toUpperCase();
+    if (["INCONSULTATION", "IN_CONSULTATION", "IN_ENCOUNTER", "READY_FOR_PROVIDER"].includes(nextStatus)) {
+      await setDoctorAutomaticStatus({ doctorId: updated.doctor, status: "BUSY_AUTOMATIC" });
+    }
+    if (["COMPLETED", "CANCELLED", "NO_SHOW", "NOSHOW"].includes(nextStatus)) {
+      await setDoctorAutomaticStatus({ doctorId: updated.doctor, status: "AVAILABLE", onlyIfAutomatic: true });
+    }
+
     /* 🧾 Audit AFTER */
     res.locals.after = updated;
 
@@ -1422,25 +1716,64 @@ export const deleteAppointment = async (req, res, next) => {
      * 🚨 APPOINTMENTS ARE NEVER DELETED
      * They are CANCELLED via workflow
      */
-    await workflowService.transition(
+    const cancelledAt = new Date();
+    const wf = await workflowService.transition(
       "CONSULTATION",
       a.workflowId,
       {
         cancel: true,
+        updates: {
+          cancelledAt,
+          cancelledBy: req.user._id || req.user.id,
+          cancellationReason: String(req.body?.reason || "Cancelled by user").trim(),
+          metadata: {
+            ...(a.metadata || {}),
+            cancelledByRole: req.user.role,
+            cancelledAt: cancelledAt.toISOString(),
+          },
+        },
         actor: req.user,
       }
     );
+    const cancelledAppointment = wf.context.appointment;
+    const reassignedAppointment = await assignNextQueuedAppointmentToReleasedSlot({
+      cancelledAppointment,
+      actorId: req.user._id || req.user.id,
+    });
+
+    await setDoctorAutomaticStatus({
+      doctorId: cancelledAppointment.doctor,
+      status: "AVAILABLE",
+      onlyIfAutomatic: true,
+    });
 
     /* 🧾 Audit AFTER (cancelled) */
-    res.locals.after = null;
+    res.locals.after = cancelledAppointment;
 
     try {
+      const patientUserId = await getPatientUserId(cancelledAppointment.patient);
       getIO()
-        .to(String(a.patient))
-        .emit("appointmentCancelled", a);
+        .to(patientUserId || String(cancelledAppointment.patient))
+        .emit("appointmentCancelled", serializeAppointment(cancelledAppointment));
+      if (reassignedAppointment) {
+        const reassignedPatientUserId = await getPatientUserId(reassignedAppointment.patient);
+        if (reassignedPatientUserId) {
+          getIO()
+            .to(reassignedPatientUserId)
+            .emit("appointmentReassignedFromQueue", serializeAppointment(reassignedAppointment));
+        }
+      }
     } catch (_) {}
 
-    res.json({ msg: "Cancelled" });
+    res.json({
+      msg: reassignedAppointment
+        ? "Cancelled and released slot assigned to the next waiting patient"
+        : "Cancelled",
+      cancelledAppointment: serializeAppointment(cancelledAppointment),
+      reassignedAppointment: reassignedAppointment
+        ? serializeAppointment(reassignedAppointment)
+        : null,
+    });
   } catch (err) {
     next(err);
   }

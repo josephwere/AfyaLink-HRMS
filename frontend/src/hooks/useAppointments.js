@@ -10,6 +10,7 @@ import {
 const DEFAULT_FORM = {
   patient: "",
   doctor: "",
+  serviceType: "General Consultation",
   scheduledAt: "",
   reason: "",
 };
@@ -40,7 +41,7 @@ export function useAppointments() {
       setPatients(patientItems);
       setPatientsCursor(p?.nextCursor || null);
       setPatientsHasMore(Boolean(p?.hasMore));
-      setDoctors((u || []).filter((x) => x.role === "DOCTOR"));
+      setDoctors((u || []).filter((x) => ["DOCTOR", "SURGEON"].includes(x.role)));
     } catch {
       setError("Failed to load appointments");
     } finally {
@@ -75,14 +76,18 @@ export function useAppointments() {
   const createAppointmentEntry = useCallback(async (payload) => {
     setError("");
     try {
-      await createAppointment({
+      const result = await createAppointment({
         ...payload,
+        doctor: payload.doctor || undefined,
+        serviceType: payload.serviceType || "General Consultation",
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Nairobi",
       });
       setForm(DEFAULT_FORM);
       await loadAll();
+      return result;
     } catch {
       setError("Failed to create appointment");
+      return null;
     }
   }, [loadAll]);
 
@@ -90,10 +95,12 @@ export function useAppointments() {
     if (!window.confirm("Cancel appointment?")) return;
 
     try {
-      await cancelAppointment(id);
+      const result = await cancelAppointment(id);
       await loadAll();
+      return result;
     } catch {
       window.alert("Cancellation failed");
+      return null;
     }
   }, [loadAll]);
 

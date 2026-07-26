@@ -14,8 +14,8 @@ describe("appointmentLayoutUtils", () => {
 
   it("advances the appointment flow stage as the booking journey progresses", () => {
     expect(getAppointmentFlowStage({ selectedHospital: false })).toBe(1);
-    expect(getAppointmentFlowStage({ selectedHospital: true, selectedDoctor: false })).toBe(2);
-    expect(getAppointmentFlowStage({ selectedHospital: true, selectedDoctor: true })).toBe(3);
-    expect(getAppointmentFlowStage({ selectedHospital: true, selectedDoctor: true, bookingSuccess: true })).toBe(4);
+    expect(getAppointmentFlowStage({ selectedHospital: true, selectedService: false })).toBe(2);
+    expect(getAppointmentFlowStage({ selectedHospital: true, selectedService: true })).toBe(3);
+    expect(getAppointmentFlowStage({ selectedHospital: true, selectedService: true, bookingSuccess: true })).toBe(4);
   });
 });

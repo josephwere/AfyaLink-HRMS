@@ -42,6 +42,7 @@ class WorkflowService {
 
     if (cancel) {
       appointment.status = "Cancelled";
+      Object.assign(appointment, updates);
     } else {
       Object.assign(appointment, updates);
     }
