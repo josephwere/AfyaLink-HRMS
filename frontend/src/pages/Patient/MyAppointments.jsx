@@ -14,7 +14,6 @@ import { shouldShowMapSelectionCard } from "./mapSelectionUtils";
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
 const PATIENT_DISCOVERY_COMPLETE_KEY = "afyalink_patient_discovery_complete_v1";
-const PATIENT_PANEL_COLLAPSE_KEY = "afyalink_patient_map_panel_collapsed_v1";
 const PATIENT_CONTEXT_STORAGE_KEY = "afyalink_patient_experience_mode";
 const CALL_HISTORY_DAYS = 30;
 
@@ -261,13 +260,7 @@ export default function MyAppointments() {
   const [showNearbyHospitalsList, setShowNearbyHospitalsList] = useState(false);
   const [selectedMapHospitalId, setSelectedMapHospitalId] = useState(hospitalId || "");
   const [hoveredHospitalId, setHoveredHospitalId] = useState("");
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(PATIENT_PANEL_COLLAPSE_KEY) === "true";
-  });
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [isHospitalInfoTransitioning, setIsHospitalInfoTransitioning] = useState(false);
-  const [isMapDetailExpanded, setIsMapDetailExpanded] = useState(false);
   const [routeSummary, setRouteSummary] = useState(null);
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -283,7 +276,6 @@ export default function MyAppointments() {
   const googleDirectionsRendererRef = useRef(null);
   const markerBounceTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
-  const panelResizeTimerRef = useRef(null);
   const mapPanTimerRef = useRef(null);
   const mapsApiKey = useMemo(() => import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY || "", []);
   const [journeyState, setJourneyState] = useState({ bookingSuccess: Boolean(bookingSuccess), bookingConfirmed: Boolean(bookingSuccess), doctorAssigned: Boolean(bookingSuccess?.appointment?.doctor), appointmentBooked: Boolean(bookingSuccess) });
@@ -360,9 +352,6 @@ export default function MyAppointments() {
     const nextHospital = hospitals.find((hospital) => String(hospital._id) === id);
     setHospitalId(id);
     setSelectedMapHospitalId(id);
-    setIsPanelCollapsed(false);
-    setIsMobileSheetOpen(true);
-    setIsMapDetailExpanded(false);
     setIsHospitalInfoTransitioning(true);
     clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = window.setTimeout(() => setIsHospitalInfoTransitioning(false), 220);
@@ -454,7 +443,6 @@ export default function MyAppointments() {
   }, []);
 
   const handleViewRoute = useCallback(() => {
-    setIsMapDetailExpanded(true);
     if (!googleMapRef.current || !window.google?.maps || !mapHospital) return;
     const latValue = Number(mapHospital?.location?.lat ?? mapHospital?.lat ?? mapHospital?.coordinates?.lat);
     const lngValue = Number(mapHospital?.location?.lng ?? mapHospital?.lng ?? mapHospital?.coordinates?.lng);
@@ -481,7 +469,6 @@ export default function MyAppointments() {
   useEffect(() => {
     if (hospitalId) {
       setSelectedMapHospitalId(String(hospitalId));
-      setIsMapDetailExpanded(false);
     }
   }, [hospitalId]);
 
@@ -496,29 +483,8 @@ export default function MyAppointments() {
       if (mapPanTimerRef.current) {
         window.clearTimeout(mapPanTimerRef.current);
       }
-      if (panelResizeTimerRef.current) {
-        window.clearTimeout(panelResizeTimerRef.current);
-      }
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(PATIENT_PANEL_COLLAPSE_KEY, isPanelCollapsed ? "true" : "false");
-    if (googleMapRef.current && window.google?.maps) {
-      if (panelResizeTimerRef.current) {
-        window.clearTimeout(panelResizeTimerRef.current);
-      }
-      panelResizeTimerRef.current = window.setTimeout(() => {
-        window.google.maps.event.trigger(googleMapRef.current, "resize");
-      }, 280);
-    }
-    return () => {
-      if (panelResizeTimerRef.current) {
-        window.clearTimeout(panelResizeTimerRef.current);
-      }
-    };
-  }, [isPanelCollapsed]);
 
   useEffect(() => {
     if (!mapsApiKey) {
@@ -1007,9 +973,6 @@ export default function MyAppointments() {
                   <div className={`patient-map-canvas map-zoom-${mapZoom}`} aria-label="Interactive healthcare map">
                     <div className="patient-map-overlay" />
                     <div className="patient-map-satellite" aria-hidden="true" />
-                    <button type="button" className="btn-secondary mobile-details-toggle" onClick={() => setIsMobileSheetOpen((prev) => !prev)}>
-                      {isMobileSheetOpen ? "Hide details" : "View details"}
-                    </button>
                     {mapsApiKey && !mapLoadError ? (
                       <div ref={mapContainerRef} className="patient-map-embed" />
                     ) : (
@@ -1027,7 +990,7 @@ export default function MyAppointments() {
                   </div>
                 </div>
 
-                <div className={`patient-map-sidepanel ${isPanelCollapsed ? "collapsed-panel" : ""}`}>
+                <div className="patient-map-sidepanel">
                   <div className="patient-map-sidepanel-inner">
                     <div className="patient-map-sidepanel-header">
                       <div>
@@ -1040,9 +1003,6 @@ export default function MyAppointments() {
                         <button type="button" className="btn-secondary compact-btn" onClick={toggleFullscreen} aria-label={isMapFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
                           {isMapFullscreen ? "Exit" : "Fullscreen"}
                         </button>
-                        <button type="button" className="btn-secondary compact-btn hide-on-mobile" onClick={() => setIsPanelCollapsed((prev) => !prev)} aria-label={isPanelCollapsed ? "Show details panel" : "Hide details panel"}>
-                          {isPanelCollapsed ? "▶" : "◀"}
-                        </button>
                       </div>
                     </div>
                     <div className="patient-map-sidepanel-content">
@@ -1053,7 +1013,7 @@ export default function MyAppointments() {
                         </div>
                       ) : showMapSelectionCard && mapHospital ? (
                         <div
-                          className={`patient-map-detail-card patient-map-detail-card-sidepanel ${isMapDetailExpanded ? "expanded" : "collapsed"} ${hoveredHospitalId === String(mapHospital._id) ? "highlighted" : ""} ${isHospitalInfoTransitioning ? "transitioning" : ""}`}
+                          className={`patient-map-detail-card patient-map-detail-card-sidepanel expanded ${hoveredHospitalId === String(mapHospital._id) ? "highlighted" : ""} ${isHospitalInfoTransitioning ? "transitioning" : ""}`}
                           role="button"
                           tabIndex={0}
                           onClick={(event) => {
@@ -1062,36 +1022,24 @@ export default function MyAppointments() {
                             }
                           }}
                         >
-                          <button type="button" className="patient-map-detail-handle" onClick={() => setIsMapDetailExpanded((prev) => !prev)}>
-                            <span className="patient-map-detail-handle-pill" />
-                            <span>{isMapDetailExpanded ? "Hide details" : `Hospital details · ${mapHospital.name}`}</span>
-                            <span>{isMapDetailExpanded ? "▼" : "▲"}</span>
-                          </button>
-                          {isMapDetailExpanded ? (
-                            <div className="patient-map-detail-body" onMouseEnter={() => setHoveredHospitalId(String(mapHospital._id))} onMouseLeave={() => setHoveredHospitalId("")}> 
-                              <div className="patient-map-detail-head">
-                                <strong className="patient-map-detail-title">{mapHospital.name}</strong>
-                                <span className="patient-discovery-status-pill">{mapHospitalDistance}</span>
-                              </div>
-                              <div className="patient-map-detail-meta">
-                                <span className="hospital-discovery-pill">Open</span>
-                                <span className="hospital-discovery-pill">{Number.isFinite(Number(mapHospital?.distanceKm)) ? `${Number(mapHospital.distanceKm).toFixed(1)} km` : "Near you"}</span>
-                              </div>
-                              <p className="muted" style={{ margin: "6px 0 0" }}>{mapHospital.address || "Verified care near you"}</p>
-                              {routeSummary ? (
-                                <div className="patient-map-route-summary">Driving {routeSummary.duration || ""} • {routeSummary.distance || ""}</div>
-                              ) : null}
-                              <div className="patient-map-detail-actions patient-map-detail-actions-fullwidth">
-                                <button type="button" className="btn-primary full-width" onClick={() => document.getElementById("patient-booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Book Appointment</button>
-                                <button type="button" className="btn-secondary full-width" onClick={handleViewRoute}>View Route</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="patient-map-detail-collapsed" onMouseEnter={() => setHoveredHospitalId(String(mapHospital._id))} onMouseLeave={() => setHoveredHospitalId("")}>
+                          <div className="patient-map-detail-body" onMouseEnter={() => setHoveredHospitalId(String(mapHospital._id))} onMouseLeave={() => setHoveredHospitalId("")}> 
+                            <div className="patient-map-detail-head">
                               <strong className="patient-map-detail-title">{mapHospital.name}</strong>
-                              <span className="muted">Tap to view details</span>
+                              <span className="patient-discovery-status-pill">{mapHospitalDistance}</span>
                             </div>
-                          )}
+                            <div className="patient-map-detail-meta">
+                              <span className="hospital-discovery-pill">Open</span>
+                              <span className="hospital-discovery-pill">{Number.isFinite(Number(mapHospital?.distanceKm)) ? `${Number(mapHospital.distanceKm).toFixed(1)} km` : "Near you"}</span>
+                            </div>
+                            <p className="muted" style={{ margin: "6px 0 0" }}>{mapHospital.address || "Verified care near you"}</p>
+                            {routeSummary ? (
+                              <div className="patient-map-route-summary">Driving {routeSummary.duration || ""} • {routeSummary.distance || ""}</div>
+                            ) : null}
+                            <div className="patient-map-detail-actions patient-map-detail-actions-fullwidth">
+                              <button type="button" className="btn-primary full-width" onClick={() => document.getElementById("patient-booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Book Appointment</button>
+                              <button type="button" className="btn-secondary full-width" onClick={handleViewRoute}>View Route</button>
+                            </div>
+                          </div>
                         </div>
                       ) : loading ? (
                         <div className="patient-map-detail-card patient-map-detail-card-sidepanel patient-map-skeleton-card">

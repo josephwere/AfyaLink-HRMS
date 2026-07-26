@@ -11497,8 +11497,7 @@ button.card.stat {
 
 .patient-map-sidepanel .btn-secondary,
 .patient-map-sidepanel .btn-primary,
-.patient-map-control-group button,
-.mobile-details-toggle {
+.patient-map-control-group button {
   min-width: 44px;
   min-height: 44px;
   padding: 10px 14px;
@@ -11566,59 +11565,8 @@ button.card.stat {
   margin-top: 16px;
 }
 
-.patient-map-sidepanel.collapsed-panel {
-  width: 72px;
-  min-width: 72px;
-  max-width: 72px;
-  overflow: hidden;
-  padding: 0;
-  border-radius: 20px;
-  transition: width 240ms ease, transform 240ms ease, opacity 240ms ease;
-}
-
-.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-header {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-note,
-.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-content {
-  display: none;
-}
-
-.patient-map-sidepanel.collapsed-panel .patient-map-control-group button:not(:last-child) {
-  display: none;
-}
-
-.patient-map-sidepanel.collapsed-panel .patient-map-sidepanel-inner {
-  padding: 10px 0 0;
-}
-
-.patient-map-sidepanel.collapsed-panel .appointment-success-kicker {
-  font-size: 0.75rem;
-}
-
 .patient-map-shell {
   position: relative;
-}
-
-.mobile-details-toggle {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 10;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: rgba(255,255,255,0.96);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-  transition: transform 180ms ease, opacity 180ms ease, background-color 180ms ease;
-}
-
-.mobile-details-toggle:hover,
-.mobile-details-toggle:focus-visible {
-  transform: translateY(-2px);
 }
 
 .patient-map-skeleton-card {
@@ -11669,37 +11617,13 @@ button.card.stat {
 
 @media (max-width: 1023px) {
   .patient-map-sidepanel {
-    position: fixed;
-    inset: auto 10px 10px 10px;
     width: auto;
-    max-width: calc(100% - 20px);
-    border-radius: 24px;
-    background: rgba(255,255,255,0.98);
-    box-shadow: 0 24px 48px rgba(15,23,42,0.18);
-    transform: translateY(100%);
-    transition: transform 240ms ease, opacity 240ms ease;
-    opacity: 0;
-    z-index: 12;
-    max-height: 70vh;
+    max-width: 100%;
     touch-action: manipulation;
   }
 
-  .patient-map-sidepanel.mobile-sheet-open {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
   .patient-map-sidepanel .patient-map-sidepanel-content {
-    max-height: calc(70vh - 98px);
     overflow: auto;
-  }
-
-  .patient-map-sidepanel.collapsed-panel {
-    width: auto;
-    min-width: auto;
-    max-width: calc(100% - 20px);
-    transform: translateY(100%);
-    opacity: 0;
   }
 
   .hide-on-mobile {
@@ -11712,7 +11636,6 @@ button.card.stat {
   .patient-map-markers,
   .patient-map-sidepanel,
   .patient-map-canvas,
-  .mobile-details-toggle,
   .patient-map-control-group button,
   .btn-primary,
   .btn-secondary {
@@ -11892,11 +11815,6 @@ button.card.stat {
   }
 }
 
-.patient-map-detail-card.collapsed {
-  min-height: 72px;
-  transform: translateY(0);
-}
-
 .patient-map-detail-card.expanded {
   min-height: 190px;
 }
@@ -11906,38 +11824,9 @@ button.card.stat {
   right: auto;
 }
 
-.patient-map-detail-handle {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 2px 8px;
-  color: #0f172a;
-  font-weight: 700;
-}
-
-.patient-map-detail-handle-pill {
-  width: 44px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.18);
-}
-
 .patient-map-detail-body {
   display: grid;
   gap: 8px;
-}
-
-.patient-map-detail-collapsed {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 2px 2px;
 }
 
 .patient-map-empty-hint {
