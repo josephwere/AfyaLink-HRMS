@@ -66,7 +66,10 @@ export function requireRole(user, ...allowedRoles) {
     return { allowed: true };
   }
 
-  if (!hasHierarchicalAccess(userRole, allowed)) {
+  // Route guards must match backend requireRole semantics: exact membership.
+  // Priority checks caused lower numeric roles like DEVELOPER to accidentally
+  // make clinical roles appear authorized for platform-only routes.
+  if (!allowed.includes(userRole)) {
     return {
       allowed: false,
       reason: "FORBIDDEN",

@@ -425,5 +425,5 @@ export async function createBed(req,res){
     after: b.toObject(),
     metadata: { ward: b.ward, number: b.number },
   });
-  res.json({ data: b });
+  res.status(201).json({ data: b });
 }

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-07-23T12:43:31.444Z",
+  "generatedAt": "2026-07-26T10:07:20.277Z",
   "validationCommands": [
     "npm run audit:interactive-surfaces",
     "npm run audit:simulate-clicks"
   ],
   "summary": {
-    "generatedAt": "2026-07-23T12:43:31.259Z",
-    "total": 280,
-    "resolved": 76,
-    "unresolved": 204,
+    "generatedAt": "2026-07-26T10:07:20.093Z",
+    "total": 279,
+    "resolved": 78,
+    "unresolved": 201,
     "bySurface": {
-      "deep-link": 46,
+      "deep-link": 45,
       "button": 151,
       "dashboard-card": 83
     },

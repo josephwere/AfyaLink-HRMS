@@ -81,8 +81,9 @@ export async function saveDoctorAvailability(doctorId, payload) {
 }
 
 export async function listAppointmentCalls(params = {}) {
+  const normalizedParams = typeof params === "string" ? { hospitalId: params } : params || {};
   const qs = new URLSearchParams();
-  Object.entries(params || {}).forEach(([key, value]) => {
+  Object.entries(normalizedParams).forEach(([key, value]) => {
     if (value !== undefined && value !== null && String(value) !== "") {
       qs.set(key, String(value));
     }

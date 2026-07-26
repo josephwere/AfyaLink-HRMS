@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../utils/auth";
+import { normalizeRole } from "../utils/normalizeRole";
+import { TRAINING_PLAYBOOK_ROLES, TRAINING_TRACKER_ROLES } from "../utils/roleAccessPolicies";
 import {
   listNotificationsFiltered,
   markAllNotificationsRead,
@@ -9,10 +11,10 @@ import {
 
 export function useNotificationsPage({ user, location, navigate }) {
   const resolvedNavigate = navigate || (() => {});
-  const role = String(user?.actualRole || user?.role || "").toUpperCase();
-  const canTrainingOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
-  const canMachineOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"].includes(role);
-  const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"].includes(role);
+  const role = normalizeRole(user?.actualRole || user?.role || "");
+  const canTrainingOps = TRAINING_TRACKER_ROLES.includes(role) || TRAINING_PLAYBOOK_ROLES.includes(role);
+  const canMachineOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"].includes(role);
+  const canSlaOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER"].includes(role);
   const canPharmacyOps = ["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "PHARMACIST"].includes(role);
 
   const queryFilters = useMemo(() => {

@@ -1,7 +1,11 @@
 const prefetchedRoles = new Set();
 const prefetchedGroups = new Set();
 
-const pageModules = import.meta.glob("../pages/**/*.jsx");
+const pageModules = import.meta.glob([
+  "../pages/**/*.jsx",
+  "!../pages/**/*.test.jsx",
+  "!../pages/**/*.spec.jsx",
+]);
 
 function loadPage(relPath) {
   const fullPath = `../pages/${relPath}.jsx`;

@@ -1046,10 +1046,19 @@ export const searchGuardianAccounts = async (req, res, next) => {
  */
 export const deactivatePatient = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "A valid patient id is required" });
+    }
+
+    const hospitalId = resolveScopedHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
+
     const patient = await Patient.findOneAndUpdate(
       {
         _id: req.params.id,
-        hospital: req.user.hospitalId, // 🔐 tenant scoped
+        hospital: hospitalId, // 🔐 tenant scoped
         active: true,
       },
       { active: false },

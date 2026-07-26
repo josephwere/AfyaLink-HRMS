@@ -12,6 +12,14 @@ const AUTH_STATE_FILE = path.resolve(
 );
 
 type StoredAuthState = Record<string, { headers: Record<string, string>; expiresAt: number; apiURL: string }>;
+const DEMO_HOSPITAL_CODE = 'AFYA-DEMO-001';
+const API_HOSPITAL_CONTEXT_ROLES = new Set([
+  'SUPER_ADMIN',
+  'SYSTEM_ADMIN',
+  'DEVELOPER',
+  'HOSPITAL_ADMIN',
+  'HOSPITAL_ADMIN_ASSISTANT',
+]);
 
 async function readPersistedAuthState(): Promise<StoredAuthState> {
   try {
@@ -127,6 +135,111 @@ export function expectApiStatus(response: APIResponse, allowedStatuses: number[]
   expect(allowedStatuses, `${label} returned unexpected status ${status}`).toContain(status);
 }
 
+function extractCollection(payload: any): any[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.hospitals)) return payload.hospitals;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+async function resolveActiveHospitalId(
+  request: APIRequestContext,
+  apiURL: string,
+  headers: Record<string, string>
+) {
+  const configuredHospitalId = process.env.E2E_HOSPITAL_ID || process.env.HOSPITAL_ID;
+  if (configuredHospitalId) return configuredHospitalId;
+
+  try {
+    const hospitalRes = await request.get(`${apiURL}/api/hospitals?active=true&limit=100`, {
+      headers: { Authorization: headers.Authorization },
+    });
+    if (!hospitalRes.ok()) return null;
+    const hospitalPayload = await hospitalRes.json();
+    const hospitals = extractCollection(hospitalPayload);
+    const selected =
+      hospitals.find((hospital) => String(hospital?.code || '').toUpperCase() === DEMO_HOSPITAL_CODE) ||
+      hospitals.find((hospital) => hospital?.active !== false);
+    return selected?._id || selected?.id || selected?.hospitalId || null;
+  } catch {
+    return null;
+  }
+}
+
+async function withHospitalContext(
+  request: APIRequestContext,
+  apiURL: string,
+  role: string,
+  headers: Record<string, string>
+) {
+  if (!API_HOSPITAL_CONTEXT_ROLES.has(role)) return { ...headers };
+  const hospitalId = await resolveActiveHospitalId(request, apiURL, headers);
+  if (!hospitalId) return { ...headers };
+  return {
+    ...headers,
+    'X-Hospital': String(hospitalId),
+    'X-Hospital-Id': String(hospitalId),
+  };
+}
+
+export async function createHospitalViaApi(
+  requestContext: APIRequestContext,
+  apiURL: string,
+  headers: Record<string, string>,
+  overrides: Record<string, unknown> = {}
+) {
+  const timestamp = Date.now();
+  const registryRes = await requestContext.get(`${apiURL}/api/hospitals/registry/search?q=`, { headers });
+  const registryPayload = registryRes.ok() ? await registryRes.json().catch(() => ({})) : {};
+  const registryHospital = extractCollection(registryPayload)[0] || {};
+  const registrationNumber = String(
+    overrides.registrationNumber || registryHospital.registrationNumber || 'MOH-AFYA-DEMO-001'
+  );
+  const registryLocation = registryHospital.location || {};
+  const payload = {
+    name: String(overrides.name || registryHospital.officialName || `Automated Test Hospital ${timestamp}`),
+    code: String(overrides.code || `ATH-${timestamp.toString().slice(-4)}`),
+    registrationNumber,
+    type: String(overrides.type || registryHospital.hospitalType || 'PRIVATE'),
+    country: String(overrides.country || registryLocation.country || 'KE'),
+    region: String(overrides.region || registryLocation.region || 'Nairobi'),
+    city: String(overrides.city || registryLocation.city || 'Nairobi'),
+    address: String(overrides.address || registryLocation.address || 'Test Road, Nairobi'),
+    contact: String(overrides.contact || registryHospital.contact?.phone || '+254700123456'),
+    lat: overrides.lat ?? registryLocation.lat ?? -1.28,
+    lng: overrides.lng ?? registryLocation.lng ?? 36.82,
+  };
+
+  const documentBuffer = Buffer.from(`%PDF-1.4\nTest verification document ${timestamp}\n%%EOF`);
+  return requestContext.post(`${apiURL}/api/hospitals`, {
+    headers,
+    multipart: {
+      ...payload,
+      registrationCertificate: {
+        name: `${registrationNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-registration.pdf`,
+        mimeType: 'application/pdf',
+        buffer: documentBuffer,
+      },
+      taxRegistration: {
+        name: `${registrationNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-tax.pdf`,
+        mimeType: 'application/pdf',
+        buffer: documentBuffer,
+      },
+      proofOfAddress: {
+        name: `${registrationNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-address.pdf`,
+        mimeType: 'application/pdf',
+        buffer: documentBuffer,
+      },
+      representativeId: {
+        name: `${registrationNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-representative.pdf`,
+        mimeType: 'application/pdf',
+        buffer: documentBuffer,
+      },
+    },
+  });
+}
+
 export async function loginAsSuperAdmin(page: Page) {
   await loginAsRole(page, 'SUPER_ADMIN');
 }
@@ -136,7 +249,14 @@ export async function loginAsRole(page: Page, role: string) {
   if (!creds) {
     throw new Error(`Unknown role in test harness: ${role}`);
   }
-  await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
+
+  const loginURL = `${baseURL}/login`;
+  try {
+    await page.goto(loginURL, { waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    throw new Error(`Unable to reach frontend login page at ${loginURL}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
   await page.locator('input[type="text"], input[type="email"]').first().fill(creds.email);
   await page.locator('input[type="password"]').first().fill(creds.pass);
   await page.locator('button[type="submit"]').click();
@@ -169,17 +289,19 @@ export async function getAuthHeader(request: APIRequestContext, role: string) {
   const cacheKey = `${role}:${apiURL}`;
   const cached = authCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
-    return { ...cached.headers };
+    return withHospitalContext(request, apiURL, role, cached.headers);
   }
 
   const persistedHeaders = await loadCachedAuthState(role, apiURL);
   if (persistedHeaders) {
-    authCache.set(cacheKey, { headers: { ...persistedHeaders }, expiresAt: Date.now() + AUTH_CACHE_TTL_MS });
-    return { ...persistedHeaders };
+    const scopedHeaders = await withHospitalContext(request, apiURL, role, persistedHeaders);
+    authCache.set(cacheKey, { headers: { ...scopedHeaders }, expiresAt: Date.now() + AUTH_CACHE_TTL_MS });
+    return { ...scopedHeaders };
   }
 
   const creds = ROLE_CREDENTIALS[role];
-  const response = await request.post(`${apiURL}/api/auth/login`, {
+  const loginURL = `${apiURL}/api/auth/login`;
+  const response = await request.post(loginURL, {
     data: { identifier: creds.email, password: creds.pass },
     timeout: 30_000,
   });
@@ -210,32 +332,14 @@ export async function getAuthHeader(request: APIRequestContext, role: string) {
     return { ...headers };
   }
 
-  try {
-    const hospitalRes = await request.get(`${apiURL}/api/hospitals`, { headers });
-    if (hospitalRes.ok()) {
-      const hospitalPayload = await hospitalRes.json();
-      const hospitals = Array.isArray(hospitalPayload)
-        ? hospitalPayload
-        : Array.isArray(hospitalPayload?.hospitals)
-          ? hospitalPayload.hospitals
-          : Array.isArray(hospitalPayload?.items)
-            ? hospitalPayload.items
-            : Array.isArray(hospitalPayload?.data)
-              ? hospitalPayload.data
-              : [];
-      const firstHospital = hospitals[0];
-      const scopedHospitalId = firstHospital?._id || firstHospital?.id || firstHospital?.hospitalId;
-      if (scopedHospitalId) {
-        headers['X-Hospital'] = String(scopedHospitalId);
-        headers['X-Hospital-Id'] = String(scopedHospitalId);
-        const expiresAt = Date.now() + AUTH_CACHE_TTL_MS;
-        authCache.set(cacheKey, { headers: { ...headers }, expiresAt });
-        await persistAuthState(role, apiURL, headers, expiresAt);
-        return { ...headers };
-      }
-    }
-  } catch {
-    // Fall back to the known seeded hospital for local workflow certification.
+  const scopedHospitalId = await resolveActiveHospitalId(request, apiURL, headers);
+  if (scopedHospitalId) {
+    headers['X-Hospital'] = String(scopedHospitalId);
+    headers['X-Hospital-Id'] = String(scopedHospitalId);
+    const expiresAt = Date.now() + AUTH_CACHE_TTL_MS;
+    authCache.set(cacheKey, { headers: { ...headers }, expiresAt });
+    await persistAuthState(role, apiURL, headers, expiresAt);
+    return { ...headers };
   }
 
   headers['X-Hospital'] = fallbackHospitalId;

@@ -93,7 +93,14 @@ function isPrivileged(role) {
 function policyAppliesToRole(policy, role) {
   if (!Array.isArray(policy.roles) || policy.roles.length === 0) return true;
   const normalized = normalizeRole(role || "");
-  return policy.roles.map((r) => normalizeRole(r)).includes(normalized);
+  const allowedRoles = new Set(policy.roles.map((r) => normalizeRole(r)));
+  if (allowedRoles.has(normalized)) return true;
+
+  // Hospital admin assistants operate under delegated hospital-admin scope.
+  // This keeps existing persisted ABAC policies working after the role split.
+  if (normalized === "HOSPITAL_ADMIN_ASSISTANT" && allowedRoles.has("HOSPITAL_ADMIN")) return true;
+
+  return false;
 }
 
 function evaluateConditions(policy, req) {

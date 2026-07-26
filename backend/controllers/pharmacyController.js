@@ -258,7 +258,7 @@ export async function createPrescription(req, res) {
       },
     });
 
-    return res.json(rx);
+    return res.status(201).json(rx);
   } catch (err) {
     console.error("Create prescription error:", err);
     return res.status(400).json({

@@ -5,7 +5,14 @@ import { normalizeRole } from "../utils/normalizeRole.js";
 import { logAudit } from "../services/auditService.js";
 
 const PRIVILEGED_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]);
-const TRAINER_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"]);
+const TRAINER_ROLES = new Set([
+  "SUPER_ADMIN",
+  "SYSTEM_ADMIN",
+  "DEVELOPER",
+  "HOSPITAL_ADMIN",
+  "HOSPITAL_ADMIN_ASSISTANT",
+  "HR_MANAGER",
+]);
 
 function defaultDays() {
   return [

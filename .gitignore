@@ -7,6 +7,10 @@ backend/node_modules/
 
 # Runtime data
 backend/uploads/
+frontend/playwright-report/
+frontend/test-results/
+.vite/
+.~lock*
 
 # Environment secrets
 backend/.env

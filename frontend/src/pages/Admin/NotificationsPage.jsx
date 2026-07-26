@@ -6,6 +6,7 @@ export default function Page() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const roleLabel = String(user?.actualRole || user?.role || "your role");
   const {
     navigate: navigateTo,
     canTrainingOps,
@@ -163,7 +164,7 @@ export default function Page() {
                     ) : null}
                     {String(n?.meta?.kind || "").toUpperCase() === "DAILY_ROLE_QUOTE" ? (
                       <div className="muted" style={{ marginTop: 6 }}>
-                        Daily quote for {String(n?.meta?.quoteRole || role || "your role").replaceAll("_", " ")}.
+                        Daily quote for {String(n?.meta?.quoteRole || roleLabel).replaceAll("_", " ")}.
                       </div>
                     ) : null}
                   </td>

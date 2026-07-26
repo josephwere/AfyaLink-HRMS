@@ -25,6 +25,7 @@ import { LEGACY_ROUTE_MAP } from "./app/routing/legacyRouteMap";
 import { createRuntimeRouteElements } from "./app/runtime/appRouteComposer";
 import { isPatientExperienceMode } from "./pages/Patient/appointmentFeatureFlags";
 import { ROLE_VIEW_OPTIONS } from "./utils/roleViewOptions";
+import { TRAINING_PLAYBOOK_ROLES, TRAINING_TRACKER_ROLES } from "./utils/roleAccessPolicies";
 
 /* =======================
    PUBLIC / AUTH
@@ -524,8 +525,8 @@ export default function App() {
           <Route path="/app/people/requests/leave" element={<RequireRole roles={["DOCTOR", "NURSE", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}><LeaveRequests /></RequireRole>} />
           <Route path="/app/people/schedule/shift" element={<RequireRole roles={["NURSE", "SUPER_ADMIN", "DEVELOPER"]}><NurseMyShift /></RequireRole>} />
           <Route path="/app/people/performance/index" element={<RequireRole roles={["DOCTOR", "NURSE", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}><Performance /></RequireRole>} />
-          <Route path="/app/people/training/tracker" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"]}><TrainingTracker /></RequireRole>} />
-          <Route path="/app/people/training/playbook" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"]}><TrainingPlaybook /></RequireRole>} />
+          <Route path="/app/people/training/tracker" element={<RequireRole roles={TRAINING_TRACKER_ROLES}><TrainingTracker /></RequireRole>} />
+          <Route path="/app/people/training/playbook" element={<RequireRole roles={TRAINING_PLAYBOOK_ROLES}><TrainingPlaybook /></RequireRole>} />
           <Route path="/app/people/training/cme" element={<RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}><CMECertifications /></RequireRole>} />
           <Route path="/app/people/staff/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><HospitalAdminStaffManagement /></RequireRole>} />
           <Route path="/app/people/staff/register" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "HR_MANAGER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><HospitalAdminRegisterStaff /></RequireRole>} />
@@ -579,7 +580,7 @@ export default function App() {
           <Route path="/app/platform/dev/home" element={<RequireRole roles={["DEVELOPER", "SYSTEM_ADMIN", "SUPER_ADMIN"]}><DeveloperDashboard /></RequireRole>} />
           <Route path="/app/platform/migrations/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><SystemMigrations /></RequireRole>} />
           <Route path="/app/platform/rollout/launch-readiness" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"]}><LaunchReadiness /></RequireRole>} />
-          <Route path="/app/platform/rollout/pilot-onboarding" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER"]}><PilotOnboardingOps /></RequireRole>} />
+          <Route path="/app/platform/rollout/pilot-onboarding" element={<RequireRole roles={TRAINING_TRACKER_ROLES}><PilotOnboardingOps /></RequireRole>} />
           <Route path="/app/platform/sre/incidents" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "SECURITY_ADMIN"]}><SreIncidentOps /></RequireRole>} />
           <Route path="/app/platform/support/tickets" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HR_MANAGER", "SECURITY_ADMIN"]}><SupportTickets /></RequireRole>} />
           <Route path="/app/platform/trust/decision-cockpit" element={<RequireRole roles={["DEVELOPER", "SUPER_ADMIN", "SYSTEM_ADMIN"]}><DecisionCockpit /></RequireRole>} />

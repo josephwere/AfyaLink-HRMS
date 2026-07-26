@@ -1,24 +1,24 @@
 # AFY-P1-020 Buttons Audit
 
 - Total entries: 151
-- Resolved: 27
-- Unresolved: 124
+- Resolved: 29
+- Unresolved: 122
 
-- src/app/shell/AppShell.jsx:80 interactive action -> /app/platform/account/profile (resolved)
-- src/app/shell/AppShell.jsx:88 interactive action -> /app/platform/account/profile (resolved)
-- src/app/shell/AppShell.jsx:96 interactive action -> /app/platform/account/profile (resolved)
-- src/app/shell/AppShell.jsx:123 interactive action -> /app/people/approvals/index (resolved)
-- src/app/shell/AppShell.jsx:131 interactive action -> /app/people/home/index (resolved)
-- src/app/shell/AppShell.jsx:139 interactive action -> /app/people/home/index (resolved)
-- src/app/shell/AppShell.jsx:150 interactive action -> /app/revenue/payments/index (resolved)
-- src/app/shell/AppShell.jsx:158 interactive action -> /app/platform/inbox/notifications (resolved)
-- src/app/shell/AppShell.jsx:166 interactive action -> /app/operations/lab/test-queue (resolved)
-- src/app/shell/AppShell.jsx:174 interactive action -> /app/operations/lab/test-queue (resolved)
-- src/app/shell/AppShell.jsx:182 interactive action -> /app/operations/scheduling/appointments (resolved)
-- src/app/shell/AppShell.jsx:488 interactive action -> /step-up (resolved)
-- src/app/shell/AppShell.jsx:543 interactive action -> /app/platform/account/profile (resolved)
-- src/app/shell/AppShell.jsx:561 interactive action -> /step-up (resolved)
-- src/app/shell/AppShell.jsx:653 interactive action -> /step-up (resolved)
+- src/app/shell/AppShell.jsx:84 interactive action -> /app/platform/account/profile (resolved)
+- src/app/shell/AppShell.jsx:92 interactive action -> /app/platform/account/profile (resolved)
+- src/app/shell/AppShell.jsx:100 interactive action -> /app/platform/account/profile (resolved)
+- src/app/shell/AppShell.jsx:127 interactive action -> /app/people/approvals/index (resolved)
+- src/app/shell/AppShell.jsx:135 interactive action -> /app/people/home/index (resolved)
+- src/app/shell/AppShell.jsx:143 interactive action -> /app/people/home/index (resolved)
+- src/app/shell/AppShell.jsx:154 interactive action -> /app/revenue/payments/index (resolved)
+- src/app/shell/AppShell.jsx:162 interactive action -> /app/platform/inbox/notifications (resolved)
+- src/app/shell/AppShell.jsx:170 interactive action -> /app/operations/lab/test-queue (resolved)
+- src/app/shell/AppShell.jsx:178 interactive action -> /app/operations/lab/test-queue (resolved)
+- src/app/shell/AppShell.jsx:186 interactive action -> /app/operations/scheduling/appointments (resolved)
+- src/app/shell/AppShell.jsx:525 interactive action -> /step-up (resolved)
+- src/app/shell/AppShell.jsx:580 interactive action -> /app/platform/account/profile (resolved)
+- src/app/shell/AppShell.jsx:598 interactive action -> /step-up (resolved)
+- src/app/shell/AppShell.jsx:690 interactive action -> /step-up (resolved)
 - src/components/FloatingAI.jsx:356 interactive action -> /app/innovation/ai/chatbot (resolved)
 - src/components/Navbar.jsx:164 interactive action -> /app/platform/account/profile (resolved)
 - src/components/Navigation/Sidebar.jsx:292 interactive action -> /app/platform/account/profile (resolved)

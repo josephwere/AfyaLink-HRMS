@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
+const frontendBaseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173';
+const backendBaseURL = process.env.BACKEND_BASE_URL || 'http://127.0.0.1:5000';
+
 export default defineConfig({
   testDir: './tests/e2e',
   globalSetup: './tests/e2e/global.setup.ts',
@@ -10,11 +13,15 @@ export default defineConfig({
     timeout: 15_000,
   },
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173',
+    baseURL: frontendBaseURL,
     headless: true,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     storageState: process.env.PLAYWRIGHT_STORAGE_STATE || './test-results/.auth/storage.json',
   },
   reporter: [['list']],
+  metadata: {
+    frontendBaseURL,
+    backendBaseURL,
+  },
 });

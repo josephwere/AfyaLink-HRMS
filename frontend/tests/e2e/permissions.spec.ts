@@ -16,13 +16,15 @@ test.describe('AfyaLink Permission and Auth Access Control tests', () => {
 
     // 2. Attempt to navigate directly to Super Admin System Settings
     await page.goto(`${baseURL}/app/platform/settings/system`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => undefined);
     await page.waitForTimeout(1500);
 
-    // 3. Verify they are redirected or blocked (showing forbidden, unauthorized, or home page)
+    // 3. Verify they are redirected or blocked instead of reaching the system settings page.
     const currentURL = page.url();
     const bodyText = await page.innerText('body');
-    const isBlocked = currentURL.includes('/403') || currentURL.includes('/unauthorized') || bodyText.includes('Forbidden') || bodyText.includes('Access Denied');
-    expect(isBlocked).toBe(true);
+    const isBlocked = currentURL.includes('/unauthorized') || bodyText.includes('Unauthorized') || bodyText.includes('Access Denied');
+    const isRedirectedAway = currentURL.includes('/app/') && !currentURL.includes('/app/platform/settings/system');
+    expect(isBlocked || isRedirectedAway).toBe(true);
   });
 
   test('Super Admin should be allowed access to System Settings', async ({ page }) => {
@@ -31,6 +33,7 @@ test.describe('AfyaLink Permission and Auth Access Control tests', () => {
 
     // 2. Navigate to System Settings
     await page.goto(`${baseURL}/app/platform/settings/system`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => undefined);
     await page.waitForTimeout(1500);
 
     // 3. Verify they have access

@@ -1,25 +1,25 @@
 {
   "summary": {
-    "total": 46,
+    "total": 45,
     "resolved": 34,
-    "unresolved": 12
+    "unresolved": 11
   },
   "surfaces": [
     {
-      "id": "deep-link-src/App.jsx-327",
+      "id": "deep-link-src/App.jsx-330",
       "surface": "deep-link",
       "file": "src/App.jsx",
-      "line": 327,
+      "line": 330,
       "label": "interactive action",
       "target": "/unauthorized",
       "resolved": true,
       "reason": "matches canonical route /unauthorized"
     },
     {
-      "id": "deep-link-src/App.jsx-428",
+      "id": "deep-link-src/App.jsx-431",
       "surface": "deep-link",
       "file": "src/App.jsx",
-      "line": 428,
+      "line": 431,
       "label": "interactive action",
       "target": "/app/revenue/payments/index",
       "resolved": true,
@@ -156,10 +156,10 @@
       "reason": "matches canonical route /unauthorized"
     },
     {
-      "id": "deep-link-src/components/RouteGuard.jsx-78",
+      "id": "deep-link-src/components/RouteGuard.jsx-100",
       "surface": "deep-link",
       "file": "src/components/RouteGuard.jsx",
-      "line": 78,
+      "line": 100,
       "label": "interactive action",
       "target": "/login",
       "resolved": true,
@@ -232,16 +232,6 @@
       "line": 59,
       "label": "Register Super Assistant",
       "target": "/admin/create-admin",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "deep-link-src/pages/Doctor/MySchedule.jsx-71",
-      "surface": "deep-link",
-      "file": "src/pages/Doctor/MySchedule.jsx",
-      "line": 71,
-      "label": "interactive action",
-      "target": "/doctor/settings",
       "resolved": false,
       "reason": "no matching canonical route"
     },

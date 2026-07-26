@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listMarketplaceHospitals, listVerifiedHospitals } from "../services/patientApi";
-import { listAppointmentsForHospital, listDoctorAvailability, listAppointmentCalls, listAppointmentSuggestions, createAppointment, createAppointmentCall } from "../services/appointmentWorkflow";
+import { listAppointmentsForHospital, listHospitalDoctors, listAppointmentCalls, listAppointmentSuggestions, createAppointment, createAppointmentCall } from "../services/appointmentWorkflow";
 
 const SELECTED_HOSPITAL_KEY = "afyalink_patient_hospital_id";
 const PATIENT_LOCATION_KEY = "afyalink_patient_location_v1";
@@ -171,7 +171,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
   const loadDoctors = async () => {
     if (!hospitalId) { setDoctors([]); return; }
     try {
-      const data = await listDoctorAvailability(hospitalId);
+      const data = await listHospitalDoctors(hospitalId);
       setDoctors(Array.isArray(data?.items) ? data.items : []);
     } catch {
       setDoctors([]);
