@@ -27,6 +27,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       external: ["@stripe/stripe-js"],
     },

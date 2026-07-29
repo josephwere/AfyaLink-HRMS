@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   saveDoctorAvailability,
+  getHospitalSchedulingPolicy,
+  saveHospitalSchedulingPolicy,
   listAppointmentCalls,
   updateAppointmentCall,
   listAppointmentOperationsQueue,
@@ -9,6 +11,19 @@ import {
 } from "../services/appointmentWorkflow";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DEFAULT_POLICY = {
+  bookingHorizonDays: 30,
+  cancellationCutoffHours: 24,
+  dailyDoctorCapacity: 30,
+  maximumQueueSize: 50,
+  waitlistEnabled: true,
+  emergencySlotPercentage: 15,
+  autoAssignmentEnabled: true,
+  workloadBalancingEnabled: true,
+  prioritySchedulingEnabled: false,
+  weekendBookingEnabled: true,
+  queueAlertThreshold: 10,
+};
 
 function defaultAvailabilityRows() {
   return [1, 2, 3, 4, 5].map((dayOfWeek) => ({
@@ -31,8 +46,10 @@ function defaultAvailabilityRows() {
 export function useHospitalAdminAppointments() {
   const [loading, setLoading] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
+  const [savingPolicy, setSavingPolicy] = useState(false);
   const [msg, setMsg] = useState("");
   const [data, setData] = useState({ summary: {}, appointments: [], doctors: [], availability: [], calls: [] });
+  const [schedulingPolicy, setSchedulingPolicy] = useState(DEFAULT_POLICY);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [availabilityForm, setAvailabilityForm] = useState(defaultAvailabilityRows());
   const queueSectionRef = useRef(null);
@@ -46,8 +63,11 @@ export function useHospitalAdminAppointments() {
     setLoading(true);
     setMsg("");
     try {
-      const res = await listAppointmentOperationsQueue();
-      const calls = await listAppointmentCalls();
+      const [res, calls, policyRes] = await Promise.all([
+        listAppointmentOperationsQueue(),
+        listAppointmentCalls(),
+        getHospitalSchedulingPolicy().catch(() => null),
+      ]);
       setData({
         summary: res?.summary || {},
         appointments: Array.isArray(res?.appointments) ? res.appointments : [],
@@ -55,6 +75,9 @@ export function useHospitalAdminAppointments() {
         availability: Array.isArray(res?.availability) ? res.availability : [],
         calls: Array.isArray(calls?.items) ? calls.items : [],
       });
+      if (policyRes?.policy) {
+        setSchedulingPolicy({ ...DEFAULT_POLICY, ...policyRes.policy });
+      }
       if (!selectedDoctor && Array.isArray(res?.doctors) && res.doctors.length) {
         setSelectedDoctor(String(res.doctors[0]._id));
       }
@@ -136,11 +159,31 @@ export function useHospitalAdminAppointments() {
     }
   }, [availabilityForm, load, selectedDoctor]);
 
+  const saveSchedulingPolicy = useCallback(async () => {
+    setSavingPolicy(true);
+    setMsg("");
+    try {
+      const result = await saveHospitalSchedulingPolicy(schedulingPolicy);
+      if (result?.policy) {
+        setSchedulingPolicy({ ...DEFAULT_POLICY, ...result.policy });
+      }
+      await load();
+      setMsg("Scheduling policy saved.");
+    } catch (err) {
+      setMsg(err?.message || "Failed to save scheduling policy");
+    } finally {
+      setSavingPolicy(false);
+    }
+  }, [load, schedulingPolicy]);
+
   return {
     loading,
     savingAvailability,
+    savingPolicy,
     msg,
     data,
+    schedulingPolicy,
+    setSchedulingPolicy,
     selectedDoctor,
     setSelectedDoctor,
     availabilityForm,
@@ -154,6 +197,7 @@ export function useHospitalAdminAppointments() {
     blockCall,
     removeCall,
     saveAvailability,
+    saveSchedulingPolicy,
     dayNames: DAY_NAMES,
   };
 }

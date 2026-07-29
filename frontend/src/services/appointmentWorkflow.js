@@ -91,6 +91,17 @@ export async function updateMyDoctorWorkStatus(status) {
   });
 }
 
+export async function getHospitalSchedulingPolicy() {
+  return apiFetch("/api/hospital-admin/scheduling-policy");
+}
+
+export async function saveHospitalSchedulingPolicy(policy) {
+  return apiFetch("/api/hospital-admin/scheduling-policy", {
+    method: "PUT",
+    body: { policy },
+  });
+}
+
 export async function listAppointmentCalls(params = {}) {
   const normalizedParams = typeof params === "string" ? { hospitalId: params } : params || {};
   const qs = new URLSearchParams();
@@ -141,6 +152,8 @@ export default {
   saveDoctorAvailability,
   getMyDoctorWorkStatus,
   updateMyDoctorWorkStatus,
+  getHospitalSchedulingPolicy,
+  saveHospitalSchedulingPolicy,
   listAppointmentCalls,
   createAppointmentCall,
   updateAppointmentCall,

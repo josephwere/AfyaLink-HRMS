@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useResource } from "./shared/useResource.js";
+import { listWorkflows } from "../services/workflow/queries.js";
 
 const EMPTY_WORKFLOW_RESULT = { workflows: [], total: 0 };
 
@@ -22,7 +23,7 @@ export function useWorkflow({ q = "", page = 1, limit = 25, status = "", listWor
       const listWorkflowsFn =
         typeof queryImpl === "function"
           ? queryImpl
-          : (await import("../services/workflow/queries")).listWorkflows;
+          : listWorkflows;
       return listWorkflowsFn({ q, page, limit, status });
     },
     [q, page, limit, status, queryImpl]

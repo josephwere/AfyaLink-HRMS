@@ -23,7 +23,7 @@ import PharmacyInventoryMovement from "../../models/PharmacyInventoryMovement.js
 import { notifyRolesInHospital } from "../../services/notificationService.js";
 
 const ACTIVE_DOCTOR_ROLES = ["DOCTOR", "SURGEON"];
-const EXCLUDED_APPOINTMENT_STATUSES = ["Cancelled", "Completed", "NoShow"];
+const EXCLUDED_APPOINTMENT_STATUSES = ["Cancelled", "Completed", "NoShow", "CANCELLED", "COMPLETED", "NO_SHOW"];
 const ASSIGNABLE_DOCTOR_STATUS_QUERY = {
   $or: [
     { "metadata.doctorWorkStatus": { $exists: false } },
@@ -126,6 +126,7 @@ export function createSchedulingRuntime({ observability } = {}) {
     serviceType,
     consultationMode = "IN_PERSON",
     preferredDoctorId = null,
+    policy = {},
   }) {
     if (preferredDoctorId) {
       const preferred = await validatePreferredDoctor({
@@ -162,7 +163,7 @@ export function createSchedulingRuntime({ observability } = {}) {
       .map((doctor) => {
         const availability = availabilityByDoctor.get(String(doctor._id));
         const appointmentsToday = Number(loadByDoctor.get(String(doctor._id)) || 0);
-        return buildDoctorCandidate({ doctor, availability, appointmentsToday, serviceType });
+        return buildDoctorCandidate({ doctor, availability, appointmentsToday, serviceType, policy });
       })
       .filter(doctorHasCapacity);
 
@@ -170,8 +171,19 @@ export function createSchedulingRuntime({ observability } = {}) {
       return buildAssignmentResult(null, preferredDoctorId, "all_slots_full");
     }
 
-    const selected = selectLeastLoadedDoctor(candidates);
+    const selected = policy?.workloadBalancingEnabled === false
+      ? candidates[0]?.doctor || null
+      : selectLeastLoadedDoctor(candidates);
     return buildAssignmentResult(selected, preferredDoctorId, "least_loaded_doctor");
+  }
+
+  async function getPendingQueueSize(hospitalId) {
+    return Appointment.countDocuments({
+      hospital: hospitalId,
+      assignmentStatus: "PENDING",
+      status: { $nin: EXCLUDED_APPOINTMENT_STATUSES },
+      $or: [{ doctor: null }, { doctor: { $exists: false } }],
+    });
   }
 
   async function suggestHospitalSlots({
@@ -271,11 +283,13 @@ export function createSchedulingRuntime({ observability } = {}) {
     if (!policyResult.valid) {
       const err = new Error(policyResult.message || "Booking policy violation");
       err.code = policyResult.code;
+      err.statusCode = policyResult.statusCode || 409;
       throw err;
     }
+    const policy = policyResult.policy || {};
 
     // Auto-assign a doctor if none was provided
-    if (!doctor) {
+    if (!doctor && policy.autoAssignmentEnabled !== false) {
       try {
         const assignResult = await assignDoctor({
           hospitalId,
@@ -283,10 +297,22 @@ export function createSchedulingRuntime({ observability } = {}) {
           serviceType,
           consultationMode,
           preferredDoctorId: null,
+          policy,
         });
         doctor = assignResult.doctor?._id || assignResult.doctor || null;
         assignmentStatus = assignResult.assignmentStatus || assignmentStatus;
       } catch (_) {}
+    }
+
+    if (!doctor) {
+      const pendingQueueSize = await getPendingQueueSize(hospitalId);
+      if (pendingQueueSize >= Number(policy.maximumQueueSize || 50)) {
+        const err = new Error("This hospital's appointment queue is currently full. Please choose another time or contact the hospital for urgent care.");
+        err.code = "QUEUE_FULL";
+        err.statusCode = 409;
+        throw err;
+      }
+      assignmentStatus = "PENDING";
     }
 
     // If running unit tests against a standalone Mongo, use non-transactional fallback

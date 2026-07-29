@@ -6,6 +6,7 @@ import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { notifyUsers } from "../services/notificationService.js";
 import SettingsRevision from "../models/SettingsRevision.js";
+import { normalizeSchedulingPolicy } from "../utils/schedulingPolicy.js";
 
 function resolveHospitalId(req) {
   const role = String(req.user?.role || "").toUpperCase();
@@ -99,6 +100,7 @@ export const getHospitalConfig = async (req, res) => {
           subscription: null,
           insuranceProviders: [],
           patientPaymentMethods: [],
+          schedulingPolicy: normalizeSchedulingPolicy(),
           customization: {},
           needsHospitalSelection: true,
           breakGlassActive: req.breakGlass || false,
@@ -109,7 +111,7 @@ export const getHospitalConfig = async (req, res) => {
     }
 
     const hospital = await Hospital.findById(hospitalId).select(
-      "name plan features limits active subscription insuranceProviders patientPaymentMethods customization"
+      "name plan features limits active subscription insuranceProviders patientPaymentMethods schedulingPolicy customization"
     );
 
     if (!hospital) {
@@ -125,6 +127,7 @@ export const getHospitalConfig = async (req, res) => {
 
     res.json({
       ...hospital.toObject(),
+      schedulingPolicy: normalizeSchedulingPolicy(hospital.schedulingPolicy?.toObject?.() || hospital.schedulingPolicy || {}),
       /* 🚨 EMERGENCY BREAK-GLASS TRANSPARENCY */
       breakGlassActive: req.breakGlass || false,
       breakGlassExpiresAt: req.breakGlassExpiresAt || null,
@@ -134,6 +137,83 @@ export const getHospitalConfig = async (req, res) => {
     res.status(500).json({
       message: "Failed to load hospital config",
     });
+  }
+};
+
+/* ======================================================
+   HOSPITAL SCHEDULING POLICY
+====================================================== */
+export const getHospitalSchedulingPolicy = async (req, res) => {
+  try {
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
+
+    const hospital = await Hospital.findById(hospitalId).select("name active schedulingPolicy");
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+    if (hospital.active === false) {
+      return res.status(403).json({ message: "Cannot load policy for deactivated hospital" });
+    }
+
+    return res.json({
+      hospitalId: hospital._id,
+      hospitalName: hospital.name,
+      policy: normalizeSchedulingPolicy(hospital.schedulingPolicy?.toObject?.() || hospital.schedulingPolicy || {}),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to load hospital scheduling policy" });
+  }
+};
+
+export const updateHospitalSchedulingPolicy = async (req, res) => {
+  try {
+    const hospitalId = resolveHospitalId(req);
+    if (!hospitalId) {
+      return res.status(400).json({ message: "hospitalId is required for this role" });
+    }
+
+    const hospital = await Hospital.findById(hospitalId);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+    if (hospital.active === false) {
+      return res.status(403).json({ message: "Cannot update policy for deactivated hospital" });
+    }
+
+    const before = normalizeSchedulingPolicy(hospital.schedulingPolicy?.toObject?.() || hospital.schedulingPolicy || {});
+    const after = normalizeSchedulingPolicy(req.body?.policy || req.body || {}, before);
+    hospital.schedulingPolicy = {
+      ...after,
+      updatedBy: req.user?._id || null,
+      updatedAt: new Date(),
+    };
+    await hospital.save();
+
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorRole: req.user.role,
+      action: "UPDATE_HOSPITAL_SCHEDULING_POLICY",
+      resource: "Hospital",
+      resourceId: hospital._id,
+      hospital: hospital._id,
+      before,
+      after,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
+    return res.json({
+      success: true,
+      hospitalId: hospital._id,
+      policy: normalizeSchedulingPolicy(hospital.schedulingPolicy?.toObject?.() || hospital.schedulingPolicy || {}),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to update hospital scheduling policy" });
   }
 };
 

@@ -277,6 +277,59 @@ describe('Appointments', ()=>{
     expect(cancelledAfterCancellation.cancellationReason).toBe('Patient cancelled');
   });
 
+  test('enforces patient cancellation cutoff from hospital scheduling policy', async ()=>{
+    await Hospital.findByIdAndUpdate(hospitalId, {
+      $set: {
+        "schedulingPolicy.bookingHorizonDays": 30,
+        "schedulingPolicy.cancellationCutoffHours": 24,
+        "schedulingPolicy.weekendBookingEnabled": true,
+        "schedulingPolicy.autoAssignmentEnabled": true,
+      },
+    });
+
+    const isolatedUser = await User.create({
+      name: 'Cancellation Cutoff Patient',
+      email: 'cancellation-cutoff-patient@afya.test',
+      password: 'Patient123!',
+      role: 'PATIENT',
+      active: true,
+      phone: '+254700000004',
+    });
+    const isolatedToken = jwt.sign(
+      { id: String(isolatedUser._id), twoFactorVerified: true },
+      process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+    );
+    const isolatedPatient = await Patient.create({
+      firstName: 'Cancellation',
+      lastName: 'Cutoff',
+      contact: isolatedUser.phone,
+      hospital: hospitalId,
+      metadata: { userId: String(isolatedUser._id) },
+      active: true,
+    });
+
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${isolatedToken}`)
+      .send({
+        patient: String(isolatedPatient._id),
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        timeZone: 'Africa/Nairobi',
+      });
+
+    expect([200, 201]).toContain(created.status);
+
+    const cancelled = await request(app)
+      .delete(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${isolatedToken}`)
+      .send({ reason: 'Need to reschedule' });
+
+    expect(cancelled.status).toBe(409);
+    expect(cancelled.body.code).toBe('CANCELLATION_CUTOFF_ACTIVE');
+  });
+
   test('interprets datetime-local values in the requested time zone', ()=>{
     const parsed = normalizeScheduledAtInput('2025-03-10T10:30', 'Africa/Nairobi');
     const expectedUtc = new Date(Date.UTC(2025, 2, 10, 7, 30, 0));
@@ -352,5 +405,79 @@ describe('Appointments', ()=>{
       });
 
     expect([200, 201]).toContain(nextDayBooking.status);
+  });
+
+  test('enforces hospital booking horizon policy', async ()=>{
+    await Hospital.findByIdAndUpdate(hospitalId, {
+      $set: {
+        "schedulingPolicy.bookingHorizonDays": 1,
+        "schedulingPolicy.weekendBookingEnabled": true,
+        "schedulingPolicy.maximumQueueSize": 50,
+        "schedulingPolicy.autoAssignmentEnabled": true,
+      },
+    });
+
+    const r = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect(r.status).toBe(409);
+    expect(r.body.code).toBe('BOOKING_HORIZON_EXCEEDED');
+
+    await Hospital.findByIdAndUpdate(hospitalId, {
+      $set: {
+        "schedulingPolicy.bookingHorizonDays": 30,
+      },
+    });
+  });
+
+  test('enforces hospital queue capacity policy when auto assignment is disabled', async ()=>{
+    await Hospital.findByIdAndUpdate(hospitalId, {
+      $set: {
+        "schedulingPolicy.bookingHorizonDays": 30,
+        "schedulingPolicy.weekendBookingEnabled": true,
+        "schedulingPolicy.maximumQueueSize": 1,
+        "schedulingPolicy.autoAssignmentEnabled": false,
+      },
+    });
+
+    const first = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(first.status);
+    expect(first.body.assignmentStatus).toBe('PENDING');
+
+    const second = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect(second.status).toBe(409);
+    expect(second.body.code).toBe('QUEUE_FULL');
+
+    await Hospital.findByIdAndUpdate(hospitalId, {
+      $set: {
+        "schedulingPolicy.maximumQueueSize": 50,
+        "schedulingPolicy.autoAssignmentEnabled": true,
+      },
+    });
   });
 });

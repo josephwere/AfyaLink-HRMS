@@ -54,7 +54,6 @@ const Triage = lazy(() => import("./pages/AI/Triage"));
 const VoiceDictation = lazy(() => import("./pages/AI/VoiceDictation"));
 const Chatbot = lazy(() => import("./pages/AI/Chatbot"));
 const NeuroEdgeExtract = lazy(() => import("./pages/AI/NeuroEdgeExtract"));
-const AIChatWS = lazy(() => import("./components/AIChatWS"));
 const DoctorAppointments = lazy(() => import("./pages/Doctor/Appointments"));
 const DoctorTransfers = lazy(() => import("./pages/Doctor/Transfers"));
 const MySchedule = lazy(() => import("./pages/Doctor/MySchedule"));

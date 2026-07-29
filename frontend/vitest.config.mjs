@@ -9,8 +9,10 @@ export default defineConfig({
     exclude: ['tests/e2e/**', '**/*.spec.ts', '**/*.spec.tsx', '**/*.test.mjs', '**/*.spec.mjs', '**/*.test.cjs', '**/*.spec.cjs'],
     maxWorkers: 1,
     minWorkers: 1,
-    deps: {
-      inline: ['@testing-library/react', '@testing-library/user-event'],
+    server: {
+      deps: {
+        inline: ['@testing-library/react', '@testing-library/user-event'],
+      },
     },
   },
 });

@@ -130,7 +130,7 @@ PHARMACIST: {
   },
 
   PATIENT: {
-    appointments: ["create", "read", "read_own"],
+    appointments: ["create", "read", "read_own", "delete"],
     records: ["read_own"],
     payments: ["create", "read_own"],
   },

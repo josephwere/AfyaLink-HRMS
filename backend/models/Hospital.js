@@ -258,6 +258,22 @@ const hospitalSchema = new mongoose.Schema(
       },
     ],
 
+    schedulingPolicy: {
+      bookingHorizonDays: { type: Number, default: 30, min: 1, max: 365 },
+      cancellationCutoffHours: { type: Number, default: 24, min: 0, max: 720 },
+      dailyDoctorCapacity: { type: Number, default: 30, min: 1, max: 200 },
+      maximumQueueSize: { type: Number, default: 50, min: 1, max: 10000 },
+      waitlistEnabled: { type: Boolean, default: true },
+      emergencySlotPercentage: { type: Number, default: 15, min: 0, max: 80 },
+      autoAssignmentEnabled: { type: Boolean, default: true },
+      workloadBalancingEnabled: { type: Boolean, default: true },
+      prioritySchedulingEnabled: { type: Boolean, default: false },
+      weekendBookingEnabled: { type: Boolean, default: true },
+      queueAlertThreshold: { type: Number, default: 10, min: 1, max: 10000 },
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      updatedAt: Date,
+    },
+
     customization: {
       enabled: { type: Boolean, default: false },
       branding: {

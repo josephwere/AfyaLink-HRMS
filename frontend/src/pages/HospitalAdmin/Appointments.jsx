@@ -8,8 +8,11 @@ export default function HospitalAdminAppointments() {
   const {
     loading,
     savingAvailability,
+    savingPolicy,
     msg,
     data,
+    schedulingPolicy,
+    setSchedulingPolicy,
     selectedDoctor,
     setSelectedDoctor,
     availabilityForm,
@@ -22,9 +25,17 @@ export default function HospitalAdminAppointments() {
     blockCall,
     removeCall,
     saveAvailability,
+    saveSchedulingPolicy,
     dayNames,
     load,
   } = useHospitalAdminAppointments();
+
+  const updatePolicyField = (field, value) => {
+    setSchedulingPolicy((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <div className="dashboard">
@@ -51,6 +62,99 @@ export default function HospitalAdminAppointments() {
           <StatCard title="Doctors online" value={data.summary.doctorsOnline ?? 0} onClick={() => scrollToSection(availabilitySectionRef)} />
           <StatCard title="Requested calls" value={data.calls.filter((call) => call.status === "REQUESTED").length} onClick={() => navigate("/hospital-admin/consultation-monitor?status=REQUESTED")} />
           <StatCard title="Active calls" value={data.calls.filter((call) => call.status === "ACTIVE").length} onClick={() => navigate("/hospital-admin/consultation-monitor?status=ACTIVE")} />
+        </div>
+      </section>
+
+      <section className="section">
+        <h3>Scheduling Policy</h3>
+        <div className="card premium-card">
+          <p className="muted" style={{ marginTop: 0 }}>
+            Configure how this hospital accepts bookings, manages queue capacity, and assigns clinicians.
+          </p>
+          <div className="form-grid">
+            <label>
+              Booking horizon days
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={schedulingPolicy.bookingHorizonDays}
+                onChange={(e) => updatePolicyField("bookingHorizonDays", Number(e.target.value || 1))}
+              />
+            </label>
+            <label>
+              Cancellation cutoff hours
+              <input
+                type="number"
+                min="0"
+                max="720"
+                value={schedulingPolicy.cancellationCutoffHours}
+                onChange={(e) => updatePolicyField("cancellationCutoffHours", Number(e.target.value || 0))}
+              />
+            </label>
+            <label>
+              Daily doctor capacity
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={schedulingPolicy.dailyDoctorCapacity}
+                onChange={(e) => updatePolicyField("dailyDoctorCapacity", Number(e.target.value || 1))}
+              />
+            </label>
+            <label>
+              Maximum queue size
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={schedulingPolicy.maximumQueueSize}
+                onChange={(e) => updatePolicyField("maximumQueueSize", Number(e.target.value || 1))}
+              />
+            </label>
+            <label>
+              Emergency slot percentage
+              <input
+                type="number"
+                min="0"
+                max="80"
+                value={schedulingPolicy.emergencySlotPercentage}
+                onChange={(e) => updatePolicyField("emergencySlotPercentage", Number(e.target.value || 0))}
+              />
+            </label>
+            <label>
+              Queue alert threshold
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={schedulingPolicy.queueAlertThreshold}
+                onChange={(e) => updatePolicyField("queueAlertThreshold", Number(e.target.value || 1))}
+              />
+            </label>
+          </div>
+          <div className="doctor-actions-row" style={{ marginTop: 12, flexWrap: "wrap" }}>
+            {[
+              ["autoAssignmentEnabled", "Auto assignment"],
+              ["workloadBalancingEnabled", "Workload balancing"],
+              ["waitlistEnabled", "Waitlist"],
+              ["prioritySchedulingEnabled", "Priority scheduling"],
+              ["weekendBookingEnabled", "Weekend booking"],
+            ].map(([field, label]) => (
+              <label key={field} className="action-pill" style={{ cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(schedulingPolicy[field])}
+                  onChange={(e) => updatePolicyField(field, e.target.checked)}
+                  style={{ marginRight: 8 }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <button type="button" className="btn-primary" onClick={() => void saveSchedulingPolicy()} disabled={savingPolicy}>
+            {savingPolicy ? "Saving..." : "Save Scheduling Policy"}
+          </button>
         </div>
       </section>
 

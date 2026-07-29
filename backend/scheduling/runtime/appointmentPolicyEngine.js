@@ -1,5 +1,9 @@
 import Appointment from "../../models/Appointment.js";
+import Hospital from "../../models/Hospital.js";
 import { getSystemSettingsDoc } from "../../utils/systemSettingsStore.js";
+import { normalizeSchedulingPolicy } from "../../utils/schedulingPolicy.js";
+
+const EXCLUDED_APPOINTMENT_STATUSES = ["Cancelled", "Completed", "NoShow", "CANCELLED", "COMPLETED", "NO_SHOW"];
 
 export function selectLeastLoadedDoctor(candidates = []) {
   return candidates
@@ -11,16 +15,28 @@ export function selectLeastLoadedDoctor(candidates = []) {
     .map((candidate) => candidate.doctor)[0] || null;
 }
 
-export function buildDoctorCandidate({ doctor, availability, appointmentsToday, serviceType, patientPreferences = {} }) {
+export function buildDoctorCandidate({
+  doctor,
+  availability,
+  appointmentsToday,
+  serviceType,
+  patientPreferences = {},
+  policy = {},
+}) {
   const specialtyBoost = serviceType && doctor?.employment?.department
     ? String(serviceType).toLowerCase().includes(String(doctor.employment.department).toLowerCase()) ? -1 : 0
     : 0;
+  const policyCapacity = Number(policy?.dailyDoctorCapacity || 0);
+  const availabilityCapacity = Number(availability?.appointmentSlots || 0);
+  const slots = policyCapacity > 0 && availabilityCapacity > 0
+    ? Math.min(policyCapacity, availabilityCapacity)
+    : policyCapacity || availabilityCapacity || 9999;
 
   return {
     doctor,
     availability,
     appointmentsToday: Number(appointmentsToday || 0),
-    slots: Number(availability?.appointmentSlots || 9999),
+    slots,
     specialtyBoost,
     preferred: Boolean(patientPreferences.doctorId && String(doctor._id) === String(patientPreferences.doctorId)),
     languageMatch: Boolean(patientPreferences.language && doctor.metadata?.languages?.includes(patientPreferences.language)),
@@ -47,7 +63,6 @@ export async function validateAppointmentPolicy({
   durationMins,
   consultationMode,
   doctorId,
-  timeZone,
 }) {
   if (!patientId || !hospitalId || !scheduledDate) {
     return { valid: false, code: "INVALID_BOOKING_REQUEST", message: "Patient, hospital, and scheduled date are required." };
@@ -59,6 +74,35 @@ export async function validateAppointmentPolicy({
 
   if (!Number.isInteger(durationMins) || durationMins < 5 || durationMins > 480) {
     return { valid: false, code: "INVALID_DURATION", message: "Appointment duration must be between 5 and 480 minutes." };
+  }
+
+  const hospital = await Hospital.findById(hospitalId).select("schedulingPolicy active").lean();
+  if (!hospital || hospital.active === false) {
+    return { valid: false, code: "HOSPITAL_UNAVAILABLE", message: "This hospital is not available for appointment booking." };
+  }
+
+  const policy = normalizeSchedulingPolicy(hospital.schedulingPolicy || {});
+  const now = new Date();
+  const horizonEndsAt = new Date(now.getTime() + policy.bookingHorizonDays * 24 * 60 * 60 * 1000);
+  if (scheduledDate > horizonEndsAt) {
+    return {
+      valid: false,
+      code: "BOOKING_HORIZON_EXCEEDED",
+      message: `This hospital accepts appointments up to ${policy.bookingHorizonDays} days ahead. Please choose an earlier date.`,
+      statusCode: 409,
+      policy,
+    };
+  }
+
+  const day = scheduledDate.getDay();
+  if (!policy.weekendBookingEnabled && (day === 0 || day === 6)) {
+    return {
+      valid: false,
+      code: "WEEKEND_BOOKING_DISABLED",
+      message: "Weekend appointments are not available at this hospital. Please choose a weekday.",
+      statusCode: 409,
+      policy,
+    };
   }
 
   const settings = await getSystemSettingsDoc({ lean: true });
@@ -84,7 +128,7 @@ export async function validateAppointmentPolicy({
     const existingDoctorBooking = await Appointment.findOne({
       doctor: doctorId,
       scheduledAt: scheduledDate,
-      status: { $nin: ["Cancelled", "Completed", "NoShow"] },
+      status: { $nin: EXCLUDED_APPOINTMENT_STATUSES },
     });
     if (existingDoctorBooking) {
       return {
@@ -95,7 +139,7 @@ export async function validateAppointmentPolicy({
     }
   }
 
-  return { valid: true };
+  return { valid: true, policy };
 }
 
 export function allowTelemedicineMode(availability, consultationMode) {

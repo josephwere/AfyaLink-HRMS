@@ -2,7 +2,9 @@ import express from "express";
 import {
   getHospitalConfig,
   getHospitalCustomizationHistory,
+  getHospitalSchedulingPolicy,
   restoreHospitalCustomizationRevision,
+  updateHospitalSchedulingPolicy,
   updateHospitalFeatures,
   updateHospitalCommerceConfig,
   updateHospitalCustomization,
@@ -34,6 +36,20 @@ router.put(
   protect,
   requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "HOSPITAL_ADMIN"),
   updateHospitalCommerceConfig
+);
+
+router.get(
+  "/scheduling-policy",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT"),
+  getHospitalSchedulingPolicy
+);
+
+router.put(
+  "/scheduling-policy",
+  protect,
+  requireRole("SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN"),
+  updateHospitalSchedulingPolicy
 );
 
 router.put(

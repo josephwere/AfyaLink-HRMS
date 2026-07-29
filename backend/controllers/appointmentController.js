@@ -3,6 +3,7 @@ import schedulingService from "../services/schedulingService.js";
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
 import User from "../models/User.js";
+import Hospital from "../models/Hospital.js";
 import Notification from "../models/Notification.js";
 import { notify, notifyRolesInHospital } from "../services/notificationService.js";
 import AuditLog from "../models/AuditLog.js";
@@ -17,6 +18,7 @@ import { calendarOptimizeSlot } from "../utils/aiAdvanced.js";
 import { resolvePatientIdsForUser } from "../services/familyMonitoringService.js";
 import { serializeAppointment } from "../utils/serializers.js";
 import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
+import { normalizeSchedulingPolicy } from "../utils/schedulingPolicy.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
 const DEFAULT_BOOKING_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || "Africa/Nairobi";
@@ -77,8 +79,37 @@ async function resolveDemoHospitalFallbackId() {
     return DEMO_HOSPITAL_FALLBACK_IDS[0];
   }
 
-  const fallbackHospital = await import("../models/Hospital.js").then((mod) => mod.default.findOne({ active: true }).sort({ createdAt: 1 }).select("_id").lean());
+  const fallbackHospital = await Hospital.findOne({ active: true }).sort({ createdAt: 1 }).select("_id").lean();
   return fallbackHospital?._id ? String(fallbackHospital._id) : null;
+}
+
+async function enforcePatientCancellationPolicy({ appointment, role }) {
+  if (normalizeRole(role) !== "PATIENT") return null;
+
+  const scheduledAt = appointment?.scheduledAt ? new Date(appointment.scheduledAt) : null;
+  if (!scheduledAt || Number.isNaN(scheduledAt.getTime())) return null;
+
+  const hospital = appointment?.hospital
+    ? await Hospital.findById(appointment.hospital).select("schedulingPolicy").lean()
+    : null;
+  const policy = normalizeSchedulingPolicy(hospital?.schedulingPolicy || {});
+  const cutoffMs = policy.cancellationCutoffHours * 60 * 60 * 1000;
+  if (cutoffMs <= 0) return null;
+
+  const msUntilAppointment = scheduledAt.getTime() - Date.now();
+  if (msUntilAppointment < cutoffMs) {
+    return {
+      status: 409,
+      body: {
+        msg: "This appointment is inside the hospital cancellation window. Please contact the hospital if you need urgent help changing it.",
+        code: "CANCELLATION_CUTOFF_ACTIVE",
+        cancellationCutoffHours: policy.cancellationCutoffHours,
+        scheduledAt: scheduledAt.toISOString(),
+      },
+    };
+  }
+
+  return null;
 }
 
 function parseTimeToMinutes(value, fallback) {
@@ -1701,6 +1732,17 @@ export const deleteAppointment = async (req, res, next) => {
   try {
     const a = await Appointment.findById(req.params.id);
     if (!a) return res.status(404).json({ msg: "Not found" });
+    const role = normalizeRole(req.user.role);
+
+    if (role === "PATIENT") {
+      const ownPatientIds = await resolvePatientIdsForUser(req.user.id, a.hospital || null);
+      if (!ownPatientIds.includes(String(a.patient))) {
+        return res.status(403).json({
+          msg: "You can only cancel appointments linked to your patient profile",
+          code: "APPOINTMENT_ACCESS_DENIED",
+        });
+      }
+    }
 
     /* 🔐 ABAC CONTEXT */
     req.resource = {
@@ -1716,6 +1758,16 @@ export const deleteAppointment = async (req, res, next) => {
      * 🚨 APPOINTMENTS ARE NEVER DELETED
      * They are CANCELLED via workflow
      */
+    const cancellationPolicyBlock = await enforcePatientCancellationPolicy({
+      appointment: a,
+      role,
+    });
+    if (cancellationPolicyBlock) {
+      return res
+        .status(cancellationPolicyBlock.status)
+        .json(cancellationPolicyBlock.body);
+    }
+
     const cancelledAt = new Date();
     const wf = await workflowService.transition(
       "CONSULTATION",
