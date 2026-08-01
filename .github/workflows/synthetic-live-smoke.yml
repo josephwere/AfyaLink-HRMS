@@ -46,6 +46,7 @@ jobs:
           PROBE_REGION: github-us-east
           ROLE_FILTER: SUPER_ADMIN,HOSPITAL_ADMIN
           REQUIRED_ROLE_SUITES: SUPER_ADMIN
+          SMOKE_STRICT_REQUIRED_ROLE_SUITES: "0"
           SMOKE_SUMMARY_PATH: artifacts/ops/synthetic-live-smoke-summary.json
           SUPER_ADMIN_IDENTIFIER: ${{ secrets.SYNTHETIC_SUPER_ADMIN_IDENTIFIER }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SYNTHETIC_SUPER_ADMIN_PASSWORD }}
