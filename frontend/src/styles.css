@@ -151,9 +151,11 @@ body.auth-route {
 /* =========================
    AUTH PAGES
 ========================= */
-.auth-bg {
+.auth-bg,
+.auth-page-shell {
+  min-height: 100svh;
   min-height: 100dvh;
-  height: 100dvh;
+  height: auto;
   background: var(--login-bg, var(--home-bg, none)) center/cover no-repeat, var(--app-bg);
   display: flex;
   align-items: flex-start;
@@ -163,7 +165,8 @@ body.auth-route {
   padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
 }
 
-.auth-bg.auth-bg-ready {
+.auth-bg.auth-bg-ready,
+.auth-page-shell.auth-bg-ready {
   background: var(--login-bg) center/cover no-repeat, var(--app-bg);
 }
 
@@ -183,11 +186,15 @@ body.auth-route {
 }
 
 @media (max-width: 640px) {
-  .auth-bg {
-    padding: 12px 12px calc(120px + env(safe-area-inset-bottom));
+  .auth-bg,
+  .auth-page-shell {
+    min-height: 100svh;
+    padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
   }
 
   .auth-card {
+    width: 100%;
+    max-width: 100%;
     padding: 20px;
     border-radius: 12px;
   }
@@ -1396,19 +1403,6 @@ body.auth-route {
   padding: 2px 6px;
   font-size: 11px;
   font-weight: 700;
-}
-
-.view-role-badge {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid #f59e0b;
-  background: #fffbeb;
-  color: #92400e;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .override-mode-badge {

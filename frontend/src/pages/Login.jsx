@@ -23,6 +23,8 @@ export default function Login() {
     GoogleButton,
     googleError,
     clearError,
+    fieldErrors,
+    handleFieldChange,
     handleSubmit,
   } = useLogin();
 
@@ -30,7 +32,7 @@ export default function Login() {
      UI
   -------------------------- */
   return (
-    <div className={`auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
+    <div className={`auth-page-shell auth-bg ${settings?.branding?.loginBackground ? "auth-bg-ready" : ""}`}>
       <form className="auth-card" onSubmit={handleSubmit}>
         {settings?.branding?.logo && (
           <div
@@ -41,7 +43,7 @@ export default function Login() {
             }}
           />
         )}
-        <div className="auth-kicker"> Wellcome Onboard</div>
+        <div className="auth-kicker">Welcome Onboard</div>
         <h1>Sign in</h1>
         <p className="subtitle">
           Use your work email, phone number, or national ID to open your AfyaLink workspace.
@@ -70,16 +72,20 @@ export default function Login() {
         <input
           type="text"
           value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          onChange={(e) => handleFieldChange("identifier", e.target.value)}
           placeholder="you@example.com, +2547..., or ID number"
           required
+          aria-invalid={Boolean(fieldErrors?.identifier)}
         />
+        {fieldErrors?.identifier ? <div className="auth-error">❌ {fieldErrors.identifier}</div> : null}
 
         <PasswordInput
           label="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => handleFieldChange("password", e.target.value)}
           required
+          helperText={fieldErrors?.password ? `❌ ${fieldErrors.password}` : ""}
+          inputClassName={fieldErrors?.password ? "input-error" : ""}
         />
 
         <div className="auth-row">
