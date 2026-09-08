@@ -96,4 +96,49 @@ describe("useLogin", () => {
       },
     });
   });
+
+  it("surfaces invalid credentials without the generic server fallback", async () => {
+    loginMock.mockRejectedValueOnce(new Error("Invalid credentials"));
+    const { result } = renderHook(() => useLogin());
+
+    await act(async () => {
+      result.current.setIdentifier("demo@example.com");
+      result.current.setPassword("wrong-password");
+    });
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() });
+    });
+
+    expect(result.current.error).toBe("Invalid credentials");
+    expect(result.current.error).not.toBe("We couldn’t complete that request right now. Please try again.");
+  });
+
+  it("keeps security-code and password-flow auth errors visible to the user", async () => {
+    loginMock.mockRejectedValueOnce(new Error("Unable to send the security code"));
+    const { result } = renderHook(() => useLogin());
+
+    await act(async () => {
+      result.current.setIdentifier("demo@example.com");
+      result.current.setPassword("secret");
+    });
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() });
+    });
+
+    expect(result.current.error).toBe("Unable to send the security code");
+
+    loginMock.mockRejectedValueOnce(new Error("This account does not have a password"));
+    await act(async () => {
+      result.current.setIdentifier("demo@example.com");
+      result.current.setPassword("secret");
+    });
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() });
+    });
+
+    expect(result.current.error).toBe("This account does not have a password");
+  });
 });

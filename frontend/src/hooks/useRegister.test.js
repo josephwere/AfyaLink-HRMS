@@ -38,7 +38,7 @@ describe("useRegister", () => {
   it("creates a registration payload and submits", async () => {
     const { result } = renderHook(() => useRegister());
 
-    await act(async () => {
+    act(() => {
       result.current.setForm({
         name: "Test User",
         email: "test@example.com",
@@ -49,6 +49,9 @@ describe("useRegister", () => {
         password: "StrongPass1!",
         confirmPassword: "StrongPass1!",
       });
+    });
+
+    await act(async () => {
       await result.current.handleSubmit({ preventDefault: vi.fn() });
     });
 

@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import Login from "./Login";
 
+vi.mock("react-router-dom", () => ({
+  Link: ({ children }) => children,
+}));
+
 vi.mock("../components/PasswordInput", () => ({
   default: () => <div data-testid="password-input" />,
 }));

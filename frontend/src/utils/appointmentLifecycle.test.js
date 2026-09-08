@@ -24,7 +24,7 @@ describe("appointment lifecycle UI helpers", () => {
 
   it("provides actionable guidance for the next lifecycle step", () => {
     expect(getLifecycleTransitionHint({ status: "Scheduled" }).action).toBe("Check in patient");
-    expect(getLifecycleTransitionHint({ status: "CheckedIn" }).action).toBe("Start consultation");
+    expect(getLifecycleTransitionHint({ status: "CheckedIn" }).action).toBe("Mark provider ready");
     expect(getLifecycleTransitionHint({ status: "Completed" }).action).toBe("Completed");
   });
 });
