@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { shouldUseMemoryMongo } from "../config/db.js";
+import { shouldAutoFallbackToMemoryMongo, shouldUseMemoryMongo } from "../config/db.js";
 
 describe("shouldUseMemoryMongo", () => {
   it("enables memory Mongo fallback for tests when the default local URI is in use", () => {
@@ -52,6 +52,26 @@ describe("shouldUseMemoryMongo", () => {
 
     try {
       expect(shouldUseMemoryMongo()).toBe(true);
+    } finally {
+      if (previousEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousEnv;
+      if (previousMongoUri === undefined) delete process.env.MONGO_URI;
+      else process.env.MONGO_URI = previousMongoUri;
+      if (previousUseMemoryMongo === undefined) delete process.env.USE_MEMORY_MONGO;
+      else process.env.USE_MEMORY_MONGO = previousUseMemoryMongo;
+    }
+  });
+
+  it("auto-falls back to memory Mongo for local development when the default local URI is in use", () => {
+    const previousEnv = process.env.NODE_ENV;
+    const previousMongoUri = process.env.MONGO_URI;
+    const previousUseMemoryMongo = process.env.USE_MEMORY_MONGO;
+    process.env.NODE_ENV = "development";
+    process.env.MONGO_URI = "mongodb://127.0.0.1:27017/afyalink";
+    delete process.env.USE_MEMORY_MONGO;
+
+    try {
+      expect(shouldAutoFallbackToMemoryMongo()).toBe(true);
     } finally {
       if (previousEnv === undefined) delete process.env.NODE_ENV;
       else process.env.NODE_ENV = previousEnv;

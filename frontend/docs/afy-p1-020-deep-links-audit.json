@@ -6,20 +6,20 @@
   },
   "surfaces": [
     {
-      "id": "deep-link-src/App.jsx-330",
+      "id": "deep-link-src/App.jsx-358",
       "surface": "deep-link",
       "file": "src/App.jsx",
-      "line": 330,
+      "line": 358,
       "label": "interactive action",
       "target": "/unauthorized",
       "resolved": true,
       "reason": "matches canonical route /unauthorized"
     },
     {
-      "id": "deep-link-src/App.jsx-431",
+      "id": "deep-link-src/App.jsx-459",
       "surface": "deep-link",
       "file": "src/App.jsx",
-      "line": 431,
+      "line": 459,
       "label": "interactive action",
       "target": "/app/revenue/payments/index",
       "resolved": true,
@@ -166,10 +166,10 @@
       "reason": "matches canonical route /login"
     },
     {
-      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-47",
+      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-48",
       "surface": "deep-link",
       "file": "src/pages/Admin/CreateAdmin.jsx",
-      "line": 47,
+      "line": 48,
       "label": "Manage Super Assistants",
       "target": "/admin/super-assistants",
       "resolved": false,
@@ -256,30 +256,30 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-95",
+      "id": "deep-link-src/pages/Login.jsx-103",
       "surface": "deep-link",
       "file": "src/pages/Login.jsx",
-      "line": 95,
+      "line": 103,
       "label": "interactive action",
       "target": "/forgot-password",
       "resolved": true,
       "reason": "matches canonical route /forgot-password"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-113",
+      "id": "deep-link-src/pages/Login.jsx-121",
       "surface": "deep-link",
       "file": "src/pages/Login.jsx",
-      "line": 113,
+      "line": 121,
       "label": "Create account",
       "target": "/register",
       "resolved": true,
       "reason": "matches canonical route /register"
     },
     {
-      "id": "deep-link-src/pages/Login.jsx-118",
+      "id": "deep-link-src/pages/Login.jsx-126",
       "surface": "deep-link",
       "file": "src/pages/Login.jsx",
-      "line": 118,
+      "line": 126,
       "label": "View careers",
       "target": "/careers",
       "resolved": true,
@@ -336,40 +336,40 @@
       "reason": "matches canonical route /terms"
     },
     {
-      "id": "deep-link-src/pages/Register.jsx-111",
+      "id": "deep-link-src/pages/Register.jsx-117",
       "surface": "deep-link",
       "file": "src/pages/Register.jsx",
-      "line": 111,
+      "line": 117,
       "label": "Terms of Service",
       "target": "/terms",
       "resolved": true,
       "reason": "matches canonical route /terms"
     },
     {
-      "id": "deep-link-src/pages/Register.jsx-111",
+      "id": "deep-link-src/pages/Register.jsx-117",
       "surface": "deep-link",
       "file": "src/pages/Register.jsx",
-      "line": 111,
+      "line": 117,
       "label": "Terms of Service",
       "target": "/privacy",
       "resolved": true,
       "reason": "matches canonical route /privacy"
     },
     {
-      "id": "deep-link-src/pages/Register.jsx-125",
+      "id": "deep-link-src/pages/Register.jsx-131",
       "surface": "deep-link",
       "file": "src/pages/Register.jsx",
-      "line": 125,
+      "line": 131,
       "label": "Sign in",
       "target": "/login",
       "resolved": true,
       "reason": "matches canonical route /login"
     },
     {
-      "id": "deep-link-src/pages/Register.jsx-130",
+      "id": "deep-link-src/pages/Register.jsx-136",
       "surface": "deep-link",
       "file": "src/pages/Register.jsx",
-      "line": 130,
+      "line": 136,
       "label": "View careers",
       "target": "/careers",
       "resolved": true,

@@ -13,6 +13,15 @@ export function shouldUseMemoryMongo() {
   return (nodeEnv === "test" || explicitFlag === "true" || explicitFlag === "1") && isDefaultLocalUri;
 }
 
+export function shouldAutoFallbackToMemoryMongo() {
+  const explicitFlag = String(process.env.USE_MEMORY_MONGO || "").trim().toLowerCase();
+  const nodeEnv = String(process.env.NODE_ENV || "development").toLowerCase();
+  const mongoUri = String(process.env.MONGO_URI || "").trim();
+  const isDefaultLocalUri = !mongoUri || mongoUri === DEFAULT_LOCAL_MONGO_URI;
+  const isExplicitDisable = explicitFlag === "false" || explicitFlag === "0";
+  return nodeEnv !== "production" && isDefaultLocalUri && !isExplicitDisable;
+}
+
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -67,13 +76,18 @@ function bindMongoMetrics() {
 const connectDB = async () => {
   try {
     bindMongoMetrics();
-    if (shouldUseMemoryMongo()) {
-      const { MongoMemoryServer } = await import("mongodb-memory-server");
-      const memoryServer = await MongoMemoryServer.create({
-        instance: { ip: "127.0.0.1", port: 27017 },
-      });
-      process.env.MONGO_URI = memoryServer.getUri();
-      console.log("[DB] using in-memory MongoDB for local development");
+    const shouldUseMemory = shouldUseMemoryMongo() || shouldAutoFallbackToMemoryMongo();
+    if (shouldUseMemory) {
+      try {
+        const { MongoMemoryServer } = await import("mongodb-memory-server");
+        const memoryServer = await MongoMemoryServer.create({
+          instance: { ip: "127.0.0.1", port: 27017 },
+        });
+        process.env.MONGO_URI = memoryServer.getUri();
+        console.log("[DB] using in-memory MongoDB for local development");
+      } catch (memoryError) {
+        console.warn("[DB] in-memory Mongo fallback unavailable, continuing without DB bootstrap", memoryError);
+      }
     }
     await mongoose.connect(process.env.MONGO_URI || MONGO_URI, {
       serverSelectionTimeoutMS: parsePositiveInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS, 8000),
@@ -97,7 +111,7 @@ const connectDB = async () => {
       1,
       "MongoDB connection errors observed by the application."
     );
-    process.exit(1);
+    console.warn("[DB] continuing without a ready database connection for local development");
   }
 };
 

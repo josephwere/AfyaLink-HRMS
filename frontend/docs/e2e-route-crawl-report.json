@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-26T10:07:28.423Z",
+  "generatedAt": "2026-08-26T23:06:32.941Z",
   "summary": {
-    "totalRoutes": 162,
+    "totalRoutes": 191,
     "issues": 0,
     "status": "pass"
   },
@@ -83,6 +83,114 @@
       "status": "reachable"
     },
     {
+      "route": "/app/finance/accounting/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/approval-policies/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/approvals/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/audit/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/balance-sheet/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/billing/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/cash-flow/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/cashier/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/chart-of-accounts/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/consolidation/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/executive/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/financial-intelligence/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/general-ledger/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/insurance-claims/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/journal-entries/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/manager/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/payments/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/periods/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/profit-and-loss/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/receipts/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/reconciliation/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/refunds/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/reports/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/settings/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/trial-balance/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/finance/work-center",
+      "status": "reachable"
+    },
+    {
       "route": "/app/governance/claims/index",
       "status": "reachable"
     },
@@ -96,6 +204,10 @@
     },
     {
       "route": "/app/governance/home/index",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/governance/pharmacy-safety",
       "status": "reachable"
     },
     {
@@ -420,6 +532,10 @@
     },
     {
       "route": "/app/platform/inbox/communication",
+      "status": "reachable"
+    },
+    {
+      "route": "/app/platform/inbox/hospital-communication",
       "status": "reachable"
     },
     {

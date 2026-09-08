@@ -57,8 +57,28 @@ async function bootstrapAfterDbConnect() {
     });
   });
 
+  // Signal to health/readiness that presentation seed completed.
+  try {
+    const readiness = await import("./utils/readiness.js");
+    if (readiness && readiness.default) {
+      readiness.default.presentationSeedReady = true;
+    }
+  } catch (e) {
+    // non-fatal
+  }
+
   await safeBootstrapStep("backgroundJobs", async () => {
     await startBackgroundJobs();
+  });
+
+  await safeBootstrapStep("invoiceAggregationConsumer", async () => {
+    const { startInvoiceAggregationConsumer } = await import("./services/invoiceAggregationConsumer.js");
+    startInvoiceAggregationConsumer();
+  });
+
+  await safeBootstrapStep("outboxWorker", async () => {
+    const { startOutboxWorker } = await import("./services/outboxWorkerService.js");
+    startOutboxWorker({ intervalMs: 5000 });
   });
 
   await safeBootstrapStep("systemSettingsAssetMigration", async () => {

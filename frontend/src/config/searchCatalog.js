@@ -17,6 +17,7 @@ function extraCatalogItemsForRole(role) {
     { label: "Profile", path: "/app/platform/account/profile", description: "Account settings and workspace panels." },
     { label: "Notifications", path: "/app/platform/inbox/notifications", description: "Your alerts and inbox." },
     { label: "Communication Center", path: "/app/platform/inbox/communication", description: "Messages and broadcast center." },
+    { label: "Hospital Communication Center", path: "/app/platform/inbox/hospital-communication", description: "Hospital-specific templates, campaigns, and broadcast delivery." },
   ];
 
   if (["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(r)) {

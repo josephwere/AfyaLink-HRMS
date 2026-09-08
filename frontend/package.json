@@ -17,6 +17,7 @@
     "e2e:crawl": "node scripts/e2e-route-crawl.mjs",
     "e2e:readiness": "node scripts/generate-production-readiness-report.mjs",
     "e2e:playwright": "node scripts/certify-deployment.mjs",
+    "e2e:cfo": "node tests/e2e/run_cfo_e2e.mjs",
     "deployment:certify": "node scripts/deployment-certify.mjs",
     "certify:rc1": "node scripts/deployment-certify.mjs --rc1",
     "certify": "pnpm run deployment:certify"

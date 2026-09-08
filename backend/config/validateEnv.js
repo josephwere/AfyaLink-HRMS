@@ -43,6 +43,9 @@ export function validateRuntimeEnv({ mode = process.env.NODE_ENV } = {}) {
     errors.push("JWT_ACCESS_SECRET is weak/default. Use a long random secret.");
   }
 
+  if (String(process.env.JWT_SECRET || "").length < 32) errors.push("JWT_SECRET must be at least 32 characters in production.");
+  if (String(process.env.JWT_ACCESS_SECRET || "").length < 32) errors.push("JWT_ACCESS_SECRET must be at least 32 characters in production.");
+
   const claimSecret = String(process.env.CLAIM_SECRET_KEY || "");
   if (claimSecret && !/^[a-f0-9]{64}$/i.test(claimSecret)) {
     warnings.push("CLAIM_SECRET_KEY should be a 64-hex char key (32 bytes) for AES-256-GCM.");
@@ -62,9 +65,10 @@ export function validateRuntimeEnv({ mode = process.env.NODE_ENV } = {}) {
     warnings.push("CORS_ORIGIN is not configured. Explicit production origin allowlisting is recommended.");
   }
 
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    warnings.push("Redis not configured. Realtime/queue coordination may be degraded.");
-  }
+  if (!process.env.REDIS_URL && (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)) errors.push("Production requires REDIS_URL or the complete Upstash Redis configuration.");
+  if (process.env.PPB_REGISTRY_URL && !process.env.PPB_API_KEY) errors.push("PPB_API_KEY is required when PPB_REGISTRY_URL is configured.");
+  if (process.env.PPB_API_KEY && !process.env.PPB_REGISTRY_URL) errors.push("PPB_REGISTRY_URL is required when PPB_API_KEY is configured.");
+  if (process.env.REDIS_URL && !/^rediss?:\/\//i.test(String(process.env.REDIS_URL))) errors.push("REDIS_URL must be a redis:// or rediss:// URL.");
 
   return { ok: errors.length === 0, errors, warnings, isProd };
 }

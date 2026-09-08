@@ -5,6 +5,8 @@ const financialSchema = new Schema({
   hospital: { type: Schema.Types.ObjectId, ref: 'Hospital' },
   patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
   invoiceNumber: { type: String, required: true, unique: true },
+  lifecycleStatus: { type: String, enum:['DRAFT','GENERATED','REVIEWED','ISSUED','PARTIALLY_PAID','PAID','OVERDUE','VOIDED'], default: 'DRAFT' },
+  paymentLifecycleStatus: { type: String, enum:['ISSUED','VIEWED','PARTIALLY_PAID','PAID','OVERDUE','VOIDED'], default: 'ISSUED' },
   items: [
     {
       description: String,

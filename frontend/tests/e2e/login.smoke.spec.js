@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173';
-const email = process.env.E2E_EMAIL || 'josephogwe8@gmail.com';
-const password = process.env.E2E_PASSWORD || 'Josboy@254';
+const email = process.env.E2E_SUPER_ADMIN_EMAIL || process.env.E2E_EMAIL || 'josephogwe8@gmail.com';
+const password = process.env.E2E_SUPER_ADMIN_PASSWORD || process.env.E2E_PASSWORD || 'Josboy@254';
 
 test('super-admin login reaches the platform workspace', async ({ page }) => {
   const errors = [];
@@ -16,8 +16,8 @@ test('super-admin login reaches the platform workspace', async ({ page }) => {
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 
-  await page.getByLabel(/email, phone or national id/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
+  await page.locator('#login-identifier').fill(email);
+  await page.locator('#login-password').fill(password);
   await page.locator('button[type="submit"]').click();
 
   await page.waitForURL(/\/app\//, { timeout: 30000 });

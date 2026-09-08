@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import Notification from "../models/Notification.js";
 import { notifyRolesInHospital } from "../services/notificationService.js";
 import { normalizeRole } from "../utils/normalizeRole.js";
+import PharmacyBatchControl from "../models/PharmacyBatchControl.js";
 
 function resolveHospital(req) {
   const role = normalizeRole(req.user?.role || "");
@@ -333,6 +334,8 @@ export const reserveStock = async (req, res) => {
 
     if (!batch) return res.status(400).json({ msg: "No stock batch available" });
     if (batch.quantity < qty) return res.status(400).json({ msg: "Insufficient batch stock" });
+    const held = await PharmacyBatchControl.exists({ hospital, itemId: item._id, batchNumber: batch.batchNumber, status: { $in: ["QUARANTINED", "RECALLED"] } });
+    if (held) return res.status(409).json({ msg: "Batch is under regulatory hold" });
 
     const reservation = await PharmacyReservation.create({
       hospital,
@@ -373,6 +376,8 @@ export const dispenseStock = async (req, res) => {
     const batch = item.batches.find((entry) => entry.batchNumber === String(reservation.batchNumber));
     if (!batch) return res.status(400).json({ msg: "Batch not found" });
     if (batch.quantity < qty) return res.status(400).json({ msg: "Insufficient batch stock" });
+    const held = await PharmacyBatchControl.exists({ hospital, itemId: item._id, batchNumber: batch.batchNumber, status: { $in: ["QUARANTINED", "RECALLED"] } });
+    if (held) return res.status(409).json({ msg: "Batch is under regulatory hold" });
 
     batch.quantity -= qty;
     item.totalQuantity -= qty;

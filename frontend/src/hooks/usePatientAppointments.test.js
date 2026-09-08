@@ -132,4 +132,34 @@ describe("usePatientAppointments", () => {
 
     expect(appointmentWorkflow.createAppointment).toHaveBeenCalledWith(expect.objectContaining({ doctor: "doctor-1" }));
   });
+
+  it("uses the booked appointment mode when starting a consultation request", async () => {
+    appointmentWorkflow.listAppointmentsForHospital.mockResolvedValue({ items: [{ _id: "a-1", consultationMode: "VIDEO", doctor: { name: "Dr Test" } }] });
+    const { result } = renderHook(() => usePatientAppointments({ hospitalFromQuery: "h-1", savedLocation: { lat: 1, lng: 2, radiusKm: 10, mode: "manual" } }));
+
+    await waitFor(() => {
+      expect(result.current.appointments).toEqual([{ _id: "a-1", consultationMode: "VIDEO", doctor: { name: "Dr Test" } }]);
+    });
+
+    await act(async () => {
+      await result.current.startConsultation("a-1", "VOICE");
+    });
+
+    expect(appointmentWorkflow.createAppointmentCall).toHaveBeenCalledWith(expect.objectContaining({ appointmentId: "a-1", callType: "VIDEO" }));
+  });
+
+  it("does not create a remote call request for an in-person appointment", async () => {
+    const { result } = renderHook(() => usePatientAppointments({ hospitalFromQuery: "h-1", savedLocation: { lat: 1, lng: 2, radiusKm: 10, mode: "manual" } }));
+
+    await act(async () => {
+      result.current.setAppointments([{ _id: "a-1", consultationMode: "IN_PERSON", doctor: { name: "Dr Test" } }]);
+    });
+
+    await act(async () => {
+      await result.current.startConsultation("a-1", "VIDEO");
+    });
+
+    expect(appointmentWorkflow.createAppointmentCall).not.toHaveBeenCalled();
+    expect(result.current.callMsg).toContain("in-person");
+  });
 });

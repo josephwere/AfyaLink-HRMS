@@ -4,6 +4,7 @@ import ConsultationRoom from "../../components/ConsultationRoom";
 import { useDoctorSchedule } from "../../hooks/useDoctorSchedule";
 import { useAuth } from "../../utils/auth";
 import { normalizeRole } from "../../utils/normalizeRole";
+import { canStartRemoteConsultation, getAppointmentLifecycleState } from "../../utils/appointmentLifecycle";
 
 const CALENDAR_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#b45309", "#be123c", "#047857", "#334155"];
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -105,6 +106,7 @@ export default function MySchedule() {
     activeCalls,
     load,
     runCallAction,
+    startAppointmentConsultation,
     resolveEscalation,
   } = useDoctorSchedule();
 
@@ -399,8 +401,9 @@ export default function MySchedule() {
                   <th>Patient</th>
                   <th>Hospital</th>
                   <th>Service</th>
-                  <th>Status</th>
-                  <th>Notes</th>
+                  <th>Mode</th>
+                  <th>Assignment</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -410,9 +413,25 @@ export default function MySchedule() {
                     <td>{getPatientName(item)}</td>
                     <td>{getHospitalName(item)}</td>
                     <td>{item.serviceType || "General Consultation"}</td>
-                    <td>{item.status || "Scheduled"}</td>
+                    <td>{String(item.consultationMode || "IN_PERSON").replace(/_/g, " ")}</td>
+                    <td>{item.doctor ? (typeof item.doctor === "object" ? item.doctor.name : String(item.doctor)) : "Awaiting assignment"}</td>
                     <td>
-                      {item.notes ? String(item.notes).slice(0, 80) : "No notes"}
+                      <span className={`action-pill ${getAppointmentLifecycleState(item).tone}`}>{getAppointmentLifecycleState(item).label}</span>
+                      {item.consultationMode && ["VIDEO", "VOICE"].includes(String(item.consultationMode).toUpperCase()) ? (
+                        <div style={{ marginTop: 6 }}>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => void startAppointmentConsultation(item)}
+                            disabled={!canStartRemoteConsultation(item)}
+                            title={canStartRemoteConsultation(item) ? "Start the remote consultation" : "The patient must be checked in before remote consultation can start"}
+                          >
+                            {canStartRemoteConsultation(item) ? "Start remote" : "Await check-in"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 6 }}><span className="muted">In-person</span></div>
+                      )}
                       {isClinicUser && (() => {
                         const patientKey = String(item?.patient?._id || item?.patient || "");
                         const encounter = encounterByPatient[patientKey];
@@ -450,7 +469,7 @@ export default function MySchedule() {
                 ))}
                 {!todayAppointments.length && (
                   <tr>
-                    <td colSpan={6} className="muted">No appointments for today.</td>
+                    <td colSpan={7} className="muted">No appointments for today.</td>
                   </tr>
                 )}
               </tbody>

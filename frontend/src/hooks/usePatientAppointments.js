@@ -73,6 +73,12 @@ export function mergeAppointmentList(existingAppointments = [], nextAppointment 
 export function usePatientAppointments({ hospitalFromQuery = "", savedLocation = {}, allowDoctorSelection = false } = {}) {
   const [hospitalId, setHospitalId] = useState(() => hospitalFromQuery || localStorage.getItem(SELECTED_HOSPITAL_KEY) || "");
   const [hospitals, setHospitals] = useState([]);
+
+  useEffect(() => {
+    if (!hospitalFromQuery) return;
+    setHospitalId(hospitalFromQuery);
+    localStorage.setItem(SELECTED_HOSPITAL_KEY, String(hospitalFromQuery));
+  }, [hospitalFromQuery]);
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [calls, setCalls] = useState([]);
@@ -93,6 +99,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
   const [locationLabel, setLocationLabel] = useState(savedLocation?.label || "");
   const [locating, setLocating] = useState(false);
   const autoLocationAttemptedRef = useRef(false);
+  const appointmentsRef = useRef([]);
   const [form, setForm] = useState({ scheduledAt: "", reason: "", doctor: "", serviceType: "General Consultation", consultationMode: "IN_PERSON" });
 
   const selectedHospital = useMemo(() => hospitals.find((h) => String(h._id) === String(hospitalId)) || null, [hospitals, hospitalId]);
@@ -214,6 +221,7 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
   }, [hospitalId, allowDoctorSelection]);
   useEffect(() => { if (!hospitalId) return undefined; const timer = setInterval(() => { void loadAppointments(); void loadCalls(); }, 15000); return () => clearInterval(timer); }, [hospitalId]);
   useEffect(() => { if (!hospitalId) return; void loadSuggestions(); }, [hospitalId, form.serviceType, form.consultationMode, form.scheduledAt]);
+  useEffect(() => { appointmentsRef.current = appointments; }, [appointments]);
   useEffect(() => {
     if (!form.doctor) return;
     if (!allowDoctorSelection) {
@@ -321,10 +329,24 @@ export function usePatientAppointments({ hospitalFromQuery = "", savedLocation =
 
   const startConsultation = async (appointmentId, callType) => {
     setCallMsg("");
+    const appointment = (appointmentsRef.current || []).find((item) => String(item?._id || "") === String(appointmentId));
+    const appointmentMode = String(appointment?.consultationMode || "IN_PERSON").toUpperCase();
+    const normalizedCallType = appointmentMode === "VIDEO" ? "VIDEO" : appointmentMode === "VOICE" ? "VOICE" : String(callType || "").toUpperCase();
+
+    if (appointmentMode === "IN_PERSON") {
+      setCallMsg("This appointment is booked as an in-person visit. The hospital team will guide you to the right department and room.");
+      return;
+    }
+
+    if (!["VOICE", "VIDEO"].includes(normalizedCallType)) {
+      setCallMsg("This appointment does not have a remote consultation room available yet.");
+      return;
+    }
+
     try {
-      await createAppointmentCall({ hospitalId, appointmentId, callType });
+      await createAppointmentCall({ hospitalId, appointmentId, callType: normalizedCallType });
       window.dispatchEvent(new CustomEvent("afyalink:calls-refresh"));
-      setCallMsg(`${callType === "VIDEO" ? "Video" : "Voice"} consultation request sent. We will notify you when the doctor accepts.`);
+      setCallMsg(`${normalizedCallType === "VIDEO" ? "Video" : "Voice"} consultation request sent. We will notify you when the doctor accepts.`);
       await loadCalls();
     } catch (err) { setCallMsg(err?.message || "Could not start consultation request"); }
   };

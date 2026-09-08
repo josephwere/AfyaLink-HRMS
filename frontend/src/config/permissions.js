@@ -7,7 +7,7 @@ export const PERMISSIONS = {
   },
 
   pharmacy: {
-    read: ["PHARMACIST", "HOSPITAL_ADMIN"],
+    read: ["PHARMACIST", "HOSPITAL_ADMIN", "SUPPLIER"],
     dispense: ["PHARMACIST"],
     manage: ["HOSPITAL_ADMIN"],
   },

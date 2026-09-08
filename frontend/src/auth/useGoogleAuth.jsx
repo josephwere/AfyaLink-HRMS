@@ -10,11 +10,17 @@ import {
   warmAuthRuntime,
 } from "../services/guardedAuthFetch";
 
+function isGoogleAuthSupported() {
+  if (typeof window === "undefined") return false;
+  return !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+}
+
 export function useGoogleAuth(options = {}) {
   const { onSuccess, redirectOnSuccess = true, endpoint = "/api/auth/google" } = options;
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const googleAuthSupported = isGoogleAuthSupported();
 
   const handleSuccess = async (credentialResponse) => {
     try {
@@ -59,12 +65,18 @@ export function useGoogleAuth(options = {}) {
   };
 
   return {
-    GoogleButton: () => (
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => setError("Google authentication failed")}
-      />
-    ),
+    GoogleButton: () => {
+      if (!googleAuthSupported) {
+        return null;
+      }
+
+      return (
+        <GoogleLogin
+          onSuccess={handleSuccess}
+          onError={() => setError("Google authentication failed")}
+        />
+      );
+    },
     error,
     clearError: () => setError(null),
   };

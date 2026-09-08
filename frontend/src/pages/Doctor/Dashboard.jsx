@@ -4,6 +4,7 @@ import { useAuth } from "../../utils/auth";
 import DashboardHomeShell, { DashboardSection } from "../../components/DashboardHomeShell";
 import { useAppLanguage } from "../../utils/appLanguage.jsx";
 import { useDoctorDashboard } from "../../hooks/useDoctorDashboard";
+import { getAppointmentLifecycleState } from "../../utils/appointmentLifecycle";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -20,14 +21,19 @@ export default function Dashboard() {
     statusSaving,
     resolveEscalation,
     setDoctorWorkStatus,
+    activityMessage,
   } = useDoctorDashboard();
   const [resolvingEncounterId, setResolvingEncounterId] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const currentWorkStatus = workStatus?.status || "AVAILABLE";
   const statusOptions = [
-    { value: "AVAILABLE", label: "Available", icon: "●", description: "Eligible for new automatic assignments." },
-    { value: "BUSY_MANUAL", label: "Busy", icon: "●", description: "Pause new assignments while keeping existing schedule." },
-    { value: "OFFLINE", label: "Offline", icon: "●", description: "Not on duty or not receiving assignments." },
+    { value: "AVAILABLE", label: "Available", icon: "🟢", description: "Eligible for new automatic assignments." },
+    { value: "BUSY_MANUAL", label: "Busy", icon: "🔴", description: "Pause new assignments while keeping existing schedule." },
+    { value: "IN_CONSULTATION", label: "In Consultation", icon: "🟠", description: "Mark yourself as actively engaged in a consultation." },
+    { value: "ON_BREAK", label: "On Break", icon: "🟡", description: "Temporarily away from patient assignments." },
+    { value: "EMERGENCY_ONLY", label: "Emergency Only", icon: "🔵", description: "Only urgent cases should reach you." },
+    { value: "OFF_DUTY", label: "Off Duty", icon: "⚫", description: "Not currently receiving assignments." },
+    { value: "OFFLINE", label: "Offline", icon: "⚪", description: "Not on duty or not receiving assignments." },
   ];
 
   const firstMissingRequirement = (encounter) => {
@@ -177,6 +183,7 @@ export default function Dashboard() {
             ))}
           </div>
           {statusMsg ? <p className="muted" style={{ margin: "10px 0 0" }}>{statusMsg}</p> : null}
+          {activityMessage ? <div className="warning-banner" style={{ marginTop: 12 }}>{activityMessage}</div> : null}
           <div className="success-guide-panel" style={{ marginTop: 12 }}>
             <strong>How assignment works</strong>
             <ul>
@@ -190,6 +197,24 @@ export default function Dashboard() {
 
       <DashboardSection className="doctor-main-grid" title="Today’s schedule + alerts" subtitle="Appointments, current blockers, and the fastest action paths for the day.">
         <div className="card doctor-schedule-card">
+          <div className="doctor-actions-row" style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginBottom: 12 }}>
+            <div className="card stat">
+              <div className="card-title">Assigned</div>
+              <div className="card-value">{appointments.filter((item) => item.doctor || ["Scheduled", "CheckedIn", "InConsultation"].includes(item.status)).length}</div>
+            </div>
+            <div className="card stat">
+              <div className="card-title">Waiting</div>
+              <div className="card-value">{appointments.filter((item) => !item.doctor && item.assignmentStatus !== "ASSIGNED").length}</div>
+            </div>
+            <div className="card stat">
+              <div className="card-title">Completed</div>
+              <div className="card-value">{appointments.filter((item) => /completed|done/i.test(String(item.status || ""))).length}</div>
+            </div>
+            <div className="card stat">
+              <div className="card-title">Cancelled</div>
+              <div className="card-value">{appointments.filter((item) => /cancelled|noshow|no show/i.test(String(item.status || ""))).length}</div>
+            </div>
+          </div>
           <h3>Today’s Schedule</h3>
           <div className="table-wrap">
             <table className="doctor-table">
@@ -208,7 +233,12 @@ export default function Dashboard() {
                     <td>{a.scheduledAt ? new Date(a.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-"}</td>
                     <td>{a.type || "OPD"}</td>
                     <td>{a.patient?.name || a.patient?.firstName || "-"}</td>
-                    <td>{a.status || "Scheduled"}</td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span>{a.status || "Scheduled"}</span>
+                        <span className={`action-pill ${getAppointmentLifecycleState(a).tone}`}>{getAppointmentLifecycleState(a).label}</span>
+                      </div>
+                    </td>
                     <td>
                       <div className="doctor-actions-row">
                         {(() => {

@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-07-26T10:07:20.277Z",
+  "generatedAt": "2026-08-26T23:06:02.068Z",
   "validationCommands": [
     "npm run audit:interactive-surfaces",
     "npm run audit:simulate-clicks"
   ],
   "summary": {
-    "generatedAt": "2026-07-26T10:07:20.093Z",
-    "total": 279,
-    "resolved": 78,
-    "unresolved": 201,
+    "generatedAt": "2026-08-26T23:06:01.980Z",
+    "total": 274,
+    "resolved": 80,
+    "unresolved": 194,
     "bySurface": {
       "deep-link": 45,
-      "button": 151,
-      "dashboard-card": 83
+      "button": 153,
+      "dashboard-card": 76
     },
-    "canonicalRoutes": 162
+    "canonicalRoutes": 191
   },
   "unresolved": [
     {
@@ -108,10 +108,10 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-47",
+      "id": "deep-link-src/pages/Admin/CreateAdmin.jsx-48",
       "surface": "deep-link",
       "file": "src/pages/Admin/CreateAdmin.jsx",
-      "line": 47,
+      "line": 48,
       "label": "Manage Super Assistants",
       "target": "/admin/super-assistants",
       "resolved": false,

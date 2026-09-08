@@ -494,6 +494,21 @@ export const listHospitals = async (req, res, next) => {
             ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
             : 0,
         },
+        billingState: {
+          ...(h?.billing ? h.billing : {}),
+          status: h?.billing?.status || "CURRENT",
+          ...((h?.billing || {}) && {
+            usage: {
+              target: Number(h?.billing?.monthlyTarget || 0),
+              spent: Number(h?.billing?.monthlySpent || 0),
+              percentage: Number(h?.billing?.monthlyTarget || 0) > 0
+                ? Math.round((Number(h?.billing?.monthlySpent || 0) / Number(h?.billing?.monthlyTarget || 0)) * 100)
+                : 0,
+              remaining: Math.max(0, Number(h?.billing?.monthlyTarget || 0) - Number(h?.billing?.monthlySpent || 0)),
+            },
+          }),
+          premiumRestricted: premiumPaused || Boolean(h?.billing?.balanceOutstanding > 0) || Number(h?.billing?.monthlySpent || 0) > Number(h?.billing?.monthlyTarget || 0),
+        },
       };
       return serializeHospital(base);
     });
@@ -584,6 +599,7 @@ export const updateHospital = async (req, res, next) => {
       active,
       plan,
       subscription,
+      billing,
       verification,
       accreditations,
       claimsSecurity,
@@ -694,6 +710,31 @@ export const updateHospital = async (req, res, next) => {
       } else if (hospital.subscription?.status !== "ACTIVE") {
         hospital.subscription.status = "TRIAL";
         hospital.subscription.premiumPaused = false;
+      }
+    }
+
+    if (billing && typeof billing === "object") {
+      hospital.billing = hospital.billing || {};
+      if (billing.monthlyTarget !== undefined) {
+        hospital.billing.monthlyTarget = Number(billing.monthlyTarget || 0);
+      }
+      if (billing.monthlySpent !== undefined) {
+        hospital.billing.monthlySpent = Number(billing.monthlySpent || 0);
+      }
+      if (billing.balanceOutstanding !== undefined) {
+        hospital.billing.balanceOutstanding = Number(billing.balanceOutstanding || 0);
+      }
+      if (billing.paymentDueAt !== undefined) {
+        hospital.billing.paymentDueAt = billing.paymentDueAt ? new Date(billing.paymentDueAt) : null;
+      }
+      if (Array.isArray(billing.alertThresholds)) {
+        hospital.billing.alertThresholds = billing.alertThresholds.map(Number).filter(Number.isFinite);
+      }
+      if (Array.isArray(billing.alertedMilestones)) {
+        hospital.billing.alertedMilestones = billing.alertedMilestones.map(Number).filter(Number.isFinite);
+      }
+      if (billing.status !== undefined) {
+        hospital.billing.status = String(billing.status).trim().toUpperCase();
       }
     }
 
@@ -898,6 +939,19 @@ export const listMarketplaceHospitals = async (req, res, next) => {
             trialEndsAt,
             trialExpired,
             premiumPaused,
+          },
+          billingState: {
+            ...(h?.billing ? h.billing : {}),
+            status: h?.billing?.status || "CURRENT",
+            usage: {
+              target: Number(h?.billing?.monthlyTarget || 0),
+              spent: Number(h?.billing?.monthlySpent || 0),
+              percentage: Number(h?.billing?.monthlyTarget || 0) > 0
+                ? Math.round((Number(h?.billing?.monthlySpent || 0) / Number(h?.billing?.monthlyTarget || 0)) * 100)
+                : 0,
+              remaining: Math.max(0, Number(h?.billing?.monthlyTarget || 0) - Number(h?.billing?.monthlySpent || 0)),
+            },
+            premiumRestricted: premiumPaused || Boolean(h?.billing?.balanceOutstanding > 0) || Number(h?.billing?.monthlySpent || 0) > Number(h?.billing?.monthlyTarget || 0),
           },
           insuranceProviders: (h.insuranceProviders || []).filter((i) => i?.enabled !== false),
           patientPaymentMethods: (h.patientPaymentMethods || []).filter((m) => m?.enabled !== false),

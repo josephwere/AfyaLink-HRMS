@@ -55,8 +55,8 @@ export default function PasswordInput({
               setShow((prev) => !prev);
             }
           }}
-          aria-label={show ? "Hide password" : "Show password"}
-          title={show ? "Hide password" : "Show password"}
+          aria-label={show ? "Hide entered text" : "Show entered text"}
+          title={show ? "Hide entered text" : "Show entered text"}
         >
           <EyeIcon open={show} />
         </span>

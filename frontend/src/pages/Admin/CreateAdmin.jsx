@@ -19,6 +19,7 @@ export default function CreateAdmin() {
     loading,
     loadingHospitals,
     message,
+    fieldErrors,
     canCreateSystemLevel,
     canCreateSuperAssistant,
     canCreateGovernmentAdmin,
@@ -53,16 +54,20 @@ export default function CreateAdmin() {
             placeholder="Full name"
             value={form.name}
             required
+            aria-invalid={Boolean(fieldErrors?.name)}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
+          {fieldErrors?.name ? <div className="auth-error">❌ {fieldErrors.name}</div> : null}
 
           <input
             placeholder="Email address"
             type="email"
             value={form.email}
             required
+            aria-invalid={Boolean(fieldErrors?.email)}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+          {fieldErrors?.email ? <div className="auth-error">❌ {fieldErrors.email}</div> : null}
 
           <PasswordInput
             label=""
@@ -72,6 +77,7 @@ export default function CreateAdmin() {
             autoComplete="new-password"
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+          {fieldErrors?.password ? <div className="auth-error">❌ {fieldErrors.password}</div> : null}
 
           <select
             value={form.role}
@@ -101,6 +107,7 @@ export default function CreateAdmin() {
 
             <select
               value={form.hospitalId}
+              aria-invalid={Boolean(fieldErrors?.hospitalId)}
               onChange={(e) => {
                 const hospitalId = e.target.value;
                 setForm({ ...form, hospitalId });
@@ -120,6 +127,7 @@ export default function CreateAdmin() {
                 </option>
               ))}
             </select>
+            {fieldErrors?.hospitalId ? <div className="auth-error">❌ {fieldErrors.hospitalId}</div> : null}
 
             {selectedHospital && (
               <p className="muted" style={{ marginTop: 6 }}>

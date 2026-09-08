@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import * as encounterService from "../services/encounter";
+import { useSocket } from "../utils/socket";
 import { getMyDoctorWorkStatus, updateMyDoctorWorkStatus } from "../services/appointmentWorkflow";
 import { getDoctorDashboard, listDoctorDashboardAppointments, listDoctorDashboardNotifications } from "../services/dashboardApi";
 import { listTransfers } from "../services/transferApi";
@@ -14,11 +15,13 @@ const initialState = {
   statusSaving: false,
   loading: false,
   error: null,
+  activityMessage: "",
 };
 
 export function useDoctorDashboard() {
   const [state, setState] = useState(initialState);
   const active = useRef(true);
+  const socket = useSocket();
 
   const loadEncounterSnapshots = useCallback(async (appointmentRows) => {
     const patientIds = [...new Set(
@@ -91,6 +94,43 @@ export function useDoctorDashboard() {
       active.current = false;
     };
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleStatus = (payload) => {
+      setState((prev) => ({
+        ...prev,
+        workStatus: payload || prev.workStatus,
+        activityMessage: payload?.assignedFromQueue
+          ? `${payload.assignedFromQueue} waiting patient${payload.assignedFromQueue === 1 ? "" : "s"} assigned to your schedule.`
+          : `Status updated to ${payload?.label || "Available"}.`,
+      }));
+    };
+
+    const handleAssignment = (payload) => {
+      const appointment = payload?.appointment;
+      const patientName = appointment?.patient?.name || appointment?.patient?.firstName || "A patient";
+      const service = appointment?.serviceType || "consultation";
+      const mode = appointment?.consultationMode === "VIDEO"
+        ? "Video"
+        : appointment?.consultationMode === "VOICE"
+        ? "Voice"
+        : "Consultation";
+      setState((prev) => ({
+        ...prev,
+        activityMessage: `New patient assigned: ${patientName} • ${service} • ${mode}`,
+      }));
+      void loadDashboardData();
+    };
+
+    socket.on("doctorWorkStatusUpdated", handleStatus);
+    socket.on("doctorQueueAssignment", handleAssignment);
+    return () => {
+      socket.off("doctorWorkStatusUpdated", handleStatus);
+      socket.off("doctorQueueAssignment", handleAssignment);
+    };
+  }, [loadDashboardData, socket]);
 
   const setDoctorWorkStatus = useCallback(async (status) => {
     setState((prev) => ({ ...prev, statusSaving: true, error: null }));

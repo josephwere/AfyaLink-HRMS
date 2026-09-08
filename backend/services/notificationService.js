@@ -278,6 +278,11 @@ export async function notify({
     throw new Error("Notification title and body are required");
   }
 
+  const idempotencyKey = meta?.idempotencyKey ? String(meta.idempotencyKey) : "";
+  if (idempotencyKey) {
+    const existing = await Notification.findOne({ "meta.idempotencyKey": idempotencyKey });
+    if (existing) return existing;
+  }
   return Notification.create({
     title,
     body,
@@ -318,14 +323,22 @@ export async function notifyRolesInHospital({ hospital, roles = [], title, body,
   const normalized = roles.map((r) => String(r || "").toUpperCase());
   const recipients = await User.find({ hospital, role: { $in: normalized }, active: true }).select("_id role name").lean();
   if (!recipients || !recipients.length) return null;
-  const docs = recipients.map((r) => ({
+  const recallId = meta?.recallId ? String(meta.recallId) : "";
+  const batchId = meta?.batchId ? String(meta.batchId) : "";
+  const existing = recallId ? await Notification.find({ hospital, category, "meta.recallId": recallId, "meta.batchId": batchId }).select("user").lean() : [];
+  const existingUsers = new Set(existing.map((notification) => String(notification.user)));
+  const idempotencyKey = meta?.idempotencyKey ? String(meta.idempotencyKey) : "";
+  const keyedRecipients = idempotencyKey ? await Notification.find({ "meta.idempotencyKey": { $in: recipients.map((recipient) => `${idempotencyKey}:${String(recipient._id)}`) } }).select("user").lean() : [];
+  const keyedUsers = new Set(keyedRecipients.map((notification) => String(notification.user)));
+  const docs = recipients.filter((recipient) => !existingUsers.has(String(recipient._id)) && !keyedUsers.has(String(recipient._id))).map((r) => ({
     title,
     body,
     category,
     user: r._id,
     hospital,
-    meta,
+    meta: { ...meta, ...(idempotencyKey ? { idempotencyKey: `${idempotencyKey}:${String(r._id)}` } : {}) },
   }));
+  if (!docs.length) return [];
   try {
     return Notification.insertMany(docs);
   } catch (err) {

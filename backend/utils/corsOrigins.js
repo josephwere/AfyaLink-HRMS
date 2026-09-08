@@ -10,14 +10,14 @@ function parseOriginList(value = "") {
 }
 
 export function getAllowedOrigins() {
+  const isProduction = String(process.env.NODE_ENV || "").toLowerCase() === "production";
   return Array.from(
     new Set(
       [
         ...parseOriginList(process.env.CORS_ORIGIN),
         normalizeOrigin(process.env.FRONTEND_URL),
         normalizeOrigin(process.env.FRONTEND_PUBLIC_URL),
-        "http://localhost:3000",
-        "http://localhost:5173",
+        ...(isProduction ? [] : ["http://localhost:3000", "http://localhost:5173"]),
       ].filter(Boolean)
     )
   );
@@ -32,8 +32,8 @@ export function isAllowedOrigin(origin) {
 
   try {
     const parsed = new URL(normalized);
-    if (["localhost", "127.0.0.1"].includes(parsed.hostname)) return true;
-    if (parsed.hostname.endsWith(".vercel.app")) return true;
+    if (!isProduction && ["localhost", "127.0.0.1"].includes(parsed.hostname)) return true;
+    if (!isProduction && parsed.hostname.endsWith(".vercel.app")) return true;
   } catch {
     return false;
   }

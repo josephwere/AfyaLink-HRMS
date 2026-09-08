@@ -34,9 +34,12 @@ const safe = (fn) => async (req, res) => {
  *                  M-PESA - STK PUSH
  * ============================================================
  */
+import shiftGuard from "../middleware/shiftGuard.js";
+
 router.post(
   "/mpesa/stk",
   protect,
+  shiftGuard,
   safe(async (req) => {
     const { phone, amount } = req.body;
 
@@ -62,6 +65,7 @@ router.post(
 router.post(
   "/stripe/create-intent",
   protect,
+  shiftGuard,
   safe(async (req) => {
     const { amount, currency = "usd", metadata = {} } = req.body;
 
@@ -94,6 +98,7 @@ router.post(
 router.post(
   "/flutter/init",
   protect,
+  shiftGuard,
   safe(async (req) => {
     return await flutter.initiatePayment(req.body);
   })
@@ -107,6 +112,7 @@ router.post(
 router.post(
   "/route",
   protect,
+  shiftGuard,
   safe(async (req) => {
     const {
       method,
@@ -146,7 +152,7 @@ router.post(
       });
     }
 
-    if (normalized === "paypal") {
+      if (normalized === "paypal") {
       const result = await paypal.createOrder({
         amount,
         currency,

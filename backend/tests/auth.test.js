@@ -21,6 +21,38 @@ describe('Auth (register/login)', ()=>{
     expect(login.body.accessToken || login.body.token).toBeDefined();
   });
 
+  test('login allows a realistic password compare delay without violating auth runtime guard', async () => {
+    const password = 'SlowComparePass123!';
+    const originalMatchPassword = User.prototype.matchPassword;
+
+    User.prototype.matchPassword = async function (enteredPassword) {
+      await new Promise((resolve) => setTimeout(resolve, 8000));
+      return enteredPassword === password;
+    };
+
+    try {
+      await User.create({
+        name: 'Slow Compare User',
+        email: 'slow-compare@afya.test',
+        password,
+        role: 'DOCTOR',
+        authProvider: 'local',
+        authMethods: ['local'],
+        active: true,
+        emailVerified: true,
+      });
+
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'slow-compare@afya.test', password });
+
+      expect(login.status).toBe(200);
+      expect(login.body.success).toBe(true);
+    } finally {
+      User.prototype.matchPassword = originalMatchPassword;
+    }
+  });
+
   test('legacy user without userId gets assigned one during login', async () => {
     const password = 'LegacyPass123!';
     const hashed = await bcrypt.hash(password, 10);

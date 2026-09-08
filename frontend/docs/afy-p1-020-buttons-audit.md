@@ -1,7 +1,7 @@
 # AFY-P1-020 Buttons Audit
 
-- Total entries: 151
-- Resolved: 29
+- Total entries: 153
+- Resolved: 31
 - Unresolved: 122
 
 - src/app/shell/AppShell.jsx:84 interactive action -> /app/platform/account/profile (resolved)
@@ -20,12 +20,12 @@
 - src/app/shell/AppShell.jsx:598 interactive action -> /step-up (resolved)
 - src/app/shell/AppShell.jsx:690 interactive action -> /step-up (resolved)
 - src/components/FloatingAI.jsx:356 interactive action -> /app/innovation/ai/chatbot (resolved)
-- src/components/Navbar.jsx:164 interactive action -> /app/platform/account/profile (resolved)
+- src/components/Navbar.jsx:165 interactive action -> /app/platform/account/profile (resolved)
 - src/components/Navigation/Sidebar.jsx:292 interactive action -> /app/platform/account/profile (resolved)
 - src/components/NotificationCenter.jsx:341 interactive action -> /app/platform/inbox/notifications (resolved)
 - src/hooks/useCommerceConfig.js:114 interactive action -> /hospital-admin/customization (unresolved)
-- src/hooks/useLogin.js:91 interactive action -> /2fa (resolved)
-- src/hooks/useRegister.js:94 interactive action -> /login (resolved)
+- src/hooks/useLogin.js:145 interactive action -> /2fa (resolved)
+- src/hooks/useRegister.js:123 interactive action -> /login (resolved)
 - src/hooks/useResetPassword.js:41 interactive action -> /login (resolved)
 - src/hooks/useRevenueIntelligence.js:98 interactive action -> /hospital-admin/financials (unresolved)
 - src/hooks/useRevenueIntelligence.js:113 interactive action -> /hospital-admin/claims (unresolved)

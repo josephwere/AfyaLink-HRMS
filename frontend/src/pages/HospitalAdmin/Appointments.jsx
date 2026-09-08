@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../components/Cards";
 import { useHospitalAdminAppointments } from "../../hooks/useHospitalAdminAppointments";
@@ -22,6 +22,7 @@ export default function HospitalAdminAppointments() {
     scrollToSection,
     selectedDoctorData,
     assignDoctor,
+    updateConsultationMode,
     blockCall,
     removeCall,
     saveAvailability,
@@ -29,6 +30,9 @@ export default function HospitalAdminAppointments() {
     dayNames,
     load,
   } = useHospitalAdminAppointments();
+  const [consultationModeDrafts, setConsultationModeDrafts] = useState({});
+
+  const consultationModeOptions = useMemo(() => ["IN_PERSON", "VOICE", "VIDEO"], []);
 
   const updatePolicyField = (field, value) => {
     setSchedulingPolicy((prev) => ({
@@ -179,6 +183,7 @@ export default function HospitalAdminAppointments() {
                   <th>Service</th>
                   <th>Status</th>
                   <th>Doctor</th>
+                  <th>Consultation</th>
                   <th>Assign</th>
                 </tr>
               </thead>
@@ -194,6 +199,40 @@ export default function HospitalAdminAppointments() {
                     <td>{item.serviceType || "General Consultation"}</td>
                     <td>{item.assignmentStatus || item.status}</td>
                     <td>{item.doctor?.name || "Waiting for care team"}</td>
+                    <td>
+                      <div className="doctor-actions-row" style={{ gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <span className="action-pill" style={{ whiteSpace: "nowrap" }}>
+                          {String(item.consultationMode || "IN_PERSON").replace(/_/g, " ")}
+                        </span>
+                        <select
+                          value={consultationModeDrafts[item._id] || String(item.consultationMode || "IN_PERSON")}
+                          onChange={(e) =>
+                            setConsultationModeDrafts((prev) => ({
+                              ...prev,
+                              [item._id]: e.target.value,
+                            }))
+                          }
+                        >
+                          {consultationModeOptions.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {mode.replace(/_/g, " ")}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            void updateConsultationMode(
+                              item._id,
+                              consultationModeDrafts[item._id] || String(item.consultationMode || "IN_PERSON")
+                            )
+                          }
+                        >
+                          Approve change
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <select
                         value={item.doctor?._id || ""}
@@ -211,7 +250,7 @@ export default function HospitalAdminAppointments() {
                 ))}
                 {data.appointments.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="muted">No appointments in queue.</td>
+                    <td colSpan={7} className="muted">No appointments in queue.</td>
                   </tr>
                 )}
               </tbody>

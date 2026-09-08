@@ -233,7 +233,7 @@ function writeSidebarPreference(userId, isOpen) {
 }
 
 export default function AppShell() {
-  const { user } = useAuth();
+  const { user, actualRole, roleOverride, setRoleOverride } = useAuth();
   const location = useLocation();
   const { settings } = useSystemSettings();
   const { uiPreferences, setUiPreferences, flushUiPreferences } = useUiPreferences();

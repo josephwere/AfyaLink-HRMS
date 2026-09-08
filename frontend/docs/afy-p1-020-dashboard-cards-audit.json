@@ -1,8 +1,8 @@
 {
   "summary": {
-    "total": 83,
+    "total": 76,
     "resolved": 15,
-    "unresolved": 68
+    "unresolved": 61
   },
   "surfaces": [
     {
@@ -46,30 +46,30 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-179",
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-276",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/Dashboard.jsx",
-      "line": 179,
+      "line": 276,
       "label": "interactive action",
       "target": "/doctor/medical-records${a.patient",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-190",
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-287",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/Dashboard.jsx",
-      "line": 190,
+      "line": 287,
       "label": "interactive action",
       "target": "/doctor/opd${patientKey ",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-213",
+      "id": "dashboard-card-src/pages/Doctor/Dashboard.jsx-310",
       "surface": "dashboard-card",
       "file": "src/pages/Doctor/Dashboard.jsx",
-      "line": 213,
+      "line": 310,
       "label": "interactive action",
       "target": "/notifications",
       "resolved": false,
@@ -176,20 +176,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-51",
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-67",
       "surface": "dashboard-card",
       "file": "src/pages/HospitalAdmin/Appointments.jsx",
-      "line": 51,
+      "line": 67,
       "label": "Requested calls",
       "target": "/hospital-admin/consultation-monitor",
       "resolved": false,
       "reason": "no matching canonical route"
     },
     {
-      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-52",
+      "id": "dashboard-card-src/pages/HospitalAdmin/Appointments.jsx-68",
       "surface": "dashboard-card",
       "file": "src/pages/HospitalAdmin/Appointments.jsx",
-      "line": 52,
+      "line": 68,
       "label": "Active calls",
       "target": "/hospital-admin/consultation-monitor",
       "resolved": false,
@@ -362,76 +362,6 @@
       "line": 70,
       "label": "Encounter Timeline",
       "target": "/patient/medical-records",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-356",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 356,
-      "label": "interactive action",
-      "target": "/patient/appointments",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-359",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 359,
-      "label": "interactive action",
-      "target": "/patient/prescriptions",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-362",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 362,
-      "label": "interactive action",
-      "target": "/patient/medical-records",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-367",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 367,
-      "label": "interactive action",
-      "target": "/notifications",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-370",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 370,
-      "label": "interactive action",
-      "target": "/patient/feedback",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-377",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 377,
-      "label": "interactive action",
-      "target": "/notifications",
-      "resolved": false,
-      "reason": "no matching canonical route"
-    },
-    {
-      "id": "dashboard-card-src/pages/Patient/Dashboard.jsx-380",
-      "surface": "dashboard-card",
-      "file": "src/pages/Patient/Dashboard.jsx",
-      "line": 380,
-      "label": "interactive action",
-      "target": "/patient/feedback",
       "resolved": false,
       "reason": "no matching canonical route"
     },

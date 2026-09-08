@@ -8,6 +8,7 @@ import {
   listAppointmentOperationsQueue,
   assignAppointmentDoctor,
   deleteAppointmentCall,
+  updateAppointment,
 } from "../services/appointmentWorkflow";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -119,6 +120,17 @@ export function useHospitalAdminAppointments() {
     }
   }, [load]);
 
+  const updateConsultationMode = useCallback(async (appointmentId, consultationMode) => {
+    try {
+      setMsg("");
+      await updateAppointment(appointmentId, { consultationMode });
+      await load();
+      setMsg("Consultation type updated.");
+    } catch (err) {
+      setMsg(err?.message || "Failed to change consultation type");
+    }
+  }, [load]);
+
   const blockCall = useCallback(async (callId) => {
     try {
       setMsg("");
@@ -194,6 +206,7 @@ export function useHospitalAdminAppointments() {
     selectedDoctorData,
     load,
     assignDoctor,
+    updateConsultationMode,
     blockCall,
     removeCall,
     saveAvailability,

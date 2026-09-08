@@ -28,6 +28,10 @@ vi.mock("react-router-dom", () => ({
 describe("useRegister", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
     authService.guardedAuthFetch.mockResolvedValueOnce({ accessToken: "t", user: { role: "PATIENT" } });
   });
 
@@ -35,9 +39,29 @@ describe("useRegister", () => {
     const { result } = renderHook(() => useRegister());
 
     await act(async () => {
+      result.current.setForm({
+        name: "Test User",
+        email: "test@example.com",
+        phoneCountry: "+254",
+        phoneLocal: "712345678",
+        nationalIdNumber: "12345678",
+        nationalIdCountry: "KE",
+        password: "StrongPass1!",
+        confirmPassword: "StrongPass1!",
+      });
       await result.current.handleSubmit({ preventDefault: vi.fn() });
     });
 
-    expect(authService.guardedAuthFetch).toHaveBeenCalled();
+    expect(authService.guardedAuthFetch).toHaveBeenCalledWith(
+      "/api/auth/register",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({
+          name: "Test User",
+          email: "test@example.com",
+          password: "StrongPass1!",
+        }),
+      })
+    );
   });
 });

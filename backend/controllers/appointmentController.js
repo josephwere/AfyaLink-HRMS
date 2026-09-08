@@ -22,7 +22,7 @@ import { normalizeSchedulingPolicy } from "../utils/schedulingPolicy.js";
 
 const CLINICIAN_ROLES = ["DOCTOR", "SURGEON"];
 const DEFAULT_BOOKING_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || "Africa/Nairobi";
-const DOCTOR_WORK_STATUSES = new Set(["AVAILABLE", "BUSY_MANUAL", "BUSY_AUTOMATIC", "OFFLINE"]);
+const DOCTOR_WORK_STATUSES = new Set(["AVAILABLE", "BUSY_MANUAL", "BUSY_AUTOMATIC", "OFFLINE", "ON_BREAK", "EMERGENCY_ONLY", "OFF_DUTY", "IN_CONSULTATION"]);
 const ASSIGNABLE_DOCTOR_WORK_STATUSES = new Set(["AVAILABLE"]);
 const APPOINTMENT_INACTIVE_STATUSES = ["Cancelled", "Completed", "NoShow", "CANCELLED", "COMPLETED", "NO_SHOW"];
 const DEMO_HOSPITAL_FALLBACK_IDS = [
@@ -35,9 +35,14 @@ const DEMO_HOSPITAL_FALLBACK_IDS = [
   .filter(Boolean);
 
 function normalizeDoctorWorkStatus(value) {
-  const normalized = String(value || "AVAILABLE").trim().toUpperCase();
+  const normalized = String(value || "AVAILABLE").trim().replace(/\s+/g, "_").toUpperCase();
   if (normalized === "BUSY") return "BUSY_MANUAL";
   if (normalized === "ONLINE") return "AVAILABLE";
+  if (normalized === "ON_BREAK") return "ON_BREAK";
+  if (normalized === "EMERGENCY_ONLY") return "EMERGENCY_ONLY";
+  if (normalized === "OFF_DUTY") return "OFF_DUTY";
+  if (normalized === "IN_CONSULTATION" || normalized === "INCONSULTATION") return "BUSY_AUTOMATIC";
+  if (normalized === "BUSY_AUTOMATIC") return "BUSY_AUTOMATIC";
   if (DOCTOR_WORK_STATUSES.has(normalized)) return normalized;
   return "AVAILABLE";
 }
@@ -55,9 +60,15 @@ function serializeDoctorWorkStatus(user = {}) {
       status === "AVAILABLE"
         ? "Available"
         : status === "BUSY_AUTOMATIC"
-        ? "Busy (Automatic)"
+        ? "In Consultation"
         : status === "BUSY_MANUAL"
         ? "Busy"
+        : status === "ON_BREAK"
+        ? "On Break"
+        : status === "EMERGENCY_ONLY"
+        ? "Emergency Only"
+        : status === "OFF_DUTY"
+        ? "Off Duty"
         : "Offline",
     source: user?.metadata?.doctorWorkStatusSource || (status === "AVAILABLE" ? "DEFAULT" : "SYSTEM"),
     eligibleForAssignment: ASSIGNABLE_DOCTOR_WORK_STATUSES.has(status),
@@ -312,6 +323,20 @@ async function emitConsultationLifecycle(eventName, callSession, extra = {}) {
     if (patientUserId) io.to(patientUserId).emit(eventName, payload);
     if (callSession.doctor) io.to(String(callSession.doctor)).emit(eventName, payload);
     if (callSession.hospital) io.to(String(callSession.hospital)).emit(eventName, payload);
+  } catch (_) {
+    // Realtime delivery is best-effort; API success must not depend on sockets.
+  }
+}
+
+async function emitDoctorOperationalEvent({ doctorId, hospitalId, eventName, payload = {} }) {
+  try {
+    const io = getIO();
+    const eventPayload = {
+      emittedAt: new Date().toISOString(),
+      ...payload,
+    };
+    if (doctorId) io.to(String(doctorId)).emit(eventName, eventPayload);
+    if (hospitalId) io.to(String(hospitalId)).emit(eventName, eventPayload);
   } catch (_) {
     // Realtime delivery is best-effort; API success must not depend on sockets.
   }
@@ -669,6 +694,22 @@ export const createAppointment = async (req, res, next) => {
     // Ensure doctor-created appointments remain visible in doctor queues/lists.
     if (role === "DOCTOR" && !doctor) {
       doctor = req.user.id;
+    }
+
+    // If caller omitted hospital context but provided a patient, try to infer
+    // the hospital from the patient's record. This makes API usage robust
+    // for programmatic flows where the client created the patient in the
+    // same request flow but didn't include X-Hospital headers.
+    if (!hospitalId && patient) {
+      try {
+        const patientDoc = await Patient.findById(patient).select("hospital").lean();
+        if (patientDoc && patientDoc.hospital) {
+          hospitalId = String(patientDoc.hospital);
+        }
+      } catch (err) {
+        // Best-effort; if lookup fails we'll keep existing behavior and return
+        // a validation error below so the client can correct the request.
+      }
     }
 
     if (!patient || !scheduledAt || !hospitalId) {
@@ -1123,6 +1164,15 @@ async function assignQueuedAppointmentsToDoctor({ doctor, actorId, limit = 5 }) 
       action: "reassigned",
       actorId,
     });
+    await emitDoctorOperationalEvent({
+      doctorId: doctor._id,
+      hospitalId: doctor.hospital,
+      eventName: "doctorQueueAssignment",
+      payload: {
+        appointment: serializeAppointment(wf.context.appointment),
+        source: "queue",
+      },
+    });
     assigned.push(wf.context.appointment);
   }
 
@@ -1248,8 +1298,8 @@ export const updateMyDoctorWorkStatus = async (req, res, next) => {
   try {
     const actorId = req.user._id || req.user.id;
     const nextStatus = normalizeDoctorWorkStatus(req.body?.status);
-    if (!["AVAILABLE", "BUSY_MANUAL", "OFFLINE"].includes(nextStatus)) {
-      return res.status(400).json({ msg: "Status must be Available, Busy, or Offline" });
+    if (!["AVAILABLE", "BUSY_MANUAL", "BUSY_AUTOMATIC", "OFFLINE", "ON_BREAK", "EMERGENCY_ONLY", "OFF_DUTY"].includes(nextStatus)) {
+      return res.status(400).json({ msg: "Status must be Available, Busy, In Consultation, On Break, Emergency Only, Off Duty, or Offline" });
     }
 
     const doctor = await User.findById(actorId).select("_id role hospital active employment.status metadata");
@@ -1272,9 +1322,14 @@ export const updateMyDoctorWorkStatus = async (req, res, next) => {
     }
 
     try {
-      getIO().to(String(actorId)).emit("doctorWorkStatusUpdated", {
-        ...serializeDoctorWorkStatus(doctor),
-        assignedFromQueue: assignedFromQueue.length,
+      await emitDoctorOperationalEvent({
+        doctorId: doctor._id,
+        hospitalId: doctor.hospital,
+        eventName: "doctorWorkStatusUpdated",
+        payload: {
+          ...serializeDoctorWorkStatus(doctor),
+          assignedFromQueue: assignedFromQueue.length,
+        },
       });
     } catch (_) {}
 
@@ -1399,9 +1454,22 @@ export const createCallSession = async (req, res, next) => {
     if (!hospitalId || !appointmentId) {
       return res.status(400).json({ msg: "hospitalId and appointmentId are required" });
     }
-    const normalizedCallType = String(callType || "VOICE").toUpperCase();
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment || String(appointment.hospital) !== String(hospitalId)) {
+      return res.status(404).json({ msg: "Appointment not found for this hospital" });
+    }
+
+    const appointmentMode = String(appointment.consultationMode || "IN_PERSON").toUpperCase();
+    const normalizedCallType = appointmentMode === "VIDEO" || appointmentMode === "VOICE"
+      ? appointmentMode
+      : String(callType || "VOICE").toUpperCase();
+
     if (!communications.callsEnabled) {
       return res.status(403).json({ msg: "Calls are disabled platform-wide" });
+    }
+    if (appointmentMode === "IN_PERSON") {
+      return res.status(409).json({ msg: "This appointment is booked as an in-person visit and cannot start a remote consultation" });
     }
     if (normalizedCallType === "VIDEO" && !communications.videoCallsEnabled) {
       return res.status(403).json({ msg: "Video calls are disabled platform-wide" });
@@ -1410,10 +1478,6 @@ export const createCallSession = async (req, res, next) => {
       return res.status(403).json({ msg: "Voice calls are disabled platform-wide" });
     }
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment || String(appointment.hospital) !== String(hospitalId)) {
-      return res.status(404).json({ msg: "Appointment not found for this hospital" });
-    }
     if (role === "PATIENT") {
       const patientIds = await resolvePatientIdsForUser(req.user.id, hospitalId || null);
       if (!patientIds.includes(String(appointment.patient))) {
@@ -1660,6 +1724,55 @@ export const updateAppointment = async (req, res, next) => {
     /* 🧾 Audit BEFORE */
     req.resourceSnapshot = a.toObject();
 
+    const actorRole = normalizeRole(req.user.role);
+    const updates = { ...(req.body || {}) };
+    const requestedMode = updates.consultationMode ? normalizeConsultationMode(updates.consultationMode) : null;
+
+    if (requestedMode && requestedMode !== normalizeConsultationMode(a.consultationMode)) {
+      const approverRoles = new Set([
+        "HOSPITAL_ADMIN",
+        "HOSPITAL_ADMIN_ASSISTANT",
+        "SYSTEM_ADMIN",
+        "SUPER_ADMIN",
+        "DEVELOPER",
+        "DOCTOR",
+        "SURGEON",
+      ]);
+
+      if (!approverRoles.has(actorRole)) {
+        return res.status(403).json({
+          msg: "Only hospital or doctor staff can approve a consultation-type change for an appointment.",
+          code: "CONSULTATION_MODE_CHANGE_APPROVAL_REQUIRED",
+        });
+      }
+
+      const communications = await getConsultationSettings();
+      if (!communications.callsEnabled && ["VOICE", "VIDEO"].includes(requestedMode)) {
+        return res.status(403).json({ msg: "Remote consultation is currently disabled" });
+      }
+      if (requestedMode === "VIDEO" && !communications.videoCallsEnabled) {
+        return res.status(403).json({ msg: "Video consultation is currently disabled" });
+      }
+      if (requestedMode === "VOICE" && !communications.voiceCallsEnabled) {
+        return res.status(403).json({ msg: "Voice consultation is currently disabled" });
+      }
+
+      updates.metadata = {
+        ...(a.metadata || {}),
+        ...(updates.metadata || {}),
+        consultationModeChangeRequest: {
+          ...(a.metadata?.consultationModeChangeRequest || {}),
+          ...(updates.metadata?.consultationModeChangeRequest || {}),
+          from: normalizeConsultationMode(a.consultationMode),
+          to: requestedMode,
+          approvalStatus: "APPROVED",
+          approvedBy: req.user.id || req.user._id || null,
+          approvedByRole: actorRole,
+          approvedAt: new Date().toISOString(),
+        },
+      };
+    }
+
     /**
      * 🚨 NO DIRECT UPDATE
      * This is a CONSULTATION workflow transition
@@ -1668,7 +1781,7 @@ export const updateAppointment = async (req, res, next) => {
       "CONSULTATION",
       a.workflowId,
       {
-        updates: req.body,
+        updates,
         actor: req.user,
       }
     );
@@ -1686,12 +1799,12 @@ export const updateAppointment = async (req, res, next) => {
     /* 🧾 Audit AFTER */
     res.locals.after = updated;
 
-    const updates = req.body || {};
+    const clinicalUpdates = req.body || {};
     const hasClinicalSummary =
-      Boolean(updates.notes !== undefined) ||
-      Boolean(updates.status !== undefined) ||
-      Boolean(updates?.metadata?.consultationSummary) ||
-      Boolean(updates?.metadata?.followUpRequired !== undefined);
+      Boolean(clinicalUpdates.notes !== undefined) ||
+      Boolean(clinicalUpdates.status !== undefined) ||
+      Boolean(clinicalUpdates?.metadata?.consultationSummary) ||
+      Boolean(clinicalUpdates?.metadata?.followUpRequired !== undefined);
     if (hasClinicalSummary) {
       await AuditLog.create({
         actorId: req.user._id,

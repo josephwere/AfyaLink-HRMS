@@ -20,6 +20,7 @@ import { prescriptionRuntime } from "../../prescription/runtime/prescriptionRunt
 import PharmacyItem from "../../models/PharmacyItem.js";
 import PharmacyReservation from "../../models/PharmacyReservation.js";
 import PharmacyInventoryMovement from "../../models/PharmacyInventoryMovement.js";
+import PharmacyBatchControl from "../../models/PharmacyBatchControl.js";
 import { notifyRolesInHospital } from "../../services/notificationService.js";
 
 const ACTIVE_DOCTOR_ROLES = ["DOCTOR", "SURGEON"];
@@ -383,15 +384,23 @@ export function createSchedulingRuntime({ observability } = {}) {
       createdBy,
     });
 
+    const appointment = wf.context.appointment;
+    if (normalizedScheduledAt.getTime() <= Date.now()) {
+      appointment.status = "Cancelled";
+      appointment.expiredAt = new Date();
+      appointment.cancelledAt = appointment.expiredAt;
+      await appointment.save();
+    }
+
     await transitionReservationStatusRepo(reservation._id, "CONFIRMED");
-    
+
     try {
-      reservation.appointment = wf.context.appointment._id;
+      reservation.appointment = appointment._id;
       if (typeof reservation.save === "function") await reservation.save();
     } catch (_) {}
 
     observability?.emit?.("scheduling.appointment.booked", {
-      appointmentId: wf.context.appointment._id,
+      appointmentId: appointment._id,
       patient,
       doctor,
       hospitalId,
@@ -399,7 +408,7 @@ export function createSchedulingRuntime({ observability } = {}) {
       assignmentStatus,
     });
 
-    return wf.context.appointment;
+    return appointment;
   }
 
   async function bookAppointmentTransactional({
@@ -613,12 +622,18 @@ export function createSchedulingRuntime({ observability } = {}) {
     if (!item) throw new Error("Pharmacy item not found");
     const quantity = Number(requestedQuantity || medication.requestedQuantity || 1) || 1;
     if (Number(item.totalQuantity || 0) < quantity) throw new Error("Insufficient stock for reservation");
+    const batch = medication.batchNumber
+      ? item.batches.find((entry) => entry.batchNumber === String(medication.batchNumber))
+      : item.batches.find((entry) => Number(entry.quantity || 0) >= quantity);
+    if (!batch || Number(batch.quantity || 0) < quantity) throw new Error("Insufficient batch stock for reservation");
+    const held = await PharmacyBatchControl.exists({ hospital: hospitalId, itemId: item._id, batchNumber: batch.batchNumber, status: { $in: ["QUARANTINED", "RECALLED"] } });
+    if (held) throw new Error("Batch is under regulatory hold");
 
     const reservation = await PharmacyReservation.create({
       hospital: hospitalId,
       itemId: item._id,
       prescriptionId,
-      batchNumber: medication.batchNumber || "",
+      batchNumber: batch.batchNumber || "",
       quantity,
       status: "ACTIVE",
       reservedBy: performedBy || null,
@@ -634,7 +649,7 @@ export function createSchedulingRuntime({ observability } = {}) {
       itemId: item._id,
       hospital: hospitalId,
       movementType: "RESERVATION",
-      batchNumber: medication.batchNumber || "",
+      batchNumber: batch.batchNumber || "",
       quantity,
       previousQuantity: Number(item.totalQuantity || 0) + quantity,
       newQuantity: Number(item.totalQuantity || 0),
@@ -660,6 +675,8 @@ export function createSchedulingRuntime({ observability } = {}) {
     if (!reservation) throw new Error("No active reservation found");
     const item = await PharmacyItem.findOne({ hospital: hospitalId, _id: reservation.itemId });
     if (!item) throw new Error("Pharmacy item not found");
+    const held = await PharmacyBatchControl.exists({ hospital: hospitalId, itemId: item._id, batchNumber: reservation.batchNumber, status: { $in: ["QUARANTINED", "RECALLED"] } });
+    if (held) throw new Error("Batch is under regulatory hold");
 
     const dispensedQty = Number(quantity || reservation.quantity || 1);
     await PharmacyInventoryMovement.create({

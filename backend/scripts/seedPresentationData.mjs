@@ -11,6 +11,7 @@ import Staff from "../models/Staff.js";
 import User from "../models/User.js";
 import Ward from "../models/Ward.js";
 import Bed from "../models/Bed.js";
+import SystemSettings from "../models/SystemSettings.js";
 import { HOSPITAL_SCOPED_ROLES, STAFF_ROLES } from "../utils/roleSets.js";
 import { evaluateStaffIdentityChecklist } from "../utils/staffIdentityChecklist.js";
 
@@ -507,6 +508,16 @@ export async function runPresentationSeed({
     for (const [index, account] of hospitalAccounts.entries()) {
       const user = await upsertUser(account, hospital, index + 1);
       await syncStaffProfile(user);
+        // Ensure onboarding flags and uiPreferences mark tour as completed for demo users
+        try {
+          user.uiPreferences = user.uiPreferences || {};
+          user.uiPreferences.onboarding = user.uiPreferences.onboarding || {};
+          user.uiPreferences.onboarding.completedAt = user.uiPreferences.onboarding.completedAt || new Date().toISOString();
+          user.uiPreferences.onboarding.hasCompletedTour = true;
+          await user.save();
+        } catch (e) {
+          // non-fatal
+        }
       createdHospitalUsers.push(user);
     }
 
@@ -537,6 +548,22 @@ export async function runPresentationSeed({
 
     const wards = await seedWardsAndBeds(hospital);
     await seedPharmacy(hospital);
+    // Ensure there is a GLOBAL system settings document for the frontend
+    try {
+      await SystemSettings.findOneAndUpdate(
+        { key: "GLOBAL" },
+        {
+          $setOnInsert: {
+            branding: { appIcon: "", favicon: "", logo: "" },
+            ai: { enabled: true, name: "NeuroEdge", greeting: "Hi, how can I help?" },
+            patientSelfService: { defaultLanguage: "en", enabledLanguages: ["en", "sw", "fr"] },
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    } catch (e) {
+      // non-fatal
+    }
     const doctor = createdHospitalUsers.find((user) => user.role === "DOCTOR");
     const { user: patientUser } = await seedPatient(hospital, doctor, wards);
 

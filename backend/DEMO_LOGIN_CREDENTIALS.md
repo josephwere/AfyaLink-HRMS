@@ -35,6 +35,9 @@ Shared Password: AfyaDemo@2026!
 | GOVERNMENT AUDITOR | Beatrice Nyambura Auditor | government.auditor@afyalink.demo | AfyaDemo@2026! |
 | GOVERNMENT INSPECTOR | Patrick Langat Inspector | government.inspector@afyalink.demo | AfyaDemo@2026! |
 | GOVERNMENT ANALYST | Naomi Akinyi Analyst | government.analyst@afyalink.demo | AfyaDemo@2026! |
+| ACCOUNTANT | Demo Accountant | accountant@afyalink.demo | AfyaDemo@2026! |
+| FINANCE_MANAGER | Demo Finance Manager | finance.manager@afyalink.demo | AfyaDemo@2026! |
+| CFO | Demo CFO | cfo@afyalink.demo | AfyaDemo@2026! |
 | PATIENT | John Barasa Patient | patient.demo@afyalink.demo | AfyaDemo@2026! |
 
 ## Development Hospitals

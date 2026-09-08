@@ -58,6 +58,7 @@ const complianceLedgerSchema = new Schema(
       default: {},
       immutable: true,
     },
+    eventTimestamp: { type: Date, required: true, immutable: true, index: true },
   },
   { timestamps: true, minimize: false }
 );

@@ -7,6 +7,25 @@ import {
   registerGovernmentStaff,
   listHospitals,
 } from "../services/superAdminApi";
+import { showActionSuccessGuide } from "../components/ActionSuccessGuide";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getValidationMessages(form = {}) {
+  const errors = {};
+  const email = String(form.email || "").trim();
+  const password = String(form.password || "").trim();
+  const name = String(form.name || "").trim();
+
+  if (!name) errors.name = "This field is required";
+  if (!email) errors.email = "This field is required";
+  else if (!EMAIL_REGEX.test(email)) errors.email = "Email address is invalid";
+  if (!password) errors.password = "This field is required";
+  if (form.role === "HOSPITAL_ADMIN" && !String(form.hospitalId || "").trim()) {
+    errors.hospitalId = "Select a hospital for this admin";
+  }
+  return errors;
+}
 
 export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false } = {}) {
   const [hospitals, setHospitals] = useState([]);
@@ -22,6 +41,7 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
   const [loading, setLoading] = useState(false);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [message, setMessage] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const canCreateSystemLevel = actorRole === "SUPER_ADMIN";
   const canCreateSuperAssistant = actorRole === "SUPER_ADMIN" || actorRole === "SYSTEM_ADMIN";
@@ -82,6 +102,14 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
   const submit = useCallback(async () => {
     setLoading(true);
     setMessage(null);
+    const validationErrors = getValidationMessages(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setMessage(Object.values(validationErrors)[0] || "Please complete the required fields.");
+      setLoading(false);
+      return;
+    }
+    setFieldErrors({});
 
     try {
       if (form.role === "SYSTEM_ADMIN") {
@@ -91,6 +119,14 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
         }
         await registerSystemAdmin({ name: form.name, email: form.email, password: form.password });
         setMessage("✅ System admin created");
+        showActionSuccessGuide({
+          title: "Admin created",
+          message: "System admin created successfully.",
+          notificationTitle: "Admin created",
+          notificationBody: "System admin created successfully.",
+          notificationCategory: "ACCOUNT",
+          tips: ["Review the new account security posture", "Assign the right operational access policies"],
+        });
       } else if (form.role === "SUPER_ASSISTANT") {
         if (!canCreateSuperAssistant) {
           setMessage("Only Super Admin or System Admin can create Super Assistant accounts.");
@@ -98,6 +134,14 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
         }
         await registerSuperAssistant({ name: form.name, email: form.email, password: form.password });
         setMessage("✅ Super assistant created");
+        showActionSuccessGuide({
+          title: "Admin created",
+          message: "Super assistant created successfully.",
+          notificationTitle: "Admin created",
+          notificationBody: "Super assistant created successfully.",
+          notificationCategory: "ACCOUNT",
+          tips: ["Review the assistant role handoff", "Verify the correct channels and approvals"],
+        });
       } else if (form.role === "DEVELOPER") {
         if (!canCreateSystemLevel) {
           setMessage("Only Super Admin can create Developer accounts.");
@@ -105,6 +149,14 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
         }
         await registerDeveloper({ name: form.name, email: form.email, password: form.password });
         setMessage("✅ Developer created");
+        showActionSuccessGuide({
+          title: "Admin created",
+          message: "Developer account created successfully.",
+          notificationTitle: "Admin created",
+          notificationBody: "Developer account created successfully.",
+          notificationCategory: "ACCOUNT",
+          tips: ["Review access scopes", "Confirm secure environment defaults"],
+        });
       } else if (String(form.role || "").startsWith("GOVERNMENT_")) {
         if (form.role === "GOVERNMENT_ADMIN" && !canCreateGovernmentAdmin) {
           setMessage("Only founder, system admin, or developer can create Government Admin accounts.");
@@ -112,9 +164,25 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
         }
         await registerGovernmentStaff({ name: form.name, email: form.email, password: form.password, role: form.role, agency: "Ministry of Health" });
         setMessage("✅ Government account created");
+        showActionSuccessGuide({
+          title: "Admin created",
+          message: "Government account created successfully.",
+          notificationTitle: "Admin created",
+          notificationBody: "Government account created successfully.",
+          notificationCategory: "ACCOUNT",
+          tips: ["Review agency access", "Confirm approval and compliance routing"],
+        });
       } else {
         await registerHospitalAdmin({ name: form.name, email: form.email, password: form.password, hospitalId: form.hospitalId, branch: form.branch });
         setMessage("✅ Hospital admin created");
+        showActionSuccessGuide({
+          title: "Admin created",
+          message: "Hospital admin created successfully.",
+          notificationTitle: "Admin created",
+          notificationBody: "Hospital admin created successfully.",
+          notificationCategory: "ACCOUNT",
+          tips: ["Review hospital admin permissions", "Assign the right branch and escalation path"],
+        });
       }
       setForm({ name: "", email: "", password: "", role: "HOSPITAL_ADMIN", hospitalId: "", branch: "" });
       setHospitalQuery("");
@@ -135,6 +203,7 @@ export function useCreateAdmin({ actorRole = "", canCreateGlobalAdmins = false }
     loading,
     loadingHospitals,
     message,
+    fieldErrors,
     canCreateSystemLevel,
     canCreateSuperAssistant,
     canCreateGovernmentAdmin,

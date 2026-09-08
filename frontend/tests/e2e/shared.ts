@@ -21,6 +21,22 @@ const API_HOSPITAL_CONTEXT_ROLES = new Set([
   'HOSPITAL_ADMIN_ASSISTANT',
 ]);
 
+function getBearerToken(headers: Record<string, string> = {}) {
+  const authHeader = headers.Authorization || headers.authorization;
+  return typeof authHeader === 'string' ? authHeader.replace(/^Bearer\s+/i, '') : null;
+}
+
+function tokenRoleMatches(token: string | null, expectedRole: string) {
+  if (!token || typeof token !== 'string') return false;
+  try {
+    const payload = JSON.parse(Buffer.from(String(token).split('.')[1], 'base64url').toString('utf8'));
+    const actualRole = String(payload?.role || payload?.userRole || '').toUpperCase();
+    return actualRole === String(expectedRole).toUpperCase();
+  } catch {
+    return false;
+  }
+}
+
 async function readPersistedAuthState(): Promise<StoredAuthState> {
   try {
     const raw = await fs.readFile(AUTH_STATE_FILE, 'utf8');
@@ -46,10 +62,18 @@ async function writePersistedAuthState(state: StoredAuthState) {
 async function loadCachedAuthState(role: string, apiURL: string) {
   const state = await readPersistedAuthState();
   const entry = state[role];
-  if (entry && entry.apiURL === apiURL && Date.now() < entry.expiresAt) {
-    return { ...entry.headers };
+  if (!entry || entry.apiURL !== apiURL || Date.now() >= entry.expiresAt) {
+    return null;
   }
-  return null;
+
+  const token = getBearerToken(entry.headers);
+  if (!tokenRoleMatches(token, role)) {
+    delete state[role];
+    await writePersistedAuthState(state);
+    return null;
+  }
+
+  return { ...entry.headers };
 }
 
 async function persistAuthState(role: string, apiURL: string, headers: Record<string, string>, expiresAt: number) {
@@ -69,8 +93,8 @@ export async function warmAuthState(role = 'SUPER_ADMIN') {
 
 export const ROLE_CREDENTIALS: Record<string, { email: string; pass: string }> = {
   SUPER_ADMIN: {
-    email: process.env.E2E_EMAIL || 'josephogwe8@gmail.com',
-    pass: process.env.E2E_PASSWORD || 'Josboy@254',
+    email: process.env.E2E_SUPER_ADMIN_EMAIL || process.env.E2E_EMAIL || 'josephogwe8@gmail.com',
+    pass: process.env.E2E_SUPER_ADMIN_PASSWORD || process.env.E2E_PASSWORD || 'Josboy@254',
   },
   SYSTEM_ADMIN: {
     email: 'system.admin@afyalink.demo',
@@ -98,6 +122,10 @@ export const ROLE_CREDENTIALS: Record<string, { email: string; pass: string }> =
   },
   RECEPTIONIST: {
     email: 'receptionist@afyalink.demo',
+    pass: 'AfyaDemo@2026!',
+  },
+  FINANCE_MANAGER: {
+    email: 'finance.manager@afyalink.demo',
     pass: 'AfyaDemo@2026!',
   },
   PATIENT: {
@@ -257,8 +285,8 @@ export async function loginAsRole(page: Page, role: string) {
     throw new Error(`Unable to reach frontend login page at ${loginURL}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  await page.locator('input[type="text"], input[type="email"]').first().fill(creds.email);
-  await page.locator('input[type="password"]').first().fill(creds.pass);
+  await page.locator('#login-identifier').fill(creds.email);
+  await page.locator('#login-password').fill(creds.pass);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\//, { timeout: 30000 });
   await expect(page).toHaveURL(/\/app\//);
@@ -284,12 +312,46 @@ export function setupErrorListeners(page: Page, errorsArray: string[]) {
   });
 }
 
+export async function dismissOnboardingTour(page: Page) {
+  const closeButtons = page.locator(
+    'button:has-text("Skip Tour"), button:has-text("Close Tour"), button:has-text("Close"), button:has-text("Finish"), button[aria-label="Close"]'
+  );
+  const overlay = page.locator('.tour-backdrop, .tour-modal, [role="dialog"][aria-modal="true"]');
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const isVisible = await overlay.first().isVisible().catch(() => false);
+    if (!isVisible) {
+      return;
+    }
+
+    if (await closeButtons.first().isVisible().catch(() => false)) {
+      await closeButtons.first().click({ force: true }).catch(() => {});
+      await page.waitForTimeout(500);
+    }
+
+    await page.evaluate(() => {
+      document.querySelectorAll('.tour-backdrop, .tour-modal, [role="dialog"][aria-modal="true"]').forEach((modal) => {
+        if (modal instanceof HTMLElement) {
+          modal.style.pointerEvents = 'none';
+          modal.remove();
+        }
+      });
+    });
+
+    await page.waitForTimeout(500);
+  }
+}
+
 export async function getAuthHeader(request: APIRequestContext, role: string) {
   const apiURL = process.env.BACKEND_BASE_URL || 'http://127.0.0.1:5000';
   const cacheKey = `${role}:${apiURL}`;
   const cached = authCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
-    return withHospitalContext(request, apiURL, role, cached.headers);
+    const token = getBearerToken(cached.headers);
+    if (tokenRoleMatches(token, role)) {
+      return withHospitalContext(request, apiURL, role, cached.headers);
+    }
+    authCache.delete(cacheKey);
   }
 
   const persistedHeaders = await loadCachedAuthState(role, apiURL);
@@ -321,7 +383,6 @@ export async function getAuthHeader(request: APIRequestContext, role: string) {
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
   const configuredHospitalId = process.env.E2E_HOSPITAL_ID || process.env.HOSPITAL_ID;
-  const fallbackHospitalId = configuredHospitalId || '6a3c5f256891eaf54c0514e9';
 
   if (configuredHospitalId) {
     headers['X-Hospital'] = configuredHospitalId;
@@ -342,8 +403,6 @@ export async function getAuthHeader(request: APIRequestContext, role: string) {
     return { ...headers };
   }
 
-  headers['X-Hospital'] = fallbackHospitalId;
-  headers['X-Hospital-Id'] = fallbackHospitalId;
   const expiresAt = Date.now() + AUTH_CACHE_TTL_MS;
   authCache.set(cacheKey, { headers: { ...headers }, expiresAt });
   await persistAuthState(role, apiURL, headers, expiresAt);

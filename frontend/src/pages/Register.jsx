@@ -18,6 +18,7 @@ export default function Register() {
     settings,
     GoogleButton,
     googleError,
+    fieldErrors,
     handleChange,
     handleSubmit,
   } = useRegister();
@@ -53,10 +54,12 @@ export default function Register() {
         {googleError && googleError !== error && <div className="auth-error">{googleError}</div>}
 
         <label>Full Name</label>
-        <input name="name" value={form.name} onChange={handleChange} required />
+        <input name="name" value={form.name} onChange={handleChange} required aria-invalid={Boolean(fieldErrors?.name)} />
+        {fieldErrors?.name ? <div className="auth-error">❌ {fieldErrors.name}</div> : null}
 
         <label>Email address (optional)</label>
-        <input type="email" name="email" value={form.email} onChange={handleChange} />
+        <input type="email" name="email" value={form.email} onChange={handleChange} aria-invalid={Boolean(fieldErrors?.email)} />
+        {fieldErrors?.email ? <div className="auth-error">❌ {fieldErrors.email}</div> : null}
 
         <CountryPhoneInput
           countryLabel="Phone Country (optional)"
@@ -66,6 +69,7 @@ export default function Register() {
           onCountryCodeChange={(v) => setForm((prev) => ({ ...prev, phoneCountry: v }))}
           onLocalNumberChange={(v) => setForm((prev) => ({ ...prev, phoneLocal: v }))}
         />
+        {fieldErrors?.phone ? <div className="auth-error">❌ {fieldErrors.phone}</div> : null}
 
         <label>National ID Number</label>
         <input
@@ -94,6 +98,7 @@ export default function Register() {
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           showStrength
           required
+          helperText={fieldErrors?.password ? `❌ ${fieldErrors.password}` : ""}
         />
 
         <PasswordInput
@@ -101,6 +106,7 @@ export default function Register() {
           value={form.confirmPassword}
           onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
           required
+          helperText={fieldErrors?.confirmPassword ? `❌ ${fieldErrors.confirmPassword}` : ""}
         />
 
         <div className="muted" style={{ marginBottom: 10 }}>

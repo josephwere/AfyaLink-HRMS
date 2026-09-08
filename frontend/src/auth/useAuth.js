@@ -23,6 +23,7 @@ export function useAuth() {
   }, [fetchUser]);
 
   const login = async (emailOrToken, passwordOrOptions) => {
+    console.log('[debug] useAuth.login called for', emailOrToken);
     if (passwordOrOptions?.directToken) {
       const { token, user } = passwordOrOptions;
       setAccessToken(token);
@@ -31,10 +32,12 @@ export function useAuth() {
     }
 
     try {
+      console.log('[debug] useAuth.login: calling apiFetch /api/auth/login');
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
         body: { email: emailOrToken, password: passwordOrOptions },
       });
+      console.log('[debug] useAuth.login: apiFetch returned', data && { hasUser: !!data.user, requires2FA: data.requires2FA });
 
       if (!data?.user) throw new Error("Invalid credentials");
 

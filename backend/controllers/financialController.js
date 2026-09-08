@@ -15,6 +15,16 @@ import { decrypt, encrypt } from "../services/cryptoService.js";
 import { getRevenueIntelligenceSnapshot } from "../services/revenueIntelligenceService.js";
 import { stableStringify, signPayload } from "../utils/claimSignature.js";
 import { buildBusinessIdSearchFilter } from "../utils/businessIdSearch.js";
+import {
+  buildHospitalFinancialIntelligence,
+  buildUsageLedgerEntry,
+} from "../services/hospitalFinancialIntelligenceService.js";
+import { transitionPayment } from "../services/paymentLifecycleService.js";
+import { buildReconciliationReport } from "../services/reconciliationService.js";
+import JournalEntry from "../models/JournalEntry.js";
+import JournalLine from "../models/JournalLine.js";
+import ChartOfAccount from "../models/ChartOfAccount.js";
+import AccountingPeriod from "../models/AccountingPeriod.js";
 
 function resolveHospital(req) {
   const role = normalizeRole(req.user?.role || "");
@@ -45,6 +55,68 @@ export const getRevenueIntelligence = async (req, res, next) => {
 
     const snapshot = await getRevenueIntelligenceSnapshot({ hospitalId });
     return res.json(snapshot);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getHospitalFinancialIntelligence = async (req, res, next) => {
+  try {
+    const role = normalizeRole(req.user?.role || "");
+    const hospitalId = resolveRevenueHospital(req);
+    if (!hospitalId && !["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"].includes(role)) {
+      return res.status(400).json({ message: "Hospital context required" });
+    }
+
+    const hospital = await Hospital.findById(hospitalId).lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital not found" });
+
+    const invoiceMonth = req.query?.invoiceMonth || null;
+    const usageEntries = Array.isArray(req.query?.usageEntries) ? req.query.usageEntries : [];
+    const parsedEntries = usageEntries.map((entry) => {
+      if (typeof entry === "string") {
+        try {
+          return JSON.parse(entry);
+        } catch (_err) {
+          return null;
+        }
+      }
+      return entry;
+    }).filter(Boolean);
+
+    const snapshot = await buildHospitalFinancialIntelligence({
+      hospital,
+      hospitalId: hospitalId || hospital._id,
+      invoiceMonth,
+      usageEntries: parsedEntries.length ? parsedEntries : null,
+      now: new Date(),
+    });
+
+    return res.json(snapshot);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const createUsageLedgerEntry = async (req, res, next) => {
+  try {
+    const hospitalId = resolveHospital(req);
+    if (!hospitalId) return res.status(400).json({ message: "Hospital context required" });
+
+    const payload = buildUsageLedgerEntry({
+      hospitalId,
+      serviceCode: req.body?.serviceCode || "CUSTOM",
+      serviceName: req.body?.serviceName || "Custom Premium Usage",
+      category: req.body?.category || "OTHER",
+      quantity: req.body?.quantity || 1,
+      unit: req.body?.unit || "unit",
+      unitPrice: req.body?.unitPrice || 0,
+      currency: req.body?.currency || "KES",
+      createdAt: req.body?.createdAt ? new Date(req.body.createdAt) : new Date(),
+      metadata: req.body?.metadata || {},
+    });
+
+    return res.json(payload);
   } catch (err) {
     return next(err);
   }
@@ -89,6 +161,317 @@ export const createInvoice = async (req, res, next) => {
   }
 };
 
+export const listFinanceInvoices = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const query = { hospital };
+    if (req.query?.patientId) query.patient = req.query.patientId;
+    if (req.query?.status) query.status = req.query.status;
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 25), 1), 200);
+    const invoices = await Financial.find(query).sort({ createdAt: -1 }).limit(limit).lean();
+
+    return res.json({ items: invoices, invoices, total: invoices.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getFinanceInvoice = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const invoice = await Financial.findOne({ _id: req.params.id, hospital }).lean();
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    return res.json(invoice);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const voidFinanceInvoice = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const invoice = await Financial.findOne({ _id: req.params.id, hospital });
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    invoice.status = "Cancelled";
+    invoice.paymentLifecycleStatus = "VOIDED";
+    invoice.lifecycleStatus = "VOIDED";
+    await invoice.save();
+
+    return res.json(invoice);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const listFinancePayments = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const query = { hospitalId: hospital };
+    if (req.query?.invoiceId) query.invoiceId = req.query.invoiceId;
+    if (req.query?.patientId) {
+      const patientInvoices = await Financial.find({ hospital, patient: req.query.patientId }).select("_id").lean();
+      query.invoiceId = { $in: patientInvoices.map((doc) => doc._id) };
+    }
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 25), 1), 200);
+    const items = await import("../models/PaymentReceipt.js").then((mod) => mod.default.find(query).sort({ receivedAt: -1 }).limit(limit).lean());
+
+    return res.json({ items, payments: items, total: items.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getFinancePayment = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const payment = await import("../models/PaymentReceipt.js").then((mod) => mod.default.findOne({ _id: req.params.id, hospitalId: hospital }).lean());
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
+
+    return res.json(payment);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const createFinancePayment = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const { invoiceId, amount, method, reference, metadata = {} } = req.body || {};
+    if (!invoiceId) return res.status(400).json({ message: "invoiceId is required" });
+    if (!amount || Number(amount) <= 0) return res.status(400).json({ message: "Amount must be greater than zero" });
+
+    const invoice = await Financial.findOne({ _id: invoiceId, hospital }).lean();
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    const receipt = await import("../models/PaymentReceipt.js").then((mod) => mod.default.create({
+      hospitalId: hospital,
+      invoiceId,
+      amount: Number(amount),
+      method: method || "CASH",
+      reference: reference || `PAY-${Date.now()}`,
+      provider: String(method || "CASH").toUpperCase(),
+      status: "PROCESSED",
+      receivedAt: new Date(),
+      metadata: { ...metadata, cashier: req.user?._id || null },
+    }));
+
+    const paymentEntries = Array.isArray(invoice.metadata?.payments) ? invoice.metadata.payments : [];
+    paymentEntries.push({
+      amount: Number(amount),
+      method: method || "CASH",
+      reference: reference || receipt.reference || receipt._id,
+      at: new Date(),
+      by: req.user?._id,
+    });
+
+    const totalPaid = paymentEntries.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const invoiceDoc = await Financial.findById(invoiceId);
+    invoiceDoc.metadata = invoiceDoc.metadata || {};
+    invoiceDoc.metadata.payments = paymentEntries;
+    invoiceDoc.status = Number(totalPaid) >= Number(invoiceDoc.total || 0) ? "Paid" : "Pending";
+    invoiceDoc.paymentLifecycleStatus = Number(totalPaid) >= Number(invoiceDoc.total || 0) ? "PAID" : "PARTIALLY_PAID";
+    await invoiceDoc.save();
+
+    return res.status(200).json({
+      _id: receipt._id,
+      invoiceId,
+      receiptId: receipt._id,
+      amount: Number(amount),
+      method: method || "CASH",
+      reference: receipt.reference,
+      status: invoiceDoc.status,
+      payment: { _id: receipt._id, invoiceId, amount: Number(amount), method: method || "CASH" },
+      receipt,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const listFinanceReceipts = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const query = { hospitalId: hospital };
+    if (req.query?.paymentId) query._id = req.query.paymentId;
+    if (req.query?.patientId) {
+      const patientInvoices = await Financial.find({ hospital, patient: req.query.patientId }).select("_id").lean();
+      query.invoiceId = { $in: patientInvoices.map((doc) => doc._id) };
+    }
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 25), 1), 200);
+    const items = await import("../models/PaymentReceipt.js").then((mod) => mod.default.find(query).sort({ receivedAt: -1 }).limit(limit).lean());
+
+    return res.json({ items, receipts: items, total: items.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const listAccountingPeriods = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const filter = {};
+    if (req.query?.status) filter.status = req.query.status;
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 50), 1), 200);
+    const items = await AccountingPeriod.find(filter).sort({ startDate: -1 }).limit(limit).lean();
+    return res.json({ items, periods: items, total: items.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getAccountingPeriod = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const item = await AccountingPeriod.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ message: "Accounting period not found" });
+
+    return res.json(item);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const listChartOfAccounts = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const filter = {};
+    if (req.query?.segment) filter.category = req.query.segment;
+    if (req.query?.status) filter.status = req.query.status;
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 100), 1), 500);
+    const items = await ChartOfAccount.find(filter).sort({ code: 1 }).limit(limit).lean();
+    return res.json({ items, accounts: items, total: items.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getChartOfAccount = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const item = await ChartOfAccount.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ message: "Account not found" });
+
+    return res.json(item);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getGeneralLedger = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 50), 1), 200);
+    let entries = await JournalEntry.find({ hospitalId: hospital }).sort({ postedAt: -1 }).limit(limit).lean();
+
+    if (req.query?.accountId) {
+      const lines = await JournalLine.find({ accountCode: req.query.accountId }).select("journalEntryId").lean();
+      const ids = [...new Set(lines.map((line) => String(line.journalEntryId)))];
+      entries = entries.filter((entry) => ids.includes(String(entry._id)));
+    }
+
+    const items = entries.map((entry) => ({
+      ...entry,
+      lines: []
+    }));
+
+    if (items.length) {
+      const entryIds = items.map((entry) => entry._id);
+      const lines = await JournalLine.find({ journalEntryId: { $in: entryIds } }).sort({ createdAt: 1 }).lean();
+      const group = new Map();
+      for (const line of lines) {
+        const key = String(line.journalEntryId);
+        const bucket = group.get(key) || [];
+        bucket.push(line);
+        group.set(key, bucket);
+      }
+      for (const item of items) {
+        item.lines = group.get(String(item._id)) || [];
+      }
+    }
+
+    return res.json({ items, entries: items, total: items.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getJournalEntries = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const limit = Math.min(Math.max(Number(req.query?.limit || 50), 1), 200);
+    let entries = await JournalEntry.find({ hospitalId: hospital }).sort({ postedAt: -1 }).limit(limit).lean();
+
+    if (req.query?.accountId) {
+      const lines = await JournalLine.find({ accountCode: req.query.accountId }).select("journalEntryId").lean();
+      const ids = [...new Set(lines.map((line) => String(line.journalEntryId)))];
+      entries = entries.filter((entry) => ids.includes(String(entry._id)));
+    }
+
+    return res.json({ items: entries, entries, total: entries.length });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getFinanceReconciliation = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const report = await buildReconciliationReport({ hospitalId: hospital });
+    return res.json(report);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getFinanceReceipt = async (req, res, next) => {
+  try {
+    const hospital = resolveHospital(req);
+    if (!hospital) return res.status(400).json({ message: "Hospital context required" });
+
+    const receipt = await import("../models/PaymentReceipt.js").then((mod) => mod.default.findOne({ _id: req.params.id, hospitalId: hospital }).lean());
+    if (!receipt) return res.status(404).json({ message: "Receipt not found" });
+
+    return res.json(receipt);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const recordPayment = async (req, res, next) => {
   try {
     const hospital = resolveHospital(req);
@@ -114,7 +497,22 @@ export const recordPayment = async (req, res, next) => {
     });
 
     const paid = f.metadata.payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    if (paid >= (Number(f.total) || 0)) f.status = "Paid";
+    if (paid >= (Number(f.total) || 0)) {
+      f.status = "Paid";
+      await transitionPayment({
+        invoiceId: f._id,
+        eventName: "InvoicePaid",
+        status: "PAID",
+        payload: { amount: paid, total: Number(f.total) || 0 },
+      });
+    } else {
+      await transitionPayment({
+        invoiceId: f._id,
+        eventName: "InvoicePartiallyPaid",
+        status: "PARTIALLY_PAID",
+        payload: { amount: paid, total: Number(f.total) || 0 },
+      });
+    }
     await f.save();
 
     await AuditLog.create({
@@ -356,19 +754,8 @@ export const reconcile = async (req, res, next) => {
     const hospital = resolveHospital(req);
     if (!hospital) return res.status(400).json({ message: "Hospital context required" });
 
-    const invoices = await Financial.find({ hospital }).limit(2000).lean();
-    const summary = invoices.reduce(
-      (acc, inv) => {
-        acc.totalInvoices += 1;
-        acc.totalAmount += Number(inv.total) || 0;
-        if (inv.status === "Paid") acc.paidAmount += Number(inv.total) || 0;
-        if (inv.status === "Pending") acc.pendingInvoices += 1;
-        return acc;
-      },
-      { totalInvoices: 0, totalAmount: 0, paidAmount: 0, pendingInvoices: 0 }
-    );
-
-    return res.json({ summary, count: invoices.length });
+    const report = await buildReconciliationReport({ hospitalId: hospital });
+    return res.json(report);
   } catch (err) {
     return next(err);
   }

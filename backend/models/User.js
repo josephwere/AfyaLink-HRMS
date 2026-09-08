@@ -106,6 +106,7 @@ const userSchema = new Schema(
         "NURSE",
         "LAB_TECH",
         "PHARMACIST",
+        "SUPPLIER",
         "RADIOLOGIST",
         "THERAPIST",
         "RECEPTIONIST",
@@ -113,6 +114,10 @@ const userSchema = new Schema(
         "SECURITY_ADMIN",
         "HR_MANAGER",
         "PAYROLL_OFFICER",
+        "ACCOUNTANT",
+        "CASHIER",
+        "FINANCE_MANAGER",
+        "CFO",
         "COMMUNITY_HEALTH_WORKER",
         "GOVERNMENT_REGULATOR",
         "GOVERNMENT_AUDITOR",
@@ -265,6 +270,13 @@ const userSchema = new Schema(
     registeredPharmacy: {
       type: Schema.Types.ObjectId,
       ref: "RegisteredPharmacy",
+      index: true,
+      default: null,
+    },
+
+    supplier: {
+      type: Schema.Types.ObjectId,
+      ref: "PharmacySupplier",
       index: true,
       default: null,
     },

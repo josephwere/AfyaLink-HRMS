@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 151,
-    "resolved": 29,
+    "total": 153,
+    "resolved": 31,
     "unresolved": 122
   },
   "surfaces": [
@@ -166,10 +166,10 @@
       "reason": "matches canonical route /app/innovation/ai/chatbot"
     },
     {
-      "id": "button-src/components/Navbar.jsx-164",
+      "id": "button-src/components/Navbar.jsx-165",
       "surface": "button",
       "file": "src/components/Navbar.jsx",
-      "line": 164,
+      "line": 165,
       "label": "interactive action",
       "target": "/app/platform/account/profile",
       "resolved": true,
@@ -206,20 +206,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/hooks/useLogin.js-91",
+      "id": "button-src/hooks/useLogin.js-145",
       "surface": "button",
       "file": "src/hooks/useLogin.js",
-      "line": 91,
+      "line": 145,
       "label": "interactive action",
       "target": "/2fa",
       "resolved": true,
       "reason": "matches canonical route /2fa"
     },
     {
-      "id": "button-src/hooks/useRegister.js-94",
+      "id": "button-src/hooks/useRegister.js-123",
       "surface": "button",
       "file": "src/hooks/useRegister.js",
-      "line": 94,
+      "line": 123,
       "label": "interactive action",
       "target": "/login",
       "resolved": true,
@@ -536,20 +536,20 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/Doctor/MySchedule.jsx-214",
+      "id": "button-src/pages/Doctor/MySchedule.jsx-216",
       "surface": "button",
       "file": "src/pages/Doctor/MySchedule.jsx",
-      "line": 214,
+      "line": 216,
       "label": "interactive action",
       "target": "/app/platform/account/clinician-settings",
       "resolved": true,
       "reason": "matches canonical route /app/platform/account/clinician-settings"
     },
     {
-      "id": "button-src/pages/Doctor/MySchedule.jsx-218",
+      "id": "button-src/pages/Doctor/MySchedule.jsx-220",
       "surface": "button",
       "file": "src/pages/Doctor/MySchedule.jsx",
-      "line": 218,
+      "line": 220,
       "label": "interactive action",
       "target": "/app/platform/account/profile",
       "resolved": true,
@@ -684,6 +684,26 @@
       "target": "/hospital-admin/transfer-command-center",
       "resolved": false,
       "reason": "no matching canonical route"
+    },
+    {
+      "id": "button-src/pages/Finance/ShiftApproval.jsx-28",
+      "surface": "button",
+      "file": "src/pages/Finance/ShiftApproval.jsx",
+      "line": 28,
+      "label": "interactive action",
+      "target": "/app/finance/approvals/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/finance/approvals/index"
+    },
+    {
+      "id": "button-src/pages/Finance/ShiftApproval.jsx-43",
+      "surface": "button",
+      "file": "src/pages/Finance/ShiftApproval.jsx",
+      "line": 43,
+      "label": "interactive action",
+      "target": "/app/finance/approvals/index",
+      "resolved": true,
+      "reason": "matches canonical route /app/finance/approvals/index"
     },
     {
       "id": "button-src/pages/HospitalAdmin/Approvals.jsx-926",
@@ -1266,10 +1286,10 @@
       "reason": "no matching canonical route"
     },
     {
-      "id": "button-src/pages/Patient/MyAppointments.jsx-250",
+      "id": "button-src/pages/Patient/MyAppointments.jsx-257",
       "surface": "button",
       "file": "src/pages/Patient/MyAppointments.jsx",
-      "line": 250,
+      "line": 257,
       "label": "interactive action",
       "target": "/app/portal/appointments/index",
       "resolved": true,

@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
 import Patient from '../models/Patient.js';
 import Appointment from '../models/Appointment.js';
+import workflowService from '../services/workflowService.js';
 import { normalizeScheduledAtInput } from '../controllers/appointmentController.js';
 
 let teardown;
@@ -169,6 +170,200 @@ describe('Appointments', ()=>{
     expect([200, 201]).toContain(r.status);
     expect(String(r.body.doctor)).toBe(doctorUserId);
     expect(r.body.assignmentStatus).toBe('ASSIGNED');
+  });
+
+  test('patient cannot approve a consultation mode change directly through the appointment update path', async ()=>{
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: selfServicePatientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        consultationMode: 'IN_PERSON',
+        timeZone: 'Africa/Nairobi',
+      });
+
+    expect([200, 201]).toContain(created.status);
+    expect(created.body.consultationMode).toBe('IN_PERSON');
+
+    const updated = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ consultationMode: 'VIDEO' });
+
+    expect(updated.status).toBe(403);
+    expect(updated.body.message).toBe('Forbidden by policy');
+    expect(updated.body.resource).toBe('appointments');
+  });
+
+  test('hospital admin can approve an in-person appointment conversion to video through the workflow update path', async ()=>{
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 16 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        consultationMode: 'IN_PERSON',
+      });
+
+    expect([200, 201]).toContain(created.status);
+    expect(created.body.consultationMode).toBe('IN_PERSON');
+
+    const updated = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ consultationMode: 'VIDEO' });
+
+    expect(updated.status).toBe(200);
+    expect(updated.body.consultationMode).toBe('VIDEO');
+    expect(updated.body.metadata?.consultationModeChangeRequest?.approvalStatus).toBe('APPROVED');
+    expect(updated.body.metadata?.consultationModeChangeRequest?.to).toBe('VIDEO');
+  });
+
+  test('enforces a single appointment lifecycle transition path through the workflow', async ()=>{
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(created.status);
+
+    const checkedIn = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'CheckedIn' });
+
+    expect(checkedIn.status).toBe(200);
+    expect(checkedIn.body.status).toBe('CheckedIn');
+
+    const invalidCompletion = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'Completed' });
+
+    expect(invalidCompletion.status).toBe(409);
+    expect(invalidCompletion.body.code).toBe('INVALID_APPOINTMENT_TRANSITION');
+  });
+
+  test('supports a provider-ready handoff after check-in before consultation starts', async ()=>{
+    const created = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+        consultationMode: 'VIDEO',
+      });
+
+    expect([200, 201]).toContain(created.status);
+
+    const checkedIn = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'CheckedIn' });
+
+    expect(checkedIn.status).toBe(200);
+    expect(checkedIn.body.status).toBe('CheckedIn');
+
+    const providerReady = await request(app)
+      .patch(`/api/appointments/${created.body._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'ProviderReady' });
+
+    expect(providerReady.status).toBe(200);
+    expect(providerReady.body.status).toBe('ProviderReady');
+    expect(providerReady.body.providerReadyAt).toBeDefined();
+  });
+
+  test('keeps the action matrix terminal-state safe and role-scoped', async ()=>{
+    const scheduled = workflowService.getAllowedActions({ status: 'Scheduled' }, { role: 'RECEPTIONIST' });
+    const completed = workflowService.getAllowedActions({ status: 'Completed' }, { role: 'DOCTOR' });
+    const cancelled = workflowService.getAllowedActions({ status: 'Cancelled' }, { role: 'RECEPTIONIST' });
+    const noShow = workflowService.getAllowedActions({ status: 'NoShow' }, { role: 'DOCTOR' });
+
+    expect(scheduled.canCheckIn).toBe(true);
+    expect(scheduled.canCancel).toBe(true);
+    expect(completed.canCheckIn).toBe(false);
+    expect(completed.canMarkProviderReady).toBe(false);
+    expect(completed.canStartConsultation).toBe(false);
+    expect(completed.canComplete).toBe(false);
+    expect(completed.canCancel).toBe(false);
+    expect(cancelled.canCancel).toBe(false);
+    expect(noShow.canCancel).toBe(false);
+  });
+
+  test('exposes the canonical allowed action matrix and blocks expired appointments', async ()=>{
+    const scheduled = workflowService.getAllowedActions({ status: 'Scheduled' }, { role: 'RECEPTIONIST' });
+    const checkedIn = workflowService.getAllowedActions({ status: 'CheckedIn' }, { role: 'RECEPTIONIST' });
+    const providerReady = workflowService.getAllowedActions({ status: 'ProviderReady' }, { role: 'DOCTOR' });
+    const inConsultation = workflowService.getAllowedActions({ status: 'InConsultation' }, { role: 'DOCTOR' });
+
+    expect(scheduled.canCheckIn).toBe(true);
+    expect(scheduled.canCancel).toBe(true);
+    expect(checkedIn.canMarkProviderReady).toBe(true);
+    expect(providerReady.canStartConsultation).toBe(true);
+    expect(inConsultation.canComplete).toBe(true);
+    expect(workflowService.getAllowedActions({ status: 'Completed' }, { role: 'DOCTOR' }).canComplete).toBe(false);
+
+    const expired = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        patient: patientId,
+        hospitalId,
+        scheduledAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        serviceType: 'General Consultation',
+      });
+
+    expect([200, 201]).toContain(expired.status);
+    expect(expired.body.status).toBe('Cancelled');
+    expect(expired.body.expiredAt).toBeDefined();
+  });
+
+  test('exposes the canonical allowed action matrix for the appointment lifecycle', async ()=>{
+    const scheduled = workflowService.getAllowedActions({ status: 'Scheduled' }, { role: 'RECEPTIONIST' });
+    const checkedIn = workflowService.getAllowedActions({ status: 'CheckedIn' }, { role: 'RECEPTIONIST' });
+    const providerReady = workflowService.getAllowedActions({ status: 'ProviderReady' }, { role: 'DOCTOR' });
+    const inConsultation = workflowService.getAllowedActions({ status: 'InConsultation' }, { role: 'DOCTOR' });
+
+    expect(scheduled.canCheckIn).toBe(true);
+    expect(scheduled.canCancel).toBe(true);
+    expect(checkedIn.canMarkProviderReady).toBe(true);
+    expect(providerReady.canStartConsultation).toBe(true);
+    expect(inConsultation.canComplete).toBe(true);
+    expect(workflowService.getAllowedActions({ status: 'Completed' }, { role: 'DOCTOR' }).canComplete).toBe(false);
+  });
+
+  test('accepts richer doctor work statuses and keeps only availability eligible for auto-assignment', async ()=>{
+    const consultation = await request(app)
+      .patch('/api/appointments/doctors/me/status')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'IN_CONSULTATION' });
+
+    expect(consultation.status).toBe(200);
+    expect(consultation.body.status).toBe('BUSY_AUTOMATIC');
+    expect(consultation.body.label).toBe('In Consultation');
+    expect(consultation.body.eligibleForAssignment).toBe(false);
+
+    const offDuty = await request(app)
+      .patch('/api/appointments/doctors/me/status')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'OFF_DUTY' });
+
+    expect(offDuty.status).toBe(200);
+    expect(offDuty.body.status).toBe('OFF_DUTY');
+    expect(offDuty.body.eligibleForAssignment).toBe(false);
   });
 
   test('doctor busy status pauses assignment and available status assigns queued patients', async ()=>{

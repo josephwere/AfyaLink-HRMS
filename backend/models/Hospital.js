@@ -47,6 +47,30 @@ const hospitalSchema = new mongoose.Schema(
       },
     },
 
+    /* ================= BILLING POLICY ================= */
+    billing: {
+      monthlyTarget: { type: Number, default: 0, min: 0 },
+      monthlySpent: { type: Number, default: 0, min: 0 },
+      balanceOutstanding: { type: Number, default: 0, min: 0 },
+      paymentDueAt: Date,
+      alertThresholds: {
+        type: [Number],
+        default: [50, 70, 80, 90, 100, 110, 125],
+      },
+      alertedMilestones: {
+        type: [Number],
+        default: [],
+      },
+      lastSummarySentAt: Date,
+      lastNotificationSentAt: Date,
+      status: {
+        type: String,
+        enum: ["CURRENT", "PAYMENT_DUE", "OVERDUE", "SERIOUSLY_OVERDUE"],
+        default: "CURRENT",
+        index: true,
+      },
+    },
+
     /* ================= LIMITS ================= */
     limits: {
       users: { type: Number, default: 5 },
@@ -477,6 +501,53 @@ hospitalSchema.pre("findOneAndUpdate", async function (next) {
 
   next();
 });
+
+hospitalSchema.methods.getBillingState = function getBillingState(now = new Date()) {
+  const billing = this.billing || {};
+  const monthlyTarget = Number(billing.monthlyTarget || 0);
+  const monthlySpent = Number(billing.monthlySpent || 0);
+  const balanceOutstanding = Number(billing.balanceOutstanding || 0);
+  const paymentDueAt = billing.paymentDueAt ? new Date(billing.paymentDueAt) : null;
+  const thresholds = Array.isArray(billing.alertThresholds) && billing.alertThresholds.length
+    ? billing.alertThresholds
+    : [50, 70, 80, 90, 100, 110, 125];
+  const alertedMilestones = Array.isArray(billing.alertedMilestones) ? billing.alertedMilestones : [];
+  const percentage = monthlyTarget > 0 ? Math.round((monthlySpent / monthlyTarget) * 100) : 0;
+  const targetExceeded = monthlyTarget > 0 && monthlySpent > monthlyTarget;
+  const milestonesTriggered = thresholds.filter((threshold) => percentage >= threshold);
+  const pendingMilestones = milestonesTriggered.filter((threshold) => !alertedMilestones.includes(threshold));
+
+  let status = "CURRENT";
+  if (balanceOutstanding > 0) {
+    if (paymentDueAt && now > paymentDueAt) {
+      const ageDays = Math.max(0, Math.floor((now.getTime() - paymentDueAt.getTime()) / (24 * 60 * 60 * 1000)));
+      status = ageDays >= 30 ? "SERIOUSLY_OVERDUE" : ageDays >= 7 ? "OVERDUE" : "PAYMENT_DUE";
+    } else {
+      status = "PAYMENT_DUE";
+    }
+  }
+
+  const restrictPremiumFeatures = status !== "CURRENT" || targetExceeded || Boolean(this.subscription?.premiumPaused);
+
+  return {
+    status,
+    monthlyTarget,
+    monthlySpent,
+    balanceOutstanding,
+    paymentDueAt,
+    budgetProgress: {
+      target: monthlyTarget,
+      spent: monthlySpent,
+      percentage,
+      remaining: Math.max(0, monthlyTarget - monthlySpent),
+    },
+    targetExceeded,
+    milestonesTriggered,
+    pendingMilestones,
+    alertedMilestones,
+    restrictPremiumFeatures,
+  };
+};
 
 hospitalSchema.methods.getSubscriptionState = function getSubscriptionState(now = new Date()) {
   const trialEndsAt = this.subscription?.trialEndsAt;

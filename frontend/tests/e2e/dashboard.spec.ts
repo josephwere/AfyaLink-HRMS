@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRole, baseURL, setupErrorListeners } from './shared';
+import { loginAsRole, baseURL, setupErrorListeners, dismissOnboardingTour } from './shared';
 
 const errors: string[] = [];
 
@@ -23,6 +23,7 @@ test('should exercise all cards, buttons, and actions on dashboards', async ({ p
   for (const route of DASHBOARDS) {
     await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
+    await dismissOnboardingTour(page);
 
     // Verify page is loaded
     await expect(page).toHaveURL(new RegExp(route));

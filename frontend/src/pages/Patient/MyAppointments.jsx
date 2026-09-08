@@ -1562,30 +1562,40 @@ export default function MyAppointments() {
                       </td>
                       <td>
                         <div className="doctor-actions-row">
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            disabled={!a.doctor}
-                            data-ai-action="start-voice-consultation"
-                            data-ai-label="Start Voice Consultation"
-                            data-ai-aliases="voice call|start voice|request voice consultation"
-                            data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
-                            onClick={() => startConsultation(a._id, "VOICE")}
-                          >
-                            {t("voice", "Voice")}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            disabled={!a.doctor}
-                            data-ai-action="start-video-consultation"
-                            data-ai-label="Start Video Consultation"
-                            data-ai-aliases="video call|start video|request video consultation"
-                            data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
-                            onClick={() => startConsultation(a._id, "VIDEO")}
-                          >
-                            {t("video", "Video")}
-                          </button>
+                          {String(a.consultationMode || "IN_PERSON").toUpperCase() === "VIDEO" ? (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              disabled={!a.doctor}
+                              data-ai-action="start-video-consultation"
+                              data-ai-label="Start Video Consultation"
+                              data-ai-aliases="video call|start video|request video consultation"
+                              data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
+                              onClick={() => startConsultation(a._id, "VIDEO")}
+                            >
+                              {t("video", "Video")}
+                            </button>
+                          ) : null}
+                          {String(a.consultationMode || "IN_PERSON").toUpperCase() === "VOICE" ? (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              disabled={!a.doctor}
+                              data-ai-action="start-voice-consultation"
+                              data-ai-label="Start Voice Consultation"
+                              data-ai-aliases="voice call|start voice|request voice consultation"
+                              data-ai-help={`${a.doctor?.name || a.doctor || "Assigned doctor"} | ${a.serviceType || "General Consultation"} | ${a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : "No scheduled time"}`}
+                              onClick={() => startConsultation(a._id, "VOICE")}
+                            >
+                              {t("voice", "Voice")}
+                            </button>
+                          ) : null}
+                          {String(a.consultationMode || "IN_PERSON").toUpperCase() === "IN_PERSON" ? (
+                            <span className="muted">In-person visit</span>
+                          ) : null}
+                          {!a.consultationMode || !["VOICE", "VIDEO"].includes(String(a.consultationMode || "").toUpperCase()) ? (
+                            <span className="muted">No remote consultation</span>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

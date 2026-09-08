@@ -254,6 +254,10 @@ app.use(
    🧱 CORE MIDDLEWARE
 ====================================================== */
 app.use(express.json({ limit: "15mb" }));
+app.use((req, _res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  next();
+});
 app.use(
   compression({
     threshold: 1024,
@@ -311,11 +315,20 @@ app.use((req, res, next) => {
    🧊 DB READINESS GATE (FAST FAIL)
    Avoid hanging requests during cold start / DB reconnects.
 ====================================================== */
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", async (_req, res) => {
+  let seedReady = false;
+  try {
+    // Use dynamic ESM import so we get the same module instance
+    const readinessMod = await import("./utils/readiness.js");
+    seedReady = Boolean(readinessMod && readinessMod.default && readinessMod.default.presentationSeedReady);
+  } catch (e) {
+    seedReady = false;
+  }
   res.json({
     ok: true,
     service: "afyalink-backend",
     dbReady: isDbReady(),
+    seedReady,
     uptimeSec: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   });
@@ -552,6 +565,13 @@ app.use(
   )
 );
 app.use(
+  "/api/hospital-communication",
+  lazyRouter(
+    () => import("./routes/hospitalCommunicationRoutes.js"),
+    "hospitalCommunicationRoutes"
+  )
+);
+app.use(
   "/api/audit",
   lazyRouter(() => import("./routes/auditRoutes.js"), "auditRoutes")
 );
@@ -759,6 +779,10 @@ app.use(
   lazyRouter(() => import("./routes/financialRoutes.js"), "financialRoutes")
 );
 app.use(
+  "/api/finance",
+  lazyRouter(() => import("./routes/financeRoutes.js"), "financeRoutes")
+);
+app.use(
   "/api/transfers",
   lazyRouter(() => import("./routes/transferRoutes.js"), "transferRoutes")
 );
@@ -863,6 +887,14 @@ app.use(
   lazyRouter(() => import("./routes/insuranceRoutes.js"), "insuranceRoutes")
 );
 app.use(
+  "/api/workflow",
+  lazyRouter(() => import("./routes/workflowRoutes.js"), "workflowRoutes")
+);
+app.use(
+  "/api/approval-policies",
+  lazyRouter(() => import("./routes/approvalPolicyRoutes.js"), "approvalPolicyRoutes")
+);
+app.use(
   "/api/admin/kpis",
   lazyRouter(() => import("./routes/kpiRoutes.js"), "kpiRoutes")
 );
@@ -908,11 +940,33 @@ app.get("/readyz", async (_req, res) => {
       });
     }
 
+    const checks = {
+      database: { ready: true },
+      redis: { configured: Boolean(process.env.REDIS_URL || (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)), required: String(process.env.NODE_ENV || "").toLowerCase() === "production" },
+      ppb: { configured: Boolean(process.env.PPB_REGISTRY_URL && process.env.PPB_API_KEY), required: Boolean(process.env.PPB_REGISTRY_URL || process.env.PPB_API_KEY) },
+      backgroundJobs: { ready: true },
+    };
+    if (checks.redis.required && !checks.redis.configured) checks.redis.ready = false;
+    if (checks.ppb.required && !checks.ppb.configured) checks.ppb.ready = false;
+    try {
+      const worker = await import("./workers/backgroundJobWorker.js");
+      checks.backgroundJobs = worker.getBackgroundJobWorkerHealth();
+    } catch {
+      checks.backgroundJobs = { ready: false, reason: "WORKER_UNAVAILABLE" };
+    }
+    const failedChecks = Object.entries(checks).filter(([, check]) => check.required && check.ready === false).map(([name]) => name);
+    if (failedChecks.length) {
+      recordReadinessFailure(failedChecks.join(","));
+      setMetricGauge("afyalink_readiness_status", 0);
+      return res.status(503).json({ ok: false, code: "DEPENDENCY_NOT_READY", checks, failedChecks, timestamp: new Date().toISOString() });
+    }
+
     setMetricGauge("afyalink_readiness_status", 1);
     return res.json({
       ok: true,
       service: "afyalink-backend",
       dbReady: true,
+      checks,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -58,20 +58,40 @@ export const planGuard =
         });
       }
 
-      const premiumFeatures = new Set([
-        "ai",
+      const coreFeatures = new Set([
         "payments",
-        "realtime",
-        "auditLogs",
-        "adminCreation",
-        "lab",
         "pharmacy",
         "inventory",
+        "lab",
+        "realtime",
+      ]);
+      const premiumFeatures = new Set([
+        "ai",
         "advertising",
         "recruitmentAds",
         "advancedAnalytics",
         "heavyExports",
       ]);
+      const billing = hospital?.billing || {};
+      const monthlyTarget = Number(billing.monthlyTarget || 0);
+      const monthlySpent = Number(billing.monthlySpent || 0);
+      const balanceOutstanding = Number(billing.balanceOutstanding || 0);
+      const paymentDueAt = billing.paymentDueAt ? new Date(billing.paymentDueAt) : null;
+      const thresholds = Array.isArray(billing.alertThresholds) && billing.alertThresholds.length
+        ? billing.alertThresholds
+        : [50, 70, 80, 90, 100, 110, 125];
+      const percentage = monthlyTarget > 0 ? Math.round((monthlySpent / monthlyTarget) * 100) : 0;
+      const targetExceeded = monthlyTarget > 0 && monthlySpent > monthlyTarget;
+      let billingStatus = "CURRENT";
+      if (balanceOutstanding > 0) {
+        if (paymentDueAt && now > paymentDueAt) {
+          const ageDays = Math.max(0, Math.floor((now.getTime() - paymentDueAt.getTime()) / (24 * 60 * 60 * 1000)));
+          billingStatus = ageDays >= 30 ? "SERIOUSLY_OVERDUE" : ageDays >= 7 ? "OVERDUE" : "PAYMENT_DUE";
+        } else {
+          billingStatus = "PAYMENT_DUE";
+        }
+      }
+      const restrictPremiumFeatures = billingStatus !== "CURRENT" || targetExceeded || Boolean(hospital?.subscription?.premiumPaused);
       const monetization = systemSettings?.monetization || {};
       const featureAccess =
         (typeof monetization.featureAccess?.toObject === "function"
@@ -110,13 +130,25 @@ export const planGuard =
 
       /* ================= FEATURE CHECK ================= */
       if (feature) {
+        if (coreFeatures.has(feature)) {
+          return next();
+        }
+
         const tier = String(featureAccess[feature] || (premiumFeatures.has(feature) ? "PREMIUM" : "FREE"))
           .toUpperCase();
-        if (premiumPaused && tier === "PREMIUM") {
-          await denyAudit(req, res, `Premium feature '${feature}' blocked due to expired trial`);
+        if ((premiumPaused || restrictPremiumFeatures) && tier === "PREMIUM") {
+          await denyAudit(req, res, `Premium feature '${feature}' blocked by billing policy`);
           return res.status(402).json({
-            message: "Hospital premium trial expired. Premium features are paused until payment.",
-            code: "PREMIUM_PAUSED",
+            message: restrictPremiumFeatures
+              ? "Hospital billing is currently past due or over target; only premium modules are temporarily restricted while core clinical services remain available."
+              : "Hospital premium trial expired. Premium features are paused until payment while core services remain available.",
+            code: restrictPremiumFeatures ? "PREMIUM_RESTRICTED" : "PREMIUM_PAUSED",
+            billingState: {
+              status: billingStatus,
+              percentage,
+              targetExceeded,
+              milestonesTriggered: thresholds.filter((threshold) => percentage >= threshold),
+            },
           });
         }
         const enabled = hospital.features?.[feature];

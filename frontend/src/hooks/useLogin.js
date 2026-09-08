@@ -19,6 +19,34 @@ function getStorage() {
   }
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KENYA_PHONE_REGEX = /^(\+254|254|0)\d{9}$/;
+
+function validateLoginFields(identifier, password) {
+  const trimmedIdentifier = String(identifier || "").trim();
+  const trimmedPassword = String(password || "").trim();
+  const errors = [];
+  const normalizedIdentifier = trimmedIdentifier.replace(/\s+/g, "");
+
+  if (!trimmedIdentifier) {
+    errors.push("This field is required");
+  } else if (trimmedIdentifier.includes("@") && !EMAIL_REGEX.test(trimmedIdentifier)) {
+    errors.push("Email address is invalid");
+  } else if (
+    /^[0-9+]+$/.test(normalizedIdentifier) &&
+    (normalizedIdentifier.startsWith("+254") || normalizedIdentifier.startsWith("254") || normalizedIdentifier.startsWith("0")) &&
+    !KENYA_PHONE_REGEX.test(normalizedIdentifier)
+  ) {
+    errors.push("Enter a valid Kenyan phone number");
+  }
+
+  if (!trimmedPassword) {
+    errors.push("This field is required");
+  }
+
+  return errors;
+}
+
 export function useLogin() {
   const { login } = useAuth();
   const { settings } = useSystemSettings();
@@ -34,6 +62,7 @@ export function useLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [slowAuth, setSlowAuth] = useState(false);
   const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -70,8 +99,31 @@ export function useLogin() {
     };
   }, []);
 
+  const handleFieldChange = (name, value) => {
+    if (name === "identifier") setIdentifier(value);
+    if (name === "password") setPassword(value);
+    setError("");
+    setInfo("");
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (name === "identifier") next.identifier = undefined;
+      if (name === "password") next.password = undefined;
+      return next;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validationErrors = validateLoginFields(identifier, password);
+    if (validationErrors.length) {
+      setFieldErrors({
+        identifier: validationErrors.find((item) => item.toLowerCase().includes("field") || item.toLowerCase().includes("email") || item.toLowerCase().includes("phone")),
+        password: validationErrors.find((item) => item.toLowerCase().includes("field")),
+      });
+      setError(validationErrors[0]);
+      return;
+    }
+
     setError("");
     setInfo("");
     setSubmitting(true);
@@ -85,7 +137,9 @@ export function useLogin() {
         ? storage?.setItem("remember_email", identifier)
         : storage?.removeItem("remember_email");
 
+      console.log('[debug] handleSubmit: calling login for', String(identifier).trim());
       const authResult = await login(identifier.trim(), password);
+      console.log('[debug] handleSubmit: login returned', authResult);
 
       if (authResult?.requires2FA) {
         navigate("/2fa", {
@@ -159,6 +213,8 @@ export function useLogin() {
     GoogleButton,
     googleError,
     clearError,
+    fieldErrors,
+    handleFieldChange,
     handleSubmit,
   };
 }

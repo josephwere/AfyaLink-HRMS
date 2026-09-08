@@ -13,7 +13,7 @@ import NotificationCenter from "./NotificationCenter";
 import { useUserContext } from "../contexts/UserContextContext";
 
 export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOpen = false }) {
-  const { user } = useAuth();
+  const { user, roleOverride, setRoleOverride, canRoleOverride, actualRole } = useAuth();
   const navigate = useNavigate();
   const { toggleMode, isMyHealthMode, canUseMyHealthContext } = useUserContext();
   const [switchingContext, setSwitchingContext] = useState(false);
@@ -24,8 +24,9 @@ export default function Navbar({ onToggleSidebar, onToggleContextRail, contextOp
   const nextThemeLabel = theme === "dark" ? "Light mode" : "Dark mode";
   const role = String(user?.role || "").toUpperCase();
   const canUseUxAudit = ["DEVELOPER", "SYSTEM_ADMIN", "SUPER_ADMIN"].includes(role);
-
   const homePath = user ? redirectByRole(user) : "/";
+  const canUseRoleOverride = canRoleOverride && actualRole === "SUPER_ADMIN";
+  const viewAsValue = roleOverride || "";
 
   const safeTrigger = useCallback(async (action) => {
     try {

@@ -1,16 +1,16 @@
 # AFY-P1-020 Interactive Surface Audit
 
-- Generated: 2026-07-26T10:07:20.093Z
-- Total interactive surfaces scanned: 279
-- Resolved: 78
-- Unresolved: 201
-- Canonical routes discovered: 162
+- Generated: 2026-08-26T23:06:01.980Z
+- Total interactive surfaces scanned: 274
+- Resolved: 80
+- Unresolved: 194
+- Canonical routes discovered: 191
 
 ## Surface distribution
 
 - deep-link: 45
-- button: 151
-- dashboard-card: 83
+- button: 153
+- dashboard-card: 76
 
 ## Unresolved targets
 
@@ -23,7 +23,7 @@
 - src/hooks/useRevenueIntelligence.js:118 [button] interactive action -> /payments/full (no matching canonical route)
 - src/pages/Admin/AccessControl.jsx:37 [button] interactive action -> /profile (no matching canonical route)
 - src/pages/Admin/AccessControl.jsx:41 [button] interactive action -> /profile (no matching canonical route)
-- src/pages/Admin/CreateAdmin.jsx:47 [deep-link] Manage Super Assistants -> /admin/super-assistants (no matching canonical route)
+- src/pages/Admin/CreateAdmin.jsx:48 [deep-link] Manage Super Assistants -> /admin/super-assistants (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:86 [deep-link] Open Audit Logs -> /admin/audit-logs (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:87 [deep-link] Open AI Autofill Audit -> /admin/ai-autofill-audit (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:88 [deep-link] Create Admin -> /admin/create-admin (no matching canonical route)

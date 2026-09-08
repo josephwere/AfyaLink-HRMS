@@ -4,7 +4,7 @@ import GuidedEmptyState from "../../components/GuidedEmptyState";
 import { usePatientPrescriptions } from "../../hooks/usePatientPrescriptions";
 
 export default function PatientPrescriptions() {
-  const { referrals, filter, setFilter, loading, msg, visible, load } = usePatientPrescriptions();
+  const { items, referrals, filter, setFilter, loading, msg, visible, load } = usePatientPrescriptions();
 
   const openAiAssistant = (prompt) => {
     window.dispatchEvent(

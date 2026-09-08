@@ -8,7 +8,7 @@ const PharmacyInventoryMovementSchema = new Schema(
     hospital: { type: Schema.Types.ObjectId, ref: "Hospital", required: true, index: true },
     movementType: {
       type: String,
-      enum: ["RECEIPT", "DISPENSE", "ADJUSTMENT", "EXPIRY", "TRANSFER"],
+      enum: ["RECEIPT", "DISPENSE", "RESERVATION", "RETURN", "ADJUSTMENT", "EXPIRY", "TRANSFER"],
       required: true,
       index: true,
     },

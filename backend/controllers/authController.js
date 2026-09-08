@@ -61,8 +61,12 @@ const withTimeout = async (promise, ms = 1200, fallback = null) => {
 
 const AUTH_TIMEOUT_SENTINEL = Symbol("AUTH_TIMEOUT");
 const AUTH_RUNTIME_TIMEOUT_MS = Math.max(
-  Number(process.env.AUTH_RUNTIME_TIMEOUT_MS || 6000) || 6000,
-  1000
+  Number(process.env.AUTH_RUNTIME_TIMEOUT_MS || 15000) || 15000,
+  5000
+);
+const AUTH_PASSWORD_COMPARE_TIMEOUT_MS = Math.max(
+  Number(process.env.AUTH_PASSWORD_COMPARE_TIMEOUT_MS || AUTH_RUNTIME_TIMEOUT_MS) || AUTH_RUNTIME_TIMEOUT_MS,
+  8000
 );
 const AUTH_DB_QUERY_TIMEOUT_MS = Math.max(
   Number(process.env.AUTH_DB_QUERY_TIMEOUT_MS || 5000) || 5000,
@@ -823,7 +827,11 @@ export const login = async (req, res) => {
       });
     }
 
-    const isMatch = await withAuthStepTimeout("PASSWORD_COMPARE", () => user.matchPassword(password), 4000);
+    const isMatch = await withAuthStepTimeout(
+      "PASSWORD_COMPARE",
+      () => user.matchPassword(password),
+      AUTH_PASSWORD_COMPARE_TIMEOUT_MS
+    );
     if (!isMatch) {
       return res.status(401).json({
         success: false,

@@ -356,6 +356,7 @@ export default function Sidebar({ open = true, onClose }) {
       { label: "Profile", path: "/app/platform/account/profile", icon: "account" },
       { label: "Notifications", path: "/app/platform/inbox/notifications", icon: "notifications" },
       { label: "Communication Center", path: "/app/platform/inbox/communication", icon: "notifications" },
+      { label: "Hospital Communication Center", path: "/app/platform/inbox/hospital-communication", icon: "notifications" },
     ];
 
     return dedupeByPath([...navItems, ...utilityItems]);

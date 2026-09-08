@@ -39,7 +39,11 @@ async function main() {
   }
 
   await checkMongo(process.env.MONGO_URI);
-  console.log("PASS production-preflight: env and database connectivity look good.");
+  if (!process.env.REDIS_URL && (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)) fail("Redis configuration is required for production queues and coordination");
+  if (process.env.PPB_REGISTRY_URL && !process.env.PPB_API_KEY) fail("PPB_API_KEY is required when PPB_REGISTRY_URL is configured");
+  if (process.env.PPB_API_KEY && !process.env.PPB_REGISTRY_URL) fail("PPB_REGISTRY_URL is required when PPB_API_KEY is configured");
+  if (!process.env.CORS_ORIGIN) fail("CORS_ORIGIN must explicitly allowlist the production frontend");
+  console.log("PASS production-preflight: env, database, Redis, PPB pairing, and CORS configuration look good.");
 }
 
 main().catch((err) => fail(err?.message || String(err)));

@@ -1,16 +1,16 @@
 # AFY-P1-020 Dashboard Cards Audit
 
-- Total entries: 83
+- Total entries: 76
 - Resolved: 15
-- Unresolved: 68
+- Unresolved: 61
 
 - src/hooks/useUnifiedAssistantDashboard.js:607 interactive action -> /app/revenue/financials/index (resolved)
 - src/hooks/useUnifiedAssistantDashboard.js:615 interactive action -> /app/governance/fraud/index (resolved)
 - src/hooks/useUnifiedAssistantDashboard.js:619 interactive action -> /app/platform/dev/home (resolved)
 - src/pages/Developer/DecisionCockpit.jsx:72 DLQ Failed -> /developer/queue-replay (unresolved)
-- src/pages/Doctor/Dashboard.jsx:179 interactive action -> /doctor/medical-records${a.patient (unresolved)
-- src/pages/Doctor/Dashboard.jsx:190 interactive action -> /doctor/opd${patientKey  (unresolved)
-- src/pages/Doctor/Dashboard.jsx:213 interactive action -> /notifications (unresolved)
+- src/pages/Doctor/Dashboard.jsx:276 interactive action -> /doctor/medical-records${a.patient (unresolved)
+- src/pages/Doctor/Dashboard.jsx:287 interactive action -> /doctor/opd${patientKey  (unresolved)
+- src/pages/Doctor/Dashboard.jsx:310 interactive action -> /notifications (unresolved)
 - src/pages/Doctor/MedicalRecords.jsx:63 Status -> /doctor/opd (unresolved)
 - src/pages/Doctor/MedicalRecords.jsx:64 Risk -> /doctor/lab-results (unresolved)
 - src/pages/Doctor/MedicalRecords.jsx:65 Diagnosis -> /doctor/reports-notes (unresolved)
@@ -21,8 +21,8 @@
 - src/pages/HospitalAdmin/AppointmentAnalytics.jsx:24 Appointments (30d) -> /hospital-admin/appointments (unresolved)
 - src/pages/HospitalAdmin/AppointmentAnalytics.jsx:25 Pending Assignments -> /hospital-admin/appointments (unresolved)
 - src/pages/HospitalAdmin/AppointmentAnalytics.jsx:26 No-show Rate -> /hospital-admin/appointments (unresolved)
-- src/pages/HospitalAdmin/Appointments.jsx:51 Requested calls -> /hospital-admin/consultation-monitor (unresolved)
-- src/pages/HospitalAdmin/Appointments.jsx:52 Active calls -> /hospital-admin/consultation-monitor (unresolved)
+- src/pages/HospitalAdmin/Appointments.jsx:67 Requested calls -> /hospital-admin/consultation-monitor (unresolved)
+- src/pages/HospitalAdmin/Appointments.jsx:68 Active calls -> /hospital-admin/consultation-monitor (unresolved)
 - src/pages/HospitalAdmin/ConsultationMonitor.jsx:38 Ward Escalations -> /hospital-admin/escalations (unresolved)
 - src/pages/HospitalAdmin/Dashboard.jsx:357 interactive action -> /hospital-admin/transfer-command-center (unresolved)
 - src/pages/HospitalAdmin/Dashboard.jsx:360 interactive action -> /hospital-admin/approvals (unresolved)

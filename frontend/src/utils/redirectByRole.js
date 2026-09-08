@@ -41,6 +41,9 @@ const ROLE_REDIRECT_MAP = Object.freeze({
   // 👥 People + revenue
   HR_MANAGER: "/app/people/home/index",
   PAYROLL_OFFICER: "/app/revenue/home/index",
+  ACCOUNTANT: "/app/finance/accounting/index",
+  FINANCE_MANAGER: "/app/finance/manager/index",
+  CFO: "/app/finance/executive/index",
 
   // 🏛 Governance
   GOVERNMENT_REGULATOR: "/app/governance/home/index",

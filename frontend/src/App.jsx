@@ -109,6 +109,33 @@ const PaymentSettings = lazy(() => import("./pages/Admin/PaymentSettings"));
 const AccessControl = lazy(() => import("./pages/Admin/AccessControl"));
 const PrintCenter = lazy(() => import("./pages/Admin/PrintCenter"));
 const OfflineOps = lazy(() => import("./pages/Admin/OfflineOps"));
+const FinanceHome = lazy(() => import("./pages/Finance/Home"));
+const FinanceBilling = lazy(() => import("./pages/Finance/Billing"));
+const FinanceCashier = lazy(() => import("./pages/Finance/Cashier"));
+const FinancePayments = lazy(() => import("./pages/Finance/Payments"));
+const FinanceReceipts = lazy(() => import("./pages/Finance/Receipts"));
+const FinanceRefunds = lazy(() => import("./pages/Finance/Refunds"));
+const FinanceInsuranceClaims = lazy(() => import("./pages/Finance/InsuranceClaims"));
+const FinanceAccountingDashboard = lazy(() => import("./pages/Finance/AccountingDashboard"));
+const FinanceGeneralLedger = lazy(() => import("./pages/Finance/GeneralLedger"));
+const FinanceJournalEntries = lazy(() => import("./pages/Finance/JournalEntries"));
+const FinanceChartOfAccounts = lazy(() => import("./pages/Finance/ChartOfAccounts"));
+const FinancePeriods = lazy(() => import("./pages/Finance/AccountingPeriods"));
+const FinanceReports = lazy(() => import("./pages/Finance/Reports"));
+const FinanceManagerDashboard = lazy(() => import("./pages/Finance/ManagerDashboard"));
+const FinanceTrialBalance = lazy(() => import("./pages/Finance/TrialBalance"));
+const FinanceProfitAndLoss = lazy(() => import("./pages/Finance/ProfitAndLoss"));
+const FinanceBalanceSheet = lazy(() => import("./pages/Finance/BalanceSheet"));
+const FinanceCashFlow = lazy(() => import("./pages/Finance/CashFlow"));
+const FinanceFinancialIntelligence = lazy(() => import("./pages/Finance/FinancialIntelligence"));
+const FinanceReconciliation = lazy(() => import("./pages/Finance/Reconciliation"));
+const FinanceAudit = lazy(() => import("./pages/Finance/Audit"));
+const FinanceApprovals = lazy(() => import("./pages/Finance/Approvals"));
+const FinanceConsolidation = lazy(() => import("./pages/Finance/Consolidation"));
+const FinanceSettings = lazy(() => import("./pages/Finance/Settings"));
+const FinanceApprovalPolicies = lazy(() => import("./pages/Finance/ApprovalPolicies"));
+const FinanceExecutiveDashboard = lazy(() => import("./pages/Finance/ExecutiveDashboard"));
+const FinanceWorkCenter = lazy(() => import("./pages/Finance/WorkCenter"));
 const LaunchReadiness = lazy(() => import("./pages/Admin/LaunchReadiness"));
 const SreIncidentOps = lazy(() => import("./pages/Admin/SreIncidentOps"));
 const SupportTickets = lazy(() => import("./pages/Admin/SupportTickets"));
@@ -181,8 +208,10 @@ const ClaimRules = lazy(() => import("./pages/SystemAdmin/ClaimRules"));
 const HospitalVerificationReview = lazy(() => import("./pages/SystemAdmin/HospitalVerificationReview"));
 const FraudGuard = lazy(() => import("./pages/SystemAdmin/FraudGuard"));
 const GovernmentClaimsDashboard = lazy(() => import("./pages/SystemAdmin/GovernmentClaimsDashboard"));
+const PharmacySafetyDashboard = lazy(() => import("./pages/SystemAdmin/PharmacySafetyDashboard"));
 const UnifiedAssistantDashboard = lazy(() => import("./pages/SystemAdmin/UnifiedAssistantDashboard"));
 const CommunicationCenter = lazy(() => import("./pages/Communication/Center"));
+const HospitalAdminCenter = lazy(() => import("./pages/Communication/HospitalAdminCenter"));
 const MyRequests = lazy(() => import("./pages/Workforce/MyRequests"));
 const QueueReplay = lazy(() => import("./pages/Developer/QueueReplay"));
 const WebhookRetry = lazy(() => import("./pages/Developer/WebhookRetry"));
@@ -446,6 +475,7 @@ export default function App() {
             }
           />
           <Route path="/app/governance/claims/index" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><GovernmentClaimsDashboard /></RequireRole>} />
+          <Route path="/app/governance/pharmacy-safety" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR"]}><PharmacySafetyDashboard /></RequireRole>} />
           <Route path="/app/governance/registry/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><GovernmentHospitalRegistryPage /></RequireRole>} />
           <Route path="/app/governance/registry/patient-identity" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><PatientIdentityRegistryPage /></RequireRole>} />
           <Route path="/app/governance/verification/hospitals" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER", "GOVERNMENT_ADMIN", "GOVERNMENT_REGULATOR", "GOVERNMENT_AUDITOR", "GOVERNMENT_INSPECTOR", "GOVERNMENT_ANALYST"]}><HospitalVerificationReview /></RequireRole>} />
@@ -516,7 +546,7 @@ export default function App() {
           <Route path="/app/operations/pharmacy/inventory" element={<RequireRole roles={["PHARMACIST", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyInventory /></RequireRole>} />
           <Route path="/app/operations/pharmacy/controlled" element={<RequireRole roles={["PHARMACIST", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyControlled /></RequireRole>} />
           <Route path="/app/operations/pharmacy/expiry" element={<RequireRole roles={["PHARMACIST", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyExpiry /></RequireRole>} />
-          <Route path="/app/operations/pharmacy/suppliers" element={<RequireRole roles={["PHARMACIST", "SUPER_ADMIN", "DEVELOPER"]}><PharmacySuppliers /></RequireRole>} />
+          <Route path="/app/operations/pharmacy/suppliers" element={<RequireRole roles={["PHARMACIST", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPPLIER", "SUPER_ADMIN", "DEVELOPER"]}><PharmacySuppliers /></RequireRole>} />
           <Route path="/app/operations/pharmacy/reports" element={<RequireRole roles={["PHARMACIST", "SUPER_ADMIN", "DEVELOPER"]}><PharmacyReports /></RequireRole>} />
 
           {/* People */}
@@ -543,6 +573,35 @@ export default function App() {
           <Route path="/app/revenue/commerce/config" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminCommerceConfig /></RequireRole>} />
           <Route path="/app/revenue/financials/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><HospitalAdminFinancials /></RequireRole>} />
 
+          {/* Finance */}
+          <Route path="/app/finance/home/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceHome /></RequireRole>} />
+          <Route path="/app/finance/manager/index" element={<RequireRole roles={["FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceManagerDashboard /></RequireRole>} />
+          <Route path="/app/finance/executive/index" element={<RequireRole roles={["CFO", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceExecutiveDashboard /></RequireRole>} />
+          <Route path="/app/finance/billing/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceBilling /></RequireRole>} />
+          <Route path="/app/finance/cashier/index" element={<RequireRole roles={["RECEPTIONIST", "PAYROLL_OFFICER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceCashier /></RequireRole>} />
+          <Route path="/app/finance/payments/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinancePayments /></RequireRole>} />
+          <Route path="/app/finance/receipts/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceReceipts /></RequireRole>} />
+          <Route path="/app/finance/refunds/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceRefunds /></RequireRole>} />
+          <Route path="/app/finance/insurance-claims/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "RECEPTIONIST", "PAYROLL_OFFICER", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceInsuranceClaims /></RequireRole>} />
+          <Route path="/app/finance/accounting/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceAccountingDashboard /></RequireRole>} />
+          <Route path="/app/finance/general-ledger/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceGeneralLedger /></RequireRole>} />
+          <Route path="/app/finance/journal-entries/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceJournalEntries /></RequireRole>} />
+          <Route path="/app/finance/chart-of-accounts/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceChartOfAccounts /></RequireRole>} />
+          <Route path="/app/finance/periods/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinancePeriods /></RequireRole>} />
+          <Route path="/app/finance/reports/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "PAYROLL_OFFICER", "FINANCE_MANAGER", "CFO", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceReports /></RequireRole>} />
+          <Route path="/app/finance/trial-balance/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceTrialBalance /></RequireRole>} />
+          <Route path="/app/finance/profit-and-loss/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceProfitAndLoss /></RequireRole>} />
+          <Route path="/app/finance/balance-sheet/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceBalanceSheet /></RequireRole>} />
+          <Route path="/app/finance/cash-flow/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceCashFlow /></RequireRole>} />
+          <Route path="/app/finance/financial-intelligence/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceFinancialIntelligence /></RequireRole>} />
+          <Route path="/app/finance/reconciliation/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceReconciliation /></RequireRole>} />
+          <Route path="/app/finance/audit/index" element={<RequireRole roles={["GOVERNMENT_AUDITOR", "ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceAudit /></RequireRole>} />
+          <Route path="/app/finance/approvals/index" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceApprovals /></RequireRole>} />
+          <Route path="/app/finance/work-center" element={<RequireRole roles={["ACCOUNTANT", "FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceWorkCenter /></RequireRole>} />
+          <Route path="/app/finance/consolidation/index" element={<RequireRole roles={["FINANCE_MANAGER", "CFO", "HOSPITAL_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceConsolidation /></RequireRole>} />
+          <Route path="/app/finance/settings/index" element={<RequireRole roles={["HOSPITAL_ADMIN", "FINANCE_MANAGER", "CFO", "SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><FinanceSettings /></RequireRole>} />
+          <Route path="/app/finance/approval-policies/index" element={<RequireRole roles={["SUPER_ADMIN", "FINANCE_MANAGER", "CFO"]}><FinanceApprovalPolicies /></RequireRole>} />
+
           {/* Platform */}
           <Route path="/app/platform/settings/system" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER"]}><SuperAdminSystemSettings /></RequireRole>} />
           <Route path="/app/platform/compliance/center" element={<RequireRole roles={["SYSTEM_ADMIN", "SUPER_ADMIN", "DEVELOPER"]}><ComplianceCenter /></RequireRole>} />
@@ -551,6 +610,7 @@ export default function App() {
           <Route path="/app/platform/account/clinician-settings" element={<RequireRole roles={["DOCTOR", "SURGEON", "SUPER_ADMIN", "DEVELOPER"]}><DoctorSettings /></RequireRole>} />
           <Route path="/app/platform/inbox/notifications" element={<RequireRole roles={SHARED_NOTIFICATION_ROLES}><NotificationsPage /></RequireRole>} />
           <Route path="/app/platform/inbox/communication" element={<RequireRole roles={["SUPER_ADMIN", "SYSTEM_ADMIN", "DEVELOPER", "HOSPITAL_ADMIN", "HOSPITAL_ADMIN_ASSISTANT", "DOCTOR", "NURSE", "LAB_TECH", "PHARMACIST", "SECURITY_ADMIN", "SECURITY_OFFICER", "RECEPTIONIST", "SURGEON", "HR_MANAGER", "PAYROLL_OFFICER"]}><CommunicationCenter /></RequireRole>} />
+          <Route path="/app/platform/inbox/hospital-communication" element={<RequireRole roles={["HOSPITAL_ADMIN"]}><HospitalAdminCenter /></RequireRole>} />
           <Route path="/app/platform/analytics/index" element={<Analytics />} />
           <Route path="/app/platform/analytics/hospital-kpis" element={<RequireRole roles={["HOSPITAL_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"]}><HospitalKPIDashboard /></RequireRole>} />
           <Route path="/app/platform/reports/index" element={<Reports />} />

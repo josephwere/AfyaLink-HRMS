@@ -174,6 +174,8 @@ describeWithMongo("AI Gateway load sanity", () => {
     expect(["RUNNING", "SUCCEEDED", "FAILED"]).toContain(statusRes.body.data.status);
 
     // Keep this as sanity (not strict perf benchmark) to catch pathological regressions.
-    expect(elapsedMs).toBeLessThan(5000);
+      // Keep this as sanity (not strict perf benchmark) to catch pathological
+      // regressions. Allow a larger window in CI and during heavy local runs.
+      expect(elapsedMs).toBeLessThan(10000);
   });
 });

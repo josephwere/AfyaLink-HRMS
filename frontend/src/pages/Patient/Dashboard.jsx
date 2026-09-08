@@ -4,6 +4,20 @@ import DashboardHomeShell, { DashboardSection } from "../../components/Dashboard
 import { usePatientLanguage } from "../../utils/patientLanguage.jsx";
 import { usePatientDashboard } from "../../hooks/usePatientDashboard";
 
+const PATIENT_ROUTES = Object.freeze({
+  appointments: "/app/portal/appointments/index",
+  billing: "/app/portal/billing/index",
+  familyRecords: "/app/portal/family/records",
+  familyTimeline: "/app/portal/family/timeline",
+  feedback: "/app/portal/support/feedback",
+  labResults: "/app/portal/diagnostics/lab-results",
+  medicalRecords: "/app/portal/records/index",
+  notifications: "/app/platform/inbox/notifications",
+  prescriptions: "/app/portal/medications/prescriptions",
+  profile: "/app/platform/account/profile",
+  reports: "/app/platform/reports/index",
+});
+
 export default function Dashboard() {
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
@@ -45,7 +59,7 @@ export default function Dashboard() {
         title: t("bookCareVisit", "Book a care visit"),
         body: t("bookCareVisitBody", "Choose a hospital service and schedule your next appointment."),
         actionLabel: t("bookAppointment", "Book Appointment"),
-        path: "/patient/appointments",
+        path: PATIENT_ROUTES.appointments,
       });
     }
 
@@ -63,7 +77,7 @@ export default function Dashboard() {
         title: t("followUpRecommended", "Follow-up recommended"),
         body: `${t("followUp", "Follow-up")}: ${new Date(followUpDate).toLocaleDateString()}`,
         actionLabel: t("openAppointments", "Open Appointments"),
-        path: "/patient/appointments",
+        path: PATIENT_ROUTES.appointments,
       });
     }
 
@@ -96,16 +110,16 @@ export default function Dashboard() {
       title={t("dashboardTitle", "Patient Self-Service Portal")}
       subtitle={t("dashboardSubtitle", "Simple patient view for appointments, results, bills, and insurance.")}
       actions={[
-        { label: t("myAppointments", "My Appointments"), path: "/patient/appointments" },
-        { label: t("billing", "Billing"), path: "/patient/billing", variant: "secondary" },
-        { label: t("familyRecords", "Family Records"), path: "/patient/family-records", variant: "secondary" },
-        { label: t("profile", "Profile"), path: "/profile", variant: "secondary" },
+        { label: t("myAppointments", "My Appointments"), path: PATIENT_ROUTES.appointments },
+        { label: t("billing", "Billing"), path: PATIENT_ROUTES.billing, variant: "secondary" },
+        { label: t("familyRecords", "Family Records"), path: PATIENT_ROUTES.familyRecords, variant: "secondary" },
+        { label: t("profile", "Profile"), path: PATIENT_ROUTES.profile, variant: "secondary" },
       ]}
       stats={[
-        { label: t("upcomingAppointment", "Upcoming Appointment"), value: data?.upcomingAppointments ?? "—", path: "/patient/appointments" },
-        { label: t("outstandingBill", "Outstanding Bill"), value: data?.unpaidInvoices ?? "—", path: "/patient/billing" },
-        { label: t("activePrescription", "Active Prescription"), value: data?.prescriptionsActive ?? "—", path: "/patient/prescriptions" },
-        { label: t("labResults", "Lab Results"), value: data?.labResults ?? "—", path: "/patient/lab-results" },
+        { label: t("upcomingAppointment", "Upcoming Appointment"), value: data?.upcomingAppointments ?? "—", path: PATIENT_ROUTES.appointments },
+        { label: t("outstandingBill", "Outstanding Bill"), value: data?.unpaidInvoices ?? "—", path: PATIENT_ROUTES.billing },
+        { label: t("activePrescription", "Active Prescription"), value: data?.prescriptionsActive ?? "—", path: PATIENT_ROUTES.prescriptions },
+        { label: t("labResults", "Lab Results"), value: data?.labResults ?? "—", path: PATIENT_ROUTES.labResults },
       ]}
       brief={{
         kicker: t("dailyBrief", "Daily brief"),
@@ -134,7 +148,7 @@ export default function Dashboard() {
             "Keep your scheduled visits, confirmations, and clinic timing in one place."
           ),
           eyebrow: t("care", "Care"),
-          path: "/patient/appointments",
+          path: PATIENT_ROUTES.appointments,
           badge: `${data?.upcomingAppointments ?? 0}`,
         },
         {
@@ -145,7 +159,7 @@ export default function Dashboard() {
             "Open outstanding bills, insurance posture, and payment follow-up without digging."
           ),
           eyebrow: t("coverage", "Coverage"),
-          path: "/patient/billing",
+          path: PATIENT_ROUTES.billing,
           badge: `${data?.unpaidInvoices ?? 0}`,
         },
         {
@@ -156,7 +170,7 @@ export default function Dashboard() {
             "See linked children, family care history, and guardian monitoring from one view."
           ),
           eyebrow: t("family", "Family"),
-          path: "/patient/family-records",
+          path: PATIENT_ROUTES.familyRecords,
           badge: `${linkedChildrenCount}`,
         },
         {
@@ -167,7 +181,7 @@ export default function Dashboard() {
             "Send questions, service feedback, or follow-up requests from your patient workspace."
           ),
           eyebrow: t("support", "Support"),
-          path: "/patient/feedback",
+          path: PATIENT_ROUTES.feedback,
           badge: t("open", "Open"),
         },
       ]}
@@ -177,7 +191,7 @@ export default function Dashboard() {
           title: t("medicalRecords", "Medical Records"),
           description: t("Open your care history, reports, and visit context quickly.", "Open your care history, reports, and visit context quickly."),
           eyebrow: t("records", "Records"),
-          path: "/patient/medical-records",
+          path: PATIENT_ROUTES.medicalRecords,
           variant: "compact",
         },
         {
@@ -185,7 +199,7 @@ export default function Dashboard() {
           title: t("familyTimeline", "Family Timeline"),
           description: t("Move from one family care event to the next without losing context.", "Move from one family care event to the next without losing context."),
           eyebrow: t("family", "Family"),
-          path: "/patient/family-timeline",
+          path: PATIENT_ROUTES.familyTimeline,
           variant: "compact",
         },
         {
@@ -203,7 +217,7 @@ export default function Dashboard() {
           title: t("reports", "Reports"),
           description: t("Return to recent clinical documents, summaries, and supporting reports.", "Return to recent clinical documents, summaries, and supporting reports."),
           eyebrow: t("recent", "Recent"),
-          path: "/reports",
+          path: PATIENT_ROUTES.reports,
           variant: "compact",
         },
         {
@@ -211,7 +225,7 @@ export default function Dashboard() {
           title: t("messages", "Messages"),
           description: t("Re-open notifications, updates, and daily wellness quotes quickly.", "Re-open notifications, updates, and daily wellness quotes quickly."),
           eyebrow: t("recent", "Recent"),
-          path: "/notifications",
+          path: PATIENT_ROUTES.notifications,
           variant: "compact",
         },
       ]}
@@ -221,7 +235,7 @@ export default function Dashboard() {
           title: t("outstandingBillsView", "Outstanding bills"),
           description: t("Saved entry into the billing items that still need your attention.", "Saved entry into the billing items that still need your attention."),
           eyebrow: t("savedView", "Saved view"),
-          path: "/patient/billing",
+          path: PATIENT_ROUTES.billing,
           variant: "compact",
         },
         {
@@ -229,7 +243,7 @@ export default function Dashboard() {
           title: t("familyCareView", "Family care view"),
           description: t("Saved entry into linked children, monitoring, and care continuity.", "Saved entry into linked children, monitoring, and care continuity."),
           eyebrow: t("savedView", "Saved view"),
-          path: "/patient/family-records",
+          path: PATIENT_ROUTES.familyRecords,
           variant: "compact",
         },
       ]}
@@ -243,8 +257,8 @@ export default function Dashboard() {
             { label: t("referralStatus", "Referral Status"), value: latestReferralStatus },
           ],
           actions: [
-            { label: t("openFamilyTimeline", "Open Family Timeline"), path: "/patient/family-timeline", variant: "secondary" },
-            { label: t("openNotifications", "Open Notifications"), path: "/notifications", variant: "secondary" },
+            { label: t("openFamilyTimeline", "Open Family Timeline"), path: PATIENT_ROUTES.familyTimeline, variant: "secondary" },
+            { label: t("openNotifications", "Open Notifications"), path: PATIENT_ROUTES.notifications, variant: "secondary" },
           ],
         },
         {
@@ -256,8 +270,8 @@ export default function Dashboard() {
             { label: t("feedback", "Feedback"), value: t("open", "Open") },
           ],
           actions: [
-            { label: t("messages", "Messages"), path: "/notifications", variant: "secondary" },
-            { label: t("feedback", "Feedback"), path: "/patient/feedback", variant: "secondary" },
+            { label: t("messages", "Messages"), path: PATIENT_ROUTES.notifications, variant: "secondary" },
+            { label: t("feedback", "Feedback"), path: PATIENT_ROUTES.feedback, variant: "secondary" },
           ],
         },
       ]}
@@ -353,31 +367,31 @@ export default function Dashboard() {
                   </div>
                 ) : null}
                 <div className="doctor-actions-row" style={{ marginTop: 10 }}>
-                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/appointments")}>
+                  <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.appointments)}>
                     {t("openAppointments", "Open Appointments")}
                   </button>
-                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/prescriptions")}>
+                  <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.prescriptions)}>
                     {t("prescriptions", "Prescriptions")}
                   </button>
-                  <button className="btn-secondary" type="button" onClick={() => navigate("/patient/medical-records")}>
+                  <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.medicalRecords)}>
                     {t("medicalRecords", "Medical Records")}
                   </button>
                 </div>
               </div>
-              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
+              <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.notifications)}>
                 {t("messages", "Messages")}
               </button>
-              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>
+              <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.feedback)}>
                 {t("feedback", "Feedback")}
               </button>
             </div>
           ) : (
             <div className="alert-stack">
               <div className="muted">{t("noRecentVisitSummary", "No recent visit summary yet.")}</div>
-              <button className="btn-secondary" type="button" onClick={() => navigate("/notifications")}>
+              <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.notifications)}>
                 {t("messages", "Messages")}
               </button>
-              <button className="btn-secondary" type="button" onClick={() => navigate("/patient/feedback")}>
+              <button className="btn-secondary" type="button" onClick={() => navigate(PATIENT_ROUTES.feedback)}>
                 {t("feedback", "Feedback")}
               </button>
             </div>

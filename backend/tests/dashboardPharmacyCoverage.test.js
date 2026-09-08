@@ -14,6 +14,7 @@ import Financial from "../models/Financial.js";
 let teardown;
 let hospitalAdminToken;
 let superAdminToken;
+let cfoToken;
 let hospitalA;
 
 beforeAll(async () => {
@@ -45,6 +46,15 @@ beforeAll(async () => {
     email: "global-coverage-admin@afya.test",
     password: "Pass123!",
     role: "SUPER_ADMIN",
+    active: true,
+    emailVerified: true,
+  });
+  const cfo = await User.create({
+    name: "Executive CFO",
+    email: "cfo-exec@afya.test",
+    password: "Pass123!",
+    role: "CFO",
+    hospital: hospitalA._id,
     active: true,
     emailVerified: true,
   });
@@ -84,6 +94,10 @@ beforeAll(async () => {
   );
   superAdminToken = jwt.sign(
     { id: String(superAdmin._id), twoFactorVerified: true },
+    process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
+  );
+  cfoToken = jwt.sign(
+    { id: String(cfo._id), twoFactorVerified: true },
     process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET
   );
 
@@ -171,6 +185,18 @@ describe("Dashboard pharmacy coverage warnings", () => {
     expect(res.body.domains.finance.outstandingAmount).toBe(0);
     expect(res.body.domains.finance.totalClaims).toBe(0);
     expect(res.body.domains.finance.approvalRate).toBe(0);
+  });
+
+  test("CFO can access the executive dashboard contract", async () => {
+    const res = await request(app)
+      .get("/api/dashboard/executive")
+      .set("Authorization", `Bearer ${cfoToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.domains).toBeDefined();
+    expect(res.body.domains.finance).toBeDefined();
+    expect(res.body.domains.finance.revenueToday).toBeDefined();
+    expect(res.body.domains.operations).toBeDefined();
   });
 
   test("hospital admin dashboard exposes pharmacy coverage risk when pharmacists are unlinked", async () => {

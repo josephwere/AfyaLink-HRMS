@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../utils/auth";
+import { useSocket } from "../utils/socket";
 import {
+  createAppointmentCall,
   listAppointments,
   listAppointmentCalls,
   listDoctorAvailability,
@@ -15,6 +17,7 @@ const CALL_INBOX_ROLES = new Set(["DOCTOR", "SURGEON", "HOSPITAL_ADMIN", "HOSPIT
 
 export function useDoctorSchedule() {
   const { user } = useAuth();
+  const socket = useSocket();
   const role = normalizeRole(user?.role || "");
   const [appointments, setAppointments] = useState([]);
   const [calls, setCalls] = useState([]);
@@ -99,6 +102,28 @@ export function useDoctorSchedule() {
     return () => window.clearInterval(timer);
   }, [load]);
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleAssignment = (payload) => {
+      const appointment = payload?.appointment;
+      const patientName = appointment?.patient?.name || appointment?.patient?.firstName || "a patient";
+      const service = appointment?.serviceType || "consultation";
+      const mode = appointment?.consultationMode === "VIDEO"
+        ? "Video"
+        : appointment?.consultationMode === "VOICE"
+        ? "Voice"
+        : "Consultation";
+      setMsg(`New patient assigned: ${patientName} • ${service} • ${mode}`);
+      void load();
+    };
+
+    socket.on("doctorQueueAssignment", handleAssignment);
+    return () => {
+      socket.off("doctorQueueAssignment", handleAssignment);
+    };
+  }, [load, socket]);
+
   const todayAppointments = useMemo(() => {
     const now = new Date();
     const start = new Date(now);
@@ -154,6 +179,48 @@ export function useDoctorSchedule() {
     }
   }, [calls, load]);
 
+  const startAppointmentConsultation = useCallback(async (appointment) => {
+    if (!appointment?._id) return;
+
+    const mode = String(appointment?.consultationMode || "IN_PERSON").toUpperCase();
+    if (!["VOICE", "VIDEO"].includes(mode)) {
+      setMsg("This appointment is booked as an in-person visit.");
+      return;
+    }
+
+    const lifecycleState = String(appointment?.status || "Scheduled").trim();
+    const canStart = ["CheckedIn", "InConsultation", "WAITING", "READY_FOR_PROVIDER", "OPENING_ENCOUNTER", "IN_ENCOUNTER"].includes(lifecycleState);
+    if (!canStart) {
+      setMsg("The patient must be checked in before a remote consultation can start.");
+      return;
+    }
+
+    const existingCall = (calls || []).find((call) => String(call?.appointment?._id || call?.appointment || "") === String(appointment._id));
+    if (existingCall) {
+      setActiveCall(existingCall);
+      setMsg("Remote consultation room is already ready.");
+      return;
+    }
+
+    try {
+      setMsg("");
+      const created = await createAppointmentCall({
+        appointmentId: appointment._id,
+        callType: mode,
+        doctorId: appointment?.doctor?._id || appointment?.doctor || undefined,
+      });
+      const nextCall = created || null;
+      if (nextCall) {
+        setActiveCall(nextCall);
+      }
+      setMsg("Remote consultation started.");
+      window.dispatchEvent(new CustomEvent("afyalink:calls-refresh"));
+      await load();
+    } catch (err) {
+      setMsg(err?.message || "Could not start the remote consultation.");
+    }
+  }, [calls, load]);
+
   const resolveEscalation = useCallback(async (encounter, patientKey) => {
     if (!encounter?._id) return;
     try {
@@ -185,6 +252,7 @@ export function useDoctorSchedule() {
     activeCalls,
     load,
     runCallAction,
+    startAppointmentConsultation,
     resolveEscalation,
   };
 }

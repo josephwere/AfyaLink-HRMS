@@ -1,7 +1,7 @@
 # E2E Route Crawl Report
 
-- Generated: 2026-07-26T10:07:28.423Z
-- Total routes scanned: 162
+- Generated: 2026-08-26T23:06:32.941Z
+- Total routes scanned: 191
 - Routes with issues: 0
 
 ## Routes
@@ -25,10 +25,38 @@
 - /app/care/referrals/index (reachable)
 - /app/care/transfers/index (reachable)
 - /app/care/vitals/entry (reachable)
+- /app/finance/accounting/index (reachable)
+- /app/finance/approval-policies/index (reachable)
+- /app/finance/approvals/index (reachable)
+- /app/finance/audit/index (reachable)
+- /app/finance/balance-sheet/index (reachable)
+- /app/finance/billing/index (reachable)
+- /app/finance/cash-flow/index (reachable)
+- /app/finance/cashier/index (reachable)
+- /app/finance/chart-of-accounts/index (reachable)
+- /app/finance/consolidation/index (reachable)
+- /app/finance/executive/index (reachable)
+- /app/finance/financial-intelligence/index (reachable)
+- /app/finance/general-ledger/index (reachable)
+- /app/finance/home/index (reachable)
+- /app/finance/insurance-claims/index (reachable)
+- /app/finance/journal-entries/index (reachable)
+- /app/finance/manager/index (reachable)
+- /app/finance/payments/index (reachable)
+- /app/finance/periods/index (reachable)
+- /app/finance/profit-and-loss/index (reachable)
+- /app/finance/receipts/index (reachable)
+- /app/finance/reconciliation/index (reachable)
+- /app/finance/refunds/index (reachable)
+- /app/finance/reports/index (reachable)
+- /app/finance/settings/index (reachable)
+- /app/finance/trial-balance/index (reachable)
+- /app/finance/work-center (reachable)
 - /app/governance/claims/index (reachable)
 - /app/governance/command/county (reachable)
 - /app/governance/fraud/index (reachable)
 - /app/governance/home/index (reachable)
+- /app/governance/pharmacy-safety (reachable)
 - /app/governance/registry/hospitals (reachable)
 - /app/governance/registry/patient-identity (reachable)
 - /app/governance/reports/regulatory (reachable)
@@ -110,6 +138,7 @@
 - /app/platform/facility/customization (reachable)
 - /app/platform/home/index (reachable)
 - /app/platform/inbox/communication (reachable)
+- /app/platform/inbox/hospital-communication (reachable)
 - /app/platform/inbox/notifications (reachable)
 - /app/platform/integrations/connector-sdk (reachable)
 - /app/platform/integrations/control-plane (reachable)

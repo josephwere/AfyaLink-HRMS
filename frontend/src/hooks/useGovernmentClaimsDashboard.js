@@ -36,7 +36,9 @@ const emptyOverview = {
   notifications: [],
 };
 
-export function useGovernmentClaimsDashboard(filters = {}, alertsFilters = {}) {
+const EMPTY_FILTERS = Object.freeze({});
+
+export function useGovernmentClaimsDashboard(filters = EMPTY_FILTERS, alertsFilters = EMPTY_FILTERS) {
   const [overview, setOverview] = useState(emptyOverview);
   const [claims, setClaims] = useState([]);
   const [fraudAlerts, setFraudAlerts] = useState([]);

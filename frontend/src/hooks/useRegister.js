@@ -9,6 +9,26 @@ import { enqueueOfflineRegistration, flushOfflineRegistrations } from "../utils/
 import { guardedAuthFetch, normalizeAuthUiError, warmAuthRuntime } from "../services/guardedAuthFetch";
 import { toE164 } from "../components/CountryPhoneInput";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KENYA_PHONE_REGEX = /^(\+254|254|0)\d{9}$/;
+
+function getValidationMessages(form) {
+  const messageMap = {};
+  const password = String(form.password || "");
+  const confirmPassword = String(form.confirmPassword || "");
+
+  if (!form.name?.trim()) messageMap.name = "This field is required";
+  if (form.email && !EMAIL_REGEX.test(form.email)) messageMap.email = "Email address is invalid";
+  const fullPhone = `${form.phoneCountry || ""}${form.phoneLocal || ""}`;
+  if (form.phoneCountry && form.phoneLocal && !KENYA_PHONE_REGEX.test(fullPhone.replace(/\s+/g, ""))) {
+    messageMap.phone = "Enter a valid Kenyan phone number";
+  }
+  if (!password) messageMap.password = "This field is required";
+  if (!confirmPassword) messageMap.confirmPassword = "This field is required";
+  if (password && confirmPassword && password !== confirmPassword) messageMap.confirmPassword = "Passwords do not match";
+  return messageMap;
+}
+
 export function useRegister() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -28,6 +48,7 @@ export function useRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     document.body.classList.add("auth-route");
@@ -48,16 +69,24 @@ export function useRegister() {
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const nextForm = { ...form, [e.target.name]: e.target.value };
+    setForm(nextForm);
     setError("");
     setInfo("");
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (e.target.name in next) delete next[e.target.name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match");
+    const validationErrors = getValidationMessages(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError(Object.values(validationErrors)[0]);
       return;
     }
 
@@ -123,6 +152,7 @@ export function useRegister() {
     settings,
     GoogleButton,
     googleError,
+    fieldErrors,
     handleChange,
     handleSubmit,
   };

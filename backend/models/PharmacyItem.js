@@ -8,7 +8,13 @@ const BatchSchema = new Schema({
   expiryDate: { type: Date, required: false },
   quantity: { type: Number, default: 0 },
   costPrice: { type: Number, default: 0 },
-  sellingPrice: { type: Number, default: 0 }
+  sellingPrice: { type: Number, default: 0 },
+  regulatoryProduct: { type: Schema.Types.ObjectId, ref: 'RegulatoryProduct', default: null },
+  manufacturer: { type: String, default: '' },
+  manufactureDate: { type: Date, default: null },
+  serialNumbers: { type: [String], default: [] },
+  verificationStatus: { type: String, enum: ['PENDING', 'VERIFIED', 'QUARANTINED', 'RECALLED'], default: 'PENDING' },
+  authenticityScore: { type: Number, default: null, min: 0, max: 100 }
 }, { _id: false });
 
 const PharmacyItemSchema = new Schema({

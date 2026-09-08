@@ -1,9 +1,9 @@
 # AFY-P1-020 Completion Report
 
-- Generated: 2026-07-26T10:07:20.277Z
-- Total interactive surfaces scanned: 279
-- Resolved: 78
-- Unresolved: 201
+- Generated: 2026-08-26T23:06:02.068Z
+- Total interactive surfaces scanned: 274
+- Resolved: 80
+- Unresolved: 194
 
 ## Validation commands
 
@@ -21,7 +21,7 @@
 - src/hooks/useRevenueIntelligence.js:118 /payments/full (no matching canonical route)
 - src/pages/Admin/AccessControl.jsx:37 /profile (no matching canonical route)
 - src/pages/Admin/AccessControl.jsx:41 /profile (no matching canonical route)
-- src/pages/Admin/CreateAdmin.jsx:47 /admin/super-assistants (no matching canonical route)
+- src/pages/Admin/CreateAdmin.jsx:48 /admin/super-assistants (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:86 /admin/audit-logs (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:87 /admin/ai-autofill-audit (no matching canonical route)
 - src/pages/Admin/Dashboard.jsx:88 /admin/create-admin (no matching canonical route)

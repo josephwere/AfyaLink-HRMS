@@ -68,8 +68,9 @@ export default function Login() {
           </div>
         )}
 
-        <label>Email, phone or national ID</label>
+        <label htmlFor="login-identifier">Email, phone or national ID</label>
         <input
+          id="login-identifier"
           type="text"
           value={identifier}
           onChange={(e) => handleFieldChange("identifier", e.target.value)}
@@ -80,6 +81,7 @@ export default function Login() {
         {fieldErrors?.identifier ? <div className="auth-error">❌ {fieldErrors.identifier}</div> : null}
 
         <PasswordInput
+          id="login-password"
           label="Password"
           value={password}
           onChange={(e) => handleFieldChange("password", e.target.value)}

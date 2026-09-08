@@ -17,6 +17,7 @@ export const WORKSPACES = [
   { id: "care", label: "Care", icon: "doctor" },
   { id: "operations", label: "Operations", icon: "appointments" },
   { id: "revenue", label: "Revenue", icon: "payroll" },
+  { id: "finance", label: "Finance", icon: "bank" },
   { id: "people", label: "People", icon: "staff" },
   { id: "platform", label: "Platform", icon: "settings" },
   { id: "governance", label: "Governance", icon: "shield" },
@@ -28,6 +29,7 @@ export const WORKSPACE_HOME_PATH = Object.freeze({
   care: "/app/care/home/index",
   operations: "/app/operations/home/index",
   revenue: "/app/revenue/home/index",
+  finance: "/app/finance/home/index",
   people: "/app/people/home/index",
   platform: "/app/platform/home/index",
   governance: "/app/governance/home/index",
@@ -36,6 +38,164 @@ export const WORKSPACE_HOME_PATH = Object.freeze({
 });
 
 const SHARED_CALENDAR_ROUTE = "/app/operations/scheduling/my-schedule";
+
+const FINANCE_ROUTE_MATRIX = Object.freeze({
+  CASHIER: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-cashier",
+    "fin-billing",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+  ]),
+  ACCOUNTANT: new Set([
+    "fin-home",
+    "fin-workcenter",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-journals",
+    "fin-chart-of-accounts",
+    "fin-periods",
+    "fin-reconciliation",
+    "fin-approvals",
+    "fin-settings",
+  ]),
+  FINANCE_MANAGER: new Set([
+    "fin-home",
+    "fin-workcenter",
+    "fin-manager",
+    "fin-executive",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-reconciliation",
+    "fin-approvals",
+    "fin-audit",
+    "fin-settings",
+  ]),
+  CFO: new Set([
+    "fin-home",
+    "fin-workcenter",
+    "fin-executive",
+    "fin-accounting",
+    "fin-reconciliation",
+    "fin-approvals",
+    "fin-audit",
+    "fin-settings",
+  ]),
+  HOSPITAL_ADMIN: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-executive",
+    "fin-billing",
+    "fin-cashier",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+    "fin-insurance",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-journals",
+    "fin-chart-of-accounts",
+    "fin-periods",
+    "fin-reconciliation",
+    "fin-audit",
+    "fin-approvals",
+    "fin-settings",
+  ]),
+  HOSPITAL_ADMIN_ASSISTANT: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-billing",
+    "fin-cashier",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+  ]),
+  RECEPTIONIST: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-cashier",
+    "fin-billing",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+  ]),
+  PAYROLL_OFFICER: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-billing",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+  ]),
+  SUPER_ADMIN: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-executive",
+    "fin-billing",
+    "fin-cashier",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+    "fin-insurance",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-journals",
+    "fin-chart-of-accounts",
+    "fin-periods",
+    "fin-reconciliation",
+    "fin-audit",
+    "fin-approvals",
+    "fin-settings",
+  ]),
+  SYSTEM_ADMIN: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-executive",
+    "fin-billing",
+    "fin-cashier",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+    "fin-insurance",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-journals",
+    "fin-chart-of-accounts",
+    "fin-periods",
+    "fin-reconciliation",
+    "fin-audit",
+    "fin-approvals",
+    "fin-settings",
+  ]),
+  DEVELOPER: new Set([
+    "fin-workcenter",
+    "fin-home",
+    "fin-executive",
+    "fin-billing",
+    "fin-cashier",
+    "fin-payments",
+    "fin-receipts",
+    "fin-refunds",
+    "fin-insurance",
+    "fin-accounting",
+    "fin-ledger",
+    "fin-journals",
+    "fin-chart-of-accounts",
+    "fin-periods",
+    "fin-reconciliation",
+    "fin-audit",
+    "fin-approvals",
+    "fin-settings",
+  ]),
+  DEFAULT: new Set(["fin-home", "fin-workcenter"]),
+});
+
+function getFinanceItemIdsForRole(role) {
+  const normalizedRole = normalizeRole(role || "");
+  return FINANCE_ROUTE_MATRIX[normalizedRole] || FINANCE_ROUTE_MATRIX.DEFAULT;
+}
 
 function calendarGroupForWorkspace(workspaceId) {
   return {
@@ -63,8 +223,13 @@ const WORKSPACES_BY_ROLE = Object.freeze({
   SYSTEM_ADMIN: ["governance", "platform", "revenue", "operations", "care", "innovation"],
   SUPER_ASSISTANT: ["platform", "governance", "care"],
 
-  HOSPITAL_ADMIN: ["operations", "people", "revenue", "care", "platform", "innovation"],
-  HOSPITAL_ADMIN_ASSISTANT: ["operations", "people", "revenue", "care", "platform", "innovation"],
+  HOSPITAL_ADMIN: ["operations", "people", "revenue", "finance", "care", "platform", "innovation"],
+  HOSPITAL_ADMIN_ASSISTANT: ["operations", "people", "revenue", "finance", "care", "platform", "innovation"],
+  RECEPTIONIST: ["operations", "people", "revenue", "finance", "care"],
+  PAYROLL_OFFICER: ["revenue", "finance", "people"],
+  ACCOUNTANT: ["finance"],
+  FINANCE_MANAGER: ["finance"],
+  CFO: ["finance"],
 
   DOCTOR: ["care", "operations", "people", "innovation"],
   SURGEON: ["care", "operations", "people", "innovation"],
@@ -74,7 +239,7 @@ const WORKSPACES_BY_ROLE = Object.freeze({
 
   LAB_TECH: ["operations", "care"],
   PHARMACIST: ["operations", "care"],
-  RECEPTIONIST: ["operations", "revenue", "people"],
+  SUPPLIER: ["operations"],
   COMMUNITY_HEALTH_WORKER: ["operations", "care"],
   DRIVER: ["operations"],
   AMBULANCE_DRIVER: ["operations"],
@@ -82,7 +247,6 @@ const WORKSPACES_BY_ROLE = Object.freeze({
   MORTUARY_MANAGER: ["operations"],
 
   HR_MANAGER: ["people", "operations", "platform"],
-  PAYROLL_OFFICER: ["revenue", "people"],
 
   SECURITY_ADMIN: ["platform", "operations"],
   SECURITY_OFFICER: ["platform", "operations"],
@@ -172,6 +336,7 @@ export const WORKSPACE_NAV = Object.freeze({
       items: [
         { id: "ops-rx-queue", label: "Prescription Queue", path: "/app/operations/pharmacy/prescription-queue", icon: "pharmacy" },
         { id: "ops-pharm-inv", label: "Inventory", path: "/app/operations/pharmacy/inventory", icon: "inventory" },
+        { id: "ops-pharm-suppliers", label: "Procurement", path: "/app/operations/pharmacy/suppliers", icon: "reports" },
         { id: "ops-pharm-controlled", label: "Controlled Drugs", path: "/app/operations/pharmacy/controlled", icon: "security" },
       ],
     },
@@ -185,6 +350,60 @@ export const WORKSPACE_NAV = Object.freeze({
         { id: "rev-transactions", label: "Transactions", path: "/app/revenue/transactions/index", icon: "reports" },
         { id: "rev-claims", label: "Claims", path: "/app/revenue/claims/index", icon: "reports" },
         { id: "rev-intel", label: "Revenue Intelligence", path: "/app/revenue/intelligence/index", icon: "analytics" },
+      ],
+    },
+  ],
+  finance: [
+    {
+      group: "Finance",
+      items: [
+        { id: "fin-workcenter", label: "Work Center", path: "/app/finance/work-center", icon: "inbox" },
+        { id: "fin-home", label: "Home", path: "/app/finance/home/index", icon: "home" },
+        { id: "fin-manager", label: "Manager Dashboard", path: "/app/finance/manager/index", icon: "analytics" },
+        { id: "fin-executive", label: "Executive Dashboard", path: "/app/finance/executive/index", icon: "analytics" },
+      ],
+    },
+    {
+      group: "Revenue Cycle",
+      items: [
+        { id: "fin-billing", label: "Patient Billing", path: "/app/finance/billing/index", icon: "payroll" },
+        { id: "fin-cashier", label: "Cashier", path: "/app/finance/cashier/index", icon: "payments" },
+        { id: "fin-payments", label: "Payments", path: "/app/finance/payments/index", icon: "payments" },
+        { id: "fin-receipts", label: "Receipts", path: "/app/finance/receipts/index", icon: "payments" },
+        { id: "fin-refunds", label: "Refunds", path: "/app/finance/refunds/index", icon: "refresh" },
+        { id: "fin-insurance", label: "Insurance Claims", path: "/app/finance/insurance-claims/index", icon: "shield" },
+      ],
+    },
+    {
+      group: "Accounting",
+      items: [
+        { id: "fin-accounting", label: "Accounting Dashboard", path: "/app/finance/accounting/index", icon: "ledger" },
+        { id: "fin-ledger", label: "General Ledger", path: "/app/finance/general-ledger/index", icon: "analytics" },
+        { id: "fin-journals", label: "Journal Entries", path: "/app/finance/journal-entries/index", icon: "reports" },
+        { id: "fin-chart-of-accounts", label: "Chart of Accounts", path: "/app/finance/chart-of-accounts/index", icon: "chart" },
+        { id: "fin-periods", label: "Accounting Periods", path: "/app/finance/periods/index", icon: "calendar" },
+      ],
+    },
+    {
+      group: "Reporting",
+      items: [
+        { id: "fin-reports", label: "Reports", path: "/app/finance/reports/index", icon: "analytics" },
+        { id: "fin-trial-balance", label: "Trial Balance", path: "/app/finance/trial-balance/index", icon: "balance" },
+        { id: "fin-profit-loss", label: "Profit & Loss", path: "/app/finance/profit-and-loss/index", icon: "analytics" },
+        { id: "fin-balance-sheet", label: "Balance Sheet", path: "/app/finance/balance-sheet/index", icon: "analytics" },
+        { id: "fin-cash-flow", label: "Cash Flow", path: "/app/finance/cash-flow/index", icon: "cash" },
+        { id: "fin-finintel", label: "Financial Intelligence", path: "/app/finance/financial-intelligence/index", icon: "ai" },
+      ],
+    },
+    {
+      group: "Governance",
+      items: [
+        { id: "fin-reconciliation", label: "Reconciliation", path: "/app/finance/reconciliation/index", icon: "analytics" },
+        { id: "fin-audit", label: "Audit", path: "/app/finance/audit/index", icon: "shield" },
+        { id: "fin-approvals", label: "Approvals", path: "/app/finance/approvals/index", icon: "check" },
+        { id: "fin-approval-policies", label: "Approval Policies", path: "/app/finance/approval-policies/index", icon: "policy" },
+        { id: "fin-consolidation", label: "Consolidation", path: "/app/finance/consolidation/index", icon: "bank" },
+        { id: "fin-settings", label: "Settings", path: "/app/finance/settings/index", icon: "settings" },
       ],
     },
   ],
@@ -207,6 +426,7 @@ export const WORKSPACE_NAV = Object.freeze({
         { id: "platform-profile", label: "Profile", path: "/app/platform/account/profile", icon: "account" },
         { id: "platform-notifs", label: "Notifications", path: "/app/platform/inbox/notifications", icon: "notifications" },
         { id: "platform-comm", label: "Communication Center", path: "/app/platform/inbox/communication", icon: "notifications" },
+        { id: "platform-hospital-comm", label: "Hospital Communication Center", path: "/app/platform/inbox/hospital-communication", icon: "notifications" },
       ],
     },
     {
@@ -236,6 +456,7 @@ export const WORKSPACE_NAV = Object.freeze({
       items: [
         { id: "gov-home", label: "Home", path: "/app/governance/home/index", icon: "home" },
         { id: "gov-claims", label: "Government Claims", path: "/app/governance/claims/index", icon: "reports" },
+        { id: "gov-pharmacy-safety", label: "Medicine Safety", path: "/app/governance/pharmacy-safety", icon: "shield" },
         { id: "gov-registry-hosp", label: "Hospital Registry", path: "/app/governance/registry/hospitals", icon: "admin" },
         { id: "gov-registry-patient", label: "Patient Identity", path: "/app/governance/registry/patient-identity", icon: "account" },
         { id: "gov-verification", label: "Hospital Verification", path: "/app/governance/verification/hospitals", icon: "shield" },
@@ -306,7 +527,22 @@ export function navForWorkspace(workspaceId, user = null) {
 
   const staticNav = WORKSPACE_NAV[workspaceId] || [];
   const domainItems = getRuntimeNavigationItems({ userPermissions: user?.permissions || [] }).filter((item) => item.workspace === workspaceId);
-  const baseNav = [...staticNav, calendarGroupForWorkspace(workspaceId)];
+
+  const baseNav = (() => {
+    if (workspaceId !== "finance") {
+      return [...staticNav, calendarGroupForWorkspace(workspaceId)];
+    }
+
+    const role = user?.role || "HOSPITAL_ADMIN";
+    const allowedFinanceIds = getFinanceItemIdsForRole(role);
+    const allowedItems = staticNav.flatMap((group) => (group.items || []).filter((item) => allowedFinanceIds.has(item.id)));
+
+    if (allowedItems.length === 0) {
+      return [{ group: "Finance", items: [] }, calendarGroupForWorkspace(workspaceId)];
+    }
+
+    return [{ group: "Finance", items: allowedItems }, calendarGroupForWorkspace(workspaceId)];
+  })();
 
   if (!domainItems.length) {
     return baseNav;

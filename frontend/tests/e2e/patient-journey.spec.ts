@@ -28,13 +28,19 @@ test.describe('End-to-End Patient Journey and Emergency Workflows', () => {
       }
     });
     expect(regRes.status()).toBe(201);
-    const patient = await regRes.json();
-    const patientId = patient._id;
+    const patientPayload = await regRes.json();
+    const patient = patientPayload.patient || patientPayload;
+    const patientId = patient._id || patient.id;
 
     // 2. Appointment Creation
     const docRes = await context.get(`${apiURL}/api/appointments/doctors`, { headers });
-    const doctors = await docRes.json();
-    const doctorId = doctors[0]?._id;
+    const doctorPayload = await docRes.json();
+    const doctors = Array.isArray(doctorPayload)
+      ? doctorPayload
+      : Array.isArray(doctorPayload?.items)
+        ? doctorPayload.items
+        : [];
+    const doctorId = doctors[0]?._id || doctors[0]?.id;
 
     const apptRes = await context.post(`${apiURL}/api/appointments`, {
       headers,
@@ -178,8 +184,9 @@ test.describe('End-to-End Patient Journey and Emergency Workflows', () => {
       }
     });
     expect(regRes.status()).toBe(201);
-    const patient = await regRes.json();
-    const patientId = patient._id;
+    const patientPayload = await regRes.json();
+    const patient = patientPayload.patient || patientPayload;
+    const patientId = patient._id || patient.id;
 
     // 2. Admission (Encounter created as EMERGENCY)
     const encRes = await context.post(`${apiURL}/api/encounters`, {
@@ -191,8 +198,9 @@ test.describe('End-to-End Patient Journey and Emergency Workflows', () => {
       }
     });
     expect(encRes.status()).toBe(201);
-    const encounter = await encRes.json();
-    const encounterId = encounter._id;
+    const encounterPayload = await encRes.json();
+    const encounter = encounterPayload.encounter || encounterPayload;
+    const encounterId = encounter._id || encounter.id;
 
     // 3. Consultation (Encounter started instantly)
     const startEncRes = await context.post(`${apiURL}/api/encounters/${encounterId}/start`, { headers });

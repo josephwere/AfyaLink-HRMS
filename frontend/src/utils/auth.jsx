@@ -143,7 +143,7 @@ export function AuthProvider({ children }) {
   const canRoleOverride =
     normalizeRole(baseUser?.role) === "SUPER_ADMIN" ||
     normalizeRole(baseUser?.role) === "DEVELOPER";
-  const effectiveRole = canRoleOverride && roleOverride
+  const effectiveRole = canRoleOverride && normalizeRole(baseUser?.role) === "SUPER_ADMIN" && roleOverride
     ? normalizeRole(roleOverride)
     : normalizeRole(baseUser?.role);
   const user = useMemo(() => {
@@ -447,6 +447,7 @@ export function AuthProvider({ children }) {
     ============================ */
     let data;
     try {
+      console.log('[debug] auth.jsx: calling guardedAuthFetch /api/auth/login', { identifier: identifierOrToken });
       data = await guardedAuthFetch("/api/auth/login", {
         method: "POST",
         body: {
@@ -454,6 +455,7 @@ export function AuthProvider({ children }) {
           password: passwordOrOptions,
         },
       });
+      console.log('[debug] auth.jsx: guardedAuthFetch returned', data && { hasUser: !!data.user, requires2FA: data?.requires2FA });
     } catch (err) {
       const networkLike =
         String(err?.message || "")

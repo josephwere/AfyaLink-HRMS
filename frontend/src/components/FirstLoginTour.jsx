@@ -185,8 +185,12 @@ export default function FirstLoginTour() {
   const [activeTourIdentity, setActiveTourIdentity] = useState("");
   const effectiveRole = (user?.actualRole || user?.role || "").toUpperCase();
   const tourKey = effectiveRole || "DEFAULT";
-  const seenTours = uiPreferences?.onboarding?.toursSeen;
-  const hasSeenTour = seenTours?.[tourKey] === true;
+  const onboardingPrefs = uiPreferences?.onboarding || {};
+  const seenTours = onboardingPrefs.toursSeen || {};
+  const onboardingCompletedAt = onboardingPrefs.completedAt || onboardingPrefs.hasCompletedTour;
+  const localTourSeenKey = user?.id ? `tour_seen_${user.id}_${tourKey}` : "";
+  const localTourSeen = localTourSeenKey && typeof window !== "undefined" ? localStorage.getItem(localTourSeenKey) === "true" : false;
+  const hasSeenTour = Boolean(onboardingCompletedAt) || seenTours?.[tourKey] === true || localTourSeen;
 
   const steps = useMemo(() => {
     const roleSteps = ROLE_STEPS[effectiveRole] || [];
@@ -196,15 +200,15 @@ export default function FirstLoginTour() {
   useEffect(() => {
     if (!user?.id) return;
     const identity = `${user.id}:${tourKey}`;
-    const key = `tour_seen_${user.id}_${tourKey}`;
-    const seen = localStorage.getItem(key) === "true";
-    if (!seen && !hasSeenTour) {
+    if (!hasSeenTour) {
       if (activeTourIdentity !== identity) {
         setActiveTourIdentity(identity);
         setIndex(0);
       }
       setOpen(true);
+      return;
     }
+    setOpen(false);
   }, [activeTourIdentity, hasSeenTour, tourKey, user?.id]);
 
   const close = () => {
@@ -213,7 +217,11 @@ export default function FirstLoginTour() {
       setUiPreferences(
         {
           onboarding: {
+            ...(onboardingPrefs || {}),
+            completedAt: onboardingPrefs.completedAt || new Date().toISOString(),
+            hasCompletedTour: onboardingPrefs.hasCompletedTour || true,
             toursSeen: {
+              ...(seenTours || {}),
               [tourKey]: true,
             },
           },

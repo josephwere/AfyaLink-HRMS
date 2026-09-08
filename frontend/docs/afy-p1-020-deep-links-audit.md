@@ -4,8 +4,8 @@
 - Resolved: 34
 - Unresolved: 11
 
-- src/App.jsx:330 interactive action -> /unauthorized (resolved)
-- src/App.jsx:431 interactive action -> /app/revenue/payments/index (resolved)
+- src/App.jsx:358 interactive action -> /unauthorized (resolved)
+- src/App.jsx:459 interactive action -> /app/revenue/payments/index (resolved)
 - src/components/AIAutofillAuditSummary.jsx:97 interactive action -> /app/platform/ai/autofill-audit (resolved)
 - src/components/AccessDeniedCard.jsx:14 interactive action -> /profile (unresolved)
 - src/components/AccessDeniedCard.jsx:17 interactive action -> / (resolved)
@@ -20,7 +20,7 @@
 - src/components/RequireRole.jsx:24 interactive action -> /login (resolved)
 - src/components/RequireRole.jsx:31 interactive action -> /unauthorized (resolved)
 - src/components/RouteGuard.jsx:100 interactive action -> /login (resolved)
-- src/pages/Admin/CreateAdmin.jsx:47 Manage Super Assistants -> /admin/super-assistants (unresolved)
+- src/pages/Admin/CreateAdmin.jsx:48 Manage Super Assistants -> /admin/super-assistants (unresolved)
 - src/pages/Admin/Dashboard.jsx:86 Open Audit Logs -> /admin/audit-logs (unresolved)
 - src/pages/Admin/Dashboard.jsx:87 Open AI Autofill Audit -> /admin/ai-autofill-audit (unresolved)
 - src/pages/Admin/Dashboard.jsx:88 Create Admin -> /admin/create-admin (unresolved)
@@ -29,8 +29,8 @@
 - src/pages/Admin/SuperAssistants.jsx:59 Register Super Assistant -> /admin/create-admin (unresolved)
 - src/pages/ForgotPassword.jsx:214 Back to sign in -> /login (resolved)
 - src/pages/HospitalAdmin/ConsultationMonitor.jsx:21 interactive action -> /hospital-admin/escalations (unresolved)
-- src/pages/Login.jsx:95 interactive action -> /forgot-password (resolved)
-- src/pages/Login.jsx:113 Create account -> /register (resolved)
-- src/pages/Login.jsx:118 View careers -> /careers (resolved)
+- src/pages/Login.jsx:103 interactive action -> /forgot-password (resolved)
+- src/pages/Login.jsx:121 Create account -> /register (resolved)
+- src/pages/Login.jsx:126 View careers -> /careers (resolved)
 - src/pages/Patient/AdsFeed.jsx:44 interactive action -> /register (resolved)
 - src/pages/Patient/AdsFeed.jsx:45 interactive action -> /login (resolved)

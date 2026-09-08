@@ -98,6 +98,7 @@ const appointmentSchema = new Schema(
       enum: [
         "Scheduled",
         "CheckedIn",
+        "ProviderReady",
         "InConsultation",
         "Completed",
         "Cancelled",
