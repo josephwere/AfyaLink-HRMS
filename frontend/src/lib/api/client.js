@@ -265,6 +265,12 @@ function toUiErrorMessage(message, status = 0, code = "") {
   if (code === "STEP_UP_REQUIRED" || code === "SESSION_RESTRICTED") {
     return raw || "Additional verification is required.";
   }
+  if (
+    code === "AUTH_RUNTIME_TIMEOUT" ||
+    /^(sign-in|unable to send the security code|this account does not have a password)/i.test(raw)
+  ) {
+    return raw;
+  }
   if (status >= 500) {
     return "We couldn’t complete that request right now. Please try again.";
   }
