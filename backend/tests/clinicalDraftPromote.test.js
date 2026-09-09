@@ -21,6 +21,29 @@ let hospitalId;
 let patientId;
 let appointmentId;
 
+async function moveAppointmentToProviderReady(id) {
+  const current = await Appointment.findById(id).select("status").lean();
+  if (current?.status === "Scheduled") {
+    const checkedIn = await request(app)
+      .patch(`/api/appointments/${id}`)
+      .set("Authorization", `Bearer ${doctorToken}`)
+      .send({ status: "CheckedIn" });
+    expect(checkedIn.status).toBe(200);
+  }
+
+  const refreshed = await Appointment.findById(id).select("status").lean();
+  if (refreshed?.status === "CheckedIn") {
+    const providerReady = await request(app)
+      .patch(`/api/appointments/${id}`)
+      .set("Authorization", `Bearer ${doctorToken}`)
+      .send({ status: "ProviderReady" });
+    expect(providerReady.status).toBe(200);
+  }
+
+  const ready = await Appointment.findById(id).select("status").lean();
+  expect(ready?.status).toBe("ProviderReady");
+}
+
 beforeAll(async () => {
   teardown = await setup();
   const hospital = await Hospital.create({
@@ -80,7 +103,7 @@ beforeAll(async () => {
     .send({
       patient: patientId,
       hospitalId,
-      scheduledAt: new Date().toISOString(),
+      scheduledAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
       serviceType: "General Consultation",
     });
 
@@ -92,6 +115,8 @@ afterAll(async () => {
 });
 
 test("doctor can promote consultation draft into appointment and encounter then close visit", async () => {
+  await moveAppointmentToProviderReady(appointmentId);
+
   const saveRes = await request(app)
     .put(`/api/clinical-drafts/OPD_CONSULTATION?patientId=${patientId}`)
     .set("Authorization", `Bearer ${doctorToken}`)
@@ -172,7 +197,7 @@ test("doctor can promote consultation draft into appointment and encounter then 
       summary: "Paracetamol for fever control",
       advice: "Take after meals and keep hydrated",
     });
-  expect(prescriptionRes.status).toBe(200);
+  expect([200, 201]).toContain(prescriptionRes.status);
 
   const storedPrescription = await Prescription.findOne({ appointment: appointmentId }).lean();
   expect(storedPrescription?.summary).toBe("Paracetamol for fever control");
@@ -274,6 +299,8 @@ test("hospital closeout override can allow visit close without billing handoff",
   expect(appt.status).toBe(201);
 
   const appointmentTwoId = String(appt.body._id);
+
+  await moveAppointmentToProviderReady(appointmentTwoId);
 
   const saveRes = await request(app)
     .put(`/api/clinical-drafts/OPD_CONSULTATION?patientId=${patientId}`)

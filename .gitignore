@@ -9,6 +9,23 @@ backend/node_modules/
 backend/uploads/
 frontend/playwright-report/
 frontend/test-results/
+test-results/
+.playwright-mcp/
+backend/artifacts/ops/
+backend/tmp/
+backend/utils/dist/
+frontend/tests/e2e/dist/
+**/.auth/
+backend/keys/*.pem
+backend/keys/**
+docs/artifacts/e2e-screenshots/**
+**/*.trace
+**/*.trace.zip
+**/*.webm
+**/*.har
+*.log
+*.exit
+*.probe.txt
 .vite/
 .~lock*
 

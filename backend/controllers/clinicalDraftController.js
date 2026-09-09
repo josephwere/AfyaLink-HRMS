@@ -64,14 +64,14 @@ function buildPromotedUpdates(type, appointment, payload) {
     metadata.followUpRequired = Boolean(payload.followUp);
     metadata.lastPromotedDraftType = type;
     metadata.lastPromotedDraftAt = new Date().toISOString();
-    return {
-      status:
-        appointment.status === "Scheduled" || appointment.status === "CheckedIn"
-          ? "InConsultation"
-          : appointment.status,
+    const updates = {
       notes: String(payload.assessment || appointment.notes || "").trim(),
       metadata,
     };
+    if (appointment.status === "Scheduled" || appointment.status === "CheckedIn") {
+      updates.status = "InConsultation";
+    }
+    return updates;
   }
 
   metadata.doctorNote = {

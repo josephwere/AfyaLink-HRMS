@@ -239,8 +239,11 @@ describe("Scheduling Runtime - Integration Tests", () => {
     });
 
     it("should validate booking window", async () => {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 5);
+      const futureDate = clockService.nowInTimezone("UTC");
+      futureDate.setUTCDate(futureDate.getUTCDate() + 5);
+      while ([0, 6].includes(futureDate.getUTCDay())) {
+        futureDate.setUTCDate(futureDate.getUTCDate() + 1);
+      }
 
       const result = await schedulingPolicyEngine.validateBookingWindow(
         appointmentType._id,

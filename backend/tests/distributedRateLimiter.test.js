@@ -7,20 +7,34 @@ import { redis } from "../utils/redis.js";
 let teardown;
 const originalEnableRateLimitsInTests = process.env.ENABLE_RATE_LIMITS_IN_TESTS;
 
+async function clearRateLimitKeys() {
+  await redis.del(["auth:test:u:anon", "auth_sensitive:test:u:anon"]);
+  await redis.set("auth_sensitive:test:u:anon", "0");
+  for (const pattern of ["auth:*", "auth_sensitive:*"]) {
+    const keys = await redis.keys(pattern);
+    if (Array.isArray(keys) && keys.length > 0) {
+      await redis.del(keys);
+    }
+  }
+}
+
 beforeAll(async () => {
   teardown = await setup();
+  await clearRateLimitKeys();
 });
 
-afterEach(() => {
+afterEach(async () => {
   if (originalEnableRateLimitsInTests === undefined) {
     delete process.env.ENABLE_RATE_LIMITS_IN_TESTS;
   } else {
     process.env.ENABLE_RATE_LIMITS_IN_TESTS = originalEnableRateLimitsInTests;
   }
+  await clearRateLimitKeys();
   jest.restoreAllMocks();
 });
 
 afterAll(async () => {
+  await clearRateLimitKeys();
   if (teardown) await teardown();
 });
 
