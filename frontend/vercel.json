@@ -77,7 +77,7 @@
       "destination": "https://afya-link-hrms-frontend-4.onrender.com/uploads/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ]
