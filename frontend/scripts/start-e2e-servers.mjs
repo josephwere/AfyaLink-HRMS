@@ -147,6 +147,10 @@ async function main() {
       AFYALINK_PRESENTATION_SEED_ON_BOOT: 'YES',
       AFYALINK_PRESENTATION_PASSWORD: process.env.AFYALINK_PRESENTATION_PASSWORD || 'AfyaDemo@2026!',
       AFYALINK_PRESENTATION_RESET_PASSWORDS: 'true',
+      JWT_SECRET: process.env.JWT_SECRET || 'afyalink-e2e-jwt-secret',
+      JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'afyalink-e2e-access-secret',
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'afyalink-e2e-refresh-secret',
+      REFRESH_SECRET: process.env.REFRESH_SECRET || 'afyalink-e2e-refresh-secret',
       PORT: String(BACKEND_PORT),
     };
 

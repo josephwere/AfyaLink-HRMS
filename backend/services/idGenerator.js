@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import mongoose from "mongoose";
 
 const idSequenceSchema = new mongoose.Schema(
@@ -29,8 +30,32 @@ export async function generateId(prefix, digits = 6) {
   return formatEntityId(prefix, seq, digits);
 }
 
+export const USER_ID_PATTERN = /^AFY-USR-[A-Z0-9]{8,12}$/;
+const USER_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateUserSuffix(length = 10) {
+  const bytes = crypto.randomBytes(length);
+  let suffix = "";
+  for (const byte of bytes) {
+    suffix += USER_ID_ALPHABET[byte % USER_ID_ALPHABET.length];
+  }
+  return suffix;
+}
+
 export async function generateUserId() {
-  return generateId("USR");
+  const UserModel = mongoose.models.User;
+  const maxAttempts = 12;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const suffix = generateUserSuffix(10);
+    const candidate = `AFY-USR-${suffix}`;
+
+    if (!UserModel || !(await UserModel.exists({ userId: candidate }))) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Unable to generate a unique user ID after multiple attempts.");
 }
 
 export async function generateHospitalId() {

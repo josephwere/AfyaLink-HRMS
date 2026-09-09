@@ -133,7 +133,26 @@ test.describe('AfyaLink CRUD validations', () => {
       await page.waitForTimeout(300);
     }
 
+    const registrationResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/hospital-admin/register-staff') && response.request().method() === 'POST'
+    );
     await page.click('button[type="submit"]');
+    const registrationResponse = await registrationResponsePromise;
+    const registrationBody = await registrationResponse.json();
+    const registeredUser = registrationBody.user || registrationBody.data || registrationBody;
+    expect(registrationResponse.status()).toBe(201);
+    expect(registeredUser.id).toBeTruthy();
+    const identity = await page.evaluate(async (staffEmail) => {
+      const token = window.sessionStorage.getItem('afyalink_access_token');
+      const response = await fetch(`/api/users?q=${encodeURIComponent(staffEmail)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      const users = Array.isArray(payload) ? payload : payload.items || payload.users || [];
+      return users.find((user) => user.email === staffEmail) || null;
+    }, email);
+    expect(identity?.userId).toMatch(/^AFY-USR-[A-Z0-9]+$/);
+    expect(identity?.userId).not.toMatch(/^AFY-USR-\d+$/);
     await page.waitForTimeout(2000);
 
     // Verify success banner/message

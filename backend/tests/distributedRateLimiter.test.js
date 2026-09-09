@@ -3,6 +3,7 @@ import { jest } from "@jest/globals";
 import app from "../app.js";
 import setup from "./setupTestEnv.js";
 import { redis } from "../utils/redis.js";
+import { createDistributedRateLimiter } from "../middleware/distributedRateLimiter.js";
 
 let teardown;
 const originalEnableRateLimitsInTests = process.env.ENABLE_RATE_LIMITS_IN_TESTS;
@@ -45,17 +46,36 @@ describe("Distributed rate limiter", () => {
     const stallMs = 5000;
     const originalIncr = redis.incr;
     redis.incr = () => new Promise((resolve) => setTimeout(() => resolve(1), stallMs));
+    const limiter = createDistributedRateLimiter({
+      prefix: "auth",
+      windowMs: 60_000,
+      max: 12,
+      message: { message: "Too many requests. Please retry shortly.", code: "RATE_LIMITED" },
+    });
 
     try {
       const startedAt = Date.now();
-      const res = await request(app)
-        .post("/api/auth/login")
-        .send({ identifier: "missing-user@afya.test", password: "WrongPass123!" });
-      const elapsedMs = Date.now() - startedAt;
+      let nextCalled = false;
+      const req = {
+        headers: {},
+        ip: "127.0.0.1",
+        connection: { remoteAddress: "127.0.0.1" },
+        user: null,
+      };
+      const res = {
+        setHeader: () => {},
+        status: () => res,
+        json: () => ({ ok: true }),
+      };
 
-      expect(res.status).toBe(401);
-      expect(res.body.success).toBe(false);
-      expect(elapsedMs).toBeLessThan(3000);
+      await limiter(req, res, () => {
+        nextCalled = true;
+      });
+
+      const elapsedMs = Date.now() - startedAt;
+      expect(nextCalled).toBe(true);
+      expect(elapsedMs).toBeLessThan(2000);
+      expect(elapsedMs).toBeLessThan(stallMs);
     } finally {
       redis.incr = originalIncr;
     }

@@ -1,9 +1,11 @@
 import request from 'supertest';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { jest } from '@jest/globals';
 import app from '../app.js';
 import setup from './setupTestEnv.js';
 import User from '../models/User.js';
+import { generateUserId } from '../services/idGenerator.js';
 import { getOtp } from '../services/otpStore.js';
 
 let teardown;
@@ -11,6 +13,73 @@ beforeAll(async () => { teardown = await setup(); });
 afterAll(async () => { if (teardown) await teardown(); });
 
 describe('Auth (register/login)', ()=>{
+  test('generated user IDs use the AFY-USR non-sequential alphanumeric format', async () => {
+    const userId = await generateUserId();
+    expect(userId).toMatch(/^AFY-USR-[A-Z0-9]{8,12}$/);
+    expect(userId).not.toMatch(/^AFY-USR-\d+$/);
+    expect(userId).toMatch(/[A-Z]/);
+  });
+
+  test('consecutive generated IDs are unique and not sequential', async () => {
+    const ids = [await generateUserId(), await generateUserId(), await generateUserId()];
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.some((id) => /^AFY-USR-00000/.test(id))).toBe(false);
+    expect(ids.every((id) => /^AFY-USR-[A-Z0-9]{8,12}$/.test(id))).toBe(true);
+  });
+
+  test('duplicate user ID collision retries safely', async () => {
+    const randomBytesSpy = jest.spyOn(crypto, 'randomBytes');
+    const existsSpy = jest.spyOn(User, 'exists');
+    const sequence = [Buffer.alloc(10, 0), Buffer.alloc(10, 1)];
+
+    randomBytesSpy.mockImplementation((size) => {
+      const next = sequence.shift();
+      if (next) return next;
+      return Buffer.alloc(size, 1);
+    });
+
+    existsSpy.mockImplementation(async (query) => {
+      const userId = query && query.userId ? query.userId : null;
+      return userId === 'AFY-USR-AAAAAAAA';
+    });
+
+    try {
+      const userId = await generateUserId();
+      expect(userId).toMatch(/^AFY-USR-[A-Z0-9]{8,12}$/);
+      expect(userId).not.toBe('AFY-USR-AAAAAAAA');
+    } finally {
+      randomBytesSpy.mockRestore();
+      existsSpy.mockRestore();
+    }
+  });
+
+  test('database uniqueness prevents duplicate userId values', async () => {
+    const duplicateId = 'AFY-USR-Z9K2P7Q4';
+    await User.create({
+      name: 'Duplicate User',
+      email: 'duplicate-user@afya.test',
+      password: 'Pass123!',
+      role: 'DOCTOR',
+      authProvider: 'local',
+      authMethods: ['local'],
+      active: true,
+      emailVerified: true,
+      userId: duplicateId,
+    });
+
+    await expect(User.create({
+      name: 'Another Duplicate User',
+      email: 'duplicate-user-2@afya.test',
+      password: 'Pass123!',
+      role: 'DOCTOR',
+      authProvider: 'local',
+      authMethods: ['local'],
+      active: true,
+      emailVerified: true,
+      userId: duplicateId,
+    })).rejects.toThrow();
+  });
+
   test('register -> login flow', async ()=>{
     const reg = await request(app).post('/api/auth/register').send({ name:'Test User', email:'test@afya.test', password:'Pass123!', role:'Doctor' });
     expect([200, 201]).toContain(reg.status);

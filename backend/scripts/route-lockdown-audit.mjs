@@ -3,8 +3,9 @@
 import fs from "fs";
 import path from "path";
 import process from "process";
+import { fileURLToPath } from "url";
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROUTES_DIR = path.join(ROOT, "routes");
 const CONTROLLERS_DIR = path.join(ROOT, "controllers");
 
