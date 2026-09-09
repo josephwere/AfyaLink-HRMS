@@ -24,7 +24,10 @@ describe("CORS origin policy", () => {
     delete process.env.FRONTEND_URL;
     delete process.env.FRONTEND_PUBLIC_URL;
 
+    expect(getAllowedOrigins()).toContain("https://afya-link-hrms-4.vercel.app");
+    expect(isAllowedOrigin("https://afya-link-hrms-4.vercel.app")).toBe(true);
     expect(isAllowedOrigin("http://127.0.0.1:5173")).toBe(false);
+    expect(isAllowedOrigin("https://example.invalid")).toBe(false);
     process.env.CORS_ORIGIN = "https://app.example";
     expect(isAllowedOrigin("https://app.example")).toBe(true);
   });

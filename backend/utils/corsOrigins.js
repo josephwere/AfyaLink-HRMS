@@ -21,6 +21,7 @@ export function getAllowedOrigins() {
         ...parseOriginList(process.env.CORS_ORIGIN),
         normalizeOrigin(process.env.FRONTEND_URL),
         normalizeOrigin(process.env.FRONTEND_PUBLIC_URL),
+        ...(isProduction ? ["https://afya-link-hrms-4.vercel.app"] : []),
         ...(isProduction ? [] : ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"]),
       ].filter(Boolean)
     )
